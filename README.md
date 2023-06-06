@@ -1,2 +1,2 @@
 
-# Neurosymbolic process
+# Neurosymbolic Library
