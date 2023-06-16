@@ -17,9 +17,9 @@ class TypeSignature(ABC):
         """
 
 
-class HindleyMilnerTypeSignature(TypeSignature):
+class ExpandedTypeSignature(TypeSignature):
     """
-    Wrapper around DreamCoder's Implementation of Hindley-Milner Type Inference
+    Represents a C++ style template type system
     """
 
     def unify_return(self, type: Type) -> List[List[Type]]:
