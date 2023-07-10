@@ -7,10 +7,12 @@ DSL of the form:
 # Tint_int_add :: tensor[float] -> float -> tensor[float]
 # Tint_Tint_add :: tensor[float] -> tensor[float] -> tensor[float]
 # Function signature for Tint_linear
-# Tint_linear :: tensor[float] -> tensor[float]
+# Tint_linear :: LinearObj -> tensor[float] -> tensor[float]
+# Linear_c :: LinearQbj
 """
 import torch
-from ..dsl.production import ConcreteProduction
+import torch.nn as nn
+from ..dsl.production import ConcreteProduction, ParameterizedProduction
 from ..dsl.dsl import DSL
 from ..types.type import AtomicType, ListType
 from ..types.type_signature import ConcreteTypeSignature
@@ -18,9 +20,10 @@ from ..types.type_signature import ConcreteTypeSignature
 
 # int_type = AtomicType("int")
 float_type = AtomicType("float")
+linear_obj_type = AtomicType("LinearObj")
 list_float_type = ListType(float_type)
 
-#@TODO: How to integrate length?
+# @TODO: How to integrate length?
 # 1. DSL object has length built in.
 # 2. ....
 INPUT_LENGHT = 10
@@ -54,13 +57,13 @@ differentiable_arith_dsl = DSL(
         ),
         ConcreteProduction(
             "Tint_linear",
-            ConcreteTypeSignature([list_float_type], list_float_type),
-            lambda x: x #@TODO: How to integrate linear?
-        )
+            ConcreteTypeSignature([linear_obj_type, list_float_type], list_float_type),
+            lambda f, x: f(x),
+        ),
+        ParameterizedProduction(
+            "Linear_c",
+            ConcreteTypeSignature([], linear_obj_type),
+            lambda: nn.Linear(INPUT_LENGHT, INPUT_LENGHT),
+        ),
     ]
 )
-
-
-
-
-
