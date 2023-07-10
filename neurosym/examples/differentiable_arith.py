@@ -23,12 +23,8 @@ float_type = AtomicType("float")
 linear_obj_type = AtomicType("LinearObj")
 list_float_type = ListType(float_type)
 
-# @TODO: How to integrate length?
-# 1. DSL object has length built in.
-# 2. ....
-INPUT_LENGHT = 10
 
-differentiable_arith_dsl = DSL(
+differentiable_arith_dsl = lambda length: DSL(
     [
         ConcreteProduction(
             "one",
@@ -38,7 +34,7 @@ differentiable_arith_dsl = DSL(
         ConcreteProduction(
             "ones",
             ConcreteTypeSignature([], list_float_type),
-            lambda: torch.ones(INPUT_LENGHT),
+            lambda: torch.ones(length),
         ),
         ConcreteProduction(
             "int_int_add",
@@ -63,7 +59,7 @@ differentiable_arith_dsl = DSL(
         ParameterizedProduction(
             "Linear_c",
             ConcreteTypeSignature([], linear_obj_type),
-            lambda: nn.Linear(INPUT_LENGHT, INPUT_LENGHT),
+            lambda: nn.Linear(length, length),
         ),
     ]
 )
