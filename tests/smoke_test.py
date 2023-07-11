@@ -4,6 +4,7 @@ Just checks that the package can be imported
 
 import unittest
 from neurosym.programs.s_expression import SExpression
+from neurosym.search.astar import astar
 
 from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
@@ -18,7 +19,8 @@ class TestSmoke(unittest.TestCase):
             basic_arith_dsl,
             int_type,
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x)) == 4,
+            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x))
+            == 4,
         )
         node = next(bfs(g))
         self.assertEqual(
@@ -40,6 +42,43 @@ class TestSmoke(unittest.TestCase):
                         ),
                     ),
                     SExpression(symbol="1", children=()),
+                ),
+            ),
+        )
+
+    def test_astar(self):
+        g = DSLSearchGraph(
+            basic_arith_dsl,
+            int_type,
+            ChooseFirst(),
+            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x))
+            == 4,
+        )
+        cost = (
+            lambda x: len(str(x.children[0]))
+            if isinstance(x, SExpression) and x.children
+            else 0
+        )
+        node = next(astar(g, cost))
+        self.assertEqual(
+            node,
+            SExpression(
+                symbol="+",
+                children=(
+                    SExpression(symbol="1", children=()),
+                    SExpression(
+                        symbol="+",
+                        children=(
+                            SExpression(
+                                symbol="+",
+                                children=(
+                                    SExpression(symbol="1", children=()),
+                                    SExpression(symbol="1", children=()),
+                                ),
+                            ),
+                            SExpression(symbol="1", children=()),
+                        ),
+                    ),
                 ),
             ),
         )
