@@ -6,3 +6,10 @@ from typing import Tuple
 class SExpression:
     symbol: str
     children: Tuple["SExpression"]
+
+
+@dataclass
+class InitializedSExpression:
+    symbol: str
+    children: Tuple["InitializedSExpression"]
+    state: object

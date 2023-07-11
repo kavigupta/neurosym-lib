@@ -18,7 +18,7 @@ class TestSmoke(unittest.TestCase):
             basic_arith_dsl,
             int_type,
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(x) == 4,
+            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x)) == 4,
         )
         node = next(bfs(g))
         self.assertEqual(

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from ..programs.hole import Hole
-from ..programs.s_expression import SExpression
+from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import Type
 
 from .production import Production
@@ -35,8 +35,23 @@ class DSL:
                 return production
         raise ValueError(f"Production with symbol {symbol} not found")
 
-    def compute_on_pytorch(self, program: SExpression):
+    def initialize(self, program: SExpression) -> InitializedSExpression:
+        """
+        Initializes all the productions in the given program.
+
+        Returns a new program with the same structure, but with all the productions
+        initialized.
+        """
+        prod = self.get_production(program.symbol)
+        return InitializedSExpression(
+            program.symbol,
+            tuple(self.initialize(child) for child in program.children),
+            prod.initialize(),
+        )
+
+    def compute_on_pytorch(self, program: InitializedSExpression):
         prod = self.get_production(program.symbol)
         return prod.compute_on_pytorch(
-            *[self.compute_on_pytorch(child) for child in program.children]
+            program.state,
+            *[self.compute_on_pytorch(child) for child in program.children],
         )

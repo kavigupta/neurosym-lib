@@ -20,7 +20,7 @@ class TestSmoke(unittest.TestCase):
             dsl,
             float_type,
             ChooseFirst(),
-            lambda x: dsl.compute_on_pytorch(x) == 4,
+            lambda x: dsl.compute_on_pytorch(dsl.initialize(x)) == 4,
         )
         node = next(bfs(g))
         self.assertEqual(

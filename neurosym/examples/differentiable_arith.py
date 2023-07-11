@@ -59,7 +59,8 @@ differentiable_arith_dsl = lambda length: DSL(
         ParameterizedProduction(
             "Linear_c",
             ConcreteTypeSignature([], linear_obj_type),
-            lambda: nn.Linear(length, length),
+            lambda linear: linear,
+            dict(linear=lambda: nn.Linear(length, length)),
         ),
     ]
 )

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Dict
 
 from ..types.type_signature import TypeSignature
 
@@ -23,9 +23,17 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def compute_on_pytorch(self, *inputs):
+    def initialize(self) -> object:
+        """
+        Return some state that this production might need to compute its function.
+            E.g., for a neural network production, this might be the weights of the network.
+        """
+
+    @abstractmethod
+    def compute_on_pytorch(self, state, *inputs):
         """
         Return the resulting pytorch expression of computing this function on the inputs.
+            Takes in the state of the production, which is the result of initialize().
 
         Effectively a form of denotation semantics.
         """
@@ -43,9 +51,20 @@ class ConcreteProduction(Production):
     def type_signature(self) -> TypeSignature:
         return self._type_signature
 
-    def compute_on_pytorch(self, *inputs):
+    def initialize(self) -> object:
+        return None
+
+    def compute_on_pytorch(self, state, *inputs):
+        assert state is None
         return self._compute_on_pytorch(*inputs)
 
 
+@dataclass
 class ParameterizedProduction(ConcreteProduction):
-    pass
+    _initialize: Callable[[], Dict[str, object]]
+
+    def initialize(self) -> object:
+        return self._initialize()
+
+    def compute_on_pytorch(self, state, *inputs):
+        return self._compute_on_pytorch(*inputs, **state)
