@@ -52,10 +52,10 @@ class ConcreteProduction(Production):
         return self._type_signature
 
     def initialize(self) -> object:
-        return None
+        return {}
 
     def compute_on_pytorch(self, state, *inputs):
-        assert state is None
+        assert state == {}
         return self._compute_on_pytorch(*inputs)
 
 
