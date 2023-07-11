@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Dict, Tuple
 
 
 @dataclass(frozen=True, eq=True)
@@ -12,4 +12,4 @@ class SExpression:
 class InitializedSExpression:
     symbol: str
     children: Tuple["InitializedSExpression"]
-    state: object
+    state: Dict[str, object]

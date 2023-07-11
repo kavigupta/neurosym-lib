@@ -23,7 +23,7 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def initialize(self) -> object:
+    def initialize(self) -> Dict[str, object]:
         """
         Return some state that this production might need to compute its function.
             E.g., for a neural network production, this might be the weights of the network.
@@ -51,7 +51,7 @@ class ConcreteProduction(Production):
     def type_signature(self) -> TypeSignature:
         return self._type_signature
 
-    def initialize(self) -> object:
+    def initialize(self) -> Dict[str, object]:
         return {}
 
     def compute_on_pytorch(self, state, *inputs):
@@ -63,7 +63,7 @@ class ConcreteProduction(Production):
 class ParameterizedProduction(ConcreteProduction):
     _initialize: Callable[[], Dict[str, object]]
 
-    def initialize(self) -> object:
+    def initialize(self) -> Dict[str, object]:
         return self._initialize()
 
     def compute_on_pytorch(self, state, *inputs):
