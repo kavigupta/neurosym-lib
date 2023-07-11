@@ -33,6 +33,7 @@ class ConcreteTypeSignature(TypeSignature):
     Represents a concrete type signature, where the return type is known and the
     arguments are known.
     """
+
     arguments: List[Type]
     return_type: Type
 

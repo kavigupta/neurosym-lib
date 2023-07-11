@@ -46,5 +46,6 @@ class ConcreteProduction(Production):
     def compute_on_pytorch(self, *inputs):
         return self._compute_on_pytorch(*inputs)
 
+
 class ParameterizedProduction(ConcreteProduction):
     pass

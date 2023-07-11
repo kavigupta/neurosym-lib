@@ -15,4 +15,3 @@ class AtomicType(Type):
 @dataclass(frozen=True, eq=True)
 class ListType(Type):
     element_type: Type
-    
