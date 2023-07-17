@@ -61,10 +61,10 @@ class ConcreteProduction(Production):
 
 @dataclass
 class ParameterizedProduction(ConcreteProduction):
-    _initialize: Callable[[], Dict[str, object]]
+    _initialize: Dict[str, Callable[[], object]]
 
     def initialize(self) -> Dict[str, object]:
-        return self._initialize()
+        return {k: v() for k, v in self._initialize.items()}
 
     def compute_on_pytorch(self, state, *inputs):
         return self._compute_on_pytorch(*inputs, **state)
