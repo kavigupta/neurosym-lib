@@ -4,7 +4,10 @@ from typing import Callable
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
 
-def bounded_astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float], max_depth : int):
+
+def bounded_astar(
+    g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float], max_depth: int
+):
     """
     Performs a bounded a-star search on the given search graph, yielding each node in the order it
     was visited.
@@ -34,11 +37,13 @@ def bounded_astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], f
         for child in g.expand_node(node):
             add_to_fringe(child, depth + 1)
 
+
 @dataclass(order=True)
 class BoundedAStarNode:
     """
     Represents a node in the A* search tree.
     """
+
     cost: float
     node: SExpression = field(compare=False)
     depth: int = field(compare=True)
