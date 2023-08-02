@@ -29,9 +29,9 @@ def bounded_astar(
     while not fringe.empty():
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
-        if node in visited or depth > max_depth:
+        if node.program in visited or depth > max_depth:
             continue
-        visited.add(node)
+        visited.add(node.program)
         if g.is_goal_node(node):
             yield node
         for child in g.expand_node(node):

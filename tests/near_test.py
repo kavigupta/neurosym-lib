@@ -17,6 +17,8 @@ from neurosym.examples.differentiable_arith import (
 )
 import torch
 
+from neurosym.search_graph.metadata_computer import NoMetadataComputer
+
 
 class TestNEAR(unittest.TestCase):
     def test_near_bfs(self):
@@ -26,9 +28,10 @@ class TestNEAR(unittest.TestCase):
             dsl,
             float_type,
             ChooseFirst(),
-            lambda x: dsl.compute_on_pytorch(dsl.initialize(x)) == 4,
+            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
+            NoMetadataComputer(),
         )
-        node = next(bfs(g))
+        node = next(bfs(g)).program
         self.assertEqual(
             str(node),
             str(
@@ -61,6 +64,7 @@ class TestNEAR(unittest.TestCase):
         fours = torch.full((input_size,), 4.0)
 
         def checker(x):
+            x = x.program
             xx = dsl.compute_on_pytorch(dsl.initialize(x))
             if isinstance(xx, torch.Tensor):
                 return torch.all(torch.eq(xx, fours))
@@ -72,32 +76,32 @@ class TestNEAR(unittest.TestCase):
             target_type=list_float_type,
             hole_set_chooser=ChooseFirst(),
             test_predicate=checker,
+            metadata_computer=NoMetadataComputer(),
         )
 
         cost = (
-            lambda x: len(str(x.children[0]))
-            if isinstance(x, SExpression) and x.children
+            lambda x: len(str(x.program.children[0]))
+            if isinstance(x.program, SExpression) and x.program.children
             else 0
         )
-
-        node = next(bounded_astar(g, cost, max_depth=5))
+        node = next(bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(
             node,
             SExpression(
-                symbol="Tint_Tint_add",
+                symbol="Tint_int_add",
                 children=(
                     SExpression(symbol="ones", children=()),
                     SExpression(
-                        symbol="Tint_Tint_add",
+                        symbol="int_int_add",
                         children=(
                             SExpression(
-                                symbol="Tint_Tint_add",
+                                symbol="int_int_add",
                                 children=(
-                                    SExpression(symbol="ones", children=()),
-                                    SExpression(symbol="ones", children=()),
+                                    SExpression(symbol="one", children=()),
+                                    SExpression(symbol="one", children=()),
                                 ),
                             ),
-                            SExpression(symbol="ones", children=()),
+                            SExpression(symbol="one", children=()),
                         ),
                     ),
                 ),

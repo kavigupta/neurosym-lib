@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 import itertools
 from typing import Callable
 
+from neurosym.search_graph.dsl_search_node import DSLSearchNode
+from neurosym.search_graph.metadata_computer import MetadataComputer
+
 
 from ..dsl.dsl import DSL
 from ..programs.hole import Hole, all_holes, replace_holes
@@ -27,17 +30,21 @@ class DSLSearchGraph(SearchGraph, ABC):
         target_type: Type,
         hole_set_chooser: HoleSetChooser,
         test_predicate: Callable[[SExpression], bool],
+        metadata_computer: MetadataComputer,
     ):
         self.dsl = dsl
         self.target_type = target_type
         self.hole_set_chooser = hole_set_chooser
         self.test_predicate = test_predicate
+        self.metadata_computer = metadata_computer
 
     def initial_node(self):
-        return Hole.of(self.target_type)
+        return DSLSearchNode(
+            Hole.of(self.target_type), self.metadata_computer.for_initial_node()
+        )
 
     def expand_node(self, node):
-        hole_sets = self.hole_set_chooser.choose_hole_sets(node)
+        hole_sets = self.hole_set_chooser.choose_hole_sets(node.program)
         relevant_holes = sorted(set(h for hs in hole_sets for h in hs))
         # relevant_productions[hole_idx] : list of expansions for holes[hole_idx]
         relevant_productions = {}
@@ -49,9 +56,15 @@ class DSLSearchGraph(SearchGraph, ABC):
                 *[relevant_productions[h] for h in hole_set]
             ):
                 # hole_replacements : list of SExpressions, of length len(holes)
-                yield replace_holes(node, hole_set, hole_replacements)
+                expanded_program = replace_holes(
+                    node.program, hole_set, hole_replacements
+                )
+                yield DSLSearchNode(
+                    expanded_program,
+                    self.metadata_computer.for_expanded_node(node, expanded_program),
+                )
 
     def is_goal_node(self, node):
-        if any(True for _ in all_holes(node)):
+        if any(True for _ in all_holes(node.program)):
             return False
         return self.test_predicate(node)

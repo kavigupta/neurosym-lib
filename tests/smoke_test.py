@@ -11,6 +11,7 @@ from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 
 from neurosym.examples.basic_arith import basic_arith_dsl, int_type
+from neurosym.search_graph.metadata_computer import NoMetadataComputer
 
 
 class TestSmoke(unittest.TestCase):
@@ -19,10 +20,13 @@ class TestSmoke(unittest.TestCase):
             basic_arith_dsl,
             int_type,
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x))
+            lambda x: basic_arith_dsl.compute_on_pytorch(
+                basic_arith_dsl.initialize(x.program)
+            )
             == 4,
+            metadata_computer=NoMetadataComputer(),
         )
-        node = next(bfs(g))
+        node = next(bfs(g)).program
         self.assertEqual(
             node,
             SExpression(
@@ -51,15 +55,19 @@ class TestSmoke(unittest.TestCase):
             basic_arith_dsl,
             int_type,
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(basic_arith_dsl.initialize(x))
+            lambda x: basic_arith_dsl.compute_on_pytorch(
+                basic_arith_dsl.initialize(x.program)
+            )
             == 4,
+            metadata_computer=NoMetadataComputer(),
         )
         cost = (
-            lambda x: len(str(x.children[0]))
-            if isinstance(x, SExpression) and x.children
+            lambda x: len(str(x.program.children[0]))
+            if isinstance(x.program, SExpression) and x.program.children
             else 0
         )
-        node = next(astar(g, cost))
+        node = next(astar(g, cost)).program
+        print(node)
         self.assertEqual(
             node,
             SExpression(

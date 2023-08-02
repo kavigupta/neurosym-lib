@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Tuple
 
 
@@ -12,4 +12,5 @@ class SExpression:
 class InitializedSExpression:
     symbol: str
     children: Tuple["InitializedSExpression"]
+    # state includes things related to the execution of the program, e.g. weights of a neural network
     state: Dict[str, object]
