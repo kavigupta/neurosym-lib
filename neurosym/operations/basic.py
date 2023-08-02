@@ -1,10 +1,8 @@
+import torch
 
 
-def ite(condition, if_true, if_else):
+def ite_torch(condition, if_true, if_else):
     def _ite(*args):
-        if condition(*args):
-            return if_true(*args)
-        else:
-            return if_else(*args)
-
+        cond = torch.sigmoid(condition(*args))
+        return cond * if_true(*args) + (1 - cond) * if_else(*args)
     return _ite
