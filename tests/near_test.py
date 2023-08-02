@@ -3,12 +3,11 @@ NEAR Integration tests.
 """
 
 import unittest
+from neurosym.near.near_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 
 from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
-from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
-from neurosym.search_graph.hole_set_chooser import ChooseFirst
 
 from neurosym.examples.differentiable_arith import (
     differentiable_arith_dsl,
@@ -24,12 +23,10 @@ class TestNEAR(unittest.TestCase):
     def test_near_bfs(self):
         self.maxDiff = None
         dsl = differentiable_arith_dsl(10)
-        g = DSLSearchGraph(
+        g = near_graph(
             dsl,
             float_type,
-            ChooseFirst(),
-            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
-            NoMetadataComputer(),
+            is_goal=lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
         )
         node = next(bfs(g)).program
         self.assertEqual(
@@ -71,13 +68,7 @@ class TestNEAR(unittest.TestCase):
             else:
                 return False
 
-        g = DSLSearchGraph(
-            dsl=dsl,
-            target_type=list_float_type,
-            hole_set_chooser=ChooseFirst(),
-            test_predicate=checker,
-            metadata_computer=NoMetadataComputer(),
-        )
+        g = near_graph(dsl, list_float_type, is_goal=checker)
 
         cost = (
             lambda x: len(str(x.program.children[0]))
