@@ -11,11 +11,11 @@ from neurosym.search.bounded_astar import bounded_astar
 
 from neurosym.examples.example_rnn_dsl import (
     example_rnn_dsl,
-    list_Tfloat_list_outTfloat,
 )
 import torch
 
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
+from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 
 
 class TestNEARExample(unittest.TestCase):
@@ -36,7 +36,14 @@ class TestNEARExample(unittest.TestCase):
             else:
                 return False
 
-        g = near_graph(dsl, list_Tfloat_list_outTfloat, is_goal=checker)
+        g = near_graph(
+            dsl,
+            ArrowType(
+                (ListType(TensorType(float_t, (input_size,))),),
+                ListType(TensorType(float_t, (4,))),
+            ),
+            is_goal=checker,
+        )
 
         cost = (
             lambda x: len(str(x.program.children[0]))
