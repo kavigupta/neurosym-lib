@@ -29,7 +29,7 @@ list_Tfloat_Tfloat = AtomicType("list_Tfloat_Tfloat")
 list_Tfloat_list_Tfloat = AtomicType("list_Tfloat_list_Tfloat")
 Tfloat_bool = AtomicType("Tfloat_bool")
 outTfloat = AtomicType("outTfloat")
-list_Tfloat_list_outTfloat = ...
+list_Tfloat_list_outTfloat = AtomicType("list_Tfloat_list_outTfloat")
 
 example_rnn_dsl = lambda length, out_length: DSL(
     [
@@ -53,26 +53,24 @@ example_rnn_dsl = lambda length, out_length: DSL(
             ConcreteTypeSignature([], Tfloat_bool),
             lambda: lambda x: torch.sum(x, dim=-1).unsqueeze(-1),
         ),
-        # ConcreteProduction(
-        #     "Tint_linear",
-        #     ConcreteTypeSignature([linear_obj, list_Tfloat], list_Tfloat),
-        #     lambda f, x: f(x),
-        # ),
         ParameterizedProduction(
             "Linear_c",
             ConcreteTypeSignature([], linear_obj),
             lambda linear: linear,
             dict(linear=lambda: nn.Linear(length, length)),
         ),
-        # ParameterizedProduction(
-        #     "outLinear_c",
-        #     ConcreteTypeSignature([], outlinear_obj),
-        #     lambda linear: linear,
-        #     dict(linear=lambda: nn.Linear(length, out_length)),
-        # ),
+        ParameterizedProduction(
+            "output",
+            ConcreteTypeSignature([list_Tfloat_list_Tfloat], list_Tfloat_list_outTfloat),
+            lambda f, linear: lambda x: linear(f(x)),
+            dict(linear=lambda: nn.Linear(length, out_length)),
+        ),
         ConcreteProduction(
             "Tlist_float_ITE",
-            ConcreteTypeSignature([list_Tfloat_bool, list_Tfloat_Tfloat, list_Tfloat_Tfloat], list_Tfloat_Tfloat),
+            ConcreteTypeSignature(
+                [list_Tfloat_bool, list_Tfloat_Tfloat, list_Tfloat_Tfloat],
+                list_Tfloat_Tfloat,
+            ),
             lambda cond, fx, fy: ite_torch(cond, fx, fy),
         ),
         ConcreteProduction(
@@ -82,12 +80,15 @@ example_rnn_dsl = lambda length, out_length: DSL(
         ),
         ConcreteProduction(
             "list_Tfloat_list_Tfloat_compose",
-            ConcreteTypeSignature([list_Tfloat_list_Tfloat, list_Tfloat_list_Tfloat], list_Tfloat_list_Tfloat),
+            ConcreteTypeSignature(
+                [list_Tfloat_list_Tfloat, list_Tfloat_list_Tfloat],
+                list_Tfloat_list_Tfloat,
+            ),
             lambda f, g: lambda x: f(g(x)),
         ),
         ConcreteProduction(
             "List_Tfloat_Tfloat_bool_compose",
-            ConcreteTypeSignature([list_Tfloat_Tfloat,  Tfloat_bool], list_Tfloat_bool),
+            ConcreteTypeSignature([list_Tfloat_Tfloat, Tfloat_bool], list_Tfloat_bool),
             lambda f, g: lambda x: f(g(x)),
         ),
     ]

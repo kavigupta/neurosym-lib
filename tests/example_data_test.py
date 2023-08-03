@@ -11,7 +11,7 @@ from neurosym.search.bounded_astar import bounded_astar
 
 from neurosym.examples.example_rnn_dsl import (
     example_rnn_dsl,
-    list_Tfloat_Tfloat,
+    list_Tfloat_list_outTfloat,
 )
 import torch
 
@@ -22,8 +22,11 @@ class TestNEARExample(unittest.TestCase):
     def test_near_astar(self):
         self.maxDiff = None
         input_size = 10
-        dsl = differentiable_arith_dsl(input_size)
+        dsl = example_rnn_dsl(input_size, 4)
         fours = torch.full((input_size,), 4.0)
+
+        # in folder examples/example_rnn, run
+        # train_ex_data.npy  train_ex_labels.npy
 
         def checker(x):
             x = x.program
@@ -33,7 +36,7 @@ class TestNEARExample(unittest.TestCase):
             else:
                 return False
 
-        g = near_graph(dsl, list_float_type, is_goal=checker)
+        g = near_graph(dsl, list_Tfloat_list_outTfloat, is_goal=checker)
 
         cost = (
             lambda x: len(str(x.program.children[0]))
