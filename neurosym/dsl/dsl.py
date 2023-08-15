@@ -13,6 +13,14 @@ class DSL:
     productions: List[Production]
     # variable_system: VariableSystem TODO(KG) add this
 
+    def __post_init__(self):
+        symbols = set()
+        for production in self.productions:
+            assert (
+                production.symbol() not in symbols
+            ), f"Duplicate symbol {production.symbol()}"
+            symbols.add(production.symbol())
+
     def expansions_for_type(self, type: Type) -> List[SExpression]:
         """
         Possible expansions for the given type.

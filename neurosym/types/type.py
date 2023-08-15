@@ -11,6 +11,9 @@ class Type(ABC):
 class AtomicType(Type):
     name: str
 
+    def __post_init__(self):
+        assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
+
 
 @dataclass(frozen=True, eq=True)
 class TensorType(Type):
@@ -40,5 +43,8 @@ class ArrowType(Type):
     input_type: Tuple[Type]
     output_type: Type
 
+    def __post_init__(self):
+        assert isinstance(self.input_type, tuple), "input_type must be a tuple"
 
-float_t = AtomicType("float")
+
+float_t = AtomicType("f")
