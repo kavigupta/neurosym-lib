@@ -25,7 +25,7 @@ from neurosym.operations.lists import fold_torch, map_torch
 
 def example_rnn_dsl(length, out_length):
     Tfloat = TensorType(float_t, (length,))
-    linear_obj = ArrowType((Tfloat), Tfloat)
+    linear_obj = ArrowType((Tfloat,), Tfloat)
     binop_Tfloat = ArrowType((Tfloat, Tfloat), Tfloat)
     list_Tfloat_bool = ArrowType((ListType(Tfloat),), float_t)
     list_Tfloat_Tfloat = ArrowType((ListType(Tfloat),), Tfloat)
@@ -73,8 +73,12 @@ def example_rnn_dsl(length, out_length):
             ConcreteProduction(
                 "Tlist_float_ITE",
                 ConcreteTypeSignature(
-                    [list_Tfloat_bool, list_Tfloat_Tfloat, list_Tfloat_Tfloat],
-                    list_Tfloat_Tfloat,
+                    [
+                        list_Tfloat_bool,
+                        list_Tfloat_list_Tfloat,
+                        list_Tfloat_list_Tfloat,
+                    ],
+                    list_Tfloat_list_Tfloat,
                 ),
                 lambda cond, fx, fy: ite_torch(cond, fx, fy),
             ),
