@@ -64,7 +64,7 @@ class DSL:
             *[self.compute_on_pytorch(child) for child in program.children],
         )
 
-    def all_rules(self, target_type) -> Dict[Type, List[Tuple[str, List[Type]]]]:
+    def all_rules(self, *target_types) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
         that can be expanded, and the values are a list of tuples of the form
@@ -73,7 +73,7 @@ class DSL:
 
         This is useful for generating a PCFG.
         """
-        types_to_expand = [target_type]
+        types_to_expand = list(target_types)
         rules = {}
         while len(types_to_expand) > 0:
             type = types_to_expand.pop()
@@ -92,10 +92,9 @@ class DSL:
         target types.
         """
         symbols = set()
-        for target_type in target_types:
-            rules = self.all_rules(target_type)
-            for rule in rules.values():
-                symbols.update([symbol for symbol, _ in rule])
+        rules = self.all_rules(*target_types)
+        for rule in rules.values():
+            symbols.update([symbol for symbol, _ in rule])
         for production in self.productions:
             assert production.symbol() in symbols, (
                 f"Production {production.symbol()} is unreachable from target types "
