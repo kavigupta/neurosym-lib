@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Tuple
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -63,3 +63,41 @@ class DSL:
             program.state,
             *[self.compute_on_pytorch(child) for child in program.children],
         )
+
+    def all_rules(self, target_type) -> Dict[Type, List[Tuple[str, List[Type]]]]:
+        """
+        Returns a dictionary of all the rules in the DSL, where the keys are the types
+        that can be expanded, and the values are a list of tuples of the form
+        (symbol, types), where symbol is the symbol of the production, and types is a
+        list of types that can be used to expand the given type.
+
+        This is useful for generating a PCFG.
+        """
+        types_to_expand = [target_type]
+        rules = {}
+        while len(types_to_expand) > 0:
+            type = types_to_expand.pop()
+            if type in rules:
+                continue
+            rules[type] = []
+            for production in self.productions:
+                for types in production.type_signature().unify_return(type):
+                    rules[type].append((production.symbol(), types))
+                    types_to_expand.extend(types)
+        return rules
+
+    def validate_all_rules_reachable(self, *target_types):
+        """
+        Checks that all the rules in the DSL are reachable from at least one of the
+        target types.
+        """
+        symbols = set()
+        for target_type in target_types:
+            rules = self.all_rules(target_type)
+            for rule in rules.values():
+                symbols.update([symbol for symbol, _ in rule])
+        for production in self.productions:
+            assert production.symbol() in symbols, (
+                f"Production {production.symbol()} is unreachable from target types "
+                f"{target_types}"
+            )
