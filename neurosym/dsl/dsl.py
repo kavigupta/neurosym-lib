@@ -43,13 +43,18 @@ class DSL:
                 return production
         raise ValueError(f"Production with symbol {symbol} not found")
 
-    def initialize(self, program: SExpression) -> InitializedSExpression:
+    def initialize(
+        self, program: SExpression, hole_callback=None
+    ) -> InitializedSExpression:
         """
         Initializes all the productions in the given program.
 
         Returns a new program with the same structure, but with all the productions
         initialized.
         """
+        if isinstance(program, Hole):
+            assert hole_callback is not None
+            return hole_callback(program)
         prod = self.get_production(program.symbol)
         return InitializedSExpression(
             program.symbol,
