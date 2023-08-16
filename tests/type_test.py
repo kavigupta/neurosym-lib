@@ -62,6 +62,12 @@ class TestLex(unittest.TestCase):
             lex("(int, float) -> bool"), ["(", "int", ",", "float", ")", "->", "bool"]
         )
 
+    def test_dollar(self):
+        self.assertEqual(lex("$x"), ["$x"])
+
+    def test_dollar_arrow(self):
+        self.assertEqual(lex("$fL -> $fL"), ["$fL", "->", "$fL"])
+
 
 class TestParse(unittest.TestCase):
     def test_atomic(self):
@@ -98,3 +104,6 @@ class TestParse(unittest.TestCase):
             render_type(parse_type("([{f, 10}]) -> {f, 20}")),
             "([{f, 10}]) -> {f, 20}",
         )
+
+    def test_bad_parse(self):
+        self.assertRaises(Exception, lambda: render_type(parse_type("f -> f")))
