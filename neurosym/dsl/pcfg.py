@@ -65,7 +65,7 @@ class PCFGPattern:
         sym_idx = self.symbols.index(program.symbol)
         counts[self.symbols.index(parent_sym), loc, sym_idx] += 1
         for i, child in enumerate(program.children):
-            self.count_program(child, counts, parent_sym=program.symbol, loc=i)
+            self._count_program(child, counts, parent_sym=program.symbol, loc=i)
 
 
 @dataclass
