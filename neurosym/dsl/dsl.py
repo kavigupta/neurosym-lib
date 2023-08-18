@@ -28,11 +28,17 @@ class DSL:
         An expansion is an SExpression with holes in it. The holes can be filled in with
         other SExpressions to produce a complete SExpression.
         """
-        return [
-            SExpression(production.symbol(), tuple(Hole.of(t) for t in types))
-            for production in self.productions
-            for types in production.type_signature().unify_return(type)
-        ]
+        result = []
+        for production in self.productions:
+            arg_types = production.type_signature().unify_return(type)
+            if arg_types is not None:
+                result.append(
+                    SExpression(
+                        production.symbol(),
+                        tuple(Hole.of(t) for t in arg_types),
+                    )
+                )
+        return result
 
     def get_production(self, symbol: str) -> Production:
         """
@@ -86,9 +92,11 @@ class DSL:
                 continue
             rules[type] = []
             for production in self.productions:
-                for types in production.type_signature().unify_return(type):
-                    rules[type].append((production.symbol(), types))
-                    types_to_expand.extend(types)
+                types = production.type_signature().unify_return(type)
+                if types is None:
+                    continue
+                rules[type].append((production.symbol(), types))
+                types_to_expand.extend(types)
         return rules
 
     def validate_all_rules_reachable(self, *target_types):

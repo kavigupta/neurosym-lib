@@ -6,25 +6,31 @@ from neurosym.types.type import Type
 
 class TypeSignature(ABC):
     """
-    Wrapper around DreamCoder's Implementation of Hindley-Milner Type Inference
+    Represents a type signature, which is a function converting back and
+        forth between types (outputs) and lists of types (inputs).
     """
 
     @abstractmethod
-    def unify_return(self, type: Type) -> List[List[Type]]:
+    def unify_return(self, type: Type) -> List[Type]:
         """
-        Returns a list of lists of types, where each list of types is a possible
-        expansion for the given type signature.
+        Returns a list of types, one for each of the arguments, or None
+        if the type cannot be unified.
+        """
+
+    @abstractmethod
+    def unify_arguments(self, types: List[Type]) -> Type:
+        """
+        Returns the return type of the function, or None if the types
+        cannot be unified.
         """
 
 
-class ExpandedTypeSignature(TypeSignature):
+def expanded_type_signature(type_signature: TypeSignature) -> TypeSignature:
     """
-    Represents a C++ style template type system
+    Expands the type signature into a concrete type signature.
     """
-
-    def unify_return(self, type: Type) -> List[List[Type]]:
-        # TODO(MB) implement this
-        raise NotImplementedError
+    # TODO (MB) implement this
+    raise NotImplementedError
 
 
 @dataclass
@@ -39,6 +45,12 @@ class ConcreteTypeSignature(TypeSignature):
 
     def unify_return(self, type: Type) -> List[List[Type]]:
         if type == self.return_type:
-            return [self.arguments]
+            return self.arguments
         else:
-            return []
+            return None
+
+    def unify_arguments(self, types: List[Type]) -> Type:
+        if types == self.arguments:
+            return self.return_type
+        else:
+            return None
