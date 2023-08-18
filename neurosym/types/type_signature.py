@@ -50,7 +50,7 @@ class ConcreteTypeSignature(TypeSignature):
             return None
 
     def unify_arguments(self, types: List[Type]) -> Type:
-        if types == self.arguments:
+        if list(types) == list(self.arguments):
             return self.return_type
         else:
             return None
