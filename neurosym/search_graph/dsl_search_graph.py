@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import itertools
 from typing import Callable
 
@@ -17,8 +17,8 @@ from .search_graph import SearchGraph
 
 class DSLSearchGraph(SearchGraph, ABC):
     """
-    Represents a search graph where nodes are SExpressions with holes in them, and edges are
-    expansions of those holes.
+    Represents a search graph where nodes are SExpressions with holes in them, and edges
+    are expansions of those holes.
 
     :param dsl: DSL to use for expanding holes
     :param target_type: Type of the SExpressions we are searching for

@@ -61,11 +61,10 @@ class TestSmoke(unittest.TestCase):
             == 4,
             metadata_computer=NoMetadataComputer(),
         )
-        cost = (
-            lambda x: len(str(x.program.children[0]))
-            if isinstance(x.program, SExpression) and x.program.children
-            else 0
-        )
+        def cost(x):
+            if isinstance(x.program, SExpression) and x.program.children:
+                return len(str(x.program.children[0]))
+            return 0
         node = next(astar(g, cost)).program
         print(node)
         self.assertEqual(

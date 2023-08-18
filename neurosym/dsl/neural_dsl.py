@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict
 
 from neurosym.types.type_signature import ConcreteTypeSignature
-from neurosym.types.type_string_repr import TypeDefiner
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression

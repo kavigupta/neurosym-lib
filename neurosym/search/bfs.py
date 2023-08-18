@@ -3,8 +3,8 @@ from neurosym.search_graph.search_graph import SearchGraph
 
 def bfs(g: SearchGraph):
     """
-    Performs a breadth-first search on the given search graph, yielding each node in the order it
-    was visited.
+    Performs a breadth-first search on the given search graph, yielding each node in the
+    order it was visited.
 
     :param g: Search graph to search over
     """

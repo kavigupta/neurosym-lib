@@ -16,7 +16,6 @@ from neurosym.examples.differentiable_arith import (
 )
 import torch
 
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
 
 
 class TestNEAR(unittest.TestCase):
@@ -70,11 +69,10 @@ class TestNEAR(unittest.TestCase):
 
         g = near_graph(dsl, list_float_type, is_goal=checker)
 
-        cost = (
-            lambda x: len(str(x.program.children[0]))
-            if isinstance(x.program, SExpression) and x.program.children
-            else 0
-        )
+        def cost(x):
+            if isinstance(x.program, SExpression) and x.program.children:
+                return len(str(x.program.children[0]))
+            return 0
         node = next(bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(
             node,

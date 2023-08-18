@@ -9,7 +9,8 @@ class HoleSetChooser(ABC):
     @abstractmethod
     def choose_hole_sets(self, node: SExpression) -> List[List[Hole]]:
         """
-        Returns a list of sets of holes, where each set of holes will be expanded simultaneously
+        Returns a list of sets of holes, where each set of holes will be expanded
+        simultaneously
         """
         pass
 

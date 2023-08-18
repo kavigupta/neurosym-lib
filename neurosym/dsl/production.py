@@ -9,7 +9,7 @@ class Production(ABC):
     """
     Represents a production rule in a simple s-expression grammar.
 
-    Has a symbol, a type signature, and a function that represents the function represented.
+    Has a symbol, a type signature, and a function that represents the fn represented.
     """
 
     @abstractmethod
@@ -19,20 +19,20 @@ class Production(ABC):
     @abstractmethod
     def type_signature(self) -> TypeSignature:
         """
-        Return a TypeSignature object representing the type signature of this production.
+        Return a TypeSignature object representing the type signature of this production
         """
 
     @abstractmethod
     def initialize(self) -> Dict[str, object]:
         """
         Return some state that this production might need to compute its function.
-            E.g., for a neural network production, this might be the weights of the network.
+        E.g., for a neural network production, this might be the weights of the network.
         """
 
     @abstractmethod
     def compute_on_pytorch(self, state, *inputs):
         """
-        Return the resulting pytorch expression of computing this function on the inputs.
+        Return the resulting pytorch expression of computing this function on the inputs
             Takes in the state of the production, which is the result of initialize().
 
         Effectively a form of denotation semantics.

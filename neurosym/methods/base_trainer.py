@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import CSVLogger
 import torch
 from torch import nn
 import sys
@@ -86,7 +85,8 @@ class BaseTrainer(pl.LightningModule):
         def f(step):
             warmup_steps = warmup_steps_pct * total_steps
             decay_steps = decay_steps_pct * total_steps
-            assert step < (total_steps + 1), f"Step {step} is greater than total steps {total_steps}"
+            assert step < (total_steps + 1), \
+                f"Step {step} is greater thantotal steps {total_steps}"
             if step < warmup_steps:
                 factor = step / warmup_steps
             else:
@@ -115,13 +115,22 @@ class BaseTrainer(pl.LightningModule):
 
         match self.config.optimizer:
             case 'adam':
-                optimizer = torch.optim.Adam(params, lr=self.config.lr, weight_decay =self.config.weight_decay)
+                optimizer = torch.optim.Adam(params,
+                    lr=self.config.lr,
+                    weight_decay=self.config.weight_decay
+                )
             case 'sgd':
-                optimizer = torch.optim.SGD(params, lr=self.config.lr, weight_decay =self.config.weight_decay)
+                optimizer = torch.optim.SGD(params,
+                    lr=self.config.lr,
+                    weight_decay=self.config.weight_decay
+                )
             case 'adamw':
-                optimizer = torch.optim.AdamW(params, lr=self.config.lr, weight_decay =self.config.weight_decay)
+                optimizer = torch.optim.AdamW(params,
+                    lr=self.config.lr,
+                    weight_decay=self.config.weight_decay
+                )
             case _:
-                raise NotImplementedError(f"Optimizer {self.config.optimizer} not implemented")
+                raise NotImplementedError(f"Optimizer {self.config.optimizer} not implemented")  # noqa: E501
 
         total_steps = int(self.config.epochs * (self.config.train_steps) )
 
@@ -132,7 +141,10 @@ class BaseTrainer(pl.LightningModule):
                 warmup_steps_pct = 0.02
                 decay_steps_pct = 0.2
                 scheduler = torch.optim.lr_scheduler.LambdaLR(
-                    optimizer=optimizer, lr_lambda=self.warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps)
+                    optimizer=optimizer,
+                    lr_lambda=self.warm_and_decay_lr_scheduler(warmup_steps_pct,
+                                                               decay_steps_pct,
+                                                               total_steps)
                 )
                 return ([optimizer], [{"scheduler": scheduler, "interval": "step", }])
             case 'step':

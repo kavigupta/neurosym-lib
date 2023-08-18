@@ -1,4 +1,4 @@
-def fold_torch(func, l):
+def fold_torch(func, l):  # noqa: E741
     """
     Arguments:
         func: (N, *C) -> (N, *C) -> (N, *C)
@@ -12,7 +12,7 @@ def fold_torch(func, l):
     return result
 
 
-def map_torch(func, l):
+def map_torch(func, l):  # noqa: E741
     """
     Arguments:
         func: (N, *C1) -> (N, *C2)

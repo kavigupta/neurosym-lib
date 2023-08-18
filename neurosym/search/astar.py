@@ -7,13 +7,13 @@ from neurosym.search_graph.search_graph import SearchGraph
 
 def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
     """
-    Performs a breadth-first search on the given search graph, yielding each node in the order it
-    was visited.
+    Performs a breadth-first search on the given search graph, yielding each node in the
+    order it was visited.
 
     :param g: Search graph to search over
     :param cost_plus_heuristic: Cost plus heuristic function to use for A*.
-        The heuristic function should be admissible, i.e. it should never overestimate the cost to
-        reach the goal.
+        The heuristic function should be admissible, i.e. it should never overestimate
+        the cost to reach the goal.
     """
     visited = set()
     fringe = queue.PriorityQueue()

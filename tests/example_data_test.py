@@ -6,10 +6,8 @@ import unittest
 from neurosym.models.mlp import MLP, MLPConfig
 from neurosym.models.rnn import Seq2ClassRNN, Seq2SeqRNN, RNNConfig
 from neurosym.near.near_graph import near_graph
-from neurosym.programs.hole import Hole
-from neurosym.programs.s_expression import InitializedSExpression, SExpression
+from neurosym.programs.s_expression import SExpression
 
-from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 
 from neurosym.examples.example_rnn_dsl import (
@@ -17,10 +15,9 @@ from neurosym.examples.example_rnn_dsl import (
 )
 import torch
 
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
-from neurosym.types.type import Type, ArrowType, ListType, TensorType, float_t
+from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 from neurosym.data.load_data import numpy_dataset_from_github, DatasetWrapper
-from neurosym.types.type_string_repr import TypeDefiner, render_type, parse_type
+from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.dsl.neural_dsl import NeuralDSL
 
 import pytest
@@ -31,7 +28,7 @@ class TestNEARExample(unittest.TestCase):
         A minimal implementation of NEAR with a simple DSL.
         search = A-star
         heuristic = validation score after training for N epochs. (pl.Trainer)
-        goal = Fully symbolic program. (This is handled internally search_graph/dsl_search_graph.py)
+        goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
         """
         dataset_gen = numpy_dataset_from_github(
@@ -53,12 +50,36 @@ class TestNEARExample(unittest.TestCase):
         neural_dsl = NeuralDSL.from_dsl(
             dsl=dsl,
             partial_modules= {
-                t("($fL) -> $fL") : MLP(MLPConfig(model_name="ll_mlp", input_size=input_shape, hidden_size=10, output_size=input_shape)),
-                t("($fL) -> $fO") : MLP(MLPConfig(model_name="lo_mlp", input_size=input_shape, hidden_size=10, output_size=output_shape)),
-                t("([$fL]) -> [$fL]") : Seq2SeqRNN(RNNConfig(model_name="ll_rnn", input_size=input_shape, hidden_size=10, output_size=input_shape)),
-                t("([$fL]) -> [$fO]") : Seq2SeqRNN(RNNConfig(model_name="lo_rnn", input_size=input_shape, hidden_size=10, output_size=output_shape)),
-                t("($fL) -> $fL") : Seq2ClassRNN(RNNConfig(model_name="lc_rnn", input_size=input_shape, hidden_size=10, output_size=input_shape)),
-                t("($fL) -> $fO") : Seq2ClassRNN(RNNConfig(model_name="lc_rnn", input_size=input_shape, hidden_size=10, output_size=output_shape)),
+                t("($fL) -> $fL") : MLP(MLPConfig(
+                        model_name="ll_mlp",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=input_shape)),
+                t("($fL) -> $fO") : MLP(MLPConfig(
+                        model_name="lo_mlp",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=output_shape)),
+                t("([$fL]) -> [$fL]") : Seq2SeqRNN(RNNConfig(
+                        model_name="ll_rnn",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=input_shape)),
+                t("([$fL]) -> [$fO]") : Seq2SeqRNN(RNNConfig(
+                        model_name="lo_rnn",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=output_shape)),
+                t("($fL) -> $fL") : Seq2ClassRNN(RNNConfig(
+                        model_name="lc_rnn",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=input_shape)),
+                t("($fL) -> $fO") : Seq2ClassRNN(RNNConfig(
+                        model_name="lc_rnn",
+                        input_size=input_shape,
+                        hidden_size=10,
+                        output_size=output_shape)),
             }
         )
 
@@ -74,13 +95,18 @@ class TestNEARExample(unittest.TestCase):
 
             neural_dsl.initialize(node.program)
             model = neural_dsl.compute_on_pytorch()
-            trainer.fit(model, datamodule.train_dataloader(), datamodule.val_dataloader())
+            trainer.fit(model,
+                        datamodule.train_dataloader(),
+                        datamodule.val_dataloader()
+                    )
             return trainer.callback_metrics["val_loss"].item()
 
 
         g = near_graph(
             neural_dsl,
-            parse_type(s="({f, $L}) -> {f, $O}", env=dict(L=input_shape, O=output_shape)),
+            parse_type(s="({f, $L}) -> {f, $O}",
+                        env=dict(L=input_shape, O=output_shape)
+                    ),
             is_goal=lambda node: True,
         )
         node = next(bounded_astar(g, validation_cost, max_depth=7)).program
@@ -114,15 +140,14 @@ class TestNEARExample(unittest.TestCase):
             is_goal=checker,
         )
 
-        cost = (
-            lambda x: len(str(x.program.children[0]))
-            if isinstance(x.program, SExpression) and x.program.children
-            else 0
-        )
+        def cost(x):
+            if isinstance(x.program, SExpression) and x.program.children:
+                return len(str(x.program.children[0]))
+            return 0
 
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
-            node = next(bounded_astar(g, cost, max_depth=7)).program
+            next(bounded_astar(g, cost, max_depth=7)).program
 
 
     def synthetic_test_near_astar(self):
@@ -151,11 +176,10 @@ class TestNEARExample(unittest.TestCase):
             is_goal=checker,
         )
 
-        cost = (
-            lambda x: len(str(x.program.children[0]))
-            if isinstance(x.program, SExpression) and x.program.children
-            else 0
-        )
+        def cost(x):
+            if isinstance(x.program, SExpression) and x.program.children:
+                return len(str(x.program.children[0]))
+            return 0
         node = next(bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(
             node,

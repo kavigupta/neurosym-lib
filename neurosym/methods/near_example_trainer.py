@@ -1,11 +1,6 @@
-from typing import Tuple
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import CSVLogger
 from sklearn.metrics import f1_score, hamming_loss
 import torch
 from torch import nn
-from torch.nn import functional as F
-import sys
 
 from neurosym.methods.base_trainer import BaseTrainerConfig, BaseTrainer
 
@@ -31,24 +26,29 @@ class NEARTrainer(BaseTrainer):
             case 'MSELoss':
                 self.loss_fn = nn.MSELoss()
             case _:
-                raise NotImplementedError(f"Loss function {self.config.loss_fn} not implemented")
+                raise NotImplementedError(f"Loss function {self.config.loss_fn} not implemented")  # noqa: E501
 
     @staticmethod
-    def compute_average_f1_score(predictions: torch.Tensor, targets: torch.Tensor, num_labels: int):
+    def compute_average_f1_score(predictions: torch.Tensor, targets: torch.Tensor, num_labels: int):  # noqa: E501
         if num_labels > 1:
             weighted_avg_f1 = 1 - f1_score(targets, predictions, average='weighted')
             unweighted_avg_f1 = 1 - f1_score(targets, predictions, average='macro')
             all_f1 = 1 - f1_score(targets, predictions, average=None)
-            return dict(weighted_avg_f1=weighted_avg_f1, unweighted_avg_f1=unweighted_avg_f1, all_f1s=all_f1)
+            return dict(weighted_avg_f1=weighted_avg_f1,
+                        unweighted_avg_f1=unweighted_avg_f1,
+                        all_f1s=all_f1
+                    )
         else:
             avg_f1 = 1 - f1_score(targets, predictions, average='binary')
             all_f1 = 1 - f1_score(targets, predictions, average=None)
             return dict(avg_f1=avg_f1, all_f1s=all_f1)
 
     @staticmethod
-    def label_correctness(predictions: torch.Tensor, targets: torch.Tensor, num_labels: int):
-        hamming_accuracy = 1 - hamming_loss(targets.squeeze().cpu(), predictions.squeeze().cpu())
-        f1_scores = NEARTrainer.compute_average_f1_score(predictions, targets, num_labels)
+    def label_correctness(predictions: torch.Tensor, targets: torch.Tensor, num_labels: int):  # noqa: E501
+        hamming_accuracy = 1 - hamming_loss(targets.squeeze().cpu(),
+                                            predictions.squeeze().cpu()
+                                            )
+        f1_scores = NEARTrainer.compute_average_f1_score(predictions, targets, num_labels)  # noqa: E501
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
@@ -70,5 +70,7 @@ class NEARTrainer(BaseTrainer):
         else:
             predictions = torch.round(torch.sigmoid(predictions))
         targets = outputs
-        correctness = NEARTrainer.label_correctness(predictions, targets, self.config.num_labels)
+        correctness = NEARTrainer.label_correctness(predictions,
+                                                    targets,
+                                                    self.config.num_labels)
         self.logger.log_metrics(correctness, step=self.global_step)
