@@ -2,3 +2,9 @@
 -e .
 # Tests
 pytest
+torch
+torchvision
+torchaudio
+numpy
+pytorch-lightning
+permacache
