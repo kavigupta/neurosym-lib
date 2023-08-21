@@ -71,12 +71,13 @@ class DSL:
         return InitializedSExpression(
             program.symbol,
             tuple(self.initialize(child) for child in program.children),
-            prod.initialize(),
+            prod.initialize(self),
         )
 
     def compute_on_pytorch(self, program: InitializedSExpression):
         prod = self.get_production(program.symbol)
         return prod.compute_on_pytorch(
+            self,
             program.state,
             *[self.compute_on_pytorch(child) for child in program.children],
         )
