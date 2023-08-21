@@ -79,7 +79,7 @@ class DSL:
         return prod.compute_on_pytorch(
             self,
             program.state,
-            *[self.compute_on_pytorch(child) for child in program.children],
+            [self.compute_on_pytorch(child) for child in program.children],
         )
 
     def all_rules(self, *target_types) -> Dict[Type, List[Tuple[str, List[Type]]]]:

@@ -55,7 +55,7 @@ class ConcreteProduction(Production):
         del dsl
         return {}
 
-    def compute_on_pytorch(self, dsl, state, *inputs):
+    def compute_on_pytorch(self, dsl, state, inputs):
         del dsl
         assert state == {}
         return self._compute_on_pytorch(*inputs)
@@ -69,6 +69,6 @@ class ParameterizedProduction(ConcreteProduction):
         del dsl
         return {k: v() for k, v in self._initialize.items()}
 
-    def compute_on_pytorch(self, dsl, state, *inputs):
+    def compute_on_pytorch(self, dsl, state, inputs):
         del dsl
         return self._compute_on_pytorch(*inputs, **state)
