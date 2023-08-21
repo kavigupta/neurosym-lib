@@ -7,6 +7,7 @@ from neurosym.models.mlp import MLP, MLPConfig
 from neurosym.models.rnn import Seq2ClassRNN, Seq2SeqRNN, RNNConfig
 import torch
 
+
 class TestNeuralModels(unittest.TestCase):
     def test_mlp(self):
         cfg = MLPConfig("mlp", 10, 20, 4)

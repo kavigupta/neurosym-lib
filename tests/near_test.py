@@ -17,7 +17,6 @@ from neurosym.examples.differentiable_arith import (
 import torch
 
 
-
 class TestNEAR(unittest.TestCase):
     def test_near_bfs(self):
         self.maxDiff = None
@@ -73,6 +72,7 @@ class TestNEAR(unittest.TestCase):
             if isinstance(x.program, SExpression) and x.program.children:
                 return len(str(x.program.children[0]))
             return 0
+
         node = next(bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(
             node,

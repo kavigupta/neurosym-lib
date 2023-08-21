@@ -22,7 +22,9 @@ class NeuralDSL(DSL):
     :TODO I'm electing to keep `partial_productions` separate from `productions` for now. We might
     want to seek a more elegant solution in the future.
     """
+
     partial_programs: Dict[Type, SExpression]
+
     @classmethod
     def from_dsl(cls, dsl: DSL, partial_modules: Dict[Type, nn.Module]):
         """
@@ -42,17 +44,21 @@ class NeuralDSL(DSL):
         """
         partial_productions = []
         partial_programs = {}
-        
+
         for i, (fn_type, module) in enumerate(partial_modules.items()):
-            assert isinstance(fn_type, ArrowType), f"Type of partial NN module must be an ArrowType, got {fn_type}"
+            assert isinstance(
+                fn_type, ArrowType
+            ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
             # @TODO[AS]: This is VERY hacky. Need a formal way to segregate partial modules.
-            identifier = "partial{name}_{idx}".format(idx=i, name=module.config.model_name)
+            identifier = "partial{name}_{idx}".format(
+                idx=i, name=module.config.model_name
+            )
             module_obj_type = AtomicType(identifier)
             module_c_prod = ParameterizedProduction(
                 identifier + "_c",
                 ConcreteTypeSignature([], module_obj_type),
                 lambda f_module: f_module,
-                dict(f_module= lambda: module),
+                dict(f_module=lambda: module),
             )
 
             def module_app(module, **inputs):
@@ -60,7 +66,9 @@ class NeuralDSL(DSL):
 
             module_app_prod = ConcreteProduction(
                 identifier + "_app",
-                ConcreteTypeSignature([module_obj_type, *fn_type.input_type], fn_type.output_type),
+                ConcreteTypeSignature(
+                    [module_obj_type, *fn_type.input_type], fn_type.output_type
+                ),
                 module_app,
             )
             partial_productions.append(module_c_prod)
@@ -68,18 +76,22 @@ class NeuralDSL(DSL):
 
             # @TODO[AS]: Need to define what the SExpr will be.
             raise NotImplementedError("TODO: Need to define what the SExpr will be.")
-            partial_programs[fn_type].append(lambda : InitializedSExpression(
+            partial_programs[fn_type].append(
+                lambda: InitializedSExpression(
                     # program.symbol,
                     # tuple(self.initialize(child) for child in program.children),
                     # prod.initialize(),
-                ))
+                )
+            )
 
         productions = dsl.productions + partial_productions
 
         return cls(productions=productions, partial_programs=partial_programs)
 
     def get_partial_program(self, hole: Hole) -> Production:
-        matching_types = list(filter(lambda type: hole.type == type, self.partial_programs.keys()))
+        matching_types = list(
+            filter(lambda type: hole.type == type, self.partial_programs.keys())
+        )
 
         if len(matching_types) == 0:
             raise ValueError(f"No partial production found for type {hole.type}")
@@ -96,7 +108,7 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            prod =  self.get_partial_program(program)
+            prod = self.get_partial_program(program)
         else:
             prod = self.get_production(program.symbol)
         return InitializedSExpression(

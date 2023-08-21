@@ -12,6 +12,6 @@ class SExpression:
 class InitializedSExpression:
     symbol: str
     children: Tuple["InitializedSExpression"]
-    # state includes things related to the execution of the program, 
+    # state includes things related to the execution of the program,
     # e.g. weights of a neural network
     state: Dict[str, object]

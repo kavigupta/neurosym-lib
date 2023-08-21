@@ -25,4 +25,45 @@ list_float_type = ListType(float_type)
 
 
 def differentiable_arith_dsl(length):
-    return DSL([ConcreteProduction("one", ConcreteTypeSignature([], float_type), lambda: torch.tensor(1.0)), ConcreteProduction("ones", ConcreteTypeSignature([], list_float_type), lambda: torch.ones(length)), ConcreteProduction("int_int_add", ConcreteTypeSignature([float_type, float_type], float_type), lambda x, y: x + y), ConcreteProduction("Tint_int_add", ConcreteTypeSignature([list_float_type, float_type], list_float_type), lambda x, y: x + y), ConcreteProduction("Tint_Tint_add", ConcreteTypeSignature([list_float_type, list_float_type], list_float_type), lambda x, y: x + y), ConcreteProduction("Tint_linear", ConcreteTypeSignature([linear_obj_type, list_float_type], list_float_type), lambda f, x: f(x)), ParameterizedProduction("Linear_c", ConcreteTypeSignature([], linear_obj_type), lambda linear: linear, dict(linear=lambda: nn.Linear(length, length)))])
+    return DSL(
+        [
+            ConcreteProduction(
+                "one", ConcreteTypeSignature([], float_type), lambda: torch.tensor(1.0)
+            ),
+            ConcreteProduction(
+                "ones",
+                ConcreteTypeSignature([], list_float_type),
+                lambda: torch.ones(length),
+            ),
+            ConcreteProduction(
+                "int_int_add",
+                ConcreteTypeSignature([float_type, float_type], float_type),
+                lambda x, y: x + y,
+            ),
+            ConcreteProduction(
+                "Tint_int_add",
+                ConcreteTypeSignature([list_float_type, float_type], list_float_type),
+                lambda x, y: x + y,
+            ),
+            ConcreteProduction(
+                "Tint_Tint_add",
+                ConcreteTypeSignature(
+                    [list_float_type, list_float_type], list_float_type
+                ),
+                lambda x, y: x + y,
+            ),
+            ConcreteProduction(
+                "Tint_linear",
+                ConcreteTypeSignature(
+                    [linear_obj_type, list_float_type], list_float_type
+                ),
+                lambda f, x: f(x),
+            ),
+            ParameterizedProduction(
+                "Linear_c",
+                ConcreteTypeSignature([], linear_obj_type),
+                lambda linear: linear,
+                dict(linear=lambda: nn.Linear(length, length)),
+            ),
+        ]
+    )
