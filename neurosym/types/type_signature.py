@@ -24,6 +24,12 @@ class TypeSignature(ABC):
         cannot be unified.
         """
 
+    @abstractmethod
+    def arity(self) -> int:
+        """
+        Returns the arity of the function, i.e., the number of arguments.
+        """
+
 
 def expanded_type_signature(type_signature: TypeSignature) -> TypeSignature:
     """
@@ -54,3 +60,6 @@ class ConcreteTypeSignature(TypeSignature):
             return self.return_type
         else:
             return None
+
+    def arity(self) -> int:
+        return len(self.arguments)
