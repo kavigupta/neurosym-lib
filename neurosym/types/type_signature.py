@@ -43,7 +43,7 @@ class ConcreteTypeSignature(TypeSignature):
     arguments: List[Type]
     return_type: Type
 
-    def unify_return(self, type: Type) -> List[List[Type]]:
+    def unify_return(self, type: Type) -> List[Type]:
         if type == self.return_type:
             return self.arguments
         else:
