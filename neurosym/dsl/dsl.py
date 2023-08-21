@@ -120,3 +120,37 @@ class DSL:
                 f"Production {production.symbol()} is unreachable from target types "
                 f"{target_types}"
             )
+
+    def compute_type(self, program: SExpression) -> Type:
+        """
+        Computes the type of the given program.
+        """
+        child_types = [self.compute_type(child) for child in program.children]
+        prod = self.get_production(program.symbol)
+        return prod.type_signature().unify_arguments(child_types)
+
+    def children_types(self, program_type: Type, program: SExpression) -> List[Type]:
+        """
+        Returns the types of the children of the given program.
+        """
+        prod = self.get_production(program.symbol)
+        return prod.type_signature().unify_return(program_type)
+
+    def collect_types_of_unknown_productions(
+        self, program_type: Type, program: SExpression
+    ) -> List[Tuple[SExpression, Type]]:
+        """
+        Returns a list of (program, type) pairs, where each program
+            does not have a production in the DSL, and the type is the type of the
+            program, as inferred by the signatures of the productions in the DSL
+            that surround it.
+        """
+        if program.symbol not in self._production_by_symbol:
+            return [(program, program_type)]
+        prod = self.get_production(program.symbol)
+        child_types = prod.type_signature().unify_return(program_type)
+        assert child_types is not None
+        result = []
+        for child_type, child in zip(child_types, program.children):
+            result.extend(self.collect_types_of_unknown_productions(child_type, child))
+        return result
