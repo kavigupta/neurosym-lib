@@ -1,4 +1,5 @@
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
+from neurosym.types.type_signature import ConcreteTypeSignature
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
@@ -9,6 +10,10 @@ class TypeDefiner:
 
     def __call__(self, type_str):
         return parse_type(type_str, self.env)
+
+    def sig(self, type_str):
+        typ = self(type_str)
+        return ConcreteTypeSignature(list(typ.input_type), typ.output_type)
 
     def typedef(self, key, type_str):
         self.env[key] = self(type_str)
