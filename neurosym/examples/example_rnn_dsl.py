@@ -71,18 +71,18 @@ def example_rnn_dsl(length, out_length):
     dslf.concrete(
         "Map",
         "(($fL) -> $fL) -> ([$fL]) -> [$fL]",
-        lambda: lambda f: lambda x: map_torch(f, x),
+        lambda f: lambda x: map_torch(f, x),
     )
     dslf.concrete(
         "TFloat_list_Tfloat_list_compose",
         "(([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
-        lambda: lambda f, g: lambda x: f(g(x)),
+        lambda f, g: lambda x: f(g(x)),
     )
 
     dslf.concrete(
         "Tfloat_Tfloat_bool_compose",
         "(([$fL]) -> $fL, ($fL) -> f) -> ([$fL]) -> f",
-        lambda: lambda f, g: lambda x: f(g(x)),
+        lambda f, g: lambda x: f(g(x)),
     )
 
     return dslf.finalize()
