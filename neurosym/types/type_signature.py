@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
-from neurosym.types.type import Type
+from neurosym.types.type import ArrowType, Type
 
 
 class TypeSignature(ABC):
@@ -49,6 +49,11 @@ class ConcreteTypeSignature(TypeSignature):
     arguments: List[Type]
     return_type: Type
 
+    @classmethod
+    def from_type(cls, type: Type) -> "ConcreteTypeSignature":
+        assert isinstance(type, ArrowType)
+        return cls(list(type.input_type), type.output_type)
+
     def unify_return(self, type: Type) -> List[Type]:
         if type == self.return_type:
             return self.arguments
@@ -63,3 +68,6 @@ class ConcreteTypeSignature(TypeSignature):
 
     def arity(self) -> int:
         return len(self.arguments)
+
+    def astype(self) -> Type:
+        return ArrowType(tuple(self.arguments), self.return_type)
