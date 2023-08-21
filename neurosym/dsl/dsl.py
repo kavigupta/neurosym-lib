@@ -20,6 +20,15 @@ class DSL:
                 production.symbol() not in symbols
             ), f"Duplicate symbol {production.symbol()}"
             symbols.add(production.symbol())
+        self._production_by_symbol = {
+            production.symbol(): production for production in self.productions
+        }
+
+    def arity(self, sym: str) -> int:
+        """
+        Returns the arity of the production with the given symbol.
+        """
+        return self.get_production(sym).type_signature().arity()
 
     def expansions_for_type(self, type: Type) -> List[SExpression]:
         """
@@ -44,10 +53,7 @@ class DSL:
         """
         Return the production with the given symbol.
         """
-        for production in self.productions:
-            if production.symbol() == symbol:
-                return production
-        raise ValueError(f"Production with symbol {symbol} not found")
+        return self._production_by_symbol[symbol]
 
     def initialize(
         self, program: SExpression, hole_callback=None
