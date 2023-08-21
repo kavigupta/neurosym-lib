@@ -24,6 +24,12 @@ class TestRender(unittest.TestCase):
             "(int, float) -> bool",
         )
 
+    def test_no_args(self):
+        self.assertEqual(
+            render_type(ArrowType((), AtomicType("bool"))),
+            "() -> bool",
+        )
+
     def test_nested(self):
         self.assertEqual(
             render_type(
@@ -62,6 +68,9 @@ class TestLex(unittest.TestCase):
             lex("(int, float) -> bool"), ["(", "int", ",", "float", ")", "->", "bool"]
         )
 
+    def test_no_args(self):
+        self.assertEqual(lex("() -> bool"), ["(", ")", "->", "bool"])
+
     def test_dollar(self):
         self.assertEqual(lex("$x"), ["$x"])
 
@@ -85,6 +94,12 @@ class TestParse(unittest.TestCase):
         self.assertEqual(
             parse_type("(int, float) -> bool"),
             ArrowType((AtomicType("int"), AtomicType("float")), AtomicType("bool")),
+        )
+
+    def test_no_args(self):
+        self.assertEqual(
+            parse_type("() -> bool"),
+            ArrowType((), AtomicType("bool")),
         )
 
     def test_nested(self):

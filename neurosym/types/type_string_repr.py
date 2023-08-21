@@ -56,6 +56,9 @@ def parse_type_from_buf(reversed_buf, env):
     elif first_tok == "(":
         input_types = []
         while True:
+            if reversed_buf[-1] == ")":
+                reversed_buf.pop()
+                break
             input_types.append(parse_type_from_buf(reversed_buf, env))
             tok = reversed_buf.pop()
             if tok == ")":
