@@ -15,86 +15,74 @@ RNN example
 """
 import torch
 import torch.nn as nn
+from neurosym.dsl.dsl_factory import DSLFactory
 
-from neurosym.types.type_string_repr import TypeDefiner
-from ..dsl.production import ConcreteProduction, ParameterizedProduction
-from ..dsl.dsl import DSL
-from ..types.type_signature import ConcreteTypeSignature
 from neurosym.operations.basic import ite_torch
 from neurosym.operations.lists import fold_torch, map_torch
 
 
-def example_rnn_dsl(length, out_length):
-    t = TypeDefiner(L=length, O=out_length)
-    t.typedef("fL", "{f, $L}")
+class FunctionModule(nn.Module):
+    def __init__(self, *arg_modules, _fn):
+        super().__init__()
+        self.arg_modules = nn.ModuleList(arg_modules)
+        self.fn = _fn
 
-    return DSL(
-        [
-            ConcreteProduction(
-                "Tfloat_Tfloat_add",
-                ConcreteTypeSignature([], t("($fL, $fL) -> $fL")),
-                lambda: lambda x, y: x + y,
-            ),
-            ConcreteProduction(
-                "Tfloat_Tfloat_mul",
-                ConcreteTypeSignature([], t("($fL, $fL) -> $fL")),
-                lambda: lambda x, y: x * y,
-            ),
-            ConcreteProduction(
-                "fold",
-                ConcreteTypeSignature([t("($fL, $fL) -> $fL")], t("([$fL]) -> $fL")),
-                lambda f: lambda x: fold_torch(f, x),
-            ),
-            ConcreteProduction(
-                "Sum",
-                ConcreteTypeSignature([], t("($fL) -> f")),
-                lambda: lambda x: torch.sum(x, dim=-1).unsqueeze(-1),
-            ),
-            ParameterizedProduction(
-                "Linear_c",
-                ConcreteTypeSignature([], t("($fL) -> $fL")),
-                lambda linear: linear,
-                dict(linear=lambda: nn.Linear(length, length)),
-            ),
-            ParameterizedProduction(
-                "output",
-                ConcreteTypeSignature(
-                    [t("([$fL]) -> [$fL]")], t("([$fL]) -> [{f, $O}]")
-                ),
-                lambda f, linear: lambda x: linear(f(x)),
-                dict(linear=lambda: nn.Linear(length, out_length)),
-            ),
-            ConcreteProduction(
-                "Tlist_float_ITE",
-                ConcreteTypeSignature(
-                    [
-                        t("([$fL]) -> f"),
-                        t("([$fL]) -> [$fL]"),
-                        t("([$fL]) -> [$fL]"),
-                    ],
-                    t("([$fL]) -> [$fL]"),
-                ),
-                lambda cond, fx, fy: ite_torch(cond, fx, fy),
-            ),
-            ConcreteProduction(
-                "Map",
-                ConcreteTypeSignature([t("($fL) -> $fL")], t("([$fL]) -> [$fL]")),
-                lambda f: lambda x: map_torch(f, x),
-            ),
-            ConcreteProduction(
-                "list_Tfloat_list_Tfloat_compose",
-                ConcreteTypeSignature(
-                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fL]")],
-                    t("([$fL]) -> [$fL]"),
-                ),
-                lambda f, g: lambda x: f(g(x)),
-            ),
-            ConcreteProduction(
-                "List_Tfloat_Tfloat_bool_compose",
-                ConcreteTypeSignature(
-                    [t("([$fL]) -> $fL"), t("($fL) -> f")], t("([$fL]) -> f")
-                ),
-                lambda f, g: lambda x: f(g(x)),
-            ),
-        ]
+    def forward(self, *args):
+        return self.fn(*args)
+
+
+def example_rnn_dsl(length, out_length):
+    dslf = DSLFactory(L=length, O=out_length)
+    dslf.typedef("fL", "{f, $L}")
+
+    dslf.concrete(
+        "Tfloat_Tfloat_add", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x + y
     )
+    dslf.concrete(
+        "Tfloat_Tfloat_mul", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x * y
+    )
+    dslf.concrete(
+        "fold",
+        "(($fL, $fL) -> $fL) -> ([$fL]) -> $fL",
+        lambda: lambda f: lambda x: fold_torch(f, x),
+    )
+    dslf.concrete(
+        "Sum",
+        "() -> ($fL) -> f",
+        lambda: lambda x: torch.sum(x, dim=-1).unsqueeze(-1),
+    )
+    dslf.parameterized(
+        "Linear_c",
+        "() -> ($fL) -> $fL",
+        lambda linear: linear,
+        dict(linear=lambda: nn.Linear(length, length)),
+    )
+    dslf.parameterized(
+        "output",
+        "(([$fL]) -> [$fL]) -> ([$fL]) -> [{f, $O}]",
+        lambda f, linear: lambda x: linear(f(x)),
+        dict(linear=lambda: nn.Linear(length, out_length)),
+    )
+    dslf.concrete(
+        "Tfloat_ITE",
+        "(([$fL]) -> f, ([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
+        lambda: lambda cond, fx, fy: ite_torch(cond, fx, fy),
+    )
+    dslf.concrete(
+        "Map",
+        "(($fL) -> $fL) -> ([$fL]) -> [$fL]",
+        lambda: lambda f: lambda x: map_torch(f, x),
+    )
+    dslf.concrete(
+        "TFloat_list_Tfloat_list_compose",
+        "(([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
+        lambda: lambda f, g: lambda x: f(g(x)),
+    )
+
+    dslf.concrete(
+        "Tfloat_Tfloat_bool_compose",
+        "(([$fL]) -> $fL, ($fL) -> f) -> ([$fL]) -> f",
+        lambda: lambda f, g: lambda x: f(g(x)),
+    )
+
+    return dslf.finalize()

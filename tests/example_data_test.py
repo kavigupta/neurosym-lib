@@ -18,7 +18,7 @@ import torch
 from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 from neurosym.data.load_data import numpy_dataset_from_github, DatasetWrapper
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
-from neurosym.dsl.neural_dsl import NeuralDSL
+from neurosym.dsl.neural_dsl import NeuralDSL, create_modules
 
 import pytest
 
@@ -48,56 +48,53 @@ class TestNEARExample(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
 
         dsl = example_rnn_dsl(10, 4)
+
+        # TODO [AS]: move to a separate file
+
+        def mlp_factory(**kwargs):
+            return lambda input_shape, output_shape: MLP(
+                MLPConfig(
+                    model_name="mlp",
+                    input_size=input_shape,
+                    output_size=output_shape,
+                    **kwargs,
+                )
+            )
+
+        def rnn_factory(**kwargs):
+            return lambda input_shape, output_shape: Seq2SeqRNN(
+                RNNConfig(
+                    model_name="rnn",
+                    input_size=input_shape,
+                    output_size=output_shape,
+                    **kwargs,
+                )
+            )
+
+        def rnn_factory_seq2class(**kwargs):
+            return lambda input_shape, output_shape: Seq2ClassRNN(
+                RNNConfig(
+                    model_name="rnn",
+                    input_size=input_shape,
+                    output_size=output_shape,
+                    **kwargs,
+                )
+            )
+
         neural_dsl = NeuralDSL.from_dsl(
             dsl=dsl,
-            partial_modules={
-                t("($fL) -> $fL"): MLP(
-                    MLPConfig(
-                        model_name="ll_mlp",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=input_shape,
-                    )
+            modules={
+                **create_modules(
+                    [t("($fL) -> $fL"), t("($fL) -> $fO")],
+                    mlp_factory(hidden_size=10),
                 ),
-                t("($fL) -> $fO"): MLP(
-                    MLPConfig(
-                        model_name="lo_mlp",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=output_shape,
-                    )
+                **create_modules(
+                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
+                    rnn_factory(hidden_size=10),
                 ),
-                t("([$fL]) -> [$fL]"): Seq2SeqRNN(
-                    RNNConfig(
-                        model_name="ll_rnn",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=input_shape,
-                    )
-                ),
-                t("([$fL]) -> [$fO]"): Seq2SeqRNN(
-                    RNNConfig(
-                        model_name="lo_rnn",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=output_shape,
-                    )
-                ),
-                t("($fL) -> $fL"): Seq2ClassRNN(
-                    RNNConfig(
-                        model_name="lc_rnn",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=input_shape,
-                    )
-                ),
-                t("($fL) -> $fO"): Seq2ClassRNN(
-                    RNNConfig(
-                        model_name="lc_rnn",
-                        input_size=input_shape,
-                        hidden_size=10,
-                        output_size=output_shape,
-                    )
+                **create_modules(
+                    [t("([$fL]) -> f"), t("([$fL]) -> $fO")],
+                    rnn_factory_seq2class(hidden_size=10),
                 ),
             },
         )
@@ -113,8 +110,8 @@ class TestNEARExample(unittest.TestCase):
                 callbacks=[],
             )
 
-            neural_dsl.initialize(node.program)
-            model = neural_dsl.compute_on_pytorch()
+            initialized_p = neural_dsl.initialize(node.program)
+            model = neural_dsl.compute_on_pytorch(initialized_p)
             trainer.fit(
                 model, datamodule.train_dataloader(), datamodule.val_dataloader()
             )
