@@ -4,24 +4,28 @@ from s_expression_parser import parse, ParserConfig, Pair, nil, Renderer
 from neurosym.programs.s_expression import SExpression
 
 
-def to_pair(s_exp: SExpression) -> Pair:
+def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     """
     Convert an SExpression to a Pair.
 
-    If the SExpression is a leaf, it will be converted to a string with the prefix "leaf-".
+    If we are exporting for stitch and the SExpression is a leaf,
+        it will be converted to a string with the prefix "leaf-".
         This is because stitch does not distinguish `(f)` from `f`.
 
     Args:
         s_exp: The SExpression to convert.
+        for_stitch: Whether the Pair is being converted for use with stitch.
     Returns:
         The Pair representing the SExpression.
     """
     if isinstance(s_exp, str) and s_exp.startswith("#"):
         return s_exp
     assert isinstance(s_exp, SExpression), f"Expected SExpression, got {s_exp}"
-    if not s_exp.children:
+    if for_stitch and not s_exp.children:
         return "leaf-" + s_exp.symbol
-    elements = [s_exp.symbol] + [to_pair(x) for x in s_exp.children]
+    elements = [s_exp.symbol] + [
+        to_pair(x, for_stitch=for_stitch) for x in s_exp.children
+    ]
     result = nil
     for element in reversed(elements):
         result = Pair(element, result)
@@ -60,17 +64,18 @@ def from_pair(pair: Pair, should_not_be_leaf: Set[str]) -> SExpression:
     return SExpression(head, tail)
 
 
-def render_s_expression(s_exp: SExpression) -> str:
+def render_s_expression(s_exp: SExpression, for_stitch: bool) -> str:
     """
     Render an SExpression as a string.
 
     Args:
         s_exp: The SExpression to render.
+        for_stitch: Whether the Pair is being converted for use with stitch.
 
     Returns:
         The string representing the SExpression.
     """
-    return Renderer(columns=float("inf")).render(to_pair(s_exp))
+    return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
 
 
 def parse_s_expression(s: str, should_not_be_leaf: Set[str]) -> SExpression:
