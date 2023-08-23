@@ -36,6 +36,18 @@ dslf.concrete(
     lambda x, y: lambda t: x(t) * y(t),
 )
 
+dslf.concrete(
+    "even?",
+    "($fn) -> $fn",
+    lambda x: lambda t: x(t) % 2 == 0,
+)
+
+dslf.concrete(
+    "ite",
+    "($fn, $fn, $fn) -> $fn",
+    lambda cond, fx, fy: lambda t: fx(t) if cond(t) else fy(t),
+)
+
 dslf.parameterized(
     "count",
     "() -> $fn",
