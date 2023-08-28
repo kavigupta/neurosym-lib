@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Dict
 
+from neurosym.programs.s_expression import SExpression
+
 from ..types.type_signature import TypeSignature
 
 
@@ -72,3 +74,25 @@ class ParameterizedProduction(ConcreteProduction):
     def compute_on_pytorch(self, dsl, state, inputs):
         del dsl
         return self._compute_on_pytorch(*inputs, **state)
+
+
+@dataclass
+class AbstractionProduction(Production):
+    _symbol: str
+    _type_signature: TypeSignature
+    _body: SExpression
+
+    def symbol(self):
+        return self._symbol
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        return dict(
+            body=dsl.initialize(self._body),
+        )
+
+    def compute_on_pytorch(self, dsl, state, *inputs):
+        initialized_body = state["body"]
+        return dsl.compute_on_pytorch(initialized_body)
