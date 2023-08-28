@@ -24,6 +24,9 @@ class DSL:
             production.symbol(): production for production in self.productions
         }
 
+    def symbols(self):
+        return self._production_by_symbol.keys()
+
     def arity(self, sym: str) -> int:
         """
         Returns the arity of the production with the given symbol.
@@ -121,11 +124,16 @@ class DSL:
                 f"{target_types}"
             )
 
-    def compute_type(self, program: SExpression) -> Type:
+    def compute_type(self, program: SExpression, lookup=lambda x: None) -> Type:
         """
         Computes the type of the given program.
         """
-        child_types = [self.compute_type(child) for child in program.children]
+        if lookup is not None:
+            res = lookup(program)
+            if res is not None:
+                return res
+
+        child_types = [self.compute_type(child, lookup) for child in program.children]
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
 
