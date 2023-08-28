@@ -7,6 +7,12 @@ class SExpression:
     symbol: str
     children: Tuple["SExpression"]
 
+    @property
+    def postorder(self):
+        for x in self.children:
+            yield from x.postorder
+        yield self
+
 
 @dataclass
 class InitializedSExpression:
