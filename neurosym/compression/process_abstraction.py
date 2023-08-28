@@ -14,7 +14,6 @@ from neurosym.types.type_signature import ConcreteTypeSignature
 
 def compute_abstraction_type(
     dsl,
-    target_type: Type,
     s_expression_using: SExpression,
     abstr_original: stitch_core.Abstraction,
 ):
@@ -69,7 +68,7 @@ def next_symbol(dsl):
     return f"__{number}"
 
 
-def single_step_compression(dsl, programs, out_t):
+def single_step_compression(dsl, programs):
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
     res = stitch_core.compress(
         rendered,
@@ -81,14 +80,14 @@ def single_step_compression(dsl, programs, out_t):
     abstr_original = res.abstractions[-1]
     rewritten = (parse_s_expression(x, {abstr_original.name}) for x in res.rewritten)
     user = next(x for x in rewritten if abstr_original.name in symbols(x))
-    abstr, prod = compute_abstraction_type(dsl, out_t, user, abstr_original)
+    abstr, prod = compute_abstraction_type(dsl, user, abstr_original)
     rewritten = stitch_core.rewrite(rendered, [abstr]).rewritten
     rewritten = [parse_s_expression(x, {abstr_original.name}) for x in rewritten]
     dsl2 = DSL(dsl.productions + [prod])
     return dsl2, rewritten
 
 
-def multi_step_compression(dsl, programs, out_t, iterations):
+def multi_step_compression(dsl, programs, iterations):
     for _ in range(iterations):
-        dsl, programs = single_step_compression(dsl, programs, out_t)
+        dsl, programs = single_step_compression(dsl, programs)
     return dsl, programs

@@ -51,7 +51,7 @@ class CompressionTest(unittest.TestCase):
 
     def test_single_step(self):
         dsl2, rewritten = single_step_compression(
-            mutable_arith_combinators, corpus(), out_t
+            mutable_arith_combinators, corpus()
         )
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
