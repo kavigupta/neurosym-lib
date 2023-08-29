@@ -44,6 +44,10 @@ def compute_abstraction_production(
 
 
 def inject_parameters(s_expression: Union[SExpression, str]):
+    """
+    Inject parameters into an SExpression, replacing leaves of the form #N with
+    AbstractionIndexParameter(N).
+    """
     if isinstance(s_expression, str):
         assert s_expression.startswith("#")
         return AbstractionIndexParameter(int(s_expression[1:]))
@@ -68,6 +72,9 @@ def next_symbol(dsl):
 
 
 def single_step_compression(dsl, programs):
+    """
+    Run a single step of compression on a list of programs.
+    """
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
     res = stitch_core.compress(
         rendered,
@@ -87,6 +94,9 @@ def single_step_compression(dsl, programs):
 
 
 def multi_step_compression(dsl, programs, iterations):
+    """
+    Run multiple steps of compression on a list of programs.
+    """
     for _ in range(iterations):
         dsl, programs = single_step_compression(dsl, programs)
     return dsl, programs
