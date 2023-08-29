@@ -8,9 +8,17 @@ from ..programs.s_expression import InitializedSExpression, SExpression
 
 @dataclass
 class AbstractionIndexParameter:
+    """
+    Represents a parameter of an abstraction.
+    Used in SExpressions and InitializedSExpressions.
+    """
+
     index: int
 
     def apply(self, inputs):
+        """
+        Map the parameter to a value.
+        """
         return AbstractionParameter(inputs[self.index])
 
     def __initialize__(self, dsl):
@@ -19,6 +27,12 @@ class AbstractionIndexParameter:
 
 @dataclass
 class AbstractionParameter:
+    """
+    Represents a parameter of an abstraction, with an initialized value.
+
+    Used in InitializedSExpressions.
+    """
+
     value: object
 
     def __compute_value__(self, dsl):
@@ -27,6 +41,10 @@ class AbstractionParameter:
 
 @dataclass
 class AbstractionProduction(Production):
+    """
+    Represents an abstraction in a DSL.
+    """
+
     _symbol: str
     _type_signature: TypeSignature
     _body: SExpression
@@ -48,6 +66,16 @@ class AbstractionProduction(Production):
 
 
 def with_index_parameters(ise: InitializedSExpression, inputs: tuple):
+    """
+    With the given inputs, replace all AbstractionIndexParameters in the given
+    InitializedSExpression with AbstractionParameters.
+
+    Args:
+        ise: The InitializedSExpression.
+        inputs: The inputs.
+
+    Returns a new InitializedSExpression.
+    """
     if isinstance(ise, AbstractionIndexParameter):
         return ise.apply(inputs)
     return InitializedSExpression(
