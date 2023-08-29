@@ -44,7 +44,6 @@ class AbstractionProduction(Production):
 
     def compute_on_pytorch(self, dsl, state, inputs):
         initialized_body = state["body"]
-        print(initialized_body)
         return dsl.compute_on_pytorch(with_index_parameters(initialized_body, inputs))
 
 
