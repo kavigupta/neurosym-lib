@@ -50,9 +50,7 @@ class CompressionTest(unittest.TestCase):
         self.assertEqual(outputs_1, outputs_2)
 
     def test_single_step(self):
-        dsl2, rewritten = single_step_compression(
-            mutable_arith_combinators, corpus()
-        )
+        dsl2, rewritten = single_step_compression(mutable_arith_combinators, corpus())
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
