@@ -70,6 +70,8 @@ class DSL:
         if isinstance(program, Hole):
             assert hole_callback is not None
             return hole_callback(program)
+        if hasattr(program, "__initialize__"):
+            return program.__initialize__(self)
         prod = self.get_production(program.symbol)
         return InitializedSExpression(
             program.symbol,
@@ -78,6 +80,9 @@ class DSL:
         )
 
     def compute_on_pytorch(self, program: InitializedSExpression):
+        print(program)
+        if hasattr(program, "__compute_value__"):
+            return program.__compute_value__(self)
         prod = self.get_production(program.symbol)
         return prod.compute_on_pytorch(
             self,

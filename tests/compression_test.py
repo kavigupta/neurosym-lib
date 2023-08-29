@@ -2,7 +2,10 @@ from functools import lru_cache
 import unittest
 
 import numpy as np
-from neurosym.compression.process_abstraction import single_step_compression
+from neurosym.compression.process_abstraction import (
+    multi_step_compression,
+    single_step_compression,
+)
 
 from neurosym.dsl.pcfg import PCFGPattern
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
@@ -51,6 +54,17 @@ class CompressionTest(unittest.TestCase):
 
     def test_single_step(self):
         dsl2, rewritten = single_step_compression(mutable_arith_combinators, corpus())
+        self.assertEqual(len(rewritten), len(corpus()))
+        for orig, rewr in zip(corpus(), rewritten):
+            self.fuzzy_check_fn_same(
+                mutable_arith_combinators.compute_on_pytorch(
+                    mutable_arith_combinators.initialize(orig)
+                ),
+                dsl2.compute_on_pytorch(dsl2.initialize(rewr)),
+            )
+
+    def test_multi_step(self):
+        dsl2, rewritten = multi_step_compression(mutable_arith_combinators, corpus(), 5)
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
