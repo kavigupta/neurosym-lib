@@ -40,6 +40,12 @@ class Production(ABC):
         Effectively a form of denotation semantics.
         """
 
+    @abstractmethod
+    def render(self) -> str:
+        """
+        Render this production as a string.
+        """
+
 
 @dataclass
 class ConcreteProduction(Production):
@@ -62,6 +68,9 @@ class ConcreteProduction(Production):
         assert state == {}
         return self._compute_on_pytorch(*inputs)
 
+    def render(self):
+        return f"{self._symbol:>15} :: {self._type_signature.render()}"
+
 
 @dataclass
 class ParameterizedProduction(ConcreteProduction):
@@ -74,3 +83,7 @@ class ParameterizedProduction(ConcreteProduction):
     def compute_on_pytorch(self, dsl, state, inputs):
         del dsl
         return self._compute_on_pytorch(*inputs, **state)
+
+    def render(self):
+        lhs = f"{self._symbol}[{', '.join(self._initialize)}]"
+        return f"{lhs:>15} :: {self._type_signature.render()}"

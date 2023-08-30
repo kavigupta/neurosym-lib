@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict
 
+from neurosym.programs.s_expression_render import render_s_expression
+
 from .production import Production
 from ..types.type_signature import TypeSignature
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -23,6 +25,9 @@ class AbstractionIndexParameter:
 
     def __initialize__(self, dsl):
         return self
+
+    def __to_pair__(self, for_stitch):
+        return f"#{self.index}"
 
 
 @dataclass
@@ -63,6 +68,17 @@ class AbstractionProduction(Production):
     def compute_on_pytorch(self, dsl, state, inputs):
         initialized_body = state["body"]
         return dsl.compute_on_pytorch(with_index_parameters(initialized_body, inputs))
+
+    def render_as_lambda(self):
+        body = render_s_expression(self._body, False)
+        arguments = " ".join(
+            render_s_expression(AbstractionIndexParameter(i), False)
+            for i in range(self._type_signature.arity())
+        )
+        return f"(lam ({arguments}) {body})"
+
+    def render(self):
+        return f"{self._symbol:>15} :: {self._type_signature.render()} = {self.render_as_lambda()}"
 
 
 def with_index_parameters(ise: InitializedSExpression, inputs: tuple):

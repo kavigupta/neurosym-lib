@@ -167,3 +167,9 @@ class DSL:
         for child_type, child in zip(child_types, program.children):
             result.extend(self.collect_types_of_unknown_productions(child_type, child))
         return result
+
+    def render(self) -> str:
+        """
+        Render this DSL as a string.
+        """
+        return "\n".join(production.render() for production in self.productions)

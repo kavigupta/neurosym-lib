@@ -18,8 +18,8 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     Returns:
         The Pair representing the SExpression.
     """
-    if isinstance(s_exp, str) and s_exp.startswith("#"):
-        return s_exp
+    if hasattr(s_exp, "__to_pair__"):
+        return s_exp.__to_pair__(for_stitch=for_stitch)
     assert isinstance(s_exp, SExpression), f"Expected SExpression, got {s_exp}"
     if for_stitch and not s_exp.children:
         return "leaf-" + s_exp.symbol
