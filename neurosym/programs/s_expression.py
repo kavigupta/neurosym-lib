@@ -21,3 +21,8 @@ class InitializedSExpression:
     # state includes things related to the execution of the program,
     # e.g. weights of a neural network
     state: Dict[str, object]
+
+    def all_state_values(self):
+        yield from self.state.values()
+        for child in self.children:
+            yield from child.all_state_values()
