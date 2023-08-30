@@ -80,4 +80,5 @@ class ConcreteTypeSignature(TypeSignature):
 
     def render(self) -> str:
         from neurosym.types.type_string_repr import render_type
+
         return render_type(self.astype())
