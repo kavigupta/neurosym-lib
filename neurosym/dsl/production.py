@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Dict
 
-from neurosym.programs.s_expression import SExpression
 
 from ..types.type_signature import TypeSignature
 

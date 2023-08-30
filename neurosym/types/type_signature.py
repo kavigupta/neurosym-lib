@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 from neurosym.types.type import ArrowType, Type
-from neurosym.types.type_string_repr import render_type
 
 
 class TypeSignature(ABC):
@@ -80,4 +79,5 @@ class ConcreteTypeSignature(TypeSignature):
         return ArrowType(tuple(self.arguments), self.return_type)
 
     def render(self) -> str:
+        from neurosym.types.type_string_repr import render_type
         return render_type(self.astype())
