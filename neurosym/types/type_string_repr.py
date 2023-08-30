@@ -27,6 +27,8 @@ def render_type(t):
     elif isinstance(t, ListType):
         return "[" + render_type(t.element_type) + "]"
     elif isinstance(t, ArrowType):
+        if len(t.input_type) == 1 and not isinstance(t.input_type[0], ArrowType):
+            return render_type(t.input_type[0]) + " -> " + render_type(t.output_type)
         return (
             "("
             + ", ".join(map(render_type, t.input_type))
@@ -50,13 +52,14 @@ def parse_type_from_buf(reversed_buf, env):
             tok = reversed_buf.pop()
             if tok == "}":
                 break
-            assert tok == ","
+            assert tok == ",", f"Expected ',' but got {tok}"
             size = parse_type_from_buf(reversed_buf, env)
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
     elif first_tok == "[":
         internal_type = parse_type_from_buf(reversed_buf, env)
-        assert reversed_buf.pop() == "]"
+        close_bracket = reversed_buf.pop()
+        assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
     elif first_tok == "(":
         input_types = []
@@ -68,12 +71,24 @@ def parse_type_from_buf(reversed_buf, env):
             tok = reversed_buf.pop()
             if tok == ")":
                 break
-            assert tok == ","
-        assert reversed_buf.pop() == "->"
+            assert tok == ",", f"Expected ',' but got {tok}"
+        tok = reversed_buf.pop()
+        assert tok == "->", f"Expected '->' but got {tok}"
         output_type = parse_type_from_buf(reversed_buf, env)
         return ArrowType(tuple(input_types), output_type)
     else:
         return AtomicType(first_tok)
+
+
+def parse_type_from_buf_multi(reversed_buf, env):
+    t_head = parse_type_from_buf(reversed_buf, env)
+    if not reversed_buf:
+        return t_head
+    tok = reversed_buf.pop()
+    assert tok == "->", f"Expected '->' but got {tok}"
+    t_tail = parse_type_from_buf_multi(reversed_buf, env)
+    assert reversed_buf == [], f"Extra tokens {reversed_buf[::-1]}"
+    return ArrowType((t_head,), t_tail)
 
 
 def lex(s):
@@ -95,6 +110,5 @@ def parse_type(s, env=None):
     if env is None:
         env = {}
     buf = lex(s)[::-1]
-    t = parse_type_from_buf(buf, env)
-    assert len(buf) == 0
+    t = parse_type_from_buf_multi(buf, env)
     return t

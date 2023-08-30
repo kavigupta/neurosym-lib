@@ -24,6 +24,59 @@ class TestRender(unittest.TestCase):
             "(int, float) -> bool",
         )
 
+    def test_arrow_single_arg(self):
+        self.assertEqual(
+            render_type(ArrowType((AtomicType("int"),), AtomicType("bool"))),
+            "int -> bool",
+        )
+
+    def test_arrow_single_arg_list(self):
+        self.assertEqual(
+            render_type(ArrowType((ListType(AtomicType("int")),), AtomicType("bool"))),
+            "[int] -> bool",
+        )
+
+    def test_arrow_single_arg_tensor(self):
+        self.assertEqual(
+            render_type(
+                ArrowType((TensorType(AtomicType("int"), (3, 4)),), AtomicType("bool"))
+            ),
+            "{int, 3, 4} -> bool",
+        )
+
+    def test_arrow_single_arg_arrow(self):
+        self.assertEqual(
+            render_type(
+                ArrowType(
+                    (ArrowType((AtomicType("int"),), AtomicType("bool")),),
+                    AtomicType("bool"),
+                )
+            ),
+            "(int -> bool) -> bool",
+        )
+
+    def test_arrow_single_arg_arrow_list(self):
+        self.assertEqual(
+            render_type(
+                ArrowType(
+                    (ListType(ArrowType((AtomicType("int"),), AtomicType("bool"))),),
+                    AtomicType("bool"),
+                )
+            ),
+            "[int -> bool] -> bool",
+        )
+
+    def test_arrow_returns_arrow(self):
+        self.assertEqual(
+            render_type(
+                ArrowType(
+                    (AtomicType("int"),),
+                    ArrowType((AtomicType("int"),), AtomicType("bool")),
+                )
+            ),
+            "int -> int -> bool",
+        )
+
     def test_no_args(self):
         self.assertEqual(
             render_type(ArrowType((), AtomicType("bool"))),
@@ -52,7 +105,7 @@ class TestRender(unittest.TestCase):
                     output_type=TensorType(dtype=AtomicType(name="f"), shape=(10,)),
                 )
             ),
-            "({f, 10}) -> {f, 10}",
+            "{f, 10} -> {f, 10}",
         )
 
 
@@ -96,6 +149,27 @@ class TestParse(unittest.TestCase):
             ArrowType((AtomicType("int"), AtomicType("float")), AtomicType("bool")),
         )
 
+    def test_arrow_single_arg(self):
+        self.assertEqual(
+            parse_type("int -> bool"),
+            ArrowType((AtomicType("int"),), AtomicType("bool")),
+        )
+
+    def test_arrow_single_arg_list(self):
+        self.assertEqual(
+            parse_type("[int] -> bool"),
+            ArrowType((ListType(AtomicType("int")),), AtomicType("bool")),
+        )
+
+    def test_arrow_returns_arrow(self):
+        self.assertEqual(
+            parse_type("int -> int -> bool"),
+            ArrowType(
+                (AtomicType("int"),),
+                ArrowType((AtomicType("int"),), AtomicType("bool")),
+            ),
+        )
+
     def test_no_args(self):
         self.assertEqual(
             parse_type("() -> bool"),
@@ -117,7 +191,7 @@ class TestParse(unittest.TestCase):
     def test_single_arg(self):
         self.assertEqual(
             render_type(parse_type("([{f, 10}]) -> {f, 20}")),
-            "([{f, 10}]) -> {f, 20}",
+            "[{f, 10}] -> {f, 20}",
         )
 
     def test_bad_parse(self):
