@@ -67,7 +67,7 @@ def parse_type_from_buf(reversed_buf, env):
             if reversed_buf[-1] == ")":
                 reversed_buf.pop()
                 break
-            input_types.append(parse_type_from_buf(reversed_buf, env))
+            input_types.append(parse_type_from_buf_multi(reversed_buf, env))
             tok = reversed_buf.pop()
             if tok == ")":
                 break
@@ -84,10 +84,10 @@ def parse_type_from_buf_multi(reversed_buf, env):
     t_head = parse_type_from_buf(reversed_buf, env)
     if not reversed_buf:
         return t_head
-    tok = reversed_buf.pop()
-    assert tok == "->", f"Expected '->' but got {tok}"
+    if reversed_buf and reversed_buf[-1] != "->":
+        return t_head
+    reversed_buf.pop()
     t_tail = parse_type_from_buf_multi(reversed_buf, env)
-    assert reversed_buf == [], f"Extra tokens {reversed_buf[::-1]}"
     return ArrowType((t_head,), t_tail)
 
 
@@ -111,4 +111,5 @@ def parse_type(s, env=None):
         env = {}
     buf = lex(s)[::-1]
     t = parse_type_from_buf_multi(buf, env)
+    assert buf == [], f"Extra tokens {buf[::-1]}"
     return t

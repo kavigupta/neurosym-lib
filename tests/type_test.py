@@ -194,5 +194,9 @@ class TestParse(unittest.TestCase):
             "[{f, 10}] -> {f, 20}",
         )
 
+    def test_unparenthesized_arrow_inside_argument(self):
+        t = "(i -> b, [i]) -> [i]"
+        self.assertEqual(render_type(parse_type(t)), t)
+
     def test_bad_parse(self):
-        self.assertRaises(Exception, lambda: render_type(parse_type("f -> f")))
+        self.assertRaises(Exception, lambda: render_type(parse_type("f -> f]")))
