@@ -9,7 +9,6 @@ from neurosym.programs.s_expression_render import (
     render_s_expression,
     symbols,
 )
-from neurosym.types.type import Type
 from neurosym.types.type_signature import ConcreteTypeSignature
 
 

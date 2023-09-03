@@ -5,10 +5,10 @@ from neurosym.types.type_signature import ConcreteTypeSignature
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import AtomicType, Type, ArrowType
+from ..types.type import Type, ArrowType
 from torch import nn
 
-from .production import ConcreteProduction, Production, ParameterizedProduction
+from .production import Production, ParameterizedProduction
 from .dsl import DSL
 
 
