@@ -75,6 +75,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         else:
             self.ordering = np.arange(len(self.inputs))
 
+    def get_io_dims(self):
+        return self.inputs.shape[-1], self.outputs.shape[-1]
+
     def __len__(self):
         return len(self.inputs)
 
@@ -99,6 +102,9 @@ class DatasetWrapper(pl.LightningDataModule):
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)

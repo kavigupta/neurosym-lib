@@ -8,3 +8,5 @@ torchaudio
 numpy
 pytorch-lightning
 permacache
+stitch-core
+scikit-learn

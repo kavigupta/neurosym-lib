@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from sklearn.metrics import f1_score, hamming_loss
 import torch
 from torch import nn
 
 from neurosym.methods.base_trainer import BaseTrainerConfig, BaseTrainer
 
+@dataclass
 class NEARTrainerConfig(BaseTrainerConfig):
     max_seq_len : int = 100
     loss_fn: str = "CrossEntropyLoss"

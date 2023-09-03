@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List, Tuple
 import torch
 from torch import nn
 from collections import OrderedDict
@@ -38,3 +39,20 @@ class MLP(nn.Sequential):
                 )
 
         self.apply(init_weights)
+
+def mlp_factory(**kwargs):
+    """
+    Allows instantiating an MLP module with a given input and output size.
+    """
+    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+        assert len(input_shape) == 1, "MLP takes a single input only."
+        input_size = input_shape[0][-1]
+        output_size = output_shape[-1]
+        cfg = MLPConfig(
+            model_name="mlp",
+            input_size=input_size,
+            output_size=output_size,
+            **kwargs,
+        )
+        return MLP(cfg)
+    return construct_model

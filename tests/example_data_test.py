@@ -3,8 +3,9 @@ NEAR Integration tests.
 """
 
 import unittest
-from neurosym.models.mlp import MLP, MLPConfig
-from neurosym.models.rnn import Seq2ClassRNN, Seq2SeqRNN, RNNConfig
+from neurosym.models.mlp import mlp_factory
+from neurosym.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
+from neurosym.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
 from neurosym.near.near_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 
@@ -40,47 +41,17 @@ class TestNEARExample(unittest.TestCase):
             "test_ex_labels.npy",
         )
         datamodule: DatasetWrapper = dataset_gen(train_seed=0)
+        input_dim, output_dim = datamodule.train.get_io_dims()
+        dsl = example_rnn_dsl(input_dim, output_dim)
+        trainer_cfg = NEARTrainerConfig(max_seq_len=100, 
+                                        n_epochs=10,
+                                        num_labels=output_dim,
+                                        train_steps=len(datamodule.train),
+                                        )
 
-        input_shape = datamodule.train.inputs.shape[-1]
-        output_shape = 4  # TODO[AS]: remove hardcoded
-        t = TypeDefiner(L=input_shape, O=output_shape)
+        t = TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
-
-        dsl = example_rnn_dsl(10, 4)
-
-        # TODO [AS]: move to a separate file
-
-        def mlp_factory(**kwargs):
-            return lambda input_shape, output_shape: MLP(
-                MLPConfig(
-                    model_name="mlp",
-                    input_size=input_shape,
-                    output_size=output_shape,
-                    **kwargs,
-                )
-            )
-
-        def rnn_factory(**kwargs):
-            return lambda input_shape, output_shape: Seq2SeqRNN(
-                RNNConfig(
-                    model_name="rnn",
-                    input_size=input_shape,
-                    output_size=output_shape,
-                    **kwargs,
-                )
-            )
-
-        def rnn_factory_seq2class(**kwargs):
-            return lambda input_shape, output_shape: Seq2ClassRNN(
-                RNNConfig(
-                    model_name="rnn",
-                    input_size=input_shape,
-                    output_size=output_shape,
-                    **kwargs,
-                )
-            )
-
         neural_dsl = NeuralDSL.from_dsl(
             dsl=dsl,
             modules={
@@ -90,7 +61,7 @@ class TestNEARExample(unittest.TestCase):
                 ),
                 **create_modules(
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                    rnn_factory(hidden_size=10),
+                    rnn_factory_seq2seq(hidden_size=10),
                 ),
                 **create_modules(
                     [t("([$fL]) -> f"), t("([$fL]) -> $fO")],
@@ -106,25 +77,35 @@ class TestNEARExample(unittest.TestCase):
                 max_epochs=10,
                 # devices=0,
                 # accelerator="auto",
+                enable_checkpointing=False,
                 logger=False,
                 callbacks=[],
             )
-
             initialized_p = neural_dsl.initialize(node.program)
             model = neural_dsl.compute_on_pytorch(initialized_p)
+            pl_model = NEARTrainer(model, config=trainer_cfg)
             trainer.fit(
-                model, datamodule.train_dataloader(), datamodule.val_dataloader()
+                pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
             )
             return trainer.callback_metrics["val_loss"].item()
+
+        def checker(x):
+            """
+            In NEAR, any program that has no holes is valid.
+            The hole checking is done before this function will
+            be called so we can assume that the program has no holes.
+            """
+            return True
 
         g = near_graph(
             neural_dsl,
             parse_type(
-                s="({f, $L}) -> {f, $O}", env=dict(L=input_shape, O=output_shape)
+                s="({f, $L}) -> {f, $O}", env=dict(L=input_dim, O=output_dim)
             ),
-            is_goal=lambda node: True,
+            is_goal=checker,
         )
-        node = next(bounded_astar(g, validation_cost, max_depth=7)).program
+        # succeed if this raises StopIteration
+        node = next(bounded_astar(g, validation_cost, max_depth=7))
         print(node)
 
     def test_dsl(self):

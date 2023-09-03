@@ -16,14 +16,15 @@ class BaseTrainerConfig:
     resume: str = ""
     scheduler : str = 'cosine'
     sav_dir: str = "data/shapeworldonly_checkpoints"
-    _filter_param_list: Tuple[str] = (),
+    _filter_param_list: Tuple[str] = ()
     scheduler : str = 'cosine'
     optimizer : str = 'adam'
 
 class BaseTrainer(pl.LightningModule):
     """
-    An abstract class that defines the basic functions to 
-    implement and train a neural module.
+    An abstract class that defines the supporting code to
+    train a neural module. We use pytorch-lightning as the
+    base framework.
     """
     @classmethod
     def from_arch(cls, model: nn.Module, config: BaseTrainerConfig):
@@ -111,7 +112,8 @@ class BaseTrainer(pl.LightningModule):
         """
         A rather verbose function that instantiates the optimizer and scheduler.
         """
-        params = self.filter_parameters(self.named_parameters(), self.config._filter_param_list)
+        params = self.filter_parameters(self.named_parameters(),
+                                        self.config._filter_param_list)
 
         match self.config.optimizer:
             case 'adam':
@@ -132,7 +134,8 @@ class BaseTrainer(pl.LightningModule):
             case _:
                 raise NotImplementedError(f"Optimizer {self.config.optimizer} not implemented")  # noqa: E501
 
-        total_steps = int(self.config.epochs * (self.config.train_steps) )
+        assert self.config.train_steps != -1, "Train steps not set"
+        total_steps = int(self.config.n_epochs * (self.config.train_steps) )
 
         match self.config.scheduler:
             case 'none':

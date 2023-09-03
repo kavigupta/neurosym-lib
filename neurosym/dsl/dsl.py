@@ -56,6 +56,7 @@ class DSL:
         """
         Return the production with the given symbol.
         """
+        assert isinstance(symbol, str), f"Expected string, got {type(symbol)}: {symbol}"
         return self._production_by_symbol[symbol]
 
     def initialize(
@@ -80,7 +81,6 @@ class DSL:
         )
 
     def compute_on_pytorch(self, program: InitializedSExpression):
-        print(program)
         if hasattr(program, "__compute_value__"):
             return program.__compute_value__(self)
         prod = self.get_production(program.symbol)

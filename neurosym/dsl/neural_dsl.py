@@ -20,12 +20,12 @@ class NeuralDSL(DSL):
     Required to run NEAR.
     """
 
-    partial_programs: Dict[Type, SExpression]
+    # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
 
     @classmethod
     def from_dsl(
-        cls, dsl: DSL, type_specific_modules: Dict[Type, Callable[[], nn.Module]]
+        cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]
     ):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
@@ -34,7 +34,7 @@ class NeuralDSL(DSL):
 
         Args:
             dsl: The DSL to extend.
-            type_specific_modules: A dictionary mapping types to functions that
+            modules: A dictionary mapping types to functions that
                 are used to initialize the modules for that type.
 
         Returns:
@@ -43,7 +43,7 @@ class NeuralDSL(DSL):
         partial_productions = []
         type_to_symbol = {}
 
-        for fn_type, module_template in type_specific_modules.items():
+        for fn_type, module_template in modules.items():
             assert isinstance(
                 fn_type, ArrowType
             ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
@@ -79,10 +79,11 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            prod = self.get_partial_program(program)
+            prog = self.get_partial_program(program)
         else:
-            prod = self.get_production(program.symbol)
-        return super().initialize(self, prod)
+            prog = program
+
+        return super().initialize(prog)
 
 
 def create_modules(types, module_factory):
@@ -90,5 +91,15 @@ def create_modules(types, module_factory):
 
 
 def compute_io_shape(t):
-    # TODO(AS) implement
-    raise NotImplementedError
+    """
+    t : ArrowType
+    returns: dict(input_shape, output_shape)
+        input_shape: list of tuples (shape, type)
+        output_shape: tuple (shape, type)
+    """
+    assert isinstance(t, ArrowType)
+    input_types = t.input_type
+    output_type = t.output_type
+    input_shape = [t.shape for t in input_types]
+    output_shape = output_type.shape
+    return input_shape, output_shape
