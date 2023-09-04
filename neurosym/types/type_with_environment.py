@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict
 
+from frozendict import frozendict
+
 from neurosym.types.type import Type
 
 
@@ -10,11 +12,11 @@ class Environment:
     Represents a type environment containing the variables.
     """
 
-    _elements: Dict[str, Type]
+    _elements: Dict[str, Type]  # actually a frozendict
 
     @classmethod
     def empty(cls):
-        return cls({})
+        return cls(frozendict())
 
 
 @dataclass(frozen=True, eq=True)
