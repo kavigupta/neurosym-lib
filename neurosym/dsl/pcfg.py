@@ -22,7 +22,9 @@ class PCFGPattern:
             for sym, children in rules:
                 assert arities[symbol_to_idx[sym]] is None
                 arities[symbol_to_idx[sym]] = len(children)
-        assert all(x is not None for x in arities)
+        assert all(
+            x is not None for x in arities
+        ), f"No arities for symbols {[sym for sym, ar in zip(symbols, arities) if ar is None]}"
         valid_mask = np.zeros(
             (len(symbols), max(arities), len(symbols)), dtype=np.bool_
         )
