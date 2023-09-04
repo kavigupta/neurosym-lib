@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Tuple
 
-from neurosym.types.type_with_environment import TypeWithEnvironment
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -35,7 +35,7 @@ class DSL:
         """
         return self.get_production(sym).type_signature().arity()
 
-    def expansions_for_type(self, type: Type) -> List[SExpression]:
+    def expansions_for_type(self, type: TypeWithEnvironment) -> List[SExpression]:
         """
         Possible expansions for the given type.
 
@@ -92,7 +92,9 @@ class DSL:
             [self.compute_on_pytorch(child) for child in program.children],
         )
 
-    def all_rules(self, *target_types) -> Dict[Type, List[Tuple[str, List[Type]]]]:
+    def all_rules(
+        self, *target_types: Tuple[Type]
+    ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
         that can be expanded, and the values are a list of tuples of the form
@@ -101,6 +103,7 @@ class DSL:
 
         This is useful for generating a PCFG.
         """
+        # TODO(KG) figure out how to add variables properly
         types_to_expand = list(target_types)
         rules = {}
         while len(types_to_expand) > 0:
@@ -109,9 +112,12 @@ class DSL:
                 continue
             rules[type] = []
             for production in self.productions:
-                types = production.type_signature().unify_return(type)
+                types = production.type_signature().unify_return(
+                    TypeWithEnvironment(type, Environment.empty())
+                )
                 if types is None:
                     continue
+                types = [x.typ for x in types]
                 rules[type].append((production.symbol(), types))
                 types_to_expand.extend(types)
         return rules

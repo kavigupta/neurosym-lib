@@ -4,6 +4,7 @@ from typing import Callable
 
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 
 from ..dsl.dsl import DSL
@@ -40,7 +41,8 @@ class DSLSearchGraph(SearchGraph, ABC):
 
     def initial_node(self):
         return DSLSearchNode(
-            Hole.of(self.target_type), self.metadata_computer.for_initial_node()
+            Hole.of(TypeWithEnvironment(self.target_type, Environment.empty())),
+            self.metadata_computer.for_initial_node(),
         )
 
     def expand_node(self, node):
@@ -49,7 +51,7 @@ class DSLSearchGraph(SearchGraph, ABC):
         # relevant_productions[hole_idx] : list of expansions for holes[hole_idx]
         relevant_productions = {}
         for hole in relevant_holes:
-            relevant_productions[hole] = self.dsl.expansions_for_type(hole.type)
+            relevant_productions[hole] = self.dsl.expansions_for_type(hole.twe)
         for hole_set in hole_sets:
             hole_set = sorted(hole_set)
             for hole_replacements in itertools.product(

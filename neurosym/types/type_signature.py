@@ -12,7 +12,7 @@ class TypeSignature(ABC):
     """
 
     @abstractmethod
-    def unify_return(self, type: Type) -> List[Type]:
+    def unify_return(self, type: TypeWithEnvironment) -> List[TypeWithEnvironment]:
         """
         Returns a list of types, one for each of the arguments, or None
         if the type cannot be unified.
@@ -61,9 +61,9 @@ class ConcreteTypeSignature(TypeSignature):
         assert isinstance(type, ArrowType)
         return cls(list(type.input_type), type.output_type)
 
-    def unify_return(self, type: Type) -> List[Type]:
-        if type == self.return_type:
-            return self.arguments
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+        if twe.typ == self.return_type:
+            return [TypeWithEnvironment(t, twe.env) for t in self.arguments]
         else:
             return None
 

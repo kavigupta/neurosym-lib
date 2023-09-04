@@ -3,18 +3,19 @@ from typing import List
 
 
 from .s_expression import SExpression
-from ..types.type import Type
+from ..types.type_with_environment import TypeWithEnvironment
 
 
 @dataclass(eq=True, frozen=True)
 class Hole:
     @classmethod
-    def of(cls, type: Type) -> "Hole":
+    def of(cls, twe: TypeWithEnvironment) -> "Hole":
+        assert isinstance(twe, TypeWithEnvironment)
         cls._id = getattr(cls, "_id", 0) + 1
-        return cls(id=cls._id, type=type)
+        return cls(id=cls._id, twe=twe)
 
     id: int
-    type: Type
+    twe: TypeWithEnvironment
 
 
 def replace_holes(
