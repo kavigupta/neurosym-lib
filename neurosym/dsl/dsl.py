@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
+
+from neurosym.types.type_with_environment import TypeWithEnvironment
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -129,7 +131,11 @@ class DSL:
                 f"{target_types}"
             )
 
-    def compute_type(self, program: SExpression, lookup=lambda x: None) -> Type:
+    def compute_type(
+        self,
+        program: SExpression,
+        lookup: Callable[[SExpression], TypeWithEnvironment] = lambda x: None,
+    ) -> TypeWithEnvironment:
         """
         Computes the type of the given program.
         """

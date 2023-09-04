@@ -36,7 +36,7 @@ def compute_abstraction_production(
         lambda x: type_arguments[x.index]
         if isinstance(x, AbstractionIndexParameter)
         else None,
-    )
+    ).typ
     type_signature = ConcreteTypeSignature(type_arguments, type_out)
 
     return AbstractionProduction(abstr.name, type_signature, body_se)

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 from neurosym.types.type import ArrowType, Type
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 
 class TypeSignature(ABC):
@@ -18,7 +19,7 @@ class TypeSignature(ABC):
         """
 
     @abstractmethod
-    def unify_arguments(self, types: List[Type]) -> Type:
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         """
         Returns the return type of the function, or None if the types
         cannot be unified.
@@ -66,9 +67,13 @@ class ConcreteTypeSignature(TypeSignature):
         else:
             return None
 
-    def unify_arguments(self, types: List[Type]) -> Type:
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
+        types = [x.typ for x in twes]
+        envs = [x.env for x in twes]
+        env = envs[0] if envs else Environment.empty()
+        assert all(envs[0] == env for env in envs)
         if list(types) == list(self.arguments):
-            return self.return_type
+            return TypeWithEnvironment(self.return_type, env)
         else:
             return None
 
