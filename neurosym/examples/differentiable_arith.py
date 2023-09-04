@@ -12,57 +12,25 @@ DSL of the form:
 """
 import torch
 import torch.nn as nn
-from ..dsl.production import ConcreteProduction, ParameterizedProduction
-from ..dsl.dsl import DSL
+
+from neurosym.dsl.dsl_factory import DSLFactory
 from ..types.type import AtomicType, ListType
-from ..types.type_signature import ConcreteTypeSignature
-
-
-float_type = AtomicType("float")
-linear_obj_type = AtomicType("LinearObj")
-list_float_type = ListType(float_type)
 
 
 def differentiable_arith_dsl(length):
-    return DSL(
-        [
-            ConcreteProduction(
-                "one", ConcreteTypeSignature([], float_type), lambda: torch.tensor(1.0)
-            ),
-            ConcreteProduction(
-                "ones",
-                ConcreteTypeSignature([], list_float_type),
-                lambda: torch.ones(length),
-            ),
-            ConcreteProduction(
-                "int_int_add",
-                ConcreteTypeSignature([float_type, float_type], float_type),
-                lambda x, y: x + y,
-            ),
-            ConcreteProduction(
-                "Tint_int_add",
-                ConcreteTypeSignature([list_float_type, float_type], list_float_type),
-                lambda x, y: x + y,
-            ),
-            ConcreteProduction(
-                "Tint_Tint_add",
-                ConcreteTypeSignature(
-                    [list_float_type, list_float_type], list_float_type
-                ),
-                lambda x, y: x + y,
-            ),
-            ConcreteProduction(
-                "Tint_linear",
-                ConcreteTypeSignature(
-                    [linear_obj_type, list_float_type], list_float_type
-                ),
-                lambda f, x: f(x),
-            ),
-            ParameterizedProduction(
-                "Linear_c",
-                ConcreteTypeSignature([], linear_obj_type),
-                lambda linear: linear,
-                dict(linear=lambda: nn.Linear(length, length)),
-            ),
-        ]
+    dslf = DSLFactory(L=length)
+    dslf.concrete("one", "() -> f", lambda: torch.tensor(1.0))
+    dslf.concrete("ones", "() -> {f, $L}", lambda: torch.ones(length))
+    dslf.concrete("int_int_add", "(f, f) -> f", lambda x, y: x + y)
+    dslf.concrete("Tint_int_add", "({f, $L}, f) -> {f, $L}", lambda x, y: x + y)
+    dslf.concrete("Tint_Tint_add", "({f, $L}, {f, $L}) -> {f, $L}", lambda x, y: x + y)
+    dslf.concrete(
+        "app_Tint", "({f, $L} -> {f, $L}, {f, $L}) -> {f, $L}", lambda f, x: f(x)
     )
+    dslf.parameterized(
+        "Linear_c",
+        "() -> {f, $L} -> {f, $L}",
+        lambda linear: linear,
+        dict(linear=lambda: nn.Linear(length, length)),
+    )
+    return dslf.finalize()
