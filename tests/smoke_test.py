@@ -10,15 +10,16 @@ from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 
-from neurosym.examples.basic_arith import basic_arith_dsl, int_type
+from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
+from neurosym.types.type_string_repr import parse_type
 
 
 class TestSmoke(unittest.TestCase):
     def test_bfs(self):
         g = DSLSearchGraph(
             basic_arith_dsl,
-            int_type,
+            parse_type("i"),
             ChooseFirst(),
             lambda x: basic_arith_dsl.compute_on_pytorch(
                 basic_arith_dsl.initialize(x.program)
@@ -53,7 +54,7 @@ class TestSmoke(unittest.TestCase):
     def test_astar(self):
         g = DSLSearchGraph(
             basic_arith_dsl,
-            int_type,
+            parse_type("i"),
             ChooseFirst(),
             lambda x: basic_arith_dsl.compute_on_pytorch(
                 basic_arith_dsl.initialize(x.program)

@@ -18,7 +18,6 @@ from ..types.type import AtomicType, ListType
 from ..types.type_signature import ConcreteTypeSignature
 
 
-# int_type = AtomicType("int")
 float_type = AtomicType("float")
 linear_obj_type = AtomicType("LinearObj")
 list_float_type = ListType(float_type)
