@@ -24,9 +24,7 @@ class NeuralDSL(DSL):
     type_to_symbol: Dict[Type, str]
 
     @classmethod
-    def from_dsl(
-        cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]
-    ):
+    def from_dsl(cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
 

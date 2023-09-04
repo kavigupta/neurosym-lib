@@ -43,11 +43,12 @@ class TestNEARExample(unittest.TestCase):
         datamodule: DatasetWrapper = dataset_gen(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         dsl = example_rnn_dsl(input_dim, output_dim)
-        trainer_cfg = NEARTrainerConfig(max_seq_len=100, 
-                                        n_epochs=10,
-                                        num_labels=output_dim,
-                                        train_steps=len(datamodule.train),
-                                        )
+        trainer_cfg = NEARTrainerConfig(
+            max_seq_len=100,
+            n_epochs=10,
+            num_labels=output_dim,
+            train_steps=len(datamodule.train),
+        )
 
         t = TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
@@ -99,9 +100,7 @@ class TestNEARExample(unittest.TestCase):
 
         g = near_graph(
             neural_dsl,
-            parse_type(
-                s="({f, $L}) -> {f, $O}", env=dict(L=input_dim, O=output_dim)
-            ),
+            parse_type(s="({f, $L}) -> {f, $O}", env=dict(L=input_dim, O=output_dim)),
             is_goal=checker,
         )
         # succeed if this raises StopIteration

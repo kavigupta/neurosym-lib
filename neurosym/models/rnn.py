@@ -63,10 +63,12 @@ class Seq2ClassRNN(RNN):
     def forward(self, input: torch.Tensor, hidden: torch.Tensor = None):
         return self.seq2class(input, hidden)
 
+
 def rnn_factory_seq2seq(**kwargs):
     """
     Allows instantiating an MLP module with a given input and output size.
     """
+
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
         assert len(input_shape) == 1, "MLP takes a single input only."
         input_size = input_shape[0][-1]
@@ -78,12 +80,15 @@ def rnn_factory_seq2seq(**kwargs):
             **kwargs,
         )
         return Seq2SeqRNN(cfg)
+
     return construct_model
+
 
 def rnn_factory_seq2class(**kwargs):
     """
     Allows instantiating an MLP module with a given input and output size.
     """
+
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
         assert len(input_shape) == 1, "MLP takes a single input only."
         input_size = input_shape[0][-1]
@@ -95,4 +100,5 @@ def rnn_factory_seq2class(**kwargs):
             **kwargs,
         )
         return Seq2ClassRNN(cfg)
+
     return construct_model
