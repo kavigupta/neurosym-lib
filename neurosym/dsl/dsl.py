@@ -148,25 +148,6 @@ class DSL:
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
 
-    def collect_types_of_unknown_productions(
-        self, program_type: Type, program: SExpression
-    ) -> List[Tuple[SExpression, Type]]:
-        """
-        Returns a list of (program, type) pairs, where each program
-            does not have a production in the DSL, and the type is the type of the
-            program, as inferred by the signatures of the productions in the DSL
-            that surround it.
-        """
-        if program.symbol not in self._production_by_symbol:
-            return [(program, program_type)]
-        prod = self.get_production(program.symbol)
-        child_types = prod.type_signature().unify_return(program_type)
-        assert child_types is not None
-        result = []
-        for child_type, child in zip(child_types, program.children):
-            result.extend(self.collect_types_of_unknown_productions(child_type, child))
-        return result
-
     def render(self) -> str:
         """
         Render this DSL as a string.
