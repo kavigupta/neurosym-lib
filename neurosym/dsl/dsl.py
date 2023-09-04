@@ -148,13 +148,6 @@ class DSL:
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
 
-    def children_types(self, program_type: Type, program: SExpression) -> List[Type]:
-        """
-        Returns the types of the children of the given program.
-        """
-        prod = self.get_production(program.symbol)
-        return prod.type_signature().unify_return(program_type)
-
     def collect_types_of_unknown_productions(
         self, program_type: Type, program: SExpression
     ) -> List[Tuple[SExpression, Type]]:
