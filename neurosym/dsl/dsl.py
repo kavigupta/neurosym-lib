@@ -159,3 +159,6 @@ class DSL:
         Render this DSL as a string.
         """
         return "\n".join(production.render() for production in self.productions)
+
+    def add_production(self, prod):
+        return DSL(self.productions + [prod])

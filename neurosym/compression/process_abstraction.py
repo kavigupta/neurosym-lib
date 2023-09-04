@@ -88,7 +88,7 @@ def single_step_compression(dsl, programs):
     prod = compute_abstraction_production(dsl, user, abstr)
     rewritten = stitch_core.rewrite(rendered, [abstr]).rewritten
     rewritten = [parse_s_expression(x, {abstr.name}) for x in rewritten]
-    dsl2 = DSL(dsl.productions + [prod])
+    dsl2 = dsl.add_production(prod)
     return dsl2, rewritten
 
 
