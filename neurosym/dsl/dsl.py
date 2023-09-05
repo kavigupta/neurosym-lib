@@ -22,6 +22,10 @@ class DSL:
             assert (
                 production.symbol() not in symbols
             ), f"Duplicate symbol {production.symbol()}"
+            if production.symbol().startswith("lam"):
+                raise ValueError(
+                    f"Symbol {production.symbol()} starts with lam, which is reserved"
+                )
             symbols.add(production.symbol())
         self._production_by_symbol = {
             production.symbol(): production for production in self.productions
