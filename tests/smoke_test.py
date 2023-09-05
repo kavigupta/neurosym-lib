@@ -14,17 +14,16 @@ from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
 
+dsl = basic_arith_dsl()
+
 
 class TestSmoke(unittest.TestCase):
     def test_bfs(self):
         g = DSLSearchGraph(
-            basic_arith_dsl,
+            dsl,
             parse_type("i"),
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(
-                basic_arith_dsl.initialize(x.program)
-            )
-            == 4,
+            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
             metadata_computer=NoMetadataComputer(),
         )
         node = next(bfs(g)).program
@@ -53,13 +52,10 @@ class TestSmoke(unittest.TestCase):
 
     def test_astar(self):
         g = DSLSearchGraph(
-            basic_arith_dsl,
+            dsl,
             parse_type("i"),
             ChooseFirst(),
-            lambda x: basic_arith_dsl.compute_on_pytorch(
-                basic_arith_dsl.initialize(x.program)
-            )
-            == 4,
+            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
             metadata_computer=NoMetadataComputer(),
         )
 
