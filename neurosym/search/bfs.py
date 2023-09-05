@@ -1,7 +1,7 @@
 from neurosym.search_graph.search_graph import SearchGraph
 
 
-def bfs(g: SearchGraph):
+def bfs(g: SearchGraph, iteration_limit=float("inf")):
     """
     Performs a breadth-first search on the given search graph, yielding each node in the
     order it was visited.
@@ -12,6 +12,9 @@ def bfs(g: SearchGraph):
     queue = [g.initial_node()]
     while queue:
         node = queue.pop(0)
+        iteration_limit -= 1
+        if iteration_limit < 0:
+            break
         if node in visited:
             continue
         visited.add(node)
