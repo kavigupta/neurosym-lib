@@ -19,13 +19,14 @@ class Environment:
         return cls(frozendict())
 
     def child(self, *new_typs: Tuple[Type]):
-        result = {i + len(new_typs) : typ for i, typ in self._elements.items()}
+        result = {i + len(new_typs): typ for i, typ in self._elements.items()}
         for i, new_typ in enumerate(new_typs):
             result[i] = new_typ
         return Environment(frozendict(result))
 
     def __len__(self):
         return max(self._elements) + 1
+
 
 @dataclass(frozen=True, eq=True)
 class TypeWithEnvironment:
