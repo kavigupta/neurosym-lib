@@ -1,5 +1,8 @@
+from typing import Tuple
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
+from neurosym.dsl.variable_system import LambdasVariableSystem, NoVariables
+from neurosym.types.type import Type
 from neurosym.types.type_string_repr import TypeDefiner
 
 
@@ -20,12 +23,18 @@ class DSLFactory:
     def __init__(self, **env):
         self.t = TypeDefiner(**env)
         self.productions = []
+        self.variable_system = NoVariables()
 
     def typedef(self, key, type_str):
         """
         Define a type.
         """
         self.t.typedef(key, type_str)
+
+    def lambdas(self, lambda_arity_limit: int = 2, num_variable_limit: int = 3):
+        self.variable_system = LambdasVariableSystem(
+            lambda_arity_limit=lambda_arity_limit, num_variable_limit=num_variable_limit
+        )
 
     def concrete(self, symbol, type_str, fn):
         """
@@ -56,4 +65,4 @@ class DSLFactory:
         """
         Finalize the DSL.
         """
-        return DSL(self.productions)
+        return DSL(self.productions, self.variable_system)
