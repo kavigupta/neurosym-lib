@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Tuple
+from neurosym.dsl.variable_system import VariableSystem
 
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
@@ -13,7 +14,7 @@ from .production import Production
 @dataclass
 class DSL:
     productions: List[Production]
-    # variable_system: VariableSystem TODO(KG) add this
+    variable_system: VariableSystem
 
     def __post_init__(self):
         symbols = set()
@@ -21,6 +22,10 @@ class DSL:
             assert (
                 production.symbol() not in symbols
             ), f"Duplicate symbol {production.symbol()}"
+            if production.symbol().startswith("lam"):
+                raise ValueError(
+                    f"Symbol {production.symbol()} starts with lam, which is reserved"
+                )
             symbols.add(production.symbol())
         self._production_by_symbol = {
             production.symbol(): production for production in self.productions
@@ -52,6 +57,7 @@ class DSL:
                         tuple(Hole.of(t) for t in arg_types),
                     )
                 )
+        result += self.variable_system.lambdas_for_type(type)
         return result
 
     def get_production(self, symbol: str) -> Production:
@@ -161,4 +167,4 @@ class DSL:
         return "\n".join(production.render() for production in self.productions)
 
     def add_production(self, prod):
-        return DSL(self.productions + [prod])
+        return DSL(self.productions + [prod], self.variable_system)
