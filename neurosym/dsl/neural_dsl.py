@@ -65,7 +65,7 @@ class NeuralDSL(DSL):
         Returns a production that can be used to fill the given hole.
         """
         return SExpression(
-            self.type_to_symbol[hole.type],
+            self.type_to_symbol[hole.twe.typ],
             [],
         )
 
