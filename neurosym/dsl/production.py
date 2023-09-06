@@ -65,7 +65,12 @@ class ConcreteProduction(Production):
     def compute_on_pytorch(self, dsl, state, inputs):
         del dsl
         assert state == {}
-        return self._compute_on_pytorch(*inputs)
+        try:
+            return self._compute_on_pytorch(*inputs)
+        except TypeError:
+            raise TypeError(
+                f"Error computing {self._symbol} on inputs {inputs} with state {state}"
+            )
 
     def render(self):
         return f"{self._symbol:>15} :: {self._type_signature.render()}"

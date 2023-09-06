@@ -58,7 +58,7 @@ class NeuralDSL(DSL):
 
         productions = dsl.productions + partial_productions
 
-        return cls(productions=productions, type_to_symbol=type_to_symbol)
+        return cls(productions=productions, variable_system=dsl.variable_system, type_to_symbol=type_to_symbol)
 
     def get_partial_program(self, hole: Hole) -> Production:
         """

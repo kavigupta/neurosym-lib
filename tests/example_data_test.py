@@ -104,7 +104,7 @@ class TestNEARExample(unittest.TestCase):
             is_goal=checker,
         )
         # succeed if this raises StopIteration
-        node = next(bounded_astar(g, validation_cost, max_depth=7))
+        node = next(bounded_astar(g, validation_cost, max_depth=10))
         print(node)
 
     def test_dsl(self):
@@ -142,7 +142,7 @@ class TestNEARExample(unittest.TestCase):
 
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
-            next(bounded_astar(g, cost, max_depth=7)).program
+            next(bounded_astar(g, cost, max_depth=10)).program
 
     def synthetic_test_near_astar(self):
         self.maxDiff = None

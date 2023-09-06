@@ -44,7 +44,7 @@ def example_rnn_dsl(length, out_length):
     dslf.concrete(
         "fold",
         "(($fL, $fL) -> $fL) -> ([$fL]) -> $fL",
-        lambda: lambda f: lambda x: fold_torch(f, x),
+        lambda f: lambda x: fold_torch(f, x),
     )
     dslf.concrete(
         "Sum",
@@ -66,7 +66,7 @@ def example_rnn_dsl(length, out_length):
     dslf.concrete(
         "Tfloat_ITE",
         "(([$fL]) -> f, ([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
-        lambda: lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
     dslf.concrete(
         "Map",
