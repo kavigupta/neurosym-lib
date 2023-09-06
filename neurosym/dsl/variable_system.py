@@ -25,7 +25,6 @@ class NoVariables(VariableSystem):
 
 @dataclass
 class LambdasVariableSystem(VariableSystem):
-
     lambda_arity_limit: int
     num_variable_limit: int
 
