@@ -65,6 +65,11 @@ class NEARTrainer(BaseTrainer):
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
+        if len(predictions.shape) == 3 and self.config.loss_fn == "CrossEntropyLoss":
+            "Handling seq2seq classification loss."
+            assert len(targets.shape) == 2, "Targets must be 2D for classification"
+            predictions = predictions.view(-1, predictions.shape[-1])
+            targets = targets.view(-1)
         loss = self.loss_fn(predictions, targets)
         return loss
 
