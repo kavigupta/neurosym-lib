@@ -63,6 +63,8 @@ def example_rnn_dsl(length, out_length):
         lambda f, linear: lambda x: linear(f(x)),
         dict(linear=lambda: nn.Linear(length, out_length)),
     )
+    # This is causing an issue. The inner program (f) has a output shape of out_length.
+    # The type system is not filtering out programs that have the wrong output dim.
     dslf.concrete(
         "Tfloat_ITE",
         "(([$fL]) -> f, ([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
