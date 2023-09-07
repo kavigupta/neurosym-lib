@@ -14,6 +14,7 @@ from neurosym.search.bounded_astar import bounded_astar
 from neurosym.examples.example_rnn_dsl import (
     example_rnn_dsl,
 )
+from neurosym.models.torch_program_module import TorchProgramModule
 import torch
 
 from neurosym.types.type import ArrowType, ListType, TensorType, float_t
@@ -49,7 +50,6 @@ class TestNEARExample(unittest.TestCase):
             num_labels=output_dim,
             train_steps=len(datamodule.train),
         )
-
         t = TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
@@ -84,28 +84,42 @@ class TestNEARExample(unittest.TestCase):
             )
             initialized_p = neural_dsl.initialize(node.program)
             model = neural_dsl.compute_on_pytorch(initialized_p)
+            if not isinstance(model, torch.nn.Module):
+                del model
+                del initialized_p
+                model = TorchProgramModule(dsl=neural_dsl, program=node.program)
             pl_model = NEARTrainer(model, config=trainer_cfg)
             trainer.fit(
                 pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
             )
             return trainer.callback_metrics["val_loss"].item()
 
-        def checker(x):
+        def checker(node):
             """
             In NEAR, any program that has no holes is valid.
             The hole checking is done before this function will
             be called so we can assume that the program has no holes.
             """
-            return True
+            return "__neural_dsl_internal_" not in str(node.program.symbol)
 
         g = near_graph(
             neural_dsl,
-            parse_type(s="({f, $L}) -> {f, $O}", env=dict(L=input_dim, O=output_dim)),
+            parse_type(s="([{f, $L}]) -> [{f, $O}]", env=dict(L=input_dim, O=output_dim)),
             is_goal=checker,
         )
         # succeed if this raises StopIteration
-        node = next(bounded_astar(g, validation_cost, max_depth=10))
-        print(node)
+        with pytest.raises(StopIteration):
+            n_iter = 0
+            iterator = bounded_astar(g, validation_cost, max_depth=1000)
+            while True:
+                print("iteration: ", n_iter)
+                n_iter += 1
+                node = next(iterator)
+                self.assertIsNotNone(node)
+                
+
+        
+
 
     def test_dsl(self):
         """
