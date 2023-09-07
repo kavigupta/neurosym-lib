@@ -37,7 +37,7 @@ class RNN(nn.Module):
         :return out : (batch_size, output_size)
         """
         b, s, _ = x.shape
-        h0 = torch.zeros(1, b, self.hidden_size) if hidden is None else hidden
+        h0 = torch.zeros(1, b, self.hidden_size, device=x.device) if hidden is None else hidden
         out, _ = self.rnn(x, h0)
         out = self.fc(out[:, -1, :])
         return out
@@ -48,7 +48,7 @@ class RNN(nn.Module):
         :return out : (batch_size, seq_length, output_size)
         """
         b, s, _ = x.shape
-        h0 = torch.zeros(1, b, self.hidden_size) if hidden is None else hidden
+        h0 = torch.zeros(1, b, self.hidden_size, device=x.device) if hidden is None else hidden
         out, _ = self.rnn(x, h0)
         out = self.fc(out.contiguous().view(b * s, -1)).view(b, s, -1)
         return out
