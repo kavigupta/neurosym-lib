@@ -76,7 +76,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             self.ordering = np.arange(len(self.inputs))
 
     def get_io_dims(self):
-        return self.inputs.shape[-1], self.outputs.shape[-1]
+        return self.inputs.shape[-1], len(np.unique(self.outputs))
 
     def __len__(self):
         return len(self.inputs)
