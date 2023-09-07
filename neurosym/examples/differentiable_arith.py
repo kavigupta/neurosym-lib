@@ -14,7 +14,6 @@ import torch
 import torch.nn as nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from ..types.type import AtomicType, ListType
 
 
 def differentiable_arith_dsl(length):

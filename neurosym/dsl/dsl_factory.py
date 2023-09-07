@@ -1,8 +1,6 @@
-from typing import Tuple
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
 from neurosym.dsl.variable_system import LambdasVariableSystem, NoVariables
-from neurosym.types.type import Type
 from neurosym.types.type_string_repr import TypeDefiner
 
 

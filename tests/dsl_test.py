@@ -1,7 +1,6 @@
 import unittest
 
 from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.types.type import AtomicType
 from neurosym.types.type_string_repr import TypeDefiner
 
 

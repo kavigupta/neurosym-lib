@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
 
-from neurosym.types.type import ArrowType, Type
+from neurosym.types.type import ArrowType
 from neurosym.types.type_with_environment import TypeWithEnvironment
 
 
