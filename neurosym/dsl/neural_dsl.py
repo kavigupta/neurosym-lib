@@ -5,7 +5,7 @@ from neurosym.types.type_signature import ConcreteTypeSignature
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import Type, ArrowType
+from ..types.type import ListType, TensorType, Type, ArrowType
 from torch import nn
 
 from .production import Production, ParameterizedProduction
@@ -102,6 +102,14 @@ def compute_io_shape(t):
     assert isinstance(t, ArrowType)
     input_types = t.input_type
     output_type = t.output_type
-    input_shape = [t.shape for t in input_types]
-    output_shape = output_type.shape
+    def get_shape(t):
+        match t:
+            case TensorType(_, shape):
+                return shape
+            case ListType(element_type):
+                return get_shape(element_type)
+            case _:
+                raise NotImplementedError(f"Cannot compute shape for type {t}")
+    input_shape = [get_shape(t) for t in input_types]
+    output_shape = get_shape(output_type)
     return input_shape, output_shape
