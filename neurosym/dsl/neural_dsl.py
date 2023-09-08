@@ -111,6 +111,7 @@ def compute_io_shape(t):
     assert isinstance(t, ArrowType)
     input_types = t.input_type
     output_type = t.output_type
+
     def get_shape(t):
         match t:
             case TensorType(_, shape):
@@ -119,6 +120,7 @@ def compute_io_shape(t):
                 return get_shape(element_type)
             case _:
                 raise NotImplementedError(f"Cannot compute shape for type {t}")
+
     input_shape = [get_shape(t) for t in input_types]
     output_shape = get_shape(output_type)
     return input_shape, output_shape

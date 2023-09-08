@@ -107,8 +107,9 @@ class TestNEARExample(unittest.TestCase):
 
         g = near_graph(
             neural_dsl,
-            parse_type(s="([{f, $L}]) -> [{f, $O}]", env=dict(L=input_dim,
-                                                              O=output_dim)),
+            parse_type(
+                s="([{f, $L}]) -> [{f, $O}]", env=dict(L=input_dim, O=output_dim)
+            ),
             is_goal=checker,
         )
         # succeed if this raises StopIteration
