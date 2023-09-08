@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict
+from typing import Callable, Dict, Tuple
 
 from neurosym.types.type_signature import ConcreteTypeSignature
 
@@ -24,7 +24,9 @@ class NeuralDSL(DSL):
     type_to_symbol: Dict[Type, str]
 
     @classmethod
-    def from_dsl(cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]):
+    def from_dsl(
+        cls, dsl: DSL, modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
+    ):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
 
@@ -32,7 +34,7 @@ class NeuralDSL(DSL):
 
         Args:
             dsl: The DSL to extend.
-            modules: A dictionary mapping types to functions that
+            modules: A dictionary mapping types to tags and functions that
                 are used to initialize the modules for that type.
 
         Returns:
@@ -41,11 +43,13 @@ class NeuralDSL(DSL):
         partial_productions = []
         type_to_symbol = {}
 
-        for fn_type, module_template in modules.items():
+        count_by_tag = {}
+        for fn_type, (tag, module_template) in modules.items():
             assert isinstance(
                 fn_type, ArrowType
             ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
-            identifier = "__neural_dsl_internal_{t}".format(t=fn_type)
+            count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
+            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
             module_c_prod = ParameterizedProduction(
                 identifier,
@@ -88,8 +92,13 @@ class NeuralDSL(DSL):
         return super().initialize(prog)
 
 
-def create_modules(types, module_factory):
-    return {t: lambda: module_factory(*compute_io_shape(t)) for t in types}
+def create_module_for_type(module_factory, t):
+    shape = compute_io_shape(t)
+    return lambda: module_factory(*shape)
+
+
+def create_modules(tag, types, module_factory):
+    return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
 
 
 def compute_io_shape(t):

@@ -57,14 +57,17 @@ class TestNEARExample(unittest.TestCase):
             dsl=dsl,
             modules={
                 **create_modules(
+                    "mlp",
                     [t("($fL) -> $fL"), t("($fL) -> $fO")],
                     mlp_factory(hidden_size=10),
                 ),
                 **create_modules(
+                    "rnn_seq2seq",
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
                     rnn_factory_seq2seq(hidden_size=10),
                 ),
                 **create_modules(
+                    "rnn_seq2class",
                     [t("([$fL]) -> f"), t("([$fL]) -> $fO")],
                     rnn_factory_seq2class(hidden_size=10),
                 ),
