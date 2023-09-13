@@ -8,6 +8,7 @@ from neurosym.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
 from neurosym.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
 from neurosym.near.near_graph import near_graph
 from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression_render import symbols
 
 from neurosym.search.bounded_astar import bounded_astar
 
@@ -43,7 +44,7 @@ class TestNEARExample(unittest.TestCase):
         )
         datamodule: DatasetWrapper = dataset_gen(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
-        dsl = example_rnn_dsl(input_dim, output_dim)
+        original_dsl = example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = NEARTrainerConfig(
             max_seq_len=100,
             n_epochs=10,
@@ -54,7 +55,7 @@ class TestNEARExample(unittest.TestCase):
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
         neural_dsl = NeuralDSL.from_dsl(
-            dsl=dsl,
+            dsl=original_dsl,
             modules={
                 **create_modules(
                     "mlp",
@@ -103,7 +104,7 @@ class TestNEARExample(unittest.TestCase):
             The hole checking is done before this function will
             be called so we can assume that the program has no holes.
             """
-            return "__neural_dsl_internal_" not in str(node.program.symbol)
+            return set(symbols(node.program)) - set(original_dsl.symbols()) == set()
 
         g = near_graph(
             neural_dsl,
