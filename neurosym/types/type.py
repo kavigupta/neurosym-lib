@@ -1,10 +1,20 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple
 
 
 class Type(ABC):
-    pass
+    @abstractmethod
+    def walk_type_nodes(self):
+        """
+        Walk the type tree and yield all nodes.
+        """
+
+    def is_atomic(self):
+        """
+        Return True if the type is atomic.
+        """
+        return len(list(self.walk_type_nodes())) == 1
 
 
 @dataclass(frozen=True, eq=True)
@@ -13,6 +23,9 @@ class AtomicType(Type):
 
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
+
+    def walk_type_nodes(self):
+        yield self
 
 
 @dataclass(frozen=True, eq=True)
@@ -24,6 +37,10 @@ class TensorType(Type):
     dtype: Type
     shape: Tuple[int]
 
+    def walk_type_nodes(self):
+        # is atomic. we do not consider the dtype and shape as nodes.
+        yield self
+
 
 @dataclass(frozen=True, eq=True)
 class ListType(Type):
@@ -32,6 +49,10 @@ class ListType(Type):
     """
 
     element_type: Type
+
+    def walk_type_nodes(self):
+        yield self
+        yield from self.element_type.walk_type_nodes()
 
 
 @dataclass(frozen=True, eq=True)
@@ -45,6 +66,12 @@ class ArrowType(Type):
 
     def __post_init__(self):
         assert isinstance(self.input_type, tuple), "input_type must be a tuple"
+
+    def walk_type_nodes(self):
+        yield self
+        for t in self.input_type:
+            yield from t.walk_type_nodes()
+        yield from self.output_type.walk_type_nodes()
 
 
 float_t = AtomicType("f")
