@@ -21,16 +21,6 @@ from neurosym.operations.basic import ite_torch
 from neurosym.operations.lists import fold_torch, map_torch
 
 
-class FunctionModule(nn.Module):
-    def __init__(self, *arg_modules, _fn):
-        super().__init__()
-        self.arg_modules = nn.ModuleList(arg_modules)
-        self.fn = _fn
-
-    def forward(self, *args):
-        return self.fn(*args)
-
-
 def example_rnn_dsl(length, out_length):
     dslf = DSLFactory(L=length, O=out_length)
     dslf.typedef("fL", "{f, $L}")
