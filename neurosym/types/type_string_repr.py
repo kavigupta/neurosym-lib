@@ -1,4 +1,10 @@
-from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, TypeVariable
+from neurosym.types.type import (
+    ArrowType,
+    AtomicType,
+    ListType,
+    TensorType,
+    TypeVariable,
+)
 from neurosym.types.type_signature import ConcreteTypeSignature
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
@@ -23,7 +29,7 @@ def render_type(t):
     if isinstance(t, AtomicType):
         return t.name
     if isinstance(t, TypeVariable):
-        return "#"+t.name
+        return "#" + t.name
     elif isinstance(t, TensorType):
         return "{" + ", ".join([render_type(t.dtype), *map(str, t.shape)]) + "}"
     elif isinstance(t, ListType):
