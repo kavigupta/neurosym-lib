@@ -125,9 +125,7 @@ def expansions(
     if not sig.has_type_vars():
         yield sig
         return
-    ty_vars = sig.get_type_vars()
-    # print(sig.render())
-    # print(len(ty_vars), len(expand_to), len(expand_to) ** len(ty_vars))
+    ty_vars = sorted(sig.get_type_vars())
     for type_assignment in product(expand_to, repeat=len(ty_vars)):
         substitution = {}
         for ty_var, ty in zip(ty_vars, type_assignment):
@@ -136,7 +134,7 @@ def expansions(
                 # then we replace these with a name unique to this outer `ty_var`
                 # We do this replacement with another substitution
                 inner_substitution = {}
-                for inner_ty_var in ty.get_type_vars():
+                for inner_ty_var in sorted(ty.get_type_vars()):
                     fresh = ty_var + "_" + inner_ty_var
                     assert (
                         fresh not in ty_vars

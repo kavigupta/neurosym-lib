@@ -93,6 +93,10 @@ class DSLFactory:
                 if isinstance(t, ListType):
                     has_list = True
 
+
+        atomic_types = sorted(atomic_types, key=render_type)
+        num_arrow_args = sorted(num_arrow_args)
+
         expand_to = []
 
         fresh_var = 0
