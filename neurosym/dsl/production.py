@@ -77,6 +77,29 @@ class ConcreteProduction(Production):
 
 
 @dataclass
+class LambdaProduction(Production):
+    arity: int
+
+    def symbol(self):
+        return f"lam{self.arity}"
+
+    def type_signature(self) -> TypeSignature:
+        return LambdaTypeSignature(self.arity)
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def compute_on_pytorch(self, dsl, state, inputs):
+        del dsl
+        assert state == {}
+        return self._compute_on_pytorch(*inputs)
+
+    def render(self):
+        return f"{self._symbol:>15} :: {self._type_signature.render()}"
+
+
+@dataclass
 class ParameterizedProduction(ConcreteProduction):
     _initialize: Dict[str, Callable[[], object]]
 

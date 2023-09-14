@@ -57,7 +57,6 @@ class DSL:
                         tuple(Hole.of(t) for t in arg_types),
                     )
                 )
-        result += self.variable_system.lambdas_for_type(type)
         return result
 
     def get_production(self, symbol: str) -> Production:
