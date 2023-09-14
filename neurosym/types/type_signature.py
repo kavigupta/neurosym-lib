@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
-from neurosym.types.type import ArrowType, Type
+from typing import List, Dict
+from neurosym.types.type import ArrowType, Type, TypeVariable
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from itertools import product
+import numpy as np
 
 
 class TypeSignature(ABC):
@@ -87,3 +89,72 @@ class ConcreteTypeSignature(TypeSignature):
         from neurosym.types.type_string_repr import render_type
 
         return render_type(self.astype())
+
+    def has_type_vars(self):
+        return self.astype().has_type_vars()
+
+    def get_type_vars(self):
+        return self.astype().get_type_vars()
+
+    def subst_type_vars(self, subst: Dict[str, Type]):
+        if not self.has_type_vars():
+            return self
+        return ConcreteTypeSignature(
+            [t.subst_type_vars(subst) for t in self.arguments],
+            self.return_type.subst_type_vars(subst),
+        )
+
+    def depth(self):
+        return self.astype().depth()
+
+
+def expansions(
+    sig: TypeSignature,
+    expand_to: List[Type],
+    max_expansion_steps=np.inf,
+    max_overall_depth=np.inf,
+):
+    """ """
+    assert (
+        min(max_expansion_steps, max_overall_depth) < np.inf
+    ), "must specify either max_expansion_steps or max_overall_depth"
+
+    if sig.depth() > max_overall_depth or max_expansion_steps == 0:
+        return
+
+    if not sig.has_type_vars():
+        yield sig
+        return
+    ty_vars = sig.get_type_vars()
+    # print(sig.render())
+    # print(len(ty_vars), len(expand_to), len(expand_to) ** len(ty_vars))
+    for type_assignment in product(expand_to, repeat=len(ty_vars)):
+        substitution = {}
+        for ty_var, ty in zip(ty_vars, type_assignment):
+            if ty.has_type_vars():
+                # if the type to expand with itself has type vars like `[#a]`
+                # then we replace these with a name unique to this outer `ty_var`
+                # We do this replacement with another substitution
+                inner_substitution = {}
+                for inner_ty_var in ty.get_type_vars():
+                    fresh = ty_var + "_" + inner_ty_var
+                    assert (
+                        fresh not in ty_vars
+                    ), f"fresh type variable name is already in use: {fresh}"
+                    inner_substitution[inner_ty_var] = TypeVariable(fresh)
+                ty = ty.subst_type_vars(inner_substitution)
+            substitution[ty_var] = ty
+        new_sig = sig.subst_type_vars(substitution)
+        if new_sig.has_type_vars():
+            if max_expansion_steps > 0 and new_sig.depth() <= max_overall_depth:
+                # print("recursing at ", new_sig.depth())
+                # print("recursing with", new_sig.render())
+                yield from expansions(
+                    new_sig,
+                    expand_to,
+                    max_expansion_steps=max_expansion_steps - 1,
+                    max_overall_depth=max_overall_depth,
+                )
+        else:
+            if new_sig.depth() <= max_overall_depth:
+                yield new_sig

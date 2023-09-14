@@ -1,4 +1,4 @@
-from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
+from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, TypeVariable
 from neurosym.types.type_signature import ConcreteTypeSignature
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
@@ -22,6 +22,8 @@ class TypeDefiner:
 def render_type(t):
     if isinstance(t, AtomicType):
         return t.name
+    if isinstance(t, TypeVariable):
+        return "#"+t.name
     elif isinstance(t, TensorType):
         return "{" + ", ".join([render_type(t.dtype), *map(str, t.shape)]) + "}"
     elif isinstance(t, ListType):
@@ -76,6 +78,8 @@ def parse_type_from_buf(reversed_buf, env):
         assert tok == "->", f"Expected '->' but got {tok}"
         output_type = parse_type_from_buf(reversed_buf, env)
         return ArrowType(tuple(input_types), output_type)
+    elif first_tok.startswith("#"):
+        return TypeVariable(first_tok[1:])
     else:
         return AtomicType(first_tok)
 
