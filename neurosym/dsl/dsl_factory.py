@@ -3,7 +3,7 @@ from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
 from neurosym.dsl.variable_system import LambdasVariableSystem, NoVariables
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
-from neurosym.types.type_signature import expansions
+from neurosym.types.type_signature import expansions, type_universe
 from neurosym.types.type import ArrowType, ListType
 from neurosym.types.type_string_repr import render_type
 
@@ -26,6 +26,7 @@ class DSLFactory:
         self.t = TypeDefiner(**env)
         self._concrete_productions = []
         self._parameterized_productions = []
+        self._signatures = []
         self.variable_system = NoVariables()
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
@@ -45,117 +46,71 @@ class DSLFactory:
         """
         Add a concrete production to the DSL.
         """
+        sig = self.t.sig(type_str)
         self._concrete_productions.append(
             (
                 symbol,
-                self.t.sig(type_str),
+                sig,
                 fn,
             )
         )
+        self._signatures.append(sig)
 
     def parameterized(self, symbol, type_str, fn, parameters):
         """
         Add a parameterized production to the DSL.
         """
+        sig = self.t.sig(type_str)
         self._parameterized_productions.append(
             (
                 symbol,
-                self.t.sig(type_str),
+                sig,
                 fn,
                 parameters,
             )
         )
+        self._signatures.append(sig)
+
+    def _expansions_for_single_production(
+        self, expand_to, constructor, symbol, sig, *args
+    ):
+        sigs = list(
+            expansions(
+                sig,
+                expand_to,
+                max_expansion_steps=self.max_expansion_steps,
+                max_overall_depth=self.max_overall_depth,
+            )
+        )
+        names = (
+            [f"{symbol}_{i}" for i in range(len(sigs))] if len(sigs) > 1 else [symbol]
+        )
+
+        assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
+
+        for name, expansion in zip(names, sigs):
+            yield constructor(name, expansion, *args)
+
+    def _expansions_for_all_productions(self, expand_to, constructor, args):
+        for arg in args:
+            yield from self._expansions_for_single_production(
+                expand_to, constructor, *arg
+            )
 
     def finalize(self):
         """
         Finalize the DSL.
         """
 
-        # mine the atomic types:
-        atomic_types = set()
-        num_arrow_args = set()
-        has_list = False
-        for symbol, sig, fn in self._concrete_productions:
-            for t in sig.astype().walk_type_nodes():
-                if t.is_atomic():
-                    atomic_types.add(t)
-                if isinstance(t, ArrowType):
-                    num_arrow_args.add(len(t.input_type))
-                if isinstance(t, ListType):
-                    has_list = True
-
-        for symbol, sig, fn, parameters in self._parameterized_productions:
-            for t in sig.astype().walk_type_nodes():
-                if t.is_atomic():
-                    atomic_types.add(t)
-                if isinstance(t, ArrowType):
-                    num_arrow_args.add(len(t.input_type))
-                if isinstance(t, ListType):
-                    has_list = True
-
-
-        atomic_types = sorted(atomic_types, key=render_type)
-        num_arrow_args = sorted(num_arrow_args)
-
-        expand_to = []
-
-        fresh_var = 0
-
-        def fresh():
-            nonlocal fresh_var
-            fresh_var += 1
-            return f"#FRESH{fresh_var}"
-
-        if has_list:
-            expand_to.append(parse_type(f"[{fresh()}]"))
-        for n in num_arrow_args:
-            args = [fresh() for _ in range(n)]
-            expand_to.append(parse_type(f"({','.join(args)}) -> {fresh()}"))
-        for t in atomic_types:
-            expand_to.append(t)
-
-        print("concrete productins: ", len(self._concrete_productions))
-        print("parameterized productions: ", len(self._parameterized_productions))
-        print("expansions to consider:", [render_type(t) for t in expand_to])
+        expand_to = type_universe([x.astype() for x in self._signatures])
 
         productions = []
-        for symbol, sig, fn in self._concrete_productions:
-            if not sig.has_type_vars():
-                productions.append(ConcreteProduction(symbol, sig, fn))
-            else:
-                ran_once = False
-                for i, expansion in enumerate(
-                    expansions(
-                        sig,
-                        expand_to,
-                        max_expansion_steps=self.max_expansion_steps,
-                        max_overall_depth=self.max_overall_depth,
-                    )
-                ):
-                    sym = f"{symbol}_{i}"
-                    productions.append(ConcreteProduction(sym, expansion, fn))
-                    ran_once = True
-                assert ran_once, f"No expansions within depth/step bounds for {symbol}"
-
-        for symbol, sig, fn, parameters in self._parameterized_productions:
-            if not sig.has_type_vars():
-                productions.append(ParameterizedProduction(symbol, sig, fn, parameters))
-            else:
-                ran_once = False
-                for i, expansion in enumerate(
-                    expansions(
-                        sig,
-                        expand_to,
-                        max_expansion_steps=self.max_expansion_steps,
-                        max_overall_depth=self.max_overall_depth,
-                    )
-                ):
-                    sym = f"{symbol}_{i}"
-                    productions.append(
-                        ParameterizedProduction(sym, expansion, fn, parameters)
-                    )
-                    ran_once = True
-                assert ran_once, f"No expansions within depth/step bounds for {symbol}"
+        productions += self._expansions_for_all_productions(
+            expand_to, ConcreteProduction, self._concrete_productions
+        )
+        productions += self._expansions_for_all_productions(
+            expand_to, ParameterizedProduction, self._parameterized_productions
+        )
 
         for p in productions:
             print(p.render())

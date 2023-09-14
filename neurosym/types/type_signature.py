@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Dict
+
+from torch import ListType
 from neurosym.types.type import ArrowType, Type, TypeVariable
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from itertools import product
@@ -156,3 +158,46 @@ def expansions(
         else:
             if new_sig.depth() <= max_overall_depth:
                 yield new_sig
+
+
+def type_universe(types: List[Type]):
+    atomic_types = set()
+    num_arrow_args = set()
+    has_list = False
+    for typ in types:
+        for t in typ.walk_type_nodes():
+            if t.is_atomic():
+                atomic_types.add(t)
+            if isinstance(t, ArrowType):
+                num_arrow_args.add(len(t.input_type))
+            if isinstance(t, ListType):
+                has_list = True
+    atomic_types = sorted(atomic_types, key=str)
+    num_arrow_args = sorted(num_arrow_args)
+    expand_to = []
+
+    fresh_var = 0
+
+    def fresh():
+        nonlocal fresh_var
+        fresh_var += 1
+        return f"FRESH{fresh_var}"
+
+    if has_list:
+        expand_to.append(ListType(TypeVariable(fresh())))
+    for n in num_arrow_args:
+        args = [TypeVariable(fresh()) for _ in range(n)]
+        expand_to.append(ArrowType(tuple(args), TypeVariable(fresh())))
+    for t in atomic_types:
+        expand_to.append(t)
+    return expand_to
+
+
+@dataclass
+class LambdaTypeSignature(TypeSignature):
+    """
+    Represents the type signature of the (lamN ...) production.
+
+    Does not implement the unify_return method, since that would
+        require enumerating all the possible argument types.
+    """
