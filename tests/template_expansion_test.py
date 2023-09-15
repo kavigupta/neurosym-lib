@@ -1,8 +1,76 @@
 import unittest
 from neurosym.dsl.dsl_factory import DSLFactory
+from neurosym.types.type_signature import expansions
+from neurosym.types.type_string_repr import parse_type, render_type
 
 
-class TestAllRules(unittest.TestCase):
+class TestTypeRegresion(unittest.TestCase):
+    def assertExpansions(self, actual, expected):
+        self.maxDiff = None
+        actual = sorted(render_type(x) for x in actual)
+        print(actual)
+        self.assertEqual(actual, expected)
+
+    def test_nested_expansion_1(self):
+        self.assertExpansions(
+            expansions(
+                parse_type("[#a] -> #b"),
+                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                max_overall_depth=4,
+            ),
+            [
+                "[b] -> b",
+                "[b] -> b -> b",
+                "[b] -> b -> i",
+                "[b] -> i",
+                "[b] -> i -> b",
+                "[b] -> i -> i",
+                "[i] -> b",
+                "[i] -> b -> b",
+                "[i] -> b -> i",
+                "[i] -> i",
+                "[i] -> i -> b",
+                "[i] -> i -> i",
+            ],
+        )
+
+    def test_nested_expansion_2(self):
+        self.assertExpansions(
+            expansions(
+                parse_type("([#a], [#b]) -> #c"),
+                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                max_overall_depth=4,
+            ),
+            [
+                "([b], [b]) -> b",
+                "([b], [b]) -> b -> b",
+                "([b], [b]) -> b -> i",
+                "([b], [b]) -> i",
+                "([b], [b]) -> i -> b",
+                "([b], [b]) -> i -> i",
+                "([b], [i]) -> b",
+                "([b], [i]) -> b -> b",
+                "([b], [i]) -> b -> i",
+                "([b], [i]) -> i",
+                "([b], [i]) -> i -> b",
+                "([b], [i]) -> i -> i",
+                "([i], [b]) -> b",
+                "([i], [b]) -> b -> b",
+                "([i], [b]) -> b -> i",
+                "([i], [b]) -> i",
+                "([i], [b]) -> i -> b",
+                "([i], [b]) -> i -> i",
+                "([i], [i]) -> b",
+                "([i], [i]) -> b -> b",
+                "([i], [i]) -> b -> i",
+                "([i], [i]) -> i",
+                "([i], [i]) -> i -> b",
+                "([i], [i]) -> i -> i",
+            ],
+        )
+
+
+class TestDSLExpand(unittest.TestCase):
     def assertDSL(self, dsl, expected):
         dsl = "\n".join(
             sorted([line.strip() for line in dsl.split("\n") if line.strip()])
