@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple, Dict
+from typing import List, Tuple, Dict
 import numpy as np
 
 
@@ -27,6 +27,30 @@ class Type(ABC):
             self, TypeVariable
         )
 
+    def depth_of_type_variables(self) -> List[Tuple[str, int]]:
+        """
+        Return a list of tuples of the form (type_variable, depth) where depth is the
+        depth of the type variable in the type tree.
+        """
+        node_height = np.log2(1 + len(list(self.children())))
+        return [
+            (tv, depth + node_height)
+            for child in self.children()
+            for tv, depth in child.depth_of_type_variables()
+        ]
+
+    def get_type_vars(self):
+        """
+        Return a set of all type variables in the type.
+        """
+        return sorted({tv for tv, _ in self.depth_of_type_variables()})
+
+    def has_type_vars(self):
+        """
+        Return True if the type has type variables.
+        """
+        return len(self.get_type_vars()) > 0
+
     def depth(self):
         """
         Return the depth of the type tree.
@@ -48,12 +72,6 @@ class AtomicType(Type):
     def children(self):
         yield from []
 
-    def has_type_vars(self):
-        return False
-
-    def get_type_vars(self):
-        return set()
-
     def subst_type_vars(self, subst: Dict[str, Type]):
         return self
 
@@ -73,14 +91,6 @@ class TensorType(Type):
 
     def children(self):
         yield from []
-
-    def has_type_vars(self):
-        assert not self.dtype.has_type_vars()
-        return False
-
-    def get_type_vars(self):
-        assert not self.dtype.has_type_vars()
-        return set()
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         assert not self.has_type_vars()
@@ -102,12 +112,6 @@ class ListType(Type):
     def children(self):
         yield self.element_type
 
-    def has_type_vars(self):
-        return self.element_type.has_type_vars()
-
-    def get_type_vars(self):
-        return self.element_type.get_type_vars()
-
     def subst_type_vars(self, subst: Dict[str, Type]):
         if not self.has_type_vars():
             return self
@@ -125,17 +129,6 @@ class ArrowType(Type):
 
     def __post_init__(self):
         assert isinstance(self.input_type, tuple), "input_type must be a tuple"
-
-    def has_type_vars(self):
-        return (
-            any(t.has_type_vars() for t in self.input_type)
-            or self.output_type.has_type_vars()
-        )
-
-    def get_type_vars(self):
-        return self.output_type.get_type_vars() | set().union(
-            *[t.get_type_vars() for t in self.input_type]
-        )
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         if not self.has_type_vars():
@@ -163,11 +156,8 @@ class TypeVariable(Type):
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
 
-    def get_type_vars(self):
-        return {self.name}
-
-    def has_type_vars(self):
-        return True
+    def depth_of_type_variables(self) -> List[Tuple[str, int]]:
+        return [(self.name, 0)]
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         return subst.get(self.name, self)
