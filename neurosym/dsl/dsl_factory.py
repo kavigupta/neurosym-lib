@@ -3,7 +3,11 @@ from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
 from neurosym.dsl.variable_system import LambdasVariableSystem, NoVariables
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
-from neurosym.types.type_signature import expansions, type_universe
+from neurosym.types.type_signature import (
+    ConcreteTypeSignature,
+    expansions,
+    type_universe,
+)
 from neurosym.types.type import ArrowType, ListType
 from neurosym.types.type_string_repr import render_type
 
@@ -76,7 +80,7 @@ class DSLFactory:
     ):
         sigs = list(
             expansions(
-                sig,
+                sig.astype(),
                 expand_to,
                 max_expansion_steps=self.max_expansion_steps,
                 max_overall_depth=self.max_overall_depth,
@@ -89,7 +93,7 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         for name, expansion in zip(names, sigs):
-            yield constructor(name, expansion, *args)
+            yield constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
 
     def _expansions_for_all_productions(self, expand_to, constructor, args):
         for arg in args:
@@ -102,7 +106,9 @@ class DSLFactory:
         Finalize the DSL.
         """
 
-        expand_to = type_universe([x.astype() for x in self._signatures])
+        known_types = [x.astype() for x in self._signatures]
+
+        expand_to = type_universe(known_types)
 
         productions = []
         productions += self._expansions_for_all_productions(

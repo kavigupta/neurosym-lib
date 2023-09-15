@@ -92,31 +92,14 @@ class ConcreteTypeSignature(TypeSignature):
 
         return render_type(self.astype())
 
-    def has_type_vars(self):
-        return self.astype().has_type_vars()
-
-    def get_type_vars(self):
-        return self.astype().get_type_vars()
-
-    def subst_type_vars(self, subst: Dict[str, Type]):
-        if not self.has_type_vars():
-            return self
-        return ConcreteTypeSignature(
-            [t.subst_type_vars(subst) for t in self.arguments],
-            self.return_type.subst_type_vars(subst),
-        )
-
-    def depth(self):
-        return self.astype().depth()
-
 
 def expansions(
-    sig: TypeSignature,
+    sig: Type,
     expand_to: List[Type],
     max_expansion_steps=np.inf,
     max_overall_depth=np.inf,
 ):
-    """ """
+    assert isinstance(sig, Type)
     assert (
         min(max_expansion_steps, max_overall_depth) < np.inf
     ), "must specify either max_expansion_steps or max_overall_depth"
@@ -146,15 +129,14 @@ def expansions(
             substitution[ty_var] = ty
         new_sig = sig.subst_type_vars(substitution)
         if new_sig.has_type_vars():
-            if max_expansion_steps > 0 and new_sig.depth() <= max_overall_depth:
-                # print("recursing at ", new_sig.depth())
-                # print("recursing with", new_sig.render())
-                yield from expansions(
-                    new_sig,
-                    expand_to,
-                    max_expansion_steps=max_expansion_steps - 1,
-                    max_overall_depth=max_overall_depth,
-                )
+            # print("recursing at ", new_sig.depth())
+            # print("recursing with", new_sig.render())
+            yield from expansions(
+                new_sig,
+                expand_to,
+                max_expansion_steps=max_expansion_steps - 1,
+                max_overall_depth=max_overall_depth,
+            )
         else:
             if new_sig.depth() <= max_overall_depth:
                 yield new_sig
