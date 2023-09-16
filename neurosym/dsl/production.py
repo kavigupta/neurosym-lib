@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from typing import Callable, Dict
 
 
-from ..types.type_signature import TypeSignature
+from ..types.type_signature import (
+    LambdaTypeSignature,
+    TypeSignature,
+    VariableTypeSignature,
+)
 
 
 class Production(ABC):
@@ -74,6 +78,58 @@ class ConcreteProduction(Production):
 
     def render(self):
         return f"{self._symbol:>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class LambdaProduction(Production):
+    _unique_id: int
+    _type_signature: LambdaTypeSignature
+
+    @property
+    def arity(self):
+        return len(self._type_signature.input_type)
+
+    def symbol(self):
+        return f"lam{self._unique_id}"
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def compute_on_pytorch(self, dsl, state, inputs):
+        del dsl
+        assert state == {}
+        return self._compute_on_pytorch(*inputs)
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class VariableProduction(Production):
+    _unique_id: int
+    _type_signature: VariableTypeSignature
+
+    def symbol(self):
+        return f"${self._type_signature.index_in_env}:{self._unique_id}"
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def compute_on_pytorch(self, dsl, state, inputs):
+        del dsl
+        assert state == {}
+        return self._compute_on_pytorch(*inputs)
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
 
 
 @dataclass

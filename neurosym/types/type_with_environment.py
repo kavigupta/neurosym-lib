@@ -24,6 +24,17 @@ class Environment:
             result[i] = new_typ
         return Environment(frozendict(result))
 
+    def parent(self, new_types):
+        for i, new_typ in enumerate(new_types):
+            if i in self._elements:
+                assert self._elements[i] == new_typ
+        result = {
+            i - len(new_types): typ
+            for i, typ in self._elements.items()
+            if i >= len(new_types)
+        }
+        return Environment(frozendict(result))
+
     def __len__(self):
         return max(self._elements) + 1
 

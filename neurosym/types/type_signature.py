@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import itertools
 from typing import Callable, List, Tuple
+import frozendict
 
 from torch import ListType
 from neurosym.types.type import ArrowType, Type, TypeVariable
@@ -94,6 +95,79 @@ class ConcreteTypeSignature(TypeSignature):
         return render_type(self.astype())
 
 
+@dataclass
+class LambdaTypeSignature(TypeSignature):
+    """
+    Represents the type signature of the lambda production.
+    """
+
+    lambda_type: ArrowType
+
+    def arity(self) -> int:
+        # just the body
+        return 1
+
+    def render(self) -> str:
+        from neurosym.types.type_string_repr import render_type
+
+        input_types = ";".join(render_type(x) for x in self.lambda_type.input_type)
+        lambda_type = f"L<{render_type(self.lambda_type.output_type)}|{input_types}>"
+
+        return f"{lambda_type} -> {render_type(self.lambda_type)}"
+
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+        if twe.typ != self.lambda_type:
+            return None
+        return [
+            TypeWithEnvironment(
+                self.lambda_type.output_type,
+                twe.env.child(*self.lambda_type.input_type),
+            )
+        ]
+
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
+        if len(twes) != 1:
+            return None
+        if twes[0].typ != self.lambda_type.output_type:
+            return None
+        parent = twes[0].env.parent(*self.lambda_type.input_type)
+        return TypeWithEnvironment(self.lambda_type, parent)
+
+
+@dataclass
+class VariableTypeSignature(TypeSignature):
+    """
+    Represents the type signature of variable production.
+    """
+
+    variable_type: Type
+    index_in_env: int
+
+    def arity(self) -> int:
+        # leaf
+        return 0
+
+    def render(self) -> str:
+        from neurosym.types.type_string_repr import render_type
+
+        return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
+
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+        if twe.typ != self.variable_type:
+            return None
+        if twe.env._elements.get(self.index_in_env, None) != self.variable_type:
+            return None
+        return []
+
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
+        if len(twes) != 0:
+            return None
+        return TypeWithEnvironment(
+            self.variable_type,
+            Environment(frozendict({self.index_in_env: self.variable_type})),
+        )
+
+
 def bottom_up_enumerate_types(
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
@@ -179,7 +253,7 @@ def type_universe(types: List[Type], require_arity_up_to=None):
                 has_list = True
     atomic_types = sorted(atomic_types, key=str)
     if require_arity_up_to is not None:
-        num_arrow_args |= set(range(require_arity_up_to + 1))
+        num_arrow_args |= set(range(1, require_arity_up_to + 1))
     num_arrow_args = sorted(num_arrow_args)
 
     constructors = []
@@ -193,13 +267,3 @@ def type_universe(types: List[Type], require_arity_up_to=None):
             )
         )
     return atomic_types, constructors
-
-
-@dataclass
-class LambdaTypeSignature(TypeSignature):
-    """
-    Represents the type signature of the (lamN ...) production.
-
-    Does not implement the unify_return method, since that would
-        require enumerating all the possible argument types.
-    """

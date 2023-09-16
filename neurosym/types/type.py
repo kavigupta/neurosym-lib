@@ -27,7 +27,7 @@ class Type(ABC):
             self, TypeVariable
         )
 
-    def depth_of_type_variables(self) -> List[Tuple[str, int]]:
+    def depth_of_type_variables(self) -> List[Tuple[str, float]]:
         """
         Return a list of tuples of the form (type_variable, depth) where depth is the
         depth of the type variable in the type tree.
