@@ -76,12 +76,13 @@ class DSLFactory:
         self._signatures.append(sig)
 
     def _expansions_for_single_production(
-        self, expand_to, constructor, symbol, sig, *args
+        self, terminals, type_constructors, constructor, symbol, sig, *args
     ):
         sigs = list(
             expansions(
                 sig.astype(),
-                expand_to,
+                terminals,
+                type_constructors,
                 max_expansion_steps=self.max_expansion_steps,
                 max_overall_depth=self.max_overall_depth,
             )
@@ -95,10 +96,12 @@ class DSLFactory:
         for name, expansion in zip(names, sigs):
             yield constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
 
-    def _expansions_for_all_productions(self, expand_to, constructor, args):
+    def _expansions_for_all_productions(
+        self, expand_to, terminals, type_constructors, args
+    ):
         for arg in args:
             yield from self._expansions_for_single_production(
-                expand_to, constructor, *arg
+                expand_to, terminals, type_constructors, *arg
             )
 
     def finalize(self):
@@ -108,14 +111,14 @@ class DSLFactory:
 
         known_types = [x.astype() for x in self._signatures]
 
-        expand_to = type_universe(known_types)
+        universe = type_universe(known_types)
 
         productions = []
         productions += self._expansions_for_all_productions(
-            expand_to, ConcreteProduction, self._concrete_productions
+            *universe, ConcreteProduction, self._concrete_productions
         )
         productions += self._expansions_for_all_productions(
-            expand_to, ParameterizedProduction, self._parameterized_productions
+            *universe, ParameterizedProduction, self._parameterized_productions
         )
 
         for p in productions:

@@ -1,21 +1,165 @@
 import unittest
+
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.types.type_signature import expansions
+from neurosym.types.type import ListType, ArrowType
+from neurosym.types.type_signature import bottom_up_enumerate_types, expansions
 from neurosym.types.type_string_repr import parse_type, render_type
 
 
 class TestTypeRegresion(unittest.TestCase):
     def assertExpansions(self, actual, expected):
         self.maxDiff = None
-        actual = sorted(render_type(x) for x in actual)
+        actual = set(render_type(x) for x in actual)
+        expected = set(expected)
         print(actual)
         self.assertEqual(actual, expected)
+
+    def test_enumerate_types(self):
+        self.assertExpansions(
+            bottom_up_enumerate_types(
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(1, ListType), (2, lambda x, y: ArrowType((x,), y))],
+                max_overall_depth=4,
+                max_expansion_steps=3,
+            ),
+            [
+                "(b -> b) -> [[b]]",
+                "(b -> b) -> [[i]]",
+                "(b -> b) -> [b]",
+                "(b -> b) -> [i]",
+                "(b -> b) -> b",
+                "(b -> b) -> b -> b",
+                "(b -> b) -> b -> i",
+                "(b -> b) -> i",
+                "(b -> b) -> i -> b",
+                "(b -> b) -> i -> i",
+                "(b -> i) -> [[b]]",
+                "(b -> i) -> [[i]]",
+                "(b -> i) -> [b]",
+                "(b -> i) -> [i]",
+                "(b -> i) -> b",
+                "(b -> i) -> b -> b",
+                "(b -> i) -> b -> i",
+                "(b -> i) -> i",
+                "(b -> i) -> i -> b",
+                "(b -> i) -> i -> i",
+                "(i -> b) -> [[b]]",
+                "(i -> b) -> [[i]]",
+                "(i -> b) -> [b]",
+                "(i -> b) -> [i]",
+                "(i -> b) -> b",
+                "(i -> b) -> b -> b",
+                "(i -> b) -> b -> i",
+                "(i -> b) -> i",
+                "(i -> b) -> i -> b",
+                "(i -> b) -> i -> i",
+                "(i -> i) -> [[b]]",
+                "(i -> i) -> [[i]]",
+                "(i -> i) -> [b]",
+                "(i -> i) -> [i]",
+                "(i -> i) -> b",
+                "(i -> i) -> b -> b",
+                "(i -> i) -> b -> i",
+                "(i -> i) -> i",
+                "(i -> i) -> i -> b",
+                "(i -> i) -> i -> i",
+                "[[[b]]]",
+                "[[[i]]]",
+                "[[b -> b]]",
+                "[[b -> i]]",
+                "[[b] -> [b]]",
+                "[[b] -> [i]]",
+                "[[b] -> b]",
+                "[[b] -> i]",
+                "[[b]]",
+                "[[b]] -> [[b]]",
+                "[[b]] -> [[i]]",
+                "[[b]] -> [b]",
+                "[[b]] -> [i]",
+                "[[b]] -> b",
+                "[[b]] -> b -> b",
+                "[[b]] -> b -> i",
+                "[[b]] -> i",
+                "[[b]] -> i -> b",
+                "[[b]] -> i -> i",
+                "[[i -> b]]",
+                "[[i -> i]]",
+                "[[i] -> [b]]",
+                "[[i] -> [i]]",
+                "[[i] -> b]",
+                "[[i] -> i]",
+                "[[i]]",
+                "[[i]] -> [[b]]",
+                "[[i]] -> [[i]]",
+                "[[i]] -> [b]",
+                "[[i]] -> [i]",
+                "[[i]] -> b",
+                "[[i]] -> b -> b",
+                "[[i]] -> b -> i",
+                "[[i]] -> i",
+                "[[i]] -> i -> b",
+                "[[i]] -> i -> i",
+                "[b -> [b]]",
+                "[b -> [i]]",
+                "[b -> b]",
+                "[b -> i]",
+                "[b]",
+                "[b] -> [[b]]",
+                "[b] -> [[i]]",
+                "[b] -> [b]",
+                "[b] -> [i]",
+                "[b] -> b",
+                "[b] -> b -> b",
+                "[b] -> b -> i",
+                "[b] -> i",
+                "[b] -> i -> b",
+                "[b] -> i -> i",
+                "[i -> [b]]",
+                "[i -> [i]]",
+                "[i -> b]",
+                "[i -> i]",
+                "[i]",
+                "[i] -> [[b]]",
+                "[i] -> [[i]]",
+                "[i] -> [b]",
+                "[i] -> [i]",
+                "[i] -> b",
+                "[i] -> b -> b",
+                "[i] -> b -> i",
+                "[i] -> i",
+                "[i] -> i -> b",
+                "[i] -> i -> i",
+                "b",
+                "b -> [[b]]",
+                "b -> [[i]]",
+                "b -> [b]",
+                "b -> [i]",
+                "b -> b",
+                "b -> b -> b",
+                "b -> b -> i",
+                "b -> i",
+                "b -> i -> b",
+                "b -> i -> i",
+                "i",
+                "i -> [[b]]",
+                "i -> [[i]]",
+                "i -> [b]",
+                "i -> [i]",
+                "i -> b",
+                "i -> b -> b",
+                "i -> b -> i",
+                "i -> i",
+                "i -> i -> b",
+                "i -> i -> i",
+            ],
+        )
 
     def test_nested_expansion_1(self):
         self.assertExpansions(
             expansions(
                 parse_type("[#a] -> #b"),
-                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(2, lambda x, y: ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [
@@ -38,7 +182,8 @@ class TestTypeRegresion(unittest.TestCase):
         self.assertExpansions(
             expansions(
                 parse_type("([#a], [#b]) -> #c"),
-                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(2, lambda x, y: ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [
@@ -73,7 +218,8 @@ class TestTypeRegresion(unittest.TestCase):
         self.assertExpansions(
             expansions(
                 parse_type("[[[[([#a], [#b]) -> #c]]]]"),
-                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(2, lambda x, y: ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [],
@@ -83,8 +229,9 @@ class TestTypeRegresion(unittest.TestCase):
         self.assertExpansions(
             expansions(
                 parse_type("[#a] -> #a"),
-                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
-                max_expansion_steps=2,
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                max_expansion_steps=1,
             ),
             [
                 "[b -> b] -> b -> b",
@@ -100,8 +247,9 @@ class TestTypeRegresion(unittest.TestCase):
         self.assertExpansions(
             expansions(
                 parse_type("[[[[#a] -> #a]]]"),
-                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
-                max_expansion_steps=2,
+                terminals=[parse_type(x) for x in ["b", "i"]],
+                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                max_expansion_steps=1,
             ),
             [
                 "[[[[b -> b] -> b -> b]]]",

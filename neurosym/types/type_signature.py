@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict
+import itertools
+from typing import Callable, List, Tuple
 
 from torch import ListType
 from neurosym.types.type import ArrowType, Type, TypeVariable
@@ -93,56 +94,78 @@ class ConcreteTypeSignature(TypeSignature):
         return render_type(self.astype())
 
 
-def expansions(
-    sig: Type,
-    expand_to: List[Type],
+def bottom_up_enumerate_types(
+    terminals: List[Type],
+    constructors: List[Tuple[int, Callable]],
     max_expansion_steps=np.inf,
     max_overall_depth=np.inf,
 ):
-    assert isinstance(sig, Type)
+    """
+    Returns a list of all possible expansions of the given terminals
+    using the given constructors.
+    """
     assert (
         min(max_expansion_steps, max_overall_depth) < np.inf
     ), "must specify either max_expansion_steps or max_overall_depth"
-
-    if sig.depth() > max_overall_depth or max_expansion_steps == 0:
-        return
-
-    if not sig.has_type_vars():
-        yield sig
-        return
-    ty_vars = sorted(sig.get_type_vars())
-    for type_assignment in product(expand_to, repeat=len(ty_vars)):
-        substitution = {}
-        for ty_var, ty in zip(ty_vars, type_assignment):
-            if ty.has_type_vars():
-                # if the type to expand with itself has type vars like `[#a]`
-                # then we replace these with a name unique to this outer `ty_var`
-                # We do this replacement with another substitution
-                inner_substitution = {}
-                for inner_ty_var in sorted(ty.get_type_vars()):
-                    fresh = ty_var + "_" + inner_ty_var
-                    assert (
-                        fresh not in ty_vars
-                    ), f"fresh type variable name is already in use: {fresh}"
-                    inner_substitution[inner_ty_var] = TypeVariable(fresh)
-                ty = ty.subst_type_vars(inner_substitution)
-            substitution[ty_var] = ty
-        new_sig = sig.subst_type_vars(substitution)
-        if new_sig.has_type_vars():
-            # print("recursing at ", new_sig.depth())
-            # print("recursing with", new_sig.render())
-            yield from expansions(
-                new_sig,
-                expand_to,
-                max_expansion_steps=max_expansion_steps - 1,
-                max_overall_depth=max_overall_depth,
-            )
-        else:
-            if new_sig.depth() <= max_overall_depth:
-                yield new_sig
+    current_with_depth = [(t, t.depth(), 0) for t in terminals]
+    current_with_depth = [
+        (t, d, n)
+        for t, d, n in current_with_depth
+        if d <= max_overall_depth and n <= max_expansion_steps
+    ]
+    overall = set()
+    while True:
+        overall.update(current_with_depth)
+        current_with_depth = []
+        for arity, fn in constructors:
+            additional_depth = np.log2(arity + 1)
+            will_work = [
+                (t, d, n)
+                for t, d, n in overall
+                if d + additional_depth <= max_overall_depth
+                and n + 1 <= max_expansion_steps
+            ]
+            for subentities in itertools.product(will_work, repeat=arity):
+                types = [t for t, _, _ in subentities]
+                depth = max([d for _, d, _ in subentities]) + additional_depth
+                steps = max([n for _, _, n in subentities]) + 1
+                assert depth <= max_overall_depth
+                assert steps <= max_expansion_steps
+                new_type = fn(*types)
+                res = (new_type, depth, steps)
+                if res in overall:
+                    continue
+                current_with_depth.append(res)
+        if len(current_with_depth) == 0:
+            break
+    return sorted([t for t, _, _ in overall], key=str)
 
 
-def type_universe(types: List[Type]):
+def expansions(
+    sig: Type,
+    terminals: List[Type],
+    constructors: List[Tuple[int, Callable]],
+    max_expansion_steps=np.inf,
+    max_overall_depth=np.inf,
+):
+    depth_by_var = sig.max_depth_per_type_variable()
+    enumerations_by_var = {
+        ty_var: bottom_up_enumerate_types(
+            terminals,
+            constructors,
+            max_expansion_steps,
+            max_overall_depth - depth_by_var[ty_var],
+        )
+        for ty_var in depth_by_var.keys()
+    }
+    variables = list(depth_by_var.keys())
+    enumerations = [enumerations_by_var[ty_var] for ty_var in variables]
+    for types in product(*enumerations):
+        remap = dict(zip(variables, types))
+        yield sig.subst_type_vars(remap)
+
+
+def type_universe(types: List[Type], require_arity_up_to=None):
     atomic_types = set()
     num_arrow_args = set()
     has_list = False
@@ -155,24 +178,21 @@ def type_universe(types: List[Type]):
             if isinstance(t, ListType):
                 has_list = True
     atomic_types = sorted(atomic_types, key=str)
+    if require_arity_up_to is not None:
+        num_arrow_args |= set(range(require_arity_up_to + 1))
     num_arrow_args = sorted(num_arrow_args)
-    expand_to = []
 
-    fresh_var = 0
-
-    def fresh():
-        nonlocal fresh_var
-        fresh_var += 1
-        return f"FRESH{fresh_var}"
-
+    constructors = []
     if has_list:
-        expand_to.append(ListType(TypeVariable(fresh())))
+        constructors.append((1, ListType))
     for n in num_arrow_args:
-        args = [TypeVariable(fresh()) for _ in range(n)]
-        expand_to.append(ArrowType(tuple(args), TypeVariable(fresh())))
-    for t in atomic_types:
-        expand_to.append(t)
-    return expand_to
+        constructors.append(
+            (
+                n + 1,
+                lambda *args: ArrowType(tuple(args[:-1]), args[-1]),
+            )
+        )
+    return atomic_types, constructors
 
 
 @dataclass

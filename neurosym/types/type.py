@@ -39,6 +39,16 @@ class Type(ABC):
             for tv, depth in child.depth_of_type_variables()
         ]
 
+    def max_depth_per_type_variable(self) -> Dict[str, float]:
+        """
+        Return a dictionary mapping type variables to their maximum depth in the type
+        tree.
+        """
+        result = {}
+        for tv, depth in self.depth_of_type_variables():
+            result[tv] = max(result.get(tv, 0), depth)
+        return result
+
     def get_type_vars(self):
         """
         Return a set of all type variables in the type.
