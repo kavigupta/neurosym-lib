@@ -85,11 +85,7 @@ class DSL:
         if hasattr(program, "__compute_value__"):
             return program.__compute_value__(self)
         prod = self.get_production(program.symbol)
-        return prod.apply(
-            self,
-            program.state,
-            program.children
-        )
+        return prod.apply(self, program.state, program.children)
 
     def all_rules(
         self, *target_types: Tuple[Type]
