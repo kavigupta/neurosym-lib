@@ -99,10 +99,10 @@ class LambdaProduction(Production):
         del dsl
         return {}
 
-    def compute_on_pytorch(self, dsl, state, inputs):
+    def compute(self, dsl, state, inputs):
         del dsl
         assert state == {}
-        return self._compute_on_pytorch(*inputs)
+        return self._compute(*inputs)
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -123,10 +123,10 @@ class VariableProduction(Production):
         del dsl
         return {}
 
-    def compute_on_pytorch(self, dsl, state, inputs):
+    def compute(self, dsl, state, inputs):
         del dsl
         assert state == {}
-        return self._compute_on_pytorch(*inputs)
+        return self._compute(*inputs)
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
