@@ -64,7 +64,6 @@ class NeuralDSL(DSL):
 
         return cls(
             productions=productions,
-            variable_system=dsl.variable_system,
             type_to_symbol=type_to_symbol,
         )
 

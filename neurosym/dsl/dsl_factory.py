@@ -1,6 +1,5 @@
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
-from neurosym.dsl.variable_system import LambdasVariableSystem, NoVariables
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
 from neurosym.types.type_signature import (
@@ -31,7 +30,6 @@ class DSLFactory:
         self._concrete_productions = []
         self._parameterized_productions = []
         self._signatures = []
-        self.variable_system = NoVariables()
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
 
@@ -40,11 +38,6 @@ class DSLFactory:
         Define a type.
         """
         self.t.typedef(key, type_str)
-
-    def lambdas(self, lambda_arity_limit: int = 2, num_variable_limit: int = 3):
-        self.variable_system = LambdasVariableSystem(
-            lambda_arity_limit=lambda_arity_limit, num_variable_limit=num_variable_limit
-        )
 
     def concrete(self, symbol, type_str, fn):
         """
@@ -126,4 +119,4 @@ class DSLFactory:
 
         print("productions: ", len(productions))
 
-        return DSL(productions, self.variable_system)
+        return DSL(productions)
