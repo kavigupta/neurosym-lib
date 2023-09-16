@@ -89,10 +89,10 @@ class DSL:
         if hasattr(program, "__compute_value__"):
             return program.__compute_value__(self)
         prod = self.get_production(program.symbol)
-        return prod.compute(
+        return prod.apply(
             self,
             program.state,
-            [self.compute(child) for child in program.children],
+            program.children
         )
 
     def all_rules(
