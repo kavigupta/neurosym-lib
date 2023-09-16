@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.0",
     author="Kavi Gupta",
     author_email="kavig+neurosym@mit.edu",
-    description="Permanant cache.",
+    description="Neurosymbolic library.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/kavigupta/neurosym-lib",
