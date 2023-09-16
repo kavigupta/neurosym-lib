@@ -170,6 +170,13 @@ class TestParse(unittest.TestCase):
             ),
         )
 
+    def test_multi_arg_arrow_returns_arrow(self):
+        t = "(int, float) -> int -> bool"
+        self.assertEqual(
+            render_type(parse_type(t)),
+            t,
+        )
+
     def test_no_args(self):
         self.assertEqual(
             parse_type("() -> bool"),

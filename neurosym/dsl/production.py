@@ -117,7 +117,10 @@ class LambdaProduction(Production):
         """
         Apply this production to the given children.
         """
-        raise NotImplementedError
+        from neurosym.dsl.lambdas import LambdaFunction
+
+        [body] = children
+        return LambdaFunction.of(dsl, body, self._type_signature)
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -146,6 +149,10 @@ class VariableProduction(Production):
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+    @property
+    def index_in_env(self):
+        return self._type_signature.index_in_env
 
 
 @dataclass
