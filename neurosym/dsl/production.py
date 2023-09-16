@@ -35,13 +35,19 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def compute(self, dsl, state, *inputs):
+    def compute(self, dsl, state, inputs):
         """
         Return the resulting pytorch expression of computing this function on the inputs
             Takes in the state of the production, which is the result of initialize().
 
         Effectively a form of denotation semantics.
         """
+
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+        return self.compute(dsl, state, [dsl.compute(x) for x in children])
 
     @abstractmethod
     def render(self) -> str:
