@@ -113,10 +113,11 @@ class LambdaProduction(Production):
         del dsl
         return {}
 
-    def compute(self, dsl, state, inputs):
-        del dsl
-        assert state == {}
-        return self._compute(*inputs)
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+        raise NotImplementedError
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -137,10 +138,11 @@ class VariableProduction(Production):
         del dsl
         return {}
 
-    def compute(self, dsl, state, inputs):
-        del dsl
-        assert state == {}
-        return self._compute(*inputs)
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+        raise NotImplementedError
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
