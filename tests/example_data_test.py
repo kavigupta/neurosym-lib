@@ -87,7 +87,7 @@ class TestNEARExample(unittest.TestCase):
                 callbacks=[],
             )
             initialized_p = neural_dsl.initialize(node.program)
-            model = neural_dsl.compute_on_pytorch(initialized_p)
+            model = neural_dsl.compute(initialized_p)
             if not isinstance(model, torch.nn.Module):
                 del model
                 del initialized_p
@@ -138,7 +138,7 @@ class TestNEARExample(unittest.TestCase):
         def checker(x):
             """Initialize and return False"""
             x = x.program
-            xx = dsl.compute_on_pytorch(dsl.initialize(x))
+            xx = dsl.compute(dsl.initialize(x))
             print(xx)
             return False
 
@@ -171,7 +171,7 @@ class TestNEARExample(unittest.TestCase):
 
         def checker(x):
             x = x.program
-            xx = dsl.compute_on_pytorch(dsl.initialize(x))
+            xx = dsl.compute(dsl.initialize(x))
             if isinstance(xx, torch.Tensor):
                 return torch.all(torch.eq(xx, fours))
             else:

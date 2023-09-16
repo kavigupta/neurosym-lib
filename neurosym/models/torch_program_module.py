@@ -11,4 +11,4 @@ class TorchProgramModule(nn.Module):
         )
 
     def forward(self, *args):
-        return self.dsl.compute_on_pytorch(self.initalized_program)(*args)
+        return self.dsl.compute(self.initalized_program)(*args)

@@ -65,9 +65,9 @@ class AbstractionProduction(Production):
             body=dsl.initialize(self._body),
         )
 
-    def compute_on_pytorch(self, dsl, state, inputs):
+    def compute(self, dsl, state, inputs):
         initialized_body = state["body"]
-        return dsl.compute_on_pytorch(with_index_parameters(initialized_body, inputs))
+        return dsl.compute(with_index_parameters(initialized_body, inputs))
 
     def render_as_lambda(self):
         body = render_s_expression(self._body, False)

@@ -31,10 +31,10 @@ def corpus():
 class BasicDSLTest(unittest.TestCase):
     def test_independent_mutability(self):
         prog = parse_s_expression("(ite (even? (x)) (count) (count))", set())
-        fn_1 = mutable_arith_combinators.compute_on_pytorch(
+        fn_1 = mutable_arith_combinators.compute(
             mutable_arith_combinators.initialize(prog)
         )
-        fn_2 = mutable_arith_combinators.compute_on_pytorch(
+        fn_2 = mutable_arith_combinators.compute(
             mutable_arith_combinators.initialize(prog)
         )
         self.assertEqual([fn_1(2), fn_1(4), fn_1(8)], [1, 2, 3])
@@ -57,10 +57,10 @@ class CompressionTest(unittest.TestCase):
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
-                mutable_arith_combinators.compute_on_pytorch(
+                mutable_arith_combinators.compute(
                     mutable_arith_combinators.initialize(orig)
                 ),
-                dsl2.compute_on_pytorch(dsl2.initialize(rewr)),
+                dsl2.compute(dsl2.initialize(rewr)),
             )
 
     def test_multi_step(self):
@@ -68,8 +68,8 @@ class CompressionTest(unittest.TestCase):
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
-                mutable_arith_combinators.compute_on_pytorch(
+                mutable_arith_combinators.compute(
                     mutable_arith_combinators.initialize(orig)
                 ),
-                dsl2.compute_on_pytorch(dsl2.initialize(rewr)),
+                dsl2.compute(dsl2.initialize(rewr)),
             )
