@@ -81,14 +81,14 @@ class DSL:
             prod.initialize(self),
         )
 
-    def compute_on_pytorch(self, program: InitializedSExpression):
+    def compute(self, program: InitializedSExpression):
         if hasattr(program, "__compute_value__"):
             return program.__compute_value__(self)
         prod = self.get_production(program.symbol)
-        return prod.compute_on_pytorch(
+        return prod.compute(
             self,
             program.state,
-            [self.compute_on_pytorch(child) for child in program.children],
+            [self.compute(child) for child in program.children],
         )
 
     def all_rules(

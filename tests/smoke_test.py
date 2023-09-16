@@ -23,7 +23,7 @@ class TestSmoke(unittest.TestCase):
             dsl,
             parse_type("i"),
             ChooseFirst(),
-            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
+            lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=NoMetadataComputer(),
         )
         node = next(bfs(g)).program
@@ -55,7 +55,7 @@ class TestSmoke(unittest.TestCase):
             dsl,
             parse_type("i"),
             ChooseFirst(),
-            lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
+            lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=NoMetadataComputer(),
         )
 

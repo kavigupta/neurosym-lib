@@ -35,7 +35,7 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def compute_on_pytorch(self, dsl, state, *inputs):
+    def compute(self, dsl, state, *inputs):
         """
         Return the resulting pytorch expression of computing this function on the inputs
             Takes in the state of the production, which is the result of initialize().
@@ -54,7 +54,7 @@ class Production(ABC):
 class ConcreteProduction(Production):
     _symbol: str
     _type_signature: TypeSignature
-    _compute_on_pytorch: Callable[..., object]
+    _compute: Callable[..., object]
 
     def symbol(self):
         return self._symbol
@@ -66,11 +66,11 @@ class ConcreteProduction(Production):
         del dsl
         return {}
 
-    def compute_on_pytorch(self, dsl, state, inputs):
+    def compute(self, dsl, state, inputs):
         del dsl
         assert state == {}
         try:
-            return self._compute_on_pytorch(*inputs)
+            return self._compute(*inputs)
         except TypeError:
             raise TypeError(
                 f"Error computing {self._symbol} on inputs {inputs} with state {state}"
@@ -140,9 +140,9 @@ class ParameterizedProduction(ConcreteProduction):
         del dsl
         return {k: v() for k, v in self._initialize.items()}
 
-    def compute_on_pytorch(self, dsl, state, inputs):
+    def compute(self, dsl, state, inputs):
         del dsl
-        return self._compute_on_pytorch(*inputs, **state)
+        return self._compute(*inputs, **state)
 
     def render(self):
         lhs = f"{self._symbol}[{', '.join(self._initialize)}]"

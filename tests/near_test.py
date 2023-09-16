@@ -22,7 +22,7 @@ class TestNEAR(unittest.TestCase):
         g = near_graph(
             dsl,
             parse_type("f"),
-            is_goal=lambda x: dsl.compute_on_pytorch(dsl.initialize(x.program)) == 4,
+            is_goal=lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
         )
         node = next(bfs(g)).program
         self.assertEqual(
@@ -58,7 +58,7 @@ class TestNEAR(unittest.TestCase):
 
         def checker(x):
             x = x.program
-            xx = dsl.compute_on_pytorch(dsl.initialize(x))
+            xx = dsl.compute(dsl.initialize(x))
             if isinstance(xx, torch.Tensor):
                 return torch.all(torch.eq(xx, fours))
             else:
