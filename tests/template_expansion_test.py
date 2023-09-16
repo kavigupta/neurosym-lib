@@ -69,6 +69,50 @@ class TestTypeRegresion(unittest.TestCase):
             ],
         )
 
+    def test_nested_expansion_3(self):
+        self.assertExpansions(
+            expansions(
+                parse_type("[[[[([#a], [#b]) -> #c]]]]"),
+                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                max_overall_depth=4,
+            ),
+            [],
+        )
+
+    def test_step_expansion_1(self):
+        self.assertExpansions(
+            expansions(
+                parse_type("[#a] -> #a"),
+                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                max_expansion_steps=2,
+            ),
+            [
+                "[b -> b] -> b -> b",
+                "[b -> i] -> b -> i",
+                "[b] -> b",
+                "[i -> b] -> i -> b",
+                "[i -> i] -> i -> i",
+                "[i] -> i",
+            ],
+        )
+
+    def test_step_expansion_2(self):
+        self.assertExpansions(
+            expansions(
+                parse_type("[[[[#a] -> #a]]]"),
+                expand_to=[parse_type(x) for x in ["b", "i", "#a -> #b"]],
+                max_expansion_steps=2,
+            ),
+            [
+                "[[[[b -> b] -> b -> b]]]",
+                "[[[[b -> i] -> b -> i]]]",
+                "[[[[b] -> b]]]",
+                "[[[[i -> b] -> i -> b]]]",
+                "[[[[i -> i] -> i -> i]]]",
+                "[[[[i] -> i]]]",
+            ],
+        )
+
 
 class TestDSLExpand(unittest.TestCase):
     def assertDSL(self, dsl, expected):
