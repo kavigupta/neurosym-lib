@@ -31,7 +31,21 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def compute(self, dsl, state, inputs):
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+
+    @abstractmethod
+    def render(self) -> str:
+        """
+        Render this production as a string.
+        """
+
+
+class FunctionLikeProduction(Production):
+    @abstractmethod
+    def evaluate(self, dsl, state, inputs):
         """
         Return the resulting pytorch expression of computing this function on the inputs
             Takes in the state of the production, which is the result of initialize().
@@ -43,17 +57,11 @@ class Production(ABC):
         """
         Apply this production to the given children.
         """
-        return self.compute(dsl, state, [dsl.compute(x) for x in children])
-
-    @abstractmethod
-    def render(self) -> str:
-        """
-        Render this production as a string.
-        """
+        return self.evaluate(dsl, state, [dsl.compute(x) for x in children])
 
 
 @dataclass
-class ConcreteProduction(Production):
+class ConcreteProduction(FunctionLikeProduction):
     _symbol: str
     _type_signature: TypeSignature
     _compute: Callable[..., object]
@@ -68,7 +76,7 @@ class ConcreteProduction(Production):
         del dsl
         return {}
 
-    def compute(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs):
         del dsl
         assert state == {}
         try:
@@ -90,7 +98,7 @@ class ParameterizedProduction(ConcreteProduction):
         del dsl
         return {k: v() for k, v in self._initialize.items()}
 
-    def compute(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs):
         del dsl
         return self._compute(*inputs, **state)
 

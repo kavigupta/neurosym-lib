@@ -3,7 +3,7 @@ from typing import Dict
 
 from neurosym.programs.s_expression_render import render_s_expression
 
-from .production import Production
+from .production import FunctionLikeProduction
 from ..types.type_signature import TypeSignature
 from ..programs.s_expression import InitializedSExpression, SExpression
 
@@ -45,7 +45,7 @@ class AbstractionParameter:
 
 
 @dataclass
-class AbstractionProduction(Production):
+class AbstractionProduction(FunctionLikeProduction):
     """
     Represents an abstraction in a DSL.
     """
@@ -65,7 +65,7 @@ class AbstractionProduction(Production):
             body=dsl.initialize(self._body),
         )
 
-    def compute(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs):
         initialized_body = state["body"]
         return dsl.compute(with_index_parameters(initialized_body, inputs))
 
