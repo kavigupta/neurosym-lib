@@ -200,3 +200,7 @@ class TestParse(unittest.TestCase):
 
     def test_bad_parse(self):
         self.assertRaises(Exception, lambda: render_type(parse_type("f -> f]")))
+
+    def test_list_of_arrows(self):
+        t = "[i -> i]"
+        self.assertEqual(render_type(parse_type(t)), t)

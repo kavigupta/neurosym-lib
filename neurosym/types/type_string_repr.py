@@ -65,7 +65,7 @@ def parse_type_from_buf(reversed_buf, env):
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
     elif first_tok == "[":
-        internal_type = parse_type_from_buf(reversed_buf, env)
+        internal_type = parse_type_from_buf_multi(reversed_buf, env)
         close_bracket = reversed_buf.pop()
         assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
