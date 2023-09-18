@@ -3,8 +3,7 @@ from dataclasses import dataclass
 import itertools
 from typing import Callable, List, Tuple
 
-from torch import ListType
-from neurosym.types.type import ArrowType, Type, TypeVariable
+from neurosym.types.type import ArrowType, Type, ListType
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from itertools import product
 import numpy as np
