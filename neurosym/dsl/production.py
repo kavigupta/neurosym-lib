@@ -138,8 +138,14 @@ class LambdaProduction(Production):
     def arity(self):
         return len(self._type_signature.input_type)
 
-    def symbol(self):
-        return f"lam{self._unique_id}"
+    def base_symbol(self):
+        return "lam"
+
+    def get_index(self):
+        return self._unique_id
+
+    def with_index(self, index):
+        return LambdaProduction(index, self._type_signature)
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature
@@ -166,8 +172,14 @@ class VariableProduction(Production):
     _unique_id: int
     _type_signature: VariableTypeSignature
 
-    def symbol(self):
-        return f"${self._type_signature.index_in_env}:{self._unique_id}"
+    def base_symbol(self):
+        return f"${self._type_signature.index_in_env}"
+
+    def get_index(self):
+        return self._unique_id
+
+    def with_index(self, index):
+        return VariableProduction(index, self._type_signature)
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature

@@ -154,7 +154,7 @@ class DSLFactory:
             )
             expanded = list(expanded)
             expanded = [x for x in expanded if isinstance(x, ArrowType)]
-            productions += [
+            sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x))
                 for i, x in enumerate(expanded)
             ]
@@ -172,14 +172,9 @@ class DSLFactory:
                 for variable_type in variable_types
                 for index_in_env in range(self.lambda_parameters["max_env_depth"])
             ]
-            productions += [
+            sym_to_productions["<variable>"] = [
                 VariableProduction(unique_id, variable_type_sig)
                 for unique_id, variable_type_sig in enumerate(variable_type_signatures)
             ]
-
-        for p in productions:
-            print(p.render())
-
-        print("productions: ", len(productions))
 
         return DSL([prod for prods in sym_to_productions.values() for prod in prods])
