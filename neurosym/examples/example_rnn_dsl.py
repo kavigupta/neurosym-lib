@@ -22,7 +22,7 @@ from neurosym.operations.lists import fold_torch, map_torch
 
 
 def example_rnn_dsl(length, out_length):
-    dslf = DSLFactory(L=length, O=out_length)
+    dslf = DSLFactory(L=length, O=out_length, max_overall_depth=5)
     dslf.typedef("fL", "{f, $L}")
 
     dslf.concrete(
