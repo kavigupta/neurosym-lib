@@ -224,5 +224,5 @@ class ParameterizedProduction(ConcreteProduction):
         return self._compute(*inputs, **state)
 
     def render(self):
-        lhs = f"{self.symbol()}[{', '.join(self.initalizers)}]"
+        lhs = f"{self.symbol()}[{', '.join(self.initializers)}]"
         return f"{lhs:>15} :: {self._type_signature.render()}"
