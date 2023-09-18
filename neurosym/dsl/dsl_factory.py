@@ -187,7 +187,6 @@ class DSLFactory:
                 for unique_id, variable_type_sig in enumerate(variable_type_signatures)
             ]
 
-        return DSL([prod for prods in sym_to_productions.values() for prod in prods])
         make_dsl = lambda: DSL(
             [prod for prods in sym_to_productions.values() for prod in prods]
         )
