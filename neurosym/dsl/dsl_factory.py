@@ -42,6 +42,8 @@ class DSLFactory:
         self.lambda_parameters = None
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
+        self.prune = False
+        self.target_types = None
 
     def typedef(self, key, type_str):
         """
@@ -87,6 +89,14 @@ class DSLFactory:
             )
         )
         self._signatures.append(sig)
+
+    def prune_to(self, *target_types):
+        """
+        Prune the DSL to only include productions that can be constructed from the given
+        target types.
+        """
+        self.prune = True
+        self.target_types = [self.t(x) for x in target_types]
 
     def _expansions_for_single_production(
         self, terminals, type_constructors, constructor, symbol, sig, *args
@@ -178,3 +188,26 @@ class DSLFactory:
             ]
 
         return DSL([prod for prods in sym_to_productions.values() for prod in prods])
+        make_dsl = lambda: DSL(
+            [prod for prods in sym_to_productions.values() for prod in prods]
+        )
+        dsl = make_dsl()
+        if self.prune:
+            assert self.target_types is not None
+            symbols = dsl.constructible_symbols(*self.target_types)
+            new_sym_to_productions = {}
+            for original_symbol, prods in sym_to_productions.items():
+                new_sym_to_productions[original_symbol] = [
+                    x for x in prods if x.symbol() in symbols
+                ]
+                if len(new_sym_to_productions[original_symbol]) == 0:
+                    raise TypeError(
+                        f"All productions for {original_symbol} were pruned. "
+                        f"Check that the target types are correct."
+                    )
+                new_sym_to_productions[original_symbol] = Production.reindex(
+                    new_sym_to_productions[original_symbol]
+                )
+            sym_to_productions = new_sym_to_productions
+            dsl = make_dsl()
+        return dsl

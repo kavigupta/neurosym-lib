@@ -84,6 +84,7 @@ def example_rnn_dsl(length, out_length):
     #     lambda f, g: lambda x: f(g(x)),
     # )
 
+    dslf.prune_to("[{f, $L}] -> [{f, $O}]")
     return dslf.finalize()
 
 
