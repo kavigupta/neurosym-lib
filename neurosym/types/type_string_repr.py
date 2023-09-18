@@ -82,7 +82,7 @@ def parse_type_from_buf(reversed_buf, env):
             assert tok == ",", f"Expected ',' but got {tok}"
         tok = reversed_buf.pop()
         assert tok == "->", f"Expected '->' but got {tok}"
-        output_type = parse_type_from_buf(reversed_buf, env)
+        output_type = parse_type_from_buf_multi(reversed_buf, env)
         return ArrowType(tuple(input_types), output_type)
     elif first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
