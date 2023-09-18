@@ -85,18 +85,14 @@ class DSLFactory:
                 max_overall_depth=self.max_overall_depth,
             )
         )
-        names = (
-            [f"{symbol}_{i}" for i in range(len(sigs))] if len(sigs) > 1 else [symbol]
-        )
-
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
-        return {
-            symbol: [
-                constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
-                for name, expansion in zip(names, sigs)
-            ]
-        }
+        prods = [
+            constructor(symbol, ConcreteTypeSignature.from_type(expansion), *args)
+            for expansion in sigs
+        ]
+
+        return {symbol: Production.reindex(prods)}
 
     def _expansions_for_all_productions(
         self, expand_to, terminals, type_constructors, args

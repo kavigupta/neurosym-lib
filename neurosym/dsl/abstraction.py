@@ -54,8 +54,14 @@ class AbstractionProduction(FunctionLikeProduction):
     _type_signature: TypeSignature
     _body: SExpression
 
-    def symbol(self):
+    def base_symbol(self):
         return self._symbol
+
+    def get_index(self):
+        return None
+
+    def with_index(self, index):
+        raise NotImplementedError
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature
