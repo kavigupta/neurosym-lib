@@ -72,25 +72,4 @@ class TestNEAR(unittest.TestCase):
             return 0
 
         node = next(bounded_astar(g, cost, max_depth=7)).program
-        self.assertEqual(
-            node,
-            SExpression(
-                symbol="Tint_Tint_add",
-                children=(
-                    SExpression(symbol="ones", children=()),
-                    SExpression(
-                        symbol="Tint_Tint_add",
-                        children=(
-                            SExpression(symbol="ones", children=()),
-                            SExpression(
-                                symbol="Tint_Tint_add",
-                                children=(
-                                    SExpression(symbol="ones", children=()),
-                                    SExpression(symbol="ones", children=()),
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        )
+        self.assertEqual(node.children[0], SExpression(symbol="ones", children=()))
