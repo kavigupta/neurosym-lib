@@ -117,15 +117,38 @@ class DSL:
                 types_to_expand.extend(types)
         return rules
 
+    def constructible_symbols(self, *target_types):
+        """
+        Returns all the symbols that can be constructed from the given target types.
+        """
+        type_to_rules = self.all_rules(*target_types)
+
+        constructible = set()
+
+        while True:
+            done = True
+            for out_t, rules in type_to_rules.items():
+                if out_t in constructible:
+                    continue
+                for sym, in_t in rules:
+                    if all(t in constructible for t in in_t):
+                        constructible.add(out_t)
+                        done = False
+            if done:
+                break
+        return {
+            sym
+            for _, rules in type_to_rules.items()
+            for sym, in_t in rules
+            if all(t in constructible for t in in_t)
+        }
+
     def validate_all_rules_reachable(self, *target_types):
         """
         Checks that all the rules in the DSL are reachable from at least one of the
         target types.
         """
-        symbols = set()
-        rules = self.all_rules(*target_types)
-        for rule in rules.values():
-            symbols.update([symbol for symbol, _ in rule])
+        symbols = self.constructible_symbols(*target_types)
         for production in self.productions:
             assert production.symbol() in symbols, (
                 f"Production {production.symbol()} is unreachable from target types "

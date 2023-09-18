@@ -55,7 +55,8 @@ class NeuralDSL(DSL):
                 identifier,
                 ConcreteTypeSignature([], fn_type),
                 lambda initialized_module: initialized_module,
-                dict(initialized_module=module_template),
+                index=None,
+                initializers=dict(initialized_module=module_template),
             )
 
             partial_productions.append(module_c_prod)

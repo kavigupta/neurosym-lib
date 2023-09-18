@@ -1,9 +1,11 @@
+from typing import Dict, List
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
     VariableProduction,
+    Production,
 )
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
@@ -98,22 +100,26 @@ class DSLFactory:
                 max_overall_depth=self.max_overall_depth,
             )
         )
-        names = (
-            [f"{symbol}_{i}" for i in range(len(sigs))] if len(sigs) > 1 else [symbol]
-        )
-
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
-        for name, expansion in zip(names, sigs):
-            yield constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
+        prods = [
+            constructor(symbol, ConcreteTypeSignature.from_type(expansion), *args)
+            for expansion in sigs
+        ]
+
+        return {symbol: Production.reindex(prods)}
 
     def _expansions_for_all_productions(
         self, expand_to, terminals, type_constructors, args
     ):
+        result = {}
         for arg in args:
-            yield from self._expansions_for_single_production(
-                expand_to, terminals, type_constructors, *arg
+            result.update(
+                self._expansions_for_single_production(
+                    expand_to, terminals, type_constructors, *arg
+                )
             )
+        return result
 
     def finalize(self):
         """
@@ -124,12 +130,16 @@ class DSLFactory:
 
         universe = type_universe(known_types)
 
-        productions = []
-        productions += self._expansions_for_all_productions(
-            *universe, ConcreteProduction, self._concrete_productions
+        sym_to_productions: Dict[str, List[Production]] = {}
+        sym_to_productions.update(
+            self._expansions_for_all_productions(
+                *universe, ConcreteProduction, self._concrete_productions
+            )
         )
-        productions += self._expansions_for_all_productions(
-            *universe, ParameterizedProduction, self._parameterized_productions
+        sym_to_productions.update(
+            self._expansions_for_all_productions(
+                *universe, ParameterizedProduction, self._parameterized_productions
+            )
         )
 
         if self.lambda_parameters is not None:
@@ -172,4 +182,4 @@ class DSLFactory:
 
         print("productions: ", len(productions))
 
-        return DSL(productions)
+        return DSL([prod for prods in sym_to_productions.values() for prod in prods])

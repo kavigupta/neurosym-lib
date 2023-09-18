@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from typing import Callable, Dict
 
 
@@ -18,8 +18,24 @@ class Production(ABC):
     """
 
     @abstractmethod
-    def symbol(self):
+    def base_symbol(self):
         pass
+
+    @abstractmethod
+    def get_index(self):
+        pass
+
+    @abstractmethod
+    def with_index(self, index):
+        pass
+
+    def symbol(self):
+        """
+        Return the symbol of this production.
+        """
+        if self.get_index() is None:
+            return self.base_symbol()
+        return f"{self.base_symbol()}_{self.get_index()}"
 
     @abstractmethod
     def type_signature(self) -> TypeSignature:
@@ -46,6 +62,15 @@ class Production(ABC):
         Render this production as a string.
         """
 
+    @classmethod
+    def reindex(cls, productions):
+        """
+        Reindex the given productions, so that they are indexed from 0 to len(productions) - 1.
+        """
+        if len(productions) == 1:
+            return [productions[0].with_index(None)]
+        return [p.with_index(i) for i, p in enumerate(productions)]
+
 
 class FunctionLikeProduction(Production):
     @abstractmethod
@@ -69,9 +94,19 @@ class ConcreteProduction(FunctionLikeProduction):
     _symbol: str
     _type_signature: TypeSignature
     _compute: Callable[..., object]
+    _: KW_ONLY
+    index: int = None
 
-    def symbol(self):
+    def base_symbol(self):
         return self._symbol
+
+    def get_index(self):
+        return self.index
+
+    def with_index(self, index):
+        return type(self)(
+            self._symbol, self._type_signature, self._compute, index=index
+        )
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature
@@ -87,11 +122,11 @@ class ConcreteProduction(FunctionLikeProduction):
             return self._compute(*inputs)
         except TypeError:
             raise TypeError(
-                f"Error computing {self._symbol} on inputs {inputs} with state {state}"
+                f"Error computing {self.symbol()} on inputs {inputs} with state {state}"
             )
 
     def render(self):
-        return f"{self._symbol:>15} :: {self._type_signature.render()}"
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
 
 
 @dataclass
@@ -157,16 +192,25 @@ class VariableProduction(Production):
 
 @dataclass
 class ParameterizedProduction(ConcreteProduction):
-    _initialize: Dict[str, Callable[[], object]]
+    initializers: Dict[str, Callable[[], object]]
+
+    def with_index(self, index):
+        return ParameterizedProduction(
+            self._symbol,
+            self._type_signature,
+            self._compute,
+            index=index,
+            initializers=self.initializers,
+        )
 
     def initialize(self, dsl) -> Dict[str, object]:
         del dsl
-        return {k: v() for k, v in self._initialize.items()}
+        return {k: v() for k, v in self.initializers.items()}
 
     def evaluate(self, dsl, state, inputs):
         del dsl
         return self._compute(*inputs, **state)
 
     def render(self):
-        lhs = f"{self._symbol}[{', '.join(self._initialize)}]"
+        lhs = f"{self.symbol()}[{', '.join(self.initalizers)}]"
         return f"{lhs:>15} :: {self._type_signature.render()}"

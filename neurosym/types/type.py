@@ -123,8 +123,6 @@ class ListType(Type):
         yield self.element_type
 
     def subst_type_vars(self, subst: Dict[str, Type]):
-        if not self.has_type_vars():
-            return self
         return ListType(self.element_type.subst_type_vars(subst))
 
 
@@ -141,8 +139,6 @@ class ArrowType(Type):
         assert isinstance(self.input_type, tuple), "input_type must be a tuple"
 
     def subst_type_vars(self, subst: Dict[str, Type]):
-        if not self.has_type_vars():
-            return self
         return ArrowType(
             tuple(t.subst_type_vars(subst) for t in self.input_type),
             self.output_type.subst_type_vars(subst),
