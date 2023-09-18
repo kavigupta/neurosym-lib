@@ -1,5 +1,10 @@
+from typing import Dict, List
 from neurosym.dsl.dsl import DSL
-from neurosym.dsl.production import ConcreteProduction, ParameterizedProduction
+from neurosym.dsl.production import (
+    ConcreteProduction,
+    ParameterizedProduction,
+    Production,
+)
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
 from neurosym.types.type_signature import (
@@ -86,16 +91,24 @@ class DSLFactory:
 
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
-        for name, expansion in zip(names, sigs):
-            yield constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
+        return {
+            symbol: [
+                constructor(name, ConcreteTypeSignature.from_type(expansion), *args)
+                for name, expansion in zip(names, sigs)
+            ]
+        }
 
     def _expansions_for_all_productions(
         self, expand_to, terminals, type_constructors, args
     ):
+        result = {}
         for arg in args:
-            yield from self._expansions_for_single_production(
-                expand_to, terminals, type_constructors, *arg
+            result.update(
+                self._expansions_for_single_production(
+                    expand_to, terminals, type_constructors, *arg
+                )
             )
+        return result
 
     def finalize(self):
         """
@@ -106,17 +119,16 @@ class DSLFactory:
 
         universe = type_universe(known_types)
 
-        productions = []
-        productions += self._expansions_for_all_productions(
-            *universe, ConcreteProduction, self._concrete_productions
+        sym_to_productions: Dict[str, List[Production]] = {}
+        sym_to_productions.update(
+            self._expansions_for_all_productions(
+                *universe, ConcreteProduction, self._concrete_productions
+            )
         )
-        productions += self._expansions_for_all_productions(
-            *universe, ParameterizedProduction, self._parameterized_productions
+        sym_to_productions.update(
+            self._expansions_for_all_productions(
+                *universe, ParameterizedProduction, self._parameterized_productions
+            )
         )
 
-        for p in productions:
-            print(p.render())
-
-        print("productions: ", len(productions))
-
-        return DSL(productions)
+        return DSL([prod for prods in sym_to_productions.values() for prod in prods])
