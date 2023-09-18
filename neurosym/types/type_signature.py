@@ -178,7 +178,7 @@ def type_universe(types: List[Type], require_arity_up_to=None):
                 has_list = True
     atomic_types = sorted(atomic_types, key=str)
     if require_arity_up_to is not None:
-        num_arrow_args |= set(range(require_arity_up_to + 1))
+        num_arrow_args |= set(range(1, require_arity_up_to + 1))
     num_arrow_args = sorted(num_arrow_args)
 
     constructors = []
@@ -192,13 +192,3 @@ def type_universe(types: List[Type], require_arity_up_to=None):
             )
         )
     return atomic_types, constructors
-
-
-@dataclass
-class LambdaTypeSignature(TypeSignature):
-    """
-    Represents the type signature of the (lamN ...) production.
-
-    Does not implement the unify_return method, since that would
-        require enumerating all the possible argument types.
-    """
