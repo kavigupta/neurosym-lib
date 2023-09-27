@@ -146,7 +146,7 @@ class VariableTypeSignature(TypeSignature):
     def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
         if twe.typ != self.variable_type:
             return None
-        if twe.env._elements.get(self.index_in_env, None) != self.variable_type:
+        if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
             return None
         return []
 
