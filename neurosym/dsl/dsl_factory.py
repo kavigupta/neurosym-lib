@@ -1,11 +1,11 @@
 from typing import Dict, List
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
-    Production,
     ConcreteProduction,
-    ParameterizedProduction,
     LambdaProduction,
+    ParameterizedProduction,
     VariableProduction,
+    Production,
 )
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
@@ -152,14 +152,6 @@ class DSLFactory:
             )
         )
 
-        if self.prune:
-            assert self.target_types is not None
-            sym_to_productions = prune(
-                sym_to_productions, self.target_types, care_about_variables=False
-            )
-            sym_to_productions = prune(
-                sym_to_productions, self.target_types, care_about_variables=True
-            )
         if self.lambda_parameters is not None:
             universe_lambda = type_universe(
                 known_types, require_arity_up_to=self.lambda_parameters["max_arity"]
@@ -195,6 +187,14 @@ class DSLFactory:
                 for unique_id, variable_type_sig in enumerate(variable_type_signatures)
             ]
 
+        if self.prune:
+            assert self.target_types is not None
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=False
+            )
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=True
+            )
         dsl = make_dsl(sym_to_productions)
         return dsl
 
