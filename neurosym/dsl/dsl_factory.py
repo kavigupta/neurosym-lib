@@ -14,6 +14,7 @@ from neurosym.types.type_signature import (
     LambdaTypeSignature,
     VariableTypeSignature,
     expansions,
+    signature_expansions,
     type_universe,
 )
 from neurosym.types.type import ArrowType, ListType, TypeVariable
@@ -104,8 +105,8 @@ class DSLFactory:
         self, terminals, type_constructors, constructor, symbol, sig, *args
     ):
         sigs = list(
-            expansions(
-                sig.astype(),
+            signature_expansions(
+                sig,
                 terminals,
                 type_constructors,
                 max_expansion_steps=self.max_expansion_steps,
