@@ -44,6 +44,7 @@ class DSLFactory:
         self.max_overall_depth = max_overall_depth
         self.prune = False
         self.target_types = None
+        self.prune_variables = False
 
     def typedef(self, key, type_str):
         """
@@ -90,13 +91,14 @@ class DSLFactory:
         )
         self._signatures.append(sig)
 
-    def prune_to(self, *target_types):
+    def prune_to(self, *target_types, prune_variables=True):
         """
         Prune the DSL to only include productions that can be constructed from the given
         target types.
         """
         self.prune = True
         self.target_types = [self.t(x) for x in target_types]
+        self.prune_variables = prune_variables
 
     def _expansions_for_single_production(
         self, terminals, type_constructors, constructor, symbol, sig, *args
@@ -192,9 +194,10 @@ class DSLFactory:
             sym_to_productions = prune(
                 sym_to_productions, self.target_types, care_about_variables=False
             )
-            sym_to_productions = prune(
-                sym_to_productions, self.target_types, care_about_variables=True
-            )
+            if self.prune_variables:
+                sym_to_productions = prune(
+                    sym_to_productions, self.target_types, care_about_variables=True
+                )
         dsl = make_dsl(sym_to_productions)
         return dsl
 
