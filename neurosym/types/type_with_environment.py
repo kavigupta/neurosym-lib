@@ -41,6 +41,11 @@ class Environment:
     def __len__(self):
         return max(self._elements) + 1
 
+    def short_repr(self):
+        return ",".join(
+            f"{i}={self._elements[i].short_repr()}" for i in sorted(self._elements)
+        )
+
 
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:

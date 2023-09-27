@@ -17,6 +17,14 @@ class Hole:
     id: int
     twe: TypeWithEnvironment
 
+    def __to_pair__(self, for_stitch: bool) -> str:
+        from neurosym.types.type_string_repr import render_type
+
+        env_short = self.twe.env.short_repr()
+        if env_short:
+            env_short = "|" + env_short
+        return f"??::<{render_type(self.twe.typ)}{env_short}>"
+
 
 def replace_holes(
     program: SExpression, holes: List[Hole], hole_replacements: List[SExpression]
