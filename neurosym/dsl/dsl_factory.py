@@ -137,26 +137,31 @@ class DSLFactory:
             )
         )
 
-        make_dsl = lambda: DSL(
-            [prod for prods in sym_to_productions.values() for prod in prods]
-        )
-        dsl = make_dsl()
         if self.prune:
             assert self.target_types is not None
-            symbols = dsl.constructible_symbols(*self.target_types)
-            new_sym_to_productions = {}
-            for original_symbol, prods in sym_to_productions.items():
-                new_sym_to_productions[original_symbol] = [
-                    x for x in prods if x.symbol() in symbols
-                ]
-                if len(new_sym_to_productions[original_symbol]) == 0:
-                    raise TypeError(
-                        f"All productions for {original_symbol} were pruned. "
-                        f"Check that the target types are correct."
-                    )
-                new_sym_to_productions[original_symbol] = Production.reindex(
-                    new_sym_to_productions[original_symbol]
-                )
-            sym_to_productions = new_sym_to_productions
-            dsl = make_dsl()
+            sym_to_productions = prune(sym_to_productions, self.target_types)
+        dsl = make_dsl(sym_to_productions)
         return dsl
+
+
+def make_dsl(sym_to_productions):
+    return DSL([prod for prods in sym_to_productions.values() for prod in prods])
+
+
+def prune(sym_to_productions, target_types):
+    dsl = make_dsl(sym_to_productions)
+    symbols = dsl.constructible_symbols(*target_types)
+    new_sym_to_productions = {}
+    for original_symbol, prods in sym_to_productions.items():
+        new_sym_to_productions[original_symbol] = [
+            x for x in prods if x.symbol() in symbols
+        ]
+        if len(new_sym_to_productions[original_symbol]) == 0:
+            raise TypeError(
+                f"All productions for {original_symbol} were pruned. "
+                f"Check that the target types are correct."
+            )
+        new_sym_to_productions[original_symbol] = Production.reindex(
+            new_sym_to_productions[original_symbol]
+        )
+    return new_sym_to_productions
