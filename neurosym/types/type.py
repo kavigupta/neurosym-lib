@@ -19,6 +19,27 @@ class Type(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        """
+        Unify this type with another type. Returns a dictionary of substitutions.
+
+        Raise UnificationError if the types cannot be unified.
+
+        If already_tried_other_direction is True, then we have already tried to unify
+        the other direction and failed, so we should not try again.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def subst_type_vars(self, subst: Dict[str, "Type"]):
+        """
+        Substitute type variables in the type according to the substitution.
+        """
+        raise NotImplementedError
+
     def is_atomic(self):
         """
         Return True if the type is atomic.
@@ -69,6 +90,10 @@ class Type(ABC):
         return max(children + [0]) + np.log2(len(children) + 1)
 
 
+class UnificationError(Exception):
+    pass
+
+
 @dataclass(frozen=True, eq=True)
 class AtomicType(Type):
     name: str
@@ -81,6 +106,19 @@ class AtomicType(Type):
 
     def children(self):
         yield from []
+
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        if isinstance(other, AtomicType):
+            if self.name == other.name:
+                return {}
+            else:
+                raise UnificationError(f"{self} != {other}")
+        elif already_tried_other_direction:
+            raise UnificationError(f"{self} != {other}")
+        else:
+            return other.unify(self, already_tried_other_direction=True)
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         return self
@@ -106,6 +144,19 @@ class TensorType(Type):
         assert not self.has_type_vars()
         return self
 
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        if isinstance(other, TensorType):
+            if self.shape == other.shape:
+                return self.dtype.unify(other.dtype)
+            else:
+                raise UnificationError(f"{self} != {other}")
+        elif already_tried_other_direction:
+            raise UnificationError(f"{self} != {other}")
+        else:
+            return other.unify(self, already_tried_other_direction=True)
+
 
 @dataclass(frozen=True, eq=True)
 class ListType(Type):
@@ -124,6 +175,16 @@ class ListType(Type):
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         return ListType(self.element_type.subst_type_vars(subst))
+
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        if isinstance(other, ListType):
+            return self.element_type.unify(other.element_type)
+        elif already_tried_other_direction:
+            raise UnificationError(f"{self} != {other}")
+        else:
+            return other.unify(self, already_tried_other_direction=True)
 
 
 @dataclass(frozen=True, eq=True)
@@ -154,6 +215,30 @@ class ArrowType(Type):
         yield from self.input_type
         yield self.output_type
 
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        if not isinstance(other, ArrowType):
+            if already_tried_other_direction:
+                raise UnificationError(f"{self} != {other}")
+            else:
+                return other.unify(self, already_tried_other_direction=True)
+        if len(self.input_type) != len(other.input_type):
+            raise UnificationError(f"{self} != {other}")
+        individuals = []
+        for t1, t2 in zip(self.input_type, other.input_type):
+            individuals.append(t1.unify(t2))
+        individuals.append(self.output_type.unify(other.output_type))
+        subst = {}
+        for individual in individuals:
+            for k, v in individual.items():
+                if k in subst:
+                    if subst[k] != v:
+                        raise UnificationError(f"{k} is unified to {subst[k]} and {v}")
+                else:
+                    subst[k] = v
+        return subst
+
 
 @dataclass(frozen=True, eq=True)
 class TypeVariable(Type):
@@ -173,6 +258,11 @@ class TypeVariable(Type):
 
     def children(self):
         yield from []
+
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        return {self.name: other}
 
 
 float_t = AtomicType("f")
