@@ -72,54 +72,5 @@ def example_rnn_dsl(length, out_length):
         lambda f, g: lambda x: f(g(x)),
     )
 
-    # dslf.concrete(
-    #     "TFloat_list_Tfloat_list_compose",
-    #     "(([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
-    #     lambda f, g: lambda x: f(g(x)),
-    # )
-
-    # dslf.concrete(
-    #     "Tfloat_Tfloat_bool_compose",
-    #     "(([$fL]) -> $fL, ($fL) -> f) -> ([$fL]) -> f",
-    #     lambda f, g: lambda x: f(g(x)),
-    # )
-
     dslf.prune_to("[{f, $L}] -> [{f, $O}]")
     return dslf.finalize()
-
-
-# example_rnn_dsl(10, 10)
-
-
-# from neurosym.types.type_string_repr import parse_type, render_type
-
-# print(render_type(parse_type("a -> b -> c")))
-
-# from typing import List
-
-
-# from neurosym.types.type_string_repr import parse_type, render_type
-# from neurosym.types.type_signature import ConcreteTypeSignature,expansions
-
-# ty = parse_type("([#a], float) -> int")
-# ty = parse_type("#a -> ret")
-# sig = ConcreteTypeSignature(list(ty.input_type), ty.output_type)
-
-# expand_to = [parse_type(ty) for ty in ["leaf", "(#a,#b) -> #c"]]
-# # expand_to = [parse_type(ty) for ty in ["bool", "(#a,int) -> #a"]]
-# # expand_to = [parse_type(ty) for ty in ["int", "[#i]"]]
-
-
-# print("sigs:")
-# for t in expansions(sig, expand_to, max_overall_depth=8):
-#     print(t.render())
-#     print(t.depth())
-#     pass
-
-
-# print("int", parse_type("int").depth())
-# print("[int]", parse_type("[int]").depth())
-# print("[[int]]", parse_type("[[int]]").depth())
-# print("[[[int]]]", parse_type("[[[int]]]").depth())
-# print("[[[[int]]]]", parse_type("[[[[int]]]]").depth())
-# print("[[[[[int]]]]]", parse_type("[[[[[int]]]]]").depth())
