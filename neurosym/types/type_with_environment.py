@@ -43,6 +43,21 @@ class Environment:
 
 
 @dataclass(frozen=True, eq=True)
+class PermissiveEnvironmment:
+    def child(self, *new_types: Tuple[Type]):
+        return self
+
+    def parent(self, new_types):
+        return self
+
+    def contains_type_at(self, typ: Type, index: int):
+        return True
+
+    def __len__(self):
+        raise NotImplementedError
+
+
+@dataclass(frozen=True, eq=True)
 class TypeWithEnvironment:
     """
     Represents a type in a given environment.

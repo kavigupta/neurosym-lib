@@ -139,7 +139,12 @@ class DSLFactory:
 
         if self.prune:
             assert self.target_types is not None
-            sym_to_productions = prune(sym_to_productions, self.target_types)
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=False
+            )
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=True
+            )
         dsl = make_dsl(sym_to_productions)
         return dsl
 
@@ -148,9 +153,11 @@ def make_dsl(sym_to_productions):
     return DSL([prod for prods in sym_to_productions.values() for prod in prods])
 
 
-def prune(sym_to_productions, target_types):
+def prune(sym_to_productions, target_types, *, care_about_variables):
     dsl = make_dsl(sym_to_productions)
-    symbols = dsl.constructible_symbols(*target_types)
+    symbols = dsl.constructible_symbols(
+        *target_types, care_about_variables=care_about_variables
+    )
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
         new_sym_to_productions[original_symbol] = [

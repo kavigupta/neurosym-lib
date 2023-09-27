@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Tuple
 
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import (
+    Environment,
+    PermissiveEnvironmment,
+    TypeWithEnvironment,
+)
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -88,7 +92,7 @@ class DSL:
         return prod.apply(self, program.state, program.children)
 
     def all_rules(
-        self, *target_types: Tuple[Type]
+        self, *target_types: Tuple[Type], care_about_variables
     ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
@@ -99,29 +103,44 @@ class DSL:
         This is useful for generating a PCFG.
         """
         # TODO(KG) figure out how to add variables properly
-        types_to_expand = list(target_types)
+        twes_to_expand = [
+            TypeWithEnvironment(
+                type,
+                Environment.empty()
+                if care_about_variables
+                else PermissiveEnvironmment(),
+            )
+            for type in target_types
+        ]
         rules = {}
-        while len(types_to_expand) > 0:
-            type = types_to_expand.pop()
-            if type in rules:
+        while len(twes_to_expand) > 0:
+            twe = twes_to_expand.pop()
+            if twe in rules:
                 continue
-            rules[type] = []
+            rules[twe] = []
             for production in self.productions:
-                types = production.type_signature().unify_return(
-                    TypeWithEnvironment(type, Environment.empty())
-                )
-                if types is None:
+                twes = production.type_signature().unify_return(twe)
+                if twes is None:
                     continue
-                types = [x.typ for x in types]
-                rules[type].append((production.symbol(), types))
-                types_to_expand.extend(types)
+                rules[twe].append((production.symbol(), twes))
+                twes_to_expand.extend(twes)
+        if not care_about_variables:
+            rules = {
+                out_twe.typ: [
+                    (sym, [inp_twe.typ for inp_twe in inp_twes])
+                    for sym, inp_twes in rules
+                ]
+                for out_twe, rules in rules.items()
+            }
         return rules
 
-    def constructible_symbols(self, *target_types):
+    def constructible_symbols(self, *target_types, care_about_variables):
         """
         Returns all the symbols that can be constructed from the given target types.
         """
-        type_to_rules = self.all_rules(*target_types)
+        type_to_rules = self.all_rules(
+            *target_types, care_about_variables=care_about_variables
+        )
 
         constructible = set()
 
@@ -143,12 +162,14 @@ class DSL:
             if all(t in constructible for t in in_t)
         }
 
-    def validate_all_rules_reachable(self, *target_types):
+    def validate_all_rules_reachable(self, *target_types, care_about_variables):
         """
         Checks that all the rules in the DSL are reachable from at least one of the
         target types.
         """
-        symbols = self.constructible_symbols(*target_types)
+        symbols = self.constructible_symbols(
+            *target_types, care_about_variables=care_about_variables
+        )
         for production in self.productions:
             assert production.symbol() in symbols, (
                 f"Production {production.symbol()} is unreachable from target types "
