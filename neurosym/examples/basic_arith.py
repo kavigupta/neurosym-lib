@@ -7,4 +7,5 @@ def basic_arith_dsl(lambdas=False):
     dslf.concrete("1", "() -> i", lambda: 1)
     if lambdas:
         dslf.lambdas()
+    dslf.prune_to("i", "i -> i", "i -> i -> i", "(i, i) -> i", "(i, i) -> i -> i")
     return dslf.finalize()

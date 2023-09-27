@@ -1,11 +1,11 @@
 from typing import Dict, List
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
-    ConcreteProduction,
-    LambdaProduction,
-    ParameterizedProduction,
-    VariableProduction,
     Production,
+    ConcreteProduction,
+    ParameterizedProduction,
+    LambdaProduction,
+    VariableProduction,
 )
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 import numpy as np
@@ -152,6 +152,14 @@ class DSLFactory:
             )
         )
 
+        if self.prune:
+            assert self.target_types is not None
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=False
+            )
+            sym_to_productions = prune(
+                sym_to_productions, self.target_types, care_about_variables=True
+            )
         if self.lambda_parameters is not None:
             universe_lambda = type_universe(
                 known_types, require_arity_up_to=self.lambda_parameters["max_arity"]
@@ -187,26 +195,30 @@ class DSLFactory:
                 for unique_id, variable_type_sig in enumerate(variable_type_signatures)
             ]
 
-        make_dsl = lambda: DSL(
-            [prod for prods in sym_to_productions.values() for prod in prods]
-        )
-        dsl = make_dsl()
-        if self.prune:
-            assert self.target_types is not None
-            symbols = dsl.constructible_symbols(*self.target_types)
-            new_sym_to_productions = {}
-            for original_symbol, prods in sym_to_productions.items():
-                new_sym_to_productions[original_symbol] = [
-                    x for x in prods if x.symbol() in symbols
-                ]
-                if len(new_sym_to_productions[original_symbol]) == 0:
-                    raise TypeError(
-                        f"All productions for {original_symbol} were pruned. "
-                        f"Check that the target types are correct."
-                    )
-                new_sym_to_productions[original_symbol] = Production.reindex(
-                    new_sym_to_productions[original_symbol]
-                )
-            sym_to_productions = new_sym_to_productions
-            dsl = make_dsl()
+        dsl = make_dsl(sym_to_productions)
         return dsl
+
+
+def make_dsl(sym_to_productions):
+    return DSL([prod for prods in sym_to_productions.values() for prod in prods])
+
+
+def prune(sym_to_productions, target_types, *, care_about_variables):
+    dsl = make_dsl(sym_to_productions)
+    symbols = dsl.constructible_symbols(
+        *target_types, care_about_variables=care_about_variables
+    )
+    new_sym_to_productions = {}
+    for original_symbol, prods in sym_to_productions.items():
+        new_sym_to_productions[original_symbol] = [
+            x for x in prods if x.symbol() in symbols
+        ]
+        if len(new_sym_to_productions[original_symbol]) == 0:
+            raise TypeError(
+                f"All productions for {original_symbol} were pruned. "
+                f"Check that the target types are correct."
+            )
+        new_sym_to_productions[original_symbol] = Production.reindex(
+            new_sym_to_productions[original_symbol]
+        )
+    return new_sym_to_productions

@@ -35,8 +35,26 @@ class Environment:
         }
         return Environment(frozendict(result))
 
+    def contains_type_at(self, typ: Type, index: int):
+        return index in self._elements and self._elements[index] == typ
+
     def __len__(self):
         return max(self._elements) + 1
+
+
+@dataclass(frozen=True, eq=True)
+class PermissiveEnvironmment:
+    def child(self, *new_types: Tuple[Type]):
+        return self
+
+    def parent(self, new_types):
+        return self
+
+    def contains_type_at(self, typ: Type, index: int):
+        return True
+
+    def __len__(self):
+        raise NotImplementedError
 
 
 @dataclass(frozen=True, eq=True)

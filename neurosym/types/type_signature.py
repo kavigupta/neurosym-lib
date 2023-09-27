@@ -43,14 +43,6 @@ class TypeSignature(ABC):
         """
 
 
-def expanded_type_signature(type_signature: TypeSignature) -> TypeSignature:
-    """
-    Expands the type signature into a concrete type signature.
-    """
-    # TODO (MB) implement this
-    raise NotImplementedError
-
-
 @dataclass
 class ConcreteTypeSignature(TypeSignature):
     """
