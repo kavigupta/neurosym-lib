@@ -162,20 +162,6 @@ class DSL:
             if all(t in constructible for t in in_t)
         }
 
-    def validate_all_rules_reachable(self, *target_types, care_about_variables):
-        """
-        Checks that all the rules in the DSL are reachable from at least one of the
-        target types.
-        """
-        symbols = self.constructible_symbols(
-            *target_types, care_about_variables=care_about_variables
-        )
-        for production in self.productions:
-            assert production.symbol() in symbols, (
-                f"Production {production.symbol()} is unreachable from target types "
-                f"{target_types}"
-            )
-
     def compute_type(
         self,
         program: SExpression,
