@@ -35,6 +35,9 @@ class Environment:
         }
         return Environment(frozendict(result))
 
+    def contains_type_at(self, typ: Type, index: int):
+        return index in self._elements and self._elements[index] == typ
+
     def __len__(self):
         return max(self._elements) + 1
 
