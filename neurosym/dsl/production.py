@@ -3,7 +3,11 @@ from dataclasses import KW_ONLY, dataclass
 from typing import Callable, Dict
 
 
-from ..types.type_signature import TypeSignature
+from ..types.type_signature import (
+    LambdaTypeSignature,
+    TypeSignature,
+    VariableTypeSignature,
+)
 
 
 class Production(ABC):
@@ -123,6 +127,79 @@ class ConcreteProduction(FunctionLikeProduction):
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class LambdaProduction(Production):
+    _unique_id: int
+    _type_signature: LambdaTypeSignature
+
+    @property
+    def arity(self):
+        return len(self._type_signature.input_type)
+
+    def base_symbol(self):
+        return "lam"
+
+    def get_index(self):
+        return self._unique_id
+
+    def with_index(self, index):
+        return LambdaProduction(index, self._type_signature)
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+        from neurosym.dsl.lambdas import LambdaFunction
+
+        [body] = children
+        return LambdaFunction.of(dsl, body, self._type_signature)
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class VariableProduction(Production):
+    _unique_id: int
+    _type_signature: VariableTypeSignature
+
+    def base_symbol(self):
+        return f"${self._type_signature.index_in_env}"
+
+    def get_index(self):
+        return self._unique_id
+
+    def with_index(self, index):
+        return VariableProduction(index, self._type_signature)
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def apply(self, dsl, state, children):
+        """
+        Apply this production to the given children.
+        """
+        raise NotImplementedError
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+    @property
+    def index_in_env(self):
+        return self._type_signature.index_in_env
 
 
 @dataclass

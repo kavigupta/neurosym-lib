@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import itertools
 from typing import Callable, List, Tuple
+import frozendict
 
 from neurosym.types.type import ArrowType, Type, ListType
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
@@ -83,6 +84,79 @@ class ConcreteTypeSignature(TypeSignature):
         from neurosym.types.type_string_repr import render_type
 
         return render_type(self.astype())
+
+
+@dataclass
+class LambdaTypeSignature(TypeSignature):
+    """
+    Represents the type signature of the lambda production.
+    """
+
+    lambda_type: ArrowType
+
+    def arity(self) -> int:
+        # just the body
+        return 1
+
+    def render(self) -> str:
+        from neurosym.types.type_string_repr import render_type
+
+        input_types = ";".join(render_type(x) for x in self.lambda_type.input_type)
+        lambda_type = f"L<{render_type(self.lambda_type.output_type)}|{input_types}>"
+
+        return f"{lambda_type} -> {render_type(self.lambda_type)}"
+
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+        if twe.typ != self.lambda_type:
+            return None
+        return [
+            TypeWithEnvironment(
+                self.lambda_type.output_type,
+                twe.env.child(*self.lambda_type.input_type),
+            )
+        ]
+
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
+        if len(twes) != 1:
+            return None
+        if twes[0].typ != self.lambda_type.output_type:
+            return None
+        parent = twes[0].env.parent(*self.lambda_type.input_type)
+        return TypeWithEnvironment(self.lambda_type, parent)
+
+
+@dataclass
+class VariableTypeSignature(TypeSignature):
+    """
+    Represents the type signature of variable production.
+    """
+
+    variable_type: Type
+    index_in_env: int
+
+    def arity(self) -> int:
+        # leaf
+        return 0
+
+    def render(self) -> str:
+        from neurosym.types.type_string_repr import render_type
+
+        return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
+
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+        if twe.typ != self.variable_type:
+            return None
+        if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
+            return None
+        return []
+
+    def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
+        if len(twes) != 0:
+            return None
+        return TypeWithEnvironment(
+            self.variable_type,
+            Environment(frozendict({self.index_in_env: self.variable_type})),
+        )
 
 
 def bottom_up_enumerate_types(
