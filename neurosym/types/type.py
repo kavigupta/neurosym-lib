@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Tuple, Dict
+import uuid
 import numpy as np
 
 
@@ -243,6 +244,10 @@ class ArrowType(Type):
 @dataclass(frozen=True, eq=True)
 class TypeVariable(Type):
     name: str
+
+    @classmethod
+    def fresh(cls):
+        return TypeVariable(f"_{uuid.uuid4().hex}")
 
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
