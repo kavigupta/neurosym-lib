@@ -162,17 +162,23 @@ class DSLFactory:
         )
 
         if self.lambda_parameters is not None:
-            universe_lambda = type_universe(
+            types, constructors_lambda = type_universe(
                 known_types, require_arity_up_to=self.lambda_parameters["max_arity"]
             )
-            expanded = expansions(
-                TypeVariable("ROOT"),
-                *universe_lambda,
-                max_expansion_steps=self.max_expansion_steps,
-                max_overall_depth=self.lambda_parameters["max_type_depth"],
-            )
-            expanded = list(expanded)
-            expanded = [x for x in expanded if isinstance(x, ArrowType)]
+            top_levels = [
+                constructor(*[TypeVariable.fresh() for _ in range(arity)])
+                for arity, constructor in constructors_lambda
+            ]
+            top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
+            expanded = []
+            for top_level in top_levels:
+                expanded += expansions(
+                    top_level,
+                    types,
+                    constructors_lambda,
+                    max_expansion_steps=self.max_expansion_steps,
+                    max_overall_depth=self.lambda_parameters["max_type_depth"],
+                )
             expanded = sorted(expanded, key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x))
