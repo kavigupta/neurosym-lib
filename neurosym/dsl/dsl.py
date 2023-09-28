@@ -6,10 +6,11 @@ from neurosym.types.type_with_environment import (
     PermissiveEnvironmment,
     TypeWithEnvironment,
 )
+from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import Type
+from ..types.type import Type, TypeVariable
 
 from .production import Production
 
@@ -29,6 +30,14 @@ class DSL:
             production.symbol(): production for production in self.productions
         }
 
+        self._out_type_to_prod_idx = TreeTrie.empty()
+        for i, prod in enumerate(self.productions):
+            self._out_type_to_prod_idx.insert(
+                prod.type_signature().return_type_template(),
+                i,
+                is_wildcard_predicate=lambda x: isinstance(x, TypeVariable),
+            )
+
     def symbols(self):
         return self._production_by_symbol.keys()
 
@@ -41,7 +50,8 @@ class DSL:
     def _productions_for_type(
         self, type: TypeWithEnvironment
     ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
-        for production in self.productions:
+        for idx in sorted(self._out_type_to_prod_idx.query(type.typ)):
+            production = self.productions[idx]
             arg_types = production.type_signature().unify_return(type)
             if arg_types is not None:
                 yield production, arg_types
