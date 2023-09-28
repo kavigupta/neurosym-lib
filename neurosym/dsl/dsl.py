@@ -38,6 +38,14 @@ class DSL:
         """
         return self.get_production(sym).type_signature().arity()
 
+    def _productions_for_type(
+        self, type: TypeWithEnvironment
+    ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
+        for production in self.productions:
+            arg_types = production.type_signature().unify_return(type)
+            if arg_types is not None:
+                yield production, arg_types
+
     def expansions_for_type(self, type: TypeWithEnvironment) -> List[SExpression]:
         """
         Possible expansions for the given type.
@@ -45,17 +53,13 @@ class DSL:
         An expansion is an SExpression with holes in it. The holes can be filled in with
         other SExpressions to produce a complete SExpression.
         """
-        result = []
-        for production in self.productions:
-            arg_types = production.type_signature().unify_return(type)
-            if arg_types is not None:
-                result.append(
-                    SExpression(
-                        production.symbol(),
-                        tuple(Hole.of(t) for t in arg_types),
-                    )
-                )
-        return result
+        return [
+            SExpression(
+                production.symbol(),
+                tuple(Hole.of(t) for t in arg_types),
+            )
+            for production, arg_types in self._productions_for_type(type)
+        ]
 
     def get_production(self, symbol: str) -> Production:
         """
@@ -118,11 +122,8 @@ class DSL:
             if twe in rules:
                 continue
             rules[twe] = []
-            for production in self.productions:
-                twes = production.type_signature().unify_return(twe)
-                if twes is None:
-                    continue
-                rules[twe].append((production.symbol(), twes))
+            for prod, twes in self._productions_for_type(twe):
+                rules[twe].append((prod.symbol(), twes))
                 twes_to_expand.extend(twes)
         if not care_about_variables:
             rules = {
