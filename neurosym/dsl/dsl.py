@@ -38,6 +38,14 @@ class DSL:
         """
         return self.get_production(sym).type_signature().arity()
 
+    def _productions_for_type(
+        self, type: TypeWithEnvironment
+    ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
+        for production in self.productions:
+            arg_types = production.type_signature().unify_return(type)
+            if arg_types is not None:
+                yield production, arg_types
+
     def expansions_for_type(self, type: TypeWithEnvironment) -> List[SExpression]:
         """
         Possible expansions for the given type.
@@ -45,17 +53,13 @@ class DSL:
         An expansion is an SExpression with holes in it. The holes can be filled in with
         other SExpressions to produce a complete SExpression.
         """
-        result = []
-        for production in self.productions:
-            arg_types = production.type_signature().unify_return(type)
-            if arg_types is not None:
-                result.append(
-                    SExpression(
-                        production.symbol(),
-                        tuple(Hole.of(t) for t in arg_types),
-                    )
-                )
-        return result
+        return [
+            SExpression(
+                production.symbol(),
+                tuple(Hole.of(t) for t in arg_types),
+            )
+            for production, arg_types in self._productions_for_type(type)
+        ]
 
     def get_production(self, symbol: str) -> Production:
         """
@@ -92,7 +96,7 @@ class DSL:
         return prod.apply(self, program.state, program.children)
 
     def all_rules(
-        self, *target_types: Tuple[Type], care_about_variables
+        self, *target_types: Tuple[Type], care_about_variables, type_depth_limit
     ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
@@ -102,7 +106,6 @@ class DSL:
 
         This is useful for generating a PCFG.
         """
-        # TODO(KG) figure out how to add variables properly
         twes_to_expand = [
             TypeWithEnvironment(
                 type,
@@ -115,14 +118,11 @@ class DSL:
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe in rules:
+            if twe.typ.depth() > type_depth_limit or twe in rules:
                 continue
             rules[twe] = []
-            for production in self.productions:
-                twes = production.type_signature().unify_return(twe)
-                if twes is None:
-                    continue
-                rules[twe].append((production.symbol(), twes))
+            for prod, twes in self._productions_for_type(twe):
+                rules[twe].append((prod.symbol(), twes))
                 twes_to_expand.extend(twes)
         if not care_about_variables:
             rules = {
@@ -134,12 +134,16 @@ class DSL:
             }
         return rules
 
-    def constructible_symbols(self, *target_types, care_about_variables):
+    def constructible_symbols(
+        self, *target_types, care_about_variables, type_depth_limit
+    ):
         """
         Returns all the symbols that can be constructed from the given target types.
         """
         type_to_rules = self.all_rules(
-            *target_types, care_about_variables=care_about_variables
+            *target_types,
+            care_about_variables=care_about_variables,
+            type_depth_limit=type_depth_limit,
         )
 
         constructible = set()

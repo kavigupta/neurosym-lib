@@ -15,5 +15,7 @@ class TestAllRules(unittest.TestCase):
                     ("1", []),
                 ]
             },
-            basic_arith_dsl().all_rules(t("i"), care_about_variables=False),
+            basic_arith_dsl().all_rules(
+                t("i"), care_about_variables=False, type_depth_limit=float("inf")
+            ),
         )
