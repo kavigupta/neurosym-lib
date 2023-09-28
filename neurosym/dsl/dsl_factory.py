@@ -173,6 +173,7 @@ class DSLFactory:
             )
             expanded = list(expanded)
             expanded = [x for x in expanded if isinstance(x, ArrowType)]
+            expanded = sorted(expanded, key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x))
                 for i, x in enumerate(expanded)
