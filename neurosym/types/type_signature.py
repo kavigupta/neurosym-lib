@@ -4,7 +4,13 @@ import itertools
 from typing import Callable, List, Tuple
 import frozendict
 
-from neurosym.types.type import ArrowType, Type, ListType
+from neurosym.types.type import (
+    ArrowType,
+    Type,
+    ListType,
+    TypeVariable,
+    UnificationError,
+)
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from itertools import product
 import numpy as np
@@ -59,20 +65,33 @@ class ConcreteTypeSignature(TypeSignature):
         return cls(list(type.input_type), type.output_type)
 
     def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
-        if twe.typ == self.return_type:
-            return [TypeWithEnvironment(t, twe.env) for t in self.arguments]
-        else:
+        try:
+            mapping = twe.typ.unify(self.return_type)
+        except UnificationError:
             return None
+        return [
+            TypeWithEnvironment(t.subst_type_vars(mapping), twe.env)
+            for t in self.arguments
+        ]
 
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
         env = envs[0] if envs else Environment.empty()
         assert all(envs[0] == env for env in envs)
-        if list(types) == list(self.arguments):
-            return TypeWithEnvironment(self.return_type, env)
-        else:
+        mapping = {}
+        try:
+            for t1, t2 in zip(self.arguments, types):
+                for_arg = t1.unify(t2)
+                for k, v in for_arg.items():
+                    if k in mapping:
+                        if mapping[k] != v:
+                            return None
+                    else:
+                        mapping[k] = v
+        except UnificationError:
             return None
+        return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
         return len(self.arguments)
@@ -92,37 +111,41 @@ class LambdaTypeSignature(TypeSignature):
     Represents the type signature of the lambda production.
     """
 
-    lambda_type: ArrowType
+    input_types: List[ArrowType]
 
     def arity(self) -> int:
         # just the body
         return 1
 
+    def function_arity(self) -> int:
+        return len(self.input_types)
+
     def render(self) -> str:
         from neurosym.types.type_string_repr import render_type
 
-        input_types = ";".join(render_type(x) for x in self.lambda_type.input_type)
-        lambda_type = f"L<{render_type(self.lambda_type.output_type)}|{input_types}>"
+        body = TypeVariable("body")
+        input_types = ";".join(render_type(x) for x in self.input_types)
+        lambda_type = f"L<{render_type(body)}|{input_types}>"
 
-        return f"{lambda_type} -> {render_type(self.lambda_type)}"
+        return f"{lambda_type} -> {render_type(ArrowType(self.input_types, body))}"
 
     def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
-        if twe.typ != self.lambda_type:
+        if not isinstance(twe.typ, ArrowType):
+            return None
+        if twe.typ.input_type != self.input_types:
             return None
         return [
             TypeWithEnvironment(
-                self.lambda_type.output_type,
-                twe.env.child(*self.lambda_type.input_type),
+                twe.typ.output_type,
+                twe.env.child(*self.input_types),
             )
         ]
 
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         if len(twes) != 1:
             return None
-        if twes[0].typ != self.lambda_type.output_type:
-            return None
-        parent = twes[0].env.parent(*self.lambda_type.input_type)
-        return TypeWithEnvironment(self.lambda_type, parent)
+        parent = twes[0].env.parent(*self.input_type)
+        return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
 
 
 @dataclass
@@ -206,14 +229,45 @@ def bottom_up_enumerate_types(
     return sorted([t for t, _, _ in overall], key=str)
 
 
+def signature_expansions(
+    sig: ConcreteTypeSignature,
+    terminals: List[Type],
+    constructors: List[Tuple[int, Callable]],
+    max_expansion_steps=np.inf,
+    max_overall_depth=np.inf,
+):
+    variables_in_arguments = {
+        var for arg in sig.arguments for var in arg.max_depth_per_type_variable()
+    }
+    variables_in_return = set(sig.return_type.max_depth_per_type_variable())
+    exclude_variables = variables_in_arguments & variables_in_return
+    return expansions(
+        sig.astype(),
+        terminals,
+        constructors,
+        max_expansion_steps,
+        max_overall_depth,
+        exclude_variables,
+    )
+
+
 def expansions(
     sig: Type,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
     max_expansion_steps=np.inf,
     max_overall_depth=np.inf,
+    exclude_variables=(),
 ):
+    from neurosym.types.type_string_repr import render_type
+
     depth_by_var = sig.max_depth_per_type_variable()
+    for var in exclude_variables:
+        if var not in depth_by_var:
+            raise ValueError(
+                f"Variable {var} not in type signature {render_type(sig)}, cannot exclude. Valid options: {sorted(depth_by_var)}"
+            )
+        del depth_by_var[var]
     enumerations_by_var = {
         ty_var: bottom_up_enumerate_types(
             terminals,
