@@ -17,7 +17,7 @@ from neurosym.types.type_signature import (
     signature_expansions,
     type_universe,
 )
-from neurosym.types.type import ArrowType, ListType, TypeVariable
+from neurosym.types.type import ArrowType, AtomicType, ListType, TypeVariable
 from neurosym.types.type_string_repr import render_type
 
 
@@ -167,7 +167,10 @@ class DSLFactory:
                 known_types, require_arity_up_to=self.lambda_parameters["max_arity"]
             )
             top_levels = [
-                constructor(*[TypeVariable.fresh() for _ in range(arity)])
+                constructor(
+                    *[TypeVariable.fresh() for _ in range(arity - 1)],
+                    AtomicType("output_type"),
+                )
                 for arity, constructor in constructors_lambda
             ]
             top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
@@ -182,7 +185,7 @@ class DSLFactory:
                 )
             expanded = sorted(expanded, key=str)
             sym_to_productions["<lambda>"] = [
-                LambdaProduction(i, LambdaTypeSignature(x))
+                LambdaProduction(i, LambdaTypeSignature(x.input_type))
                 for i, x in enumerate(expanded)
             ]
 

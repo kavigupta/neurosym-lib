@@ -18,7 +18,7 @@ class LambdaFunction:
         return cls(dsl, body, typ)
 
     def __call__(self, *args):
-        assert len(args) == len(self.typ.lambda_type.input_type)
+        assert len(args) == self.typ.function_arity()
         body = replace_variables_with_args(self.dsl, self.body)
         body = inject(self.dsl, body, args)
         return self.dsl.compute(body)
@@ -57,7 +57,7 @@ def inject(dsl: DSL, expr: InitializedSExpression, args: List[object], frame_shi
     prod = dsl.get_production(expr.symbol)
     children = expr.children
     if isinstance(prod, LambdaProduction):
-        frame_shift += len(prod.type_signature().lambda_type.input_type)
+        frame_shift += prod.type_signature().function_arity()
     return InitializedSExpression(
         expr.symbol,
         [inject(dsl, child, args, frame_shift=frame_shift) for child in children],

@@ -4,7 +4,13 @@ import itertools
 from typing import Callable, List, Tuple
 import frozendict
 
-from neurosym.types.type import ArrowType, Type, ListType, UnificationError
+from neurosym.types.type import (
+    ArrowType,
+    Type,
+    ListType,
+    TypeVariable,
+    UnificationError,
+)
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from itertools import product
 import numpy as np
@@ -105,37 +111,41 @@ class LambdaTypeSignature(TypeSignature):
     Represents the type signature of the lambda production.
     """
 
-    lambda_type: ArrowType
+    input_types: List[ArrowType]
 
     def arity(self) -> int:
         # just the body
         return 1
 
+    def function_arity(self) -> int:
+        return len(self.input_types)
+
     def render(self) -> str:
         from neurosym.types.type_string_repr import render_type
 
-        input_types = ";".join(render_type(x) for x in self.lambda_type.input_type)
-        lambda_type = f"L<{render_type(self.lambda_type.output_type)}|{input_types}>"
+        body = TypeVariable("body")
+        input_types = ";".join(render_type(x) for x in self.input_types)
+        lambda_type = f"L<{render_type(body)}|{input_types}>"
 
-        return f"{lambda_type} -> {render_type(self.lambda_type)}"
+        return f"{lambda_type} -> {render_type(ArrowType(self.input_types, body))}"
 
     def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
-        if twe.typ != self.lambda_type:
+        if not isinstance(twe.typ, ArrowType):
+            return None
+        if twe.typ.input_type != self.input_types:
             return None
         return [
             TypeWithEnvironment(
-                self.lambda_type.output_type,
-                twe.env.child(*self.lambda_type.input_type),
+                twe.typ.output_type,
+                twe.env.child(*self.input_types),
             )
         ]
 
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         if len(twes) != 1:
             return None
-        if twes[0].typ != self.lambda_type.output_type:
-            return None
-        parent = twes[0].env.parent(*self.lambda_type.input_type)
-        return TypeWithEnvironment(self.lambda_type, parent)
+        parent = twes[0].env.parent(*self.input_type)
+        return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
 
 
 @dataclass
