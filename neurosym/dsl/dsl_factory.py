@@ -39,6 +39,7 @@ class DSLFactory:
         self._concrete_productions = []
         self._parameterized_productions = []
         self._signatures = []
+        self._known_types = []
         self.lambda_parameters = None
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
@@ -51,6 +52,12 @@ class DSLFactory:
         Define a type.
         """
         self.t.typedef(key, type_str)
+
+    def known_types(self, *types):
+        """
+        Add known types to the DSL.
+        """
+        self._known_types.extend(self.t(typ) for typ in types)
 
     def lambdas(self, max_arity=2, max_type_depth=4, max_env_depth=4):
         """
@@ -138,7 +145,7 @@ class DSLFactory:
         Finalize the DSL.
         """
 
-        known_types = [x.astype() for x in self._signatures]
+        known_types = [x.astype() for x in self._signatures] + self._known_types
 
         universe = type_universe(known_types)
 
