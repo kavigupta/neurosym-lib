@@ -14,10 +14,10 @@ class EnumerationRegressionTest(unittest.TestCase):
             {line.strip() for line in expected.strip().split("\n")},
         )
 
-    def rendered_dsl(self):
+    def rendered_dsl(self, lambdas_kwargs={}):
         dslf = DSLFactory()
         dslf.known_types("i")
-        dslf.lambdas()
+        dslf.lambdas(**lambdas_kwargs)
         return dslf.finalize().render()
 
     def test_basic(self):
@@ -72,5 +72,60 @@ class EnumerationRegressionTest(unittest.TestCase):
             $1_9 :: V<i@1>
             $2_10 :: V<i@2>
             $3_11 :: V<i@3>
+            """,
+        )
+
+    def test_limited_arity(self):
+        self.assertRenderingEqual(
+            self.rendered_dsl(lambdas_kwargs=dict(max_arity=1)),
+            """
+            lam_0 :: L<i -> i|i -> i> -> (i -> i) -> i -> i
+            lam_1 :: L<i|i -> i> -> (i -> i) -> i
+            lam_2 :: L<i -> i|i> -> i -> i -> i
+            lam_3 :: L<i|i> -> i -> i
+            $0_0 :: V<i -> i@0>
+            $1_1 :: V<i -> i@1>
+            $2_2 :: V<i -> i@2>
+            $3_3 :: V<i -> i@3>
+            $0_4 :: V<i@0>
+            $1_5 :: V<i@1>
+            $2_6 :: V<i@2>
+            $3_7 :: V<i@3>
+            """,
+        )
+
+    def test_limited_type_depth(self):
+        self.assertRenderingEqual(
+            self.rendered_dsl(lambdas_kwargs=dict(max_type_depth=3.5)),
+            """
+            lam_0 :: L<i -> i|i -> i> -> (i -> i) -> i -> i
+            lam_1 :: L<i|i -> i> -> (i -> i) -> i
+            lam_2 :: L<i|i;i> -> (i, i) -> i
+            lam_3 :: L<i -> i|i> -> i -> i -> i
+            lam_4 :: L<i|i> -> i -> i
+            $0_0 :: V<i -> i@0>
+            $1_1 :: V<i -> i@1>
+            $2_2 :: V<i -> i@2>
+            $3_3 :: V<i -> i@3>
+            $0_4 :: V<i@0>
+            $1_5 :: V<i@1>
+            $2_6 :: V<i@2>
+            $3_7 :: V<i@3>
+            """,
+        )
+
+    def test_limited_type_depth_env_depth(self):
+        self.assertRenderingEqual(
+            self.rendered_dsl(lambdas_kwargs=dict(max_type_depth=3.5, max_env_depth=2)),
+            """
+            lam_0 :: L<i -> i|i -> i> -> (i -> i) -> i -> i
+            lam_1 :: L<i|i -> i> -> (i -> i) -> i
+            lam_2 :: L<i|i;i> -> (i, i) -> i
+            lam_3 :: L<i -> i|i> -> i -> i -> i
+            lam_4 :: L<i|i> -> i -> i
+            $0_0 :: V<i -> i@0>
+            $1_1 :: V<i -> i@1>
+            $0_2 :: V<i@0>
+            $1_3 :: V<i@1>
             """,
         )
