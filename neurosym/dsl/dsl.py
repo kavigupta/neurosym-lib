@@ -96,7 +96,7 @@ class DSL:
         return prod.apply(self, program.state, program.children)
 
     def all_rules(
-        self, *target_types: Tuple[Type], care_about_variables
+        self, *target_types: Tuple[Type], care_about_variables, type_depth_limit
     ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
@@ -106,7 +106,6 @@ class DSL:
 
         This is useful for generating a PCFG.
         """
-        # TODO(KG) figure out how to add variables properly
         twes_to_expand = [
             TypeWithEnvironment(
                 type,
@@ -119,7 +118,7 @@ class DSL:
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe in rules:
+            if twe.typ.depth() > type_depth_limit or twe in rules:
                 continue
             rules[twe] = []
             for prod, twes in self._productions_for_type(twe):
@@ -135,12 +134,16 @@ class DSL:
             }
         return rules
 
-    def constructible_symbols(self, *target_types, care_about_variables):
+    def constructible_symbols(
+        self, *target_types, care_about_variables, type_depth_limit
+    ):
         """
         Returns all the symbols that can be constructed from the given target types.
         """
         type_to_rules = self.all_rules(
-            *target_types, care_about_variables=care_about_variables
+            *target_types,
+            care_about_variables=care_about_variables,
+            type_depth_limit=type_depth_limit,
         )
 
         constructible = set()
