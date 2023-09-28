@@ -13,7 +13,7 @@ from neurosym.programs.s_expression_render import (
     render_s_expression,
 )
 
-dsl = basic_arith_dsl(True)
+ba_dsl = basic_arith_dsl(True)
 
 
 class TestPruning(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestPruning(unittest.TestCase):
         $1_1 :: V<i@1>
         $2_2 :: V<i@2>
         """
-        actual = dsl.render()
+        actual = ba_dsl.render()
         self.assertEqual(
             {line.strip() for line in actual.strip().split("\n")},
             {line.strip() for line in expected.strip().split("\n")},
@@ -38,8 +38,8 @@ class TestPruning(unittest.TestCase):
 
 class TestEvaluate(unittest.TestCase):
     def evaluate(self, code):
-        return dsl.compute(
-            dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
+        return ba_dsl.compute(
+            ba_dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
         )
 
     def test_constant(self):
@@ -108,7 +108,7 @@ class TestEvaluate(unittest.TestCase):
 class TestEnumerate(unittest.TestCase):
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
         g = DSLSearchGraph(
-            dsl,
+            ba_dsl,
             parse_type(typ),
             ChooseFirst(),
             filt,
