@@ -15,6 +15,7 @@ from neurosym.programs.s_expression_render import (
 
 ba_dsl = basic_arith_dsl(True)
 
+
 class TestPruning(unittest.TestCase):
     def test_output(self):
         expected = """
