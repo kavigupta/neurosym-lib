@@ -106,8 +106,12 @@ class Type(ABC):
         """
         Return the depth of the type tree.
         """
-        children = [child.depth() for child in self.children()]
-        return max(children + [0]) + np.log2(len(children) + 1)
+        if not hasattr(self, "_depth"):
+            children = [child.depth() for child in self.children()]
+            depth = max(children + [0]) + np.log2(len(children) + 1)
+            object.__setattr__(self, "_depth", depth)
+
+        return self._depth
 
 
 class UnificationError(Exception):
