@@ -284,7 +284,7 @@ def expansions(
         yield sig.subst_type_vars(remap)
 
 
-def type_universe(types: List[Type], require_arity_up_to=None):
+def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
     atomic_types = set()
     num_arrow_args = set()
     has_list = False
@@ -299,6 +299,8 @@ def type_universe(types: List[Type], require_arity_up_to=None):
     atomic_types = sorted(atomic_types, key=str)
     if require_arity_up_to is not None:
         num_arrow_args |= set(range(1, require_arity_up_to + 1))
+    if no_zeroadic:
+        num_arrow_args -= {0}
     num_arrow_args = sorted(num_arrow_args)
 
     constructors = []
