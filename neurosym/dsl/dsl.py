@@ -163,8 +163,8 @@ class DSL:
             for out_t, rules in type_to_rules.items():
                 if out_t in constructible:
                     continue
-                for sym, in_t in rules:
-                    if all(t in constructible for t in in_t):
+                for _, in_t in rules:
+                    if set(in_t).issubset(constructible):
                         constructible.add(out_t)
                         done = False
             if done:
