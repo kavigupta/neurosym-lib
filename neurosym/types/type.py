@@ -13,6 +13,25 @@ class Type(ABC):
         """
         raise NotImplementedError
 
+    def node_summary(self):
+        """
+        Return a summary of the node.
+        """
+        summary_dict = {
+            "_type": self.__class__.__name__,
+            **self.inherent_parameters(),
+        }
+        summary_dict = {k: v for k, v in sorted(summary_dict.items())}
+        return str(summary_dict)
+
+    @abstractmethod
+    def inherent_parameters(self):
+        """
+        Return a list of inherent parameters of the type, i.e., all parameters not associated
+            with the children.
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def children(self):
         """
@@ -109,6 +128,9 @@ class AtomicType(Type):
     def walk_type_nodes(self):
         yield self
 
+    def inherent_parameters(self):
+        return dict(name=self.name)
+
     def children(self):
         yield from []
 
@@ -142,6 +164,9 @@ class TensorType(Type):
         # is atomic. we do not consider the dtype and shape as nodes.
         yield self
 
+    def inherent_parameters(self):
+        return dict(dtype=self.dtype, shape=self.shape)
+
     def children(self):
         yield from []
 
@@ -174,6 +199,9 @@ class ListType(Type):
     def walk_type_nodes(self):
         yield self
         yield from self.element_type.walk_type_nodes()
+
+    def inherent_parameters(self):
+        return dict()
 
     def children(self):
         yield self.element_type
@@ -215,6 +243,9 @@ class ArrowType(Type):
         for t in self.input_type:
             yield from t.walk_type_nodes()
         yield from self.output_type.walk_type_nodes()
+
+    def inherent_parameters(self):
+        return dict()
 
     def children(self):
         yield from self.input_type
@@ -264,6 +295,9 @@ class TypeVariable(Type):
 
     def walk_type_nodes(self):
         yield self
+
+    def inherent_parameters(self):
+        return dict()
 
     def children(self):
         yield from []

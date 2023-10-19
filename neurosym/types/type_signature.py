@@ -30,6 +30,15 @@ class TypeSignature(ABC):
         """
 
     @abstractmethod
+    def return_type_template(self) -> Type:
+        """
+        Returns a template for the return type, with type variables.
+
+        This can be an over-approximation of the actual return type,
+            but it must not be an under-approximation.
+        """
+
+    @abstractmethod
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         """
         Returns the return type of the function, or None if the types
@@ -73,6 +82,9 @@ class ConcreteTypeSignature(TypeSignature):
             TypeWithEnvironment(t.subst_type_vars(mapping), twe.env)
             for t in self.arguments
         ]
+
+    def return_type_template(self) -> Type:
+        return self.return_type
 
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         types = [x.typ for x in twes]
@@ -141,6 +153,9 @@ class LambdaTypeSignature(TypeSignature):
             )
         ]
 
+    def return_type_template(self) -> Type:
+        return ArrowType(self.input_types, TypeVariable("body"))
+
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         if len(twes) != 1:
             return None
@@ -172,6 +187,9 @@ class VariableTypeSignature(TypeSignature):
         if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
             return None
         return []
+
+    def return_type_template(self) -> Type:
+        return self.variable_type
 
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         if len(twes) != 0:
