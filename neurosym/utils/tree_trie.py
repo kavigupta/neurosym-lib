@@ -49,6 +49,8 @@ class TreeTrie(Generic[K, V]):
                     as_child = query_finding
                 else:
                     as_child = as_child & query_finding
+                if as_child is not None and not as_child:
+                    break
         else:
             as_child = set()
         return as_leaf | as_wild | as_child
