@@ -41,6 +41,7 @@ class DSLFactory:
         self._parameterized_productions = []
         self._signatures = []
         self._known_types = []
+        self._no_zeroadic = False
         self.lambda_parameters = None
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
@@ -59,6 +60,12 @@ class DSLFactory:
         Add known types to the DSL.
         """
         self._known_types.extend(self.t(typ) for typ in types)
+
+    def no_zeroadic(self):
+        """
+        Disable zeroadic types (types with no arguments).
+        """
+        self._no_zeroadic = True
 
     def lambdas(self, max_arity=2, max_type_depth=4, max_env_depth=4):
         """
@@ -148,7 +155,7 @@ class DSLFactory:
 
         known_types = [x.astype() for x in self._signatures] + self._known_types
 
-        universe = type_universe(known_types)
+        universe = type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
@@ -164,7 +171,9 @@ class DSLFactory:
 
         if self.lambda_parameters is not None:
             types, constructors_lambda = type_universe(
-                known_types, require_arity_up_to=self.lambda_parameters["max_arity"]
+                known_types,
+                require_arity_up_to=self.lambda_parameters["max_arity"],
+                no_zeroadic=self._no_zeroadic,
             )
             top_levels = [
                 constructor(
