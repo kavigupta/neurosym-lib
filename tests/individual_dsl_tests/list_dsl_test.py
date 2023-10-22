@@ -1,6 +1,6 @@
 import unittest
 from neurosym.examples.dreamcoder.list_example import list_dsl
-from neurosym.near.near_graph import near_graph
+from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression_render import render_s_expression
 
 from neurosym.search.bfs import bfs

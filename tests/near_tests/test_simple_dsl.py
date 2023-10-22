@@ -1,24 +1,41 @@
 """
+Test dsl/differentiable_dsl.py with NEAR search graph.
+
+We conduct the following tests:
+- Sanity check: We can find a simple program.
+- BFS: We can find a simple program with BFS.
+- Astar: We can find a simple program with bounded Astar search.
+- Enumerate: We can enumerate all programs of a certain size.
 NEAR Integration tests.
 """
 
 import unittest
-from neurosym.near.near_graph import near_graph
+
+import pytest
+from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 
 from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 
-from neurosym.examples.differentiable_arith import differentiable_arith_dsl
+from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
 import torch
 
-from neurosym.types.type_string_repr import parse_type
+from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
 
-class TestNEAR(unittest.TestCase):
-    def test_near_bfs(self):
+class TestNEARSimpleDSL(unittest.TestCase):
+    def test_simple_dsl_bfs(self):
+        """
+        input: x: tensor[input_dim]
+        goal: f(x) = 4
+        expected node.program:
+            (int_int_add (one) (int_int_add (one) (int_int_add (one) (one))))
+            ie. 1 + (1 + (1 + 1))
+        """
         self.maxDiff = None
-        dsl = differentiable_arith_dsl(10)
+        input_dim = 10
+        dsl = differentiable_arith_dsl(input_dim)
         g = near_graph(
             dsl,
             parse_type("f"),
@@ -50,7 +67,13 @@ class TestNEAR(unittest.TestCase):
             ),
         )
 
-    def test_near_astar(self):
+    def test_simple_dsl_astar(self):
+        """
+        input: x: tensor[input_dim]
+        goal: f(x) = [4] * input_dim
+        expected node.program:
+            (ones input_dim)
+        """
         self.maxDiff = None
         input_size = 10
         dsl = differentiable_arith_dsl(input_size)
@@ -73,3 +96,36 @@ class TestNEAR(unittest.TestCase):
 
         node = next(bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(node.children[0], SExpression(symbol="ones", children=()))
+
+    def test_simple_dsl_enumerate(self):
+        """
+        Enumerate all programs in dsl upto fixed depth. This test case makes
+        sure all DSL combinations upto a fixed depth are valid.
+        """
+        self.maxDiff = None
+        input_dim = 10
+        output_dim = 4
+        max_depth = 5
+        t = TypeDefiner(L=input_dim, O=output_dim)
+        t.typedef("fL", "{f, $L}")
+        t.typedef("fO", "{f, $O}")
+
+        dsl = differentiable_arith_dsl(input_dim)
+
+        def checker(x):
+            """Initialize and return True always"""
+            x = x.program
+            xx = dsl.compute(dsl.initialize(x))
+            print(xx)
+            return True
+
+        g = near_graph(dsl, parse_type("{f, 10}"), is_goal=checker)
+
+        def cost(x):
+            if isinstance(x.program, SExpression) and x.program.children:
+                return len(str(x.program.children[0]))
+            return 0
+
+        # should not raise StopIteration.
+        for _ in bounded_astar(g, cost, max_depth=max_depth):
+            pass

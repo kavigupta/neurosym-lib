@@ -5,11 +5,11 @@ from neurosym.types.type_signature import ConcreteTypeSignature
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import ListType, TensorType, Type, ArrowType
+from ..types.type import AtomicType, ListType, TensorType, Type, ArrowType
 from torch import nn
 
-from .production import Production, ParameterizedProduction
-from .dsl import DSL
+from ..dsl.production import Production, ParameterizedProduction
+from ..dsl.dsl import DSL
 
 
 @dataclass
@@ -84,13 +84,23 @@ class NeuralDSL(DSL):
         Returns a new program with the same structure, but with all the productions
         initialized.
         """
+        import IPython; IPython.embed()
         if isinstance(program, Hole):
             prog = self.get_partial_program(program)
+            # KeyError: ArrowType(input_type=(TensorType(dtype=AtomicType(name='f'), shape=(12,)),), output_type=ListType(element_type=TensorType(dtype=AtomicType(name='f'), shape=(4,))))
+            # ie: t[12] -> List[t[4]].
+            # This isn't possible.
         else:
             prog = program
 
-        return super().initialize(prog)
-
+        if hasattr(prog, "__initialize__"):
+            return prog.__initialize__(self)
+        prod = self.get_production(prog.symbol)
+        return InitializedSExpression(
+            prog.symbol,
+            tuple(self.initialize(child) for child in prog.children),
+            prod.initialize(self),
+        )
 
 def create_module_for_type(module_factory, t):
     shape = compute_io_shape(t)

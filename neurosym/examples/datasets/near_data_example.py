@@ -1,4 +1,4 @@
-from neurosym.data.load_data import numpy_dataset_from_github
+from neurosym.near.datasets.load_data import numpy_dataset_from_github
 
 
 data = numpy_dataset_from_github(

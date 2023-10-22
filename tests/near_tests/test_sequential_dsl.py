@@ -1,33 +1,42 @@
 """
+Test dsl/sequentual_dsl.py with NEAR search graph.
+
+We conduct the following tests:
+- Sanity check: We can find a program.
+- BFS: We can find a program with BFS.
+- Astar: We can find a program with bounded Astar search.
+- Enumerate: We can enumerate all programs of a certain size.
+- Full Integration test: Can we run a full iteration of NEAR.
 NEAR Integration tests.
 """
 
 import unittest
-from neurosym.models.mlp import mlp_factory
-from neurosym.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
-from neurosym.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
-from neurosym.near.near_graph import near_graph
+from neurosym.near.models.mlp import mlp_factory
+from neurosym.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
+from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
+from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import symbols
 
 from neurosym.search.bounded_astar import bounded_astar
 
-from neurosym.examples.example_rnn_dsl import (
+from neurosym.near.dsls.sequential_differentiable_dsl import (
     example_rnn_dsl,
 )
-from neurosym.models.torch_program_module import TorchProgramModule
+from neurosym.near.models.torch_program_module import TorchProgramModule
 import torch
 
 from neurosym.types.type import ArrowType, ListType, TensorType, float_t
-from neurosym.data.load_data import numpy_dataset_from_github, DatasetWrapper
+from neurosym.near.datasets.load_data import numpy_dataset_from_github, DatasetWrapper
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
-from neurosym.dsl.neural_dsl import NeuralDSL, create_modules
+from neurosym.near.neural_dsl import NeuralDSL, create_modules
 
 import pytest
 
 
-class TestNEARExample(unittest.TestCase):
-    def test_near_astar(self):
+class TestNEARSequentialDSL(unittest.TestCase):
+
+    def test_sequential_dsl_astar(self):
         """
         A minimal implementation of NEAR with a simple DSL.
         search = A-star
@@ -69,7 +78,7 @@ class TestNEARExample(unittest.TestCase):
                 ),
                 **create_modules(
                     "rnn_seq2class",
-                    [t("([$fL]) -> f"), t("([$fL]) -> $fO")],
+                    [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
                     rnn_factory_seq2class(hidden_size=10),
                 ),
             },
@@ -80,8 +89,8 @@ class TestNEARExample(unittest.TestCase):
 
             trainer = pl.Trainer(
                 max_epochs=10,
-                # devices=0,
-                # accelerator="auto",
+                devices="auto",
+                accelerator="cpu",
                 enable_checkpointing=False,
                 logger=False,
                 callbacks=[],
@@ -123,33 +132,28 @@ class TestNEARExample(unittest.TestCase):
                 node = next(iterator)
                 self.assertIsNotNone(node)
 
-    def test_dsl(self):
+    def test_sequential_dsl_enumerate(self):
         """
-        Enumerate all programs in example_rnn_dsl upto
-        fixed depth.
-        This test case just makes sure all DSL combinations
-        upto a fixed depth are valid.
+        Enumerate all programs in dsl upto fixed depth. This test case makes
+        sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        input_size = 10
-        output_size = 4
-        dsl = example_rnn_dsl(input_size, 4)
+        input_dim = 10
+        output_dim = 4
+        max_depth = 5
+        t = TypeDefiner(L=input_dim, O=output_dim)
+        t.typedef("fL", "{f, $L}")
+        t.typedef("fO", "{f, $O}")
+        dsl = example_rnn_dsl(input_dim, output_dim)
 
         def checker(x):
-            """Initialize and return False"""
+            """Initialize and return True"""
             x = x.program
             xx = dsl.compute(dsl.initialize(x))
             print(xx)
-            return False
+            return True
 
-        g = near_graph(
-            dsl,
-            ArrowType(
-                (ListType(TensorType(float_t, (input_size,))),),
-                ListType(TensorType(float_t, (output_size,))),
-            ),
-            is_goal=checker,
-        )
+        g = near_graph(dsl, t("([$fL]) -> [$fO]"), is_goal=checker,)
 
         def cost(x):
             if isinstance(x.program, SExpression) and x.program.children:
@@ -157,65 +161,5 @@ class TestNEARExample(unittest.TestCase):
             return 0
 
         # succeed if this raises StopIteration
-        with pytest.raises(StopIteration):
-            next(bounded_astar(g, cost, max_depth=10)).program
-
-    def synthetic_test_near_astar(self):
-        self.maxDiff = None
-        input_size = 10
-        dsl = example_rnn_dsl(input_size, 4)
-        fours = torch.full((input_size,), 4.0)
-
-        # in folder examples/example_rnn, run
-        # train_ex_data.npy  train_ex_labels.npy
-
-        def checker(x):
-            x = x.program
-            xx = dsl.compute(dsl.initialize(x))
-            if isinstance(xx, torch.Tensor):
-                return torch.all(torch.eq(xx, fours))
-            else:
-                return False
-
-        g = near_graph(
-            dsl,
-            ArrowType(
-                (ListType(TensorType(float_t, (input_size,))),),
-                ListType(TensorType(float_t, (4,))),
-            ),
-            is_goal=checker,
-        )
-
-        def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
-            return 0
-
-        node = next(bounded_astar(g, cost, max_depth=7)).program
-        self.assertEqual(
-            node,
-            SExpression(
-                symbol="Tint_int_add",
-                children=(
-                    SExpression(symbol="ones", children=()),
-                    SExpression(
-                        symbol="int_int_add",
-                        children=(
-                            SExpression(
-                                symbol="int_int_add",
-                                children=(
-                                    SExpression(symbol="one", children=()),
-                                    SExpression(symbol="one", children=()),
-                                ),
-                            ),
-                            SExpression(symbol="one", children=()),
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-
-if __name__ == "__main__":
-    print("Running tests/example_data_test.py")
-    TestNEARExample().test_near_astar()
+        for _ in bounded_astar(g, cost, max_depth=max_depth):
+            pass

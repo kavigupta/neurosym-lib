@@ -17,8 +17,8 @@ import torch
 import torch.nn as nn
 from neurosym.dsl.dsl_factory import DSLFactory
 
-from neurosym.operations.basic import ite_torch
-from neurosym.operations.lists import fold_torch, map_torch
+from neurosym.near.operations.basic import ite_torch
+from neurosym.near.operations.lists import fold_torch, map_torch
 
 
 def example_rnn_dsl(length, out_length):
@@ -69,7 +69,7 @@ def example_rnn_dsl(length, out_length):
     dslf.concrete(
         "compose",
         "(#a -> #b, #b -> #c) -> #a -> #c",
-        lambda f, g: lambda x: f(g(x)),
+        lambda f, g: lambda x: g(f(x)),
     )
 
     dslf.prune_to("[{f, $L}] -> [{f, $O}]")
