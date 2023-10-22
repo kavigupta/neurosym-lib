@@ -89,7 +89,12 @@ class NeuralDSL(DSL):
             prog = self.get_partial_program(program)
             # KeyError: ArrowType(input_type=(TensorType(dtype=AtomicType(name='f'), shape=(12,)),), output_type=ListType(element_type=TensorType(dtype=AtomicType(name='f'), shape=(4,))))
             # ie: t[12] -> List[t[4]].
-            # This isn't possible.
+            # This isn't a supported function.
+            # @TODO: How to restrict NEAR to only suggest functions
+            # with valid shapes?
+            # A valid shape is one that is:
+            # - defined in the partial_program list
+            # - Has matching input/output shapes (in case of compose)
         else:
             prog = program
 
