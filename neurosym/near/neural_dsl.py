@@ -84,7 +84,6 @@ class NeuralDSL(DSL):
         Returns a new program with the same structure, but with all the productions
         initialized.
         """
-        import IPython; IPython.embed()
         if isinstance(program, Hole):
             prog = self.get_partial_program(program)
             # KeyError: ArrowType(input_type=(TensorType(dtype=AtomicType(name='f'), shape=(12,)),), output_type=ListType(element_type=TensorType(dtype=AtomicType(name='f'), shape=(4,))))
