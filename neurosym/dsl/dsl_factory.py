@@ -235,9 +235,10 @@ class DSLFactory:
                     type_depth_limit=self.max_overall_depth,
                     stable_symbols=stable_symbols,
                 )
-        sym_to_productions["<variable>"] = clean_variables(
-            sym_to_productions["<variable>"]
-        )
+        if "<variable>" in sym_to_productions:
+            sym_to_productions["<variable>"] = clean_variables(
+                sym_to_productions["<variable>"]
+            )
         dsl = make_dsl(sym_to_productions)
         return dsl
 
