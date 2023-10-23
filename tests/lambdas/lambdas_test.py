@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-
+from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
@@ -13,31 +13,43 @@ from neurosym.programs.s_expression_render import (
     render_s_expression,
 )
 
-ba_dsl = basic_arith_dsl(True)
+
+def make_compute_dsl():
+    dslf = DSLFactory()
+    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.concrete("double", "(i) -> i", lambda x: x * 2)
+    dslf.concrete("triple", "(i) -> i", lambda x: x * 3)
+    dslf.lambdas()
+    dslf.prune_to("i", "i -> i", "i -> i -> i", "(i, i) -> i", "(i, i) -> i -> i")
+    return dslf.finalize()
 
 
-class TestPruning(unittest.TestCase):
-    def test_output(self):
+compute_dsl = make_compute_dsl()
+
+
+class TestEvaluate(unittest.TestCase):
+    def test_show_dsl(self):
         expected = """
             + :: (i, i) -> i
             1 :: () -> i
+        double :: i -> i
+        triple :: i -> i
         lam_0 :: L<#body|i;i> -> (i, i) -> #body
         lam_1 :: L<#body|i> -> i -> #body
         $0_0 :: V<i@0>
         $1_1 :: V<i@1>
         $2_2 :: V<i@2>
         """
-        actual = ba_dsl.render()
+        actual = compute_dsl.render()
         self.assertEqual(
             {line.strip() for line in actual.strip().split("\n")},
             {line.strip() for line in expected.strip().split("\n")},
         )
 
-
-class TestEvaluate(unittest.TestCase):
     def evaluate(self, code):
-        return ba_dsl.compute(
-            ba_dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
+        return compute_dsl.compute(
+            compute_dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
         )
 
     def test_constant(self):
@@ -74,7 +86,7 @@ class TestEvaluate(unittest.TestCase):
                 self.assertEqual(fn(i)(j), i)
 
     def test_sub_curried(self):
-        fn = self.evaluate("(lam_1 (lam_1 (+ (+ ($0_0) ($0_0)) ($1_1))))")
+        fn = self.evaluate("(lam_1 (lam_1 (+ (double ($0_0)) ($1_1))))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), i + 2 * j)
@@ -86,27 +98,49 @@ class TestEvaluate(unittest.TestCase):
                 self.assertEqual(fn(i, j), 1)
 
     def test_two_arg_sub(self):
-        # note that the order of arguments is reversed here
-        fn = self.evaluate("(lam_0 (+ (+ ($0_0) ($0_0)) ($1_1)))")
+        fn = self.evaluate("(lam_0 (+ (double ($0_0)) ($1_1)))")
         for i in range(10):
             for j in range(10):
-                self.assertEqual(fn(i, j), 2 * i + j)
+                self.assertEqual(fn(i, j), j * 2 + i)
 
     def test_three_arg_sub(self):
-        # note that the order of arguments is reversed here
         fn = self.evaluate(
-            "(lam_0 (lam_1 (+ (+ ($2_2) (+ ($2_2) ($2_2))) (+ (+ ($0_0) ($0_0)) ($1_1)))))"
+            """
+            (lam_0 (lam_1
+                (+
+                    (+
+                        (triple ($0_0))
+                        (double ($1_1)))
+                    ($2_2))))
+            """
         )
         for i in range(10):
             for j in range(10):
                 for k in range(10):
-                    self.assertEqual(fn(i, j)(k), k * 2 + i + j * 3)
+                    self.assertEqual(fn(i, j)(k), k * 3 + j * 2 + i)
 
 
-class TestEnumerate(unittest.TestCase):
+class TestEnumerateBasicArithmetic(unittest.TestCase):
+    def test_show_dsl(self):
+        self.maxDiff = None
+        expected = """
+            + :: (i, i) -> i
+            1 :: () -> i
+        lam_0 :: L<#body|i;i> -> (i, i) -> #body
+        lam_1 :: L<#body|i> -> i -> #body
+        $0_0 :: V<i@0>
+        $1_1 :: V<i@1>
+        $2_2 :: V<i@2>
+        """
+        actual = basic_arith_dsl(True).render()
+        self.assertEqual(
+            {line.strip() for line in actual.strip().split("\n")},
+            {line.strip() for line in expected.strip().split("\n")},
+        )
+
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
         g = DSLSearchGraph(
-            ba_dsl,
+            basic_arith_dsl(True),
             parse_type(typ),
             ChooseFirst(),
             filt,
@@ -189,4 +223,72 @@ class TestEnumerate(unittest.TestCase):
                 "(lam_0 (lam_1 (+ ($0_0) ($2_2))))",
             ],
             filt=lambda x: "$" in str(x.program),
+        )
+
+
+def make_varied_type_dsl():
+    dslf = DSLFactory()
+    dslf.concrete("^", "(f, i) -> f", lambda x, y: x**y)
+    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.concrete("1f", "() -> f", lambda x: 1.0)
+    dslf.concrete("double", "(i) -> i", lambda x: x * 2)
+    dslf.lambdas()
+    dslf.prune_to("f", "f -> f", "(f, i) -> f", "(f, i) -> i")
+    return dslf.finalize()
+
+
+class TestEnumerateBasicArithmetic(unittest.TestCase):
+    def test_show_dsl(self):
+        self.maxDiff = None
+        expected = """
+              ^ :: (f, i) -> f
+              1 :: () -> i
+             1f :: () -> f
+         double :: i -> i
+          lam_0 :: L<#body|f;i> -> (f, i) -> #body
+          lam_1 :: L<#body|f> -> f -> #body
+           $0_0 :: V<f@0>
+           $1_1 :: V<f@1>
+           $0_2 :: V<i@0>
+        """
+        actual = make_varied_type_dsl().render()
+        print(actual)
+        self.assertEqual(
+            {line.strip() for line in actual.strip().split("\n")},
+            {line.strip() for line in expected.strip().split("\n")},
+        )
+
+    def assertEnumerateType(self, typ, expected, filt=lambda x: True):
+        g = DSLSearchGraph(
+            make_varied_type_dsl(),
+            parse_type(typ),
+            ChooseFirst(),
+            filt,
+            metadata_computer=NoMetadataComputer(),
+        )
+
+        res = [
+            render_s_expression(prog.program, False)
+            for prog in itertools.islice(bfs(g, 1000), 10)
+        ]
+
+        print(res)
+
+        self.assertEqual(res, expected)
+
+    def test_single(self):
+        self.assertEnumerateType(
+            "(f, i) -> f",
+            [
+                "(lam_0 (1f))",
+                "(lam_0 ($1_1))",
+                "(lam_0 (^ (1f) (1)))",
+                "(lam_0 (^ (1f) ($0_2)))",
+                "(lam_0 (^ ($1_1) (1)))",
+                "(lam_0 (^ ($1_1) ($0_2)))",
+                "(lam_0 (^ (1f) (double (1))))",
+                "(lam_0 (^ (1f) (double ($0_2))))",
+                "(lam_0 (^ ($1_1) (double (1))))",
+                "(lam_0 (^ ($1_1) (double ($0_2))))",
+            ],
         )
