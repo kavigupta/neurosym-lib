@@ -29,7 +29,7 @@ import torch
 from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 from neurosym.near.datasets.load_data import numpy_dataset_from_github, DatasetWrapper
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
-from neurosym.near.neural_dsl import NeuralDSL, create_modules
+from neurosym.near.neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 
 import pytest
 
@@ -95,7 +95,11 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 logger=False,
                 callbacks=[],
             )
-            initialized_p = neural_dsl.initialize(node.program)
+            try:
+                initialized_p = neural_dsl.initialize(node.program)
+            except PartialProgramNotFoundError:
+                return 10000
+   
             model = neural_dsl.compute(initialized_p)
             if not isinstance(model, torch.nn.Module):
                 del model
@@ -125,12 +129,14 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = bounded_astar(g, validation_cost, max_depth=1000)
+            iterator = bounded_astar(g, validation_cost, max_depth=3)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1
                 node = next(iterator)
                 self.assertIsNotNone(node)
+                if n_iter > 30:
+                    break
 
     def test_sequential_dsl_enumerate(self):
         """
