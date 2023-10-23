@@ -106,6 +106,7 @@ class NeuralDSL(DSL):
             prod.initialize(self),
         )
 
+
 def create_module_for_type(module_factory, t):
     shape = compute_io_shape(t)
     return lambda: module_factory(*shape)

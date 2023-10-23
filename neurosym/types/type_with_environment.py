@@ -19,12 +19,18 @@ class Environment:
         return cls(frozendict())
 
     def child(self, *new_typs: Tuple[Type]):
+        new_typs = new_typs[
+            ::-1
+        ]  # reverse, so that the first element is the first index
         result = {i + len(new_typs): typ for i, typ in self._elements.items()}
         for i, new_typ in enumerate(new_typs):
             result[i] = new_typ
         return Environment(frozendict(result))
 
     def parent(self, new_types):
+        new_types = new_types[
+            ::-1
+        ]  # reverse, so that the first element is the first index
         for i, new_typ in enumerate(new_types):
             if i in self._elements:
                 assert self._elements[i] == new_typ

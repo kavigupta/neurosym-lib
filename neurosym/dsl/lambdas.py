@@ -20,7 +20,8 @@ class LambdaFunction:
     def __call__(self, *args):
         assert len(args) == self.typ.function_arity()
         body = replace_variables_with_args(self.dsl, self.body)
-        body = inject(self.dsl, body, args)
+        # Reverse the arguments because we want to inject them from the right.
+        body = inject(self.dsl, body, args[::-1])
         return self.dsl.compute(body)
 
 
