@@ -37,17 +37,17 @@ class EnumerationRegressionTest(unittest.TestCase):
             lam_10 :: L<#body|i;i> -> (i, i) -> #body
             lam_11 :: L<#body|i> -> i -> #body
             $0_0 :: V<(i, i) -> i@0>
-            $1_1 :: V<(i, i) -> i@1>
-            $2_2 :: V<(i, i) -> i@2>
-            $3_3 :: V<(i, i) -> i@3>
-            $0_4 :: V<i -> i@0>
-            $1_5 :: V<i -> i@1>
-            $2_6 :: V<i -> i@2>
-            $3_7 :: V<i -> i@3>
-            $0_8 :: V<i@0>
-            $1_9 :: V<i@1>
-            $2_10 :: V<i@2>
-            $3_11 :: V<i@3>
+            $1_0 :: V<(i, i) -> i@1>
+            $2_0 :: V<(i, i) -> i@2>
+            $3_0 :: V<(i, i) -> i@3>
+            $0_1 :: V<i -> i@0>
+            $1_1 :: V<i -> i@1>
+            $2_1 :: V<i -> i@2>
+            $3_1 :: V<i -> i@3>
+            $0_2 :: V<i@0>
+            $1_2 :: V<i@1>
+            $2_2 :: V<i@2>
+            $3_2 :: V<i@3>
             """,
         )
 
@@ -58,13 +58,13 @@ class EnumerationRegressionTest(unittest.TestCase):
             lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
             lam_1 :: L<#body|i> -> i -> #body
             $0_0 :: V<i -> i@0>
-            $1_1 :: V<i -> i@1>
-            $2_2 :: V<i -> i@2>
-            $3_3 :: V<i -> i@3>
-            $0_4 :: V<i@0>
-            $1_5 :: V<i@1>
-            $2_6 :: V<i@2>
-            $3_7 :: V<i@3>
+            $1_0 :: V<i -> i@1>
+            $2_0 :: V<i -> i@2>
+            $3_0 :: V<i -> i@3>
+            $0_1 :: V<i@0>
+            $1_1 :: V<i@1>
+            $2_1 :: V<i@2>
+            $3_1 :: V<i@3>
             """,
         )
 
@@ -76,13 +76,13 @@ class EnumerationRegressionTest(unittest.TestCase):
             lam_1 :: L<#body|i;i> -> (i, i) -> #body
             lam_2 :: L<#body|i> -> i -> #body
             $0_0 :: V<i -> i@0>
-            $1_1 :: V<i -> i@1>
-            $2_2 :: V<i -> i@2>
-            $3_3 :: V<i -> i@3>
-            $0_4 :: V<i@0>
-            $1_5 :: V<i@1>
-            $2_6 :: V<i@2>
-            $3_7 :: V<i@3>
+            $1_0 :: V<i -> i@1>
+            $2_0 :: V<i -> i@2>
+            $3_0 :: V<i -> i@3>
+            $0_1 :: V<i@0>
+            $1_1 :: V<i@1>
+            $2_1 :: V<i@2>
+            $3_1 :: V<i@3>
             """,
         )
 
@@ -94,8 +94,8 @@ class EnumerationRegressionTest(unittest.TestCase):
             lam_1 :: L<#body|i;i> -> (i, i) -> #body
             lam_2 :: L<#body|i> -> i -> #body
             $0_0 :: V<i -> i@0>
-            $1_1 :: V<i -> i@1>
-            $0_2 :: V<i@0>
-            $1_3 :: V<i@1>
+            $1_0 :: V<i -> i@1>
+            $0_1 :: V<i@0>
+            $1_1 :: V<i@1>
             """,
         )

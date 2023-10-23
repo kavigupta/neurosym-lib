@@ -38,8 +38,8 @@ class TestEvaluate(unittest.TestCase):
         lam_0 :: L<#body|i;i> -> (i, i) -> #body
         lam_1 :: L<#body|i> -> i -> #body
         $0_0 :: V<i@0>
-        $1_1 :: V<i@1>
-        $2_2 :: V<i@2>
+        $1_0 :: V<i@1>
+        $2_0 :: V<i@2>
         """
         actual = compute_dsl.render()
         self.assertEqual(
@@ -80,13 +80,13 @@ class TestEvaluate(unittest.TestCase):
                 self.assertEqual(fn(i)(j), j)
 
     def test_get_outer_var(self):
-        fn = self.evaluate("(lam_1 (lam_1 ($1_1)))")
+        fn = self.evaluate("(lam_1 (lam_1 ($1_0)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), i)
 
     def test_sub_curried(self):
-        fn = self.evaluate("(lam_1 (lam_1 (+ (double ($0_0)) ($1_1))))")
+        fn = self.evaluate("(lam_1 (lam_1 (+ (double ($0_0)) ($1_0))))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), i + 2 * j)
@@ -98,7 +98,7 @@ class TestEvaluate(unittest.TestCase):
                 self.assertEqual(fn(i, j), 1)
 
     def test_two_arg_sub(self):
-        fn = self.evaluate("(lam_0 (+ (double ($0_0)) ($1_1)))")
+        fn = self.evaluate("(lam_0 (+ (double ($0_0)) ($1_0)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i, j), j * 2 + i)
@@ -110,8 +110,8 @@ class TestEvaluate(unittest.TestCase):
                 (+
                     (+
                         (triple ($0_0))
-                        (double ($1_1)))
-                    ($2_2))))
+                        (double ($1_0)))
+                    ($2_0))))
             """
         )
         for i in range(10):
@@ -129,8 +129,8 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         lam_0 :: L<#body|i;i> -> (i, i) -> #body
         lam_1 :: L<#body|i> -> i -> #body
         $0_0 :: V<i@0>
-        $1_1 :: V<i@1>
-        $2_2 :: V<i@2>
+        $1_0 :: V<i@1>
+        $2_0 :: V<i@2>
         """
         actual = basic_arith_dsl(True).render()
         self.assertEqual(
@@ -179,14 +179,14 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
             [
                 "(lam_1 (lam_1 (1)))",
                 "(lam_1 (lam_1 ($0_0)))",
-                "(lam_1 (lam_1 ($1_1)))",
+                "(lam_1 (lam_1 ($1_0)))",
                 "(lam_1 (lam_1 (+ (1) (1))))",
                 "(lam_1 (lam_1 (+ (1) ($0_0))))",
-                "(lam_1 (lam_1 (+ (1) ($1_1))))",
+                "(lam_1 (lam_1 (+ (1) ($1_0))))",
                 "(lam_1 (lam_1 (+ ($0_0) (1))))",
                 "(lam_1 (lam_1 (+ ($0_0) ($0_0))))",
-                "(lam_1 (lam_1 (+ ($0_0) ($1_1))))",
-                "(lam_1 (lam_1 (+ ($1_1) (1))))",
+                "(lam_1 (lam_1 (+ ($0_0) ($1_0))))",
+                "(lam_1 (lam_1 (+ ($1_0) (1))))",
             ],
         )
 
@@ -196,14 +196,14 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
             [
                 "(lam_0 (1))",
                 "(lam_0 ($0_0))",
-                "(lam_0 ($1_1))",
+                "(lam_0 ($1_0))",
                 "(lam_0 (+ (1) (1)))",
                 "(lam_0 (+ (1) ($0_0)))",
-                "(lam_0 (+ (1) ($1_1)))",
+                "(lam_0 (+ (1) ($1_0)))",
                 "(lam_0 (+ ($0_0) (1)))",
                 "(lam_0 (+ ($0_0) ($0_0)))",
-                "(lam_0 (+ ($0_0) ($1_1)))",
-                "(lam_0 (+ ($1_1) (1)))",
+                "(lam_0 (+ ($0_0) ($1_0)))",
+                "(lam_0 (+ ($1_0) (1)))",
             ],
         )
 
@@ -212,15 +212,15 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
             "(i, i) -> i -> i",
             [
                 "(lam_0 (lam_1 ($0_0)))",
-                "(lam_0 (lam_1 ($1_1)))",
-                "(lam_0 (lam_1 ($2_2)))",
+                "(lam_0 (lam_1 ($1_0)))",
+                "(lam_0 (lam_1 ($2_0)))",
                 "(lam_0 (lam_1 (+ (1) ($0_0))))",
-                "(lam_0 (lam_1 (+ (1) ($1_1))))",
-                "(lam_0 (lam_1 (+ (1) ($2_2))))",
+                "(lam_0 (lam_1 (+ (1) ($1_0))))",
+                "(lam_0 (lam_1 (+ (1) ($2_0))))",
                 "(lam_0 (lam_1 (+ ($0_0) (1))))",
                 "(lam_0 (lam_1 (+ ($0_0) ($0_0))))",
-                "(lam_0 (lam_1 (+ ($0_0) ($1_1))))",
-                "(lam_0 (lam_1 (+ ($0_0) ($2_2))))",
+                "(lam_0 (lam_1 (+ ($0_0) ($1_0))))",
+                "(lam_0 (lam_1 (+ ($0_0) ($2_0))))",
             ],
             filt=lambda x: "$" in str(x.program),
         )
@@ -248,8 +248,8 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
           lam_0 :: L<#body|f;i> -> (f, i) -> #body
           lam_1 :: L<#body|f> -> f -> #body
            $0_0 :: V<f@0>
-           $1_1 :: V<f@1>
-           $0_2 :: V<i@0>
+           $1_0 :: V<f@1>
+           $0_1 :: V<i@0>
         """
         actual = make_varied_type_dsl().render()
         print(actual)
@@ -276,19 +276,19 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
         self.assertEqual(res, expected)
 
-    def test_single(self):
+    def test_fi(self):
         self.assertEnumerateType(
             "(f, i) -> f",
             [
                 "(lam_0 (1f))",
-                "(lam_0 ($1_1))",
+                "(lam_0 ($1_0))",
                 "(lam_0 (^ (1f) (1)))",
-                "(lam_0 (^ (1f) ($0_2)))",
-                "(lam_0 (^ ($1_1) (1)))",
-                "(lam_0 (^ ($1_1) ($0_2)))",
+                "(lam_0 (^ (1f) ($0_1)))",
+                "(lam_0 (^ ($1_0) (1)))",
+                "(lam_0 (^ ($1_0) ($0_1)))",
                 "(lam_0 (^ (1f) (double (1))))",
-                "(lam_0 (^ (1f) (double ($0_2))))",
-                "(lam_0 (^ ($1_1) (double (1))))",
-                "(lam_0 (^ ($1_1) (double ($0_2))))",
+                "(lam_0 (^ (1f) (double ($0_1))))",
+                "(lam_0 (^ ($1_0) (double (1))))",
+                "(lam_0 (^ ($1_0) (double ($0_1))))",
             ],
         )

@@ -169,6 +169,8 @@ class DSLFactory:
             )
         )
 
+        stable_symbols = set()
+
         if self.lambda_parameters is not None:
             types, constructors_lambda = type_universe(
                 known_types,
@@ -206,15 +208,15 @@ class DSLFactory:
                 },
                 key=str,
             )
-            variable_type_signatures = [
-                VariableTypeSignature(variable_type, index_in_env)
-                for variable_type in variable_types
+            sym_to_productions["<variable>"] = [
+                VariableProduction(
+                    type_id, VariableTypeSignature(variable_type, index_in_env)
+                )
+                for type_id, variable_type in enumerate(variable_types)
                 for index_in_env in range(self.lambda_parameters["max_env_depth"])
             ]
-            sym_to_productions["<variable>"] = [
-                VariableProduction(unique_id, variable_type_sig)
-                for unique_id, variable_type_sig in enumerate(variable_type_signatures)
-            ]
+            # don't prune and reindex variables
+            stable_symbols.add("<variable>")
 
         if self.prune:
             assert self.target_types is not None
@@ -223,6 +225,7 @@ class DSLFactory:
                 self.target_types,
                 care_about_variables=False,
                 type_depth_limit=self.max_overall_depth,
+                stable_symbols=stable_symbols,
             )
             if self.prune_variables:
                 sym_to_productions = prune(
@@ -230,16 +233,37 @@ class DSLFactory:
                     self.target_types,
                     care_about_variables=True,
                     type_depth_limit=self.max_overall_depth,
+                    stable_symbols=stable_symbols,
                 )
+        sym_to_productions["<variable>"] = clean_variables(
+            sym_to_productions["<variable>"]
+        )
         dsl = make_dsl(sym_to_productions)
         return dsl
+
+
+def clean_variables(variable_productions):
+    type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
+    type_to_idx = {t: i for i, t in enumerate(sorted(type_to_idx, key=str))}
+    variable_productions = [
+        prod.with_index(type_to_idx[prod.type_signature().variable_type])
+        for prod in variable_productions
+    ]
+    return variable_productions
 
 
 def make_dsl(sym_to_productions):
     return DSL([prod for prods in sym_to_productions.values() for prod in prods])
 
 
-def prune(sym_to_productions, target_types, *, care_about_variables, type_depth_limit):
+def prune(
+    sym_to_productions,
+    target_types,
+    *,
+    care_about_variables,
+    type_depth_limit,
+    stable_symbols,
+):
     dsl = make_dsl(sym_to_productions)
     symbols = dsl.constructible_symbols(
         *target_types,
@@ -256,6 +280,8 @@ def prune(sym_to_productions, target_types, *, care_about_variables, type_depth_
                 f"All productions for {original_symbol} were pruned. "
                 f"Check that the target types are correct."
             )
+        if original_symbol in stable_symbols:
+            continue
         new_sym_to_productions[original_symbol] = Production.reindex(
             new_sym_to_productions[original_symbol]
         )
