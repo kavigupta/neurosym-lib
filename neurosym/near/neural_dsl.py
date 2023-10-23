@@ -17,6 +17,7 @@ class PartialProgramNotFoundError(Exception):
     Raised when a partial program cannot be found.
     """
 
+
 @dataclass
 class NeuralDSL(DSL):
     """
@@ -93,7 +94,9 @@ class NeuralDSL(DSL):
             try:
                 prog = self.get_partial_program(program)
             except KeyError:
-                raise PartialProgramNotFoundError(f"Cannot initialize program {program}.")
+                raise PartialProgramNotFoundError(
+                    f"Cannot initialize program {program}."
+                )
         else:
             prog = program
 

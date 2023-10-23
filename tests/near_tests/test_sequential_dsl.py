@@ -29,7 +29,11 @@ import torch
 from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 from neurosym.near.datasets.load_data import numpy_dataset_from_github, DatasetWrapper
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
-from neurosym.near.neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
+from neurosym.near.neural_dsl import (
+    NeuralDSL,
+    PartialProgramNotFoundError,
+    create_modules,
+)
 
 import pytest
 
@@ -98,7 +102,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 initialized_p = neural_dsl.initialize(node.program)
             except PartialProgramNotFoundError:
                 return 10000
-   
+
             model = neural_dsl.compute(initialized_p)
             if not isinstance(model, torch.nn.Module):
                 del model
