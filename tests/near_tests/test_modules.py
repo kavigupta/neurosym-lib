@@ -14,6 +14,7 @@ class TestNeuralModels(unittest.TestCase):
     hidden_dim = 20
     traj_len = 3
     bs = 2
+
     def test_mlp(self):
         cfg = MLPConfig("mlp", self.input_dim, self.hidden_dim, self.output_dim)
         mlp = MLP(cfg)
@@ -30,4 +31,6 @@ class TestNeuralModels(unittest.TestCase):
         cfg = RNNConfig("rnn", self.input_dim, self.hidden_dim, self.output_dim)
         seq2seq_rnn = Seq2SeqRNN(cfg)
         x = torch.randn(self.bs, self.traj_len, self.input_dim)
-        self.assertEqual(seq2seq_rnn(x).shape, (self.bs, self.traj_len, self.output_dim))
+        self.assertEqual(
+            seq2seq_rnn(x).shape, (self.bs, self.traj_len, self.output_dim)
+        )

@@ -35,7 +35,6 @@ import pytest
 
 
 class TestNEARSequentialDSL(unittest.TestCase):
-
     def test_sequential_dsl_astar(self):
         """
         A minimal implementation of NEAR with a simple DSL.
@@ -153,7 +152,11 @@ class TestNEARSequentialDSL(unittest.TestCase):
             print(xx)
             return True
 
-        g = near_graph(dsl, t("([$fL]) -> [$fO]"), is_goal=checker,)
+        g = near_graph(
+            dsl,
+            t("([$fL]) -> [$fO]"),
+            is_goal=checker,
+        )
 
         def cost(x):
             if isinstance(x.program, SExpression) and x.program.children:
