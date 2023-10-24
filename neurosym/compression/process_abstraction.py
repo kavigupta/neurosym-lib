@@ -82,11 +82,9 @@ def single_step_compression(dsl, programs):
         abstraction_prefix=next_symbol(dsl),
     )
     abstr = res.abstractions[-1]
-    rewritten = (parse_s_expression(x, {abstr.name}) for x in res.rewritten)
+    rewritten = [parse_s_expression(x, {abstr.name}) for x in res.rewritten]
     user = next(x for x in rewritten if abstr.name in symbols(x))
     prod = compute_abstraction_production(dsl, user, abstr)
-    rewritten = stitch_core.rewrite(rendered, [abstr]).rewritten
-    rewritten = [parse_s_expression(x, {abstr.name}) for x in rewritten]
     dsl2 = dsl.add_production(prod)
     return dsl2, rewritten
 
