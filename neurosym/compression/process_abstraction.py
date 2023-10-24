@@ -14,7 +14,8 @@ from neurosym.types.type_signature import ConcreteTypeSignature
 def compute_abstraction_production(
     dsl,
     s_expression_using: SExpression,
-    abstr: stitch_core.Abstraction,
+    abstr_name: str,
+    abstr_body: SExpression,
 ):
     """
     Compute the type of an abstraction production.
@@ -26,19 +27,18 @@ def compute_abstraction_production(
 
     Returns an AbstractionProduction corresponding to the abstraction.
     """
-    body_se = parse_s_expression(abstr.body, {abstr.name})
-    body_se = inject_parameters(body_se)
-    usage = next(x for x in s_expression_using.postorder if x.symbol == abstr.name)
+    abstr_body = inject_parameters(abstr_body)
+    usage = next(x for x in s_expression_using.postorder if x.symbol == abstr_name)
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
-        body_se,
+        abstr_body,
         lambda x: type_arguments[x.index]
         if isinstance(x, AbstractionIndexParameter)
         else None,
     ).typ
     type_signature = ConcreteTypeSignature(type_arguments, type_out)
 
-    return AbstractionProduction(abstr.name, type_signature, body_se)
+    return AbstractionProduction(abstr_name, type_signature, abstr_body)
 
 
 def inject_parameters(s_expression: Union[SExpression, str]):
@@ -84,7 +84,9 @@ def single_step_compression(dsl, programs):
     abstr = res.abstractions[-1]
     rewritten = [parse_s_expression(x, {abstr.name}) for x in res.rewritten]
     user = next(x for x in rewritten if abstr.name in symbols(x))
-    prod = compute_abstraction_production(dsl, user, abstr)
+    prod = compute_abstraction_production(
+        dsl, user, abstr.name, parse_s_expression(abstr.body, {abstr.name})
+    )
     dsl2 = dsl.add_production(prod)
     return dsl2, rewritten
 
