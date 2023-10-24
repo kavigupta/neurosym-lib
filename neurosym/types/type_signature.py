@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import itertools
 from typing import Callable, List, Tuple
-import frozendict
+from frozendict import frozendict
 
 from neurosym.types.type import (
     ArrowType,
@@ -89,8 +89,7 @@ class ConcreteTypeSignature(TypeSignature):
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        env = envs[0] if envs else Environment.empty()
-        assert all(envs[0] == env for env in envs)
+        env = Environment.merge_all(*envs)
         mapping = {}
         try:
             for t1, t2 in zip(self.arguments, types):
@@ -159,7 +158,7 @@ class LambdaTypeSignature(TypeSignature):
     def unify_arguments(self, twes: List[TypeWithEnvironment]) -> TypeWithEnvironment:
         if len(twes) != 1:
             return None
-        parent = twes[0].env.parent(*self.input_type)
+        parent = twes[0].env.parent(self.input_types)
         return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
 
 

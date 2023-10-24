@@ -41,6 +41,28 @@ class Environment:
         }
         return Environment(frozendict(result))
 
+    def merge(self, other):
+        """
+        Merge two environments.
+        """
+        result = dict(self._elements)
+        for i, typ in other._elements.items():
+            if i in result:
+                assert result[i] == typ
+            else:
+                result[i] = typ
+        return Environment(frozendict(result))
+
+    @classmethod
+    def merge_all(cls, *environments):
+        """
+        Merge a list of environments.
+        """
+        result = {}
+        for env in environments:
+            result.update(env._elements)
+        return Environment(frozendict(result))
+
     def contains_type_at(self, typ: Type, index: int):
         return index in self._elements and self._elements[index] == typ
 

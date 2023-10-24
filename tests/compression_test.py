@@ -8,8 +8,12 @@ from neurosym.compression.process_abstraction import (
 )
 
 from neurosym.dsl.pcfg import PCFGPattern
+from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
-from neurosym.programs.s_expression_render import parse_s_expression
+from neurosym.programs.s_expression_render import (
+    parse_s_expression,
+    render_s_expression,
+)
 from neurosym.types.type_string_repr import parse_type
 
 out_t = parse_type("(i) -> i")
@@ -73,3 +77,37 @@ class CompressionTest(unittest.TestCase):
                 ),
                 dsl2.compute(dsl2.initialize(rewr)),
             )
+
+
+class BasicProcessDSL(unittest.TestCase):
+    def setUp(self):
+        self.dsl = basic_arith_dsl(True)
+        self.fn_code = "(lam_0 (+ ($1_0) ($0_0)))"
+
+    def test_compute(self):
+        fn = self.dsl.compute(
+            self.dsl.initialize(parse_s_expression(self.fn_code, set()))
+        )
+        self.assertEqual(fn(1, 2), 3)
+        self.assertEqual(fn(3, 4), 7)
+        self.assertEqual(fn(1000, -24), 976)
+
+    def test_basic_compress(self):
+        code = [
+            "(lam_0 (+ (+ (1) (1)) ($0_0)))",
+            "(lam_0 (+ (1) ($0_0)))",
+        ]
+        code = [parse_s_expression(x, set()) for x in code]
+        dsl2, rewritten = single_step_compression(self.dsl, code)
+        self.assertEqual(len(rewritten), len(code))
+        self.assertEqual(
+            [render_s_expression(x, for_stitch=False) for x in rewritten],
+            [
+                "(__10 (+ (1) (1)))",
+                "(__10 (1))",
+            ],
+        )
+        self.assertEqual(
+            render_s_expression(dsl2.productions[-1]._body, set()),
+            "(lam_0 (+ #0 ($0_0)))",
+        )

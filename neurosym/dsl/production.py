@@ -136,7 +136,7 @@ class LambdaProduction(Production):
 
     @property
     def arity(self):
-        return len(self._type_signature.input_type)
+        return self._type_signature.function_arity()
 
     def base_symbol(self):
         return "lam"
