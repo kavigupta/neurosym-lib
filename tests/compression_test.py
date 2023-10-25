@@ -82,6 +82,7 @@ class CompressionTest(unittest.TestCase):
 class BasicProcessDSL(unittest.TestCase):
     def setUp(self):
         self.dsl = basic_arith_dsl(True)
+        print(basic_arith_dsl(True).render())
         self.fn_code = "(lam_0 (+ ($1_0) ($0_0)))"
 
     def test_compute(self):
