@@ -1,17 +1,5 @@
 """
 RNN example
-
-
-('list', 'atom') : [dsl.FoldFunction, dsl.SimpleITE],
-('atom', 'atom') : [dsl.AddFunction, dsl.MultiplyFunction, dsl.SimpleITE,LinearAffine]
-# 
-# Tfloat_Tfloat_add :: BinOp
-# Tfloat_Tfloat_mul :: BinOp
-# Linear_c :: (Tfloat -> Tfloat)
-# fold :: BinOp -> list[tensor[float]] -> tensor[float]
-# map :: (Tfloat -> Tfloat) -> list_Tfloat -> list_Tfloat
-# Tlist_float_ITE :: (list_Tfloat_bool) -> (list_Tfloat_Tfloat) -> (list_Tfloat_Tfloat) -> (list_Tfloat_Tfloat)
-# Tfloat_ITE :: (Tfloat_bool) -> (BinOp) -> (BinOp)
 """
 import torch
 import torch.nn as nn
@@ -21,55 +9,38 @@ from neurosym.near.operations.basic import ite_torch
 from neurosym.near.operations.lists import fold_torch, map_torch
 
 
-def example_rnn_dsl(length, out_length):
-    dslf = DSLFactory(L=length, O=out_length, max_overall_depth=5)
+def example_rnn_dsl(L, O):
+    dslf = DSLFactory(L=L, O=O, max_overall_depth=5)
     dslf.typedef("fL", "{f, $L}")
 
+    dslf.concrete("add", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x + y)
+    dslf.concrete("mul", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x * y)
     dslf.concrete(
-        "Tfloat_Tfloat_add", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x + y
+        "fold", "((#a, #a) -> #a) -> [#a] -> #a", lambda f: lambda x: fold_torch(f, x)
     )
     dslf.concrete(
-        "Tfloat_Tfloat_mul", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x * y
-    )
-    dslf.concrete(
-        "fold",
-        "(($fL, $fL) -> $fL) -> ([$fL]) -> $fL",
-        lambda f: lambda x: fold_torch(f, x),
-    )
-    dslf.concrete(
-        "Sum",
-        "() -> ($fL) -> f",
-        lambda: lambda x: torch.sum(x, dim=-1).unsqueeze(-1),
+        "sum", "() -> $fL -> f", lambda: lambda x: torch.sum(x, dim=-1).unsqueeze(-1)
     )
     dslf.parameterized(
-        "Linear_c",
-        "() -> ($fL) -> $fL",
-        lambda linear: linear,
-        dict(linear=lambda: nn.Linear(length, length)),
+        "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
     )
     dslf.parameterized(
         "output",
-        "(([$fL]) -> [$fL]) -> ([$fL]) -> [{f, $O}]",
-        lambda f, linear: lambda x: linear(f(x)),
-        dict(linear=lambda: nn.Linear(length, out_length)),
+        "(([$fL]) -> [$fL]) -> [$fL] -> [{f, $O}]",
+        lambda f, lin: lambda x: lin(f(x)),
+        dict(lin=lambda: nn.Linear(L, O)),
     )
-    # This is causing an issue. The inner program (f) has a output shape of out_length.
-    # The type system is not filtering out programs that have the wrong output dim.
     dslf.concrete(
-        "Tfloat_ITE",
-        "(([$fL]) -> f, ([$fL]) -> [$fL], ([$fL]) -> [$fL]) -> ([$fL]) -> [$fL]",
+        "ite",
+        "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a",
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
     dslf.concrete(
-        "Map",
-        "(($fL) -> $fL) -> ([$fL]) -> [$fL]",
-        lambda f: lambda x: map_torch(f, x),
+        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     )
 
     dslf.concrete(
-        "compose",
-        "(#a -> #b, #b -> #c) -> #a -> #c",
-        lambda f, g: lambda x: g(f(x)),
+        "compose", "(#a -> #b, #b -> #c) -> #a -> #c", lambda f, g: lambda x: g(f(x))
     )
 
     dslf.prune_to("[{f, $L}] -> [{f, $O}]")
