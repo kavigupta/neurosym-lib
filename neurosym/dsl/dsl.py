@@ -47,15 +47,15 @@ class DSL:
         return self.get_production(sym).type_signature().arity()
 
     def _productions_for_type(
-        self, type: TypeWithEnvironment
+        self, typ: TypeWithEnvironment
     ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
-        for idx in sorted(self._out_type_to_prod_idx.query(type.typ)):
+        for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
             production = self.productions[idx]
-            arg_types = production.type_signature().unify_return(type)
+            arg_types = production.type_signature().unify_return(typ)
             if arg_types is not None:
                 yield production, arg_types
 
-    def expansions_for_type(self, type: TypeWithEnvironment) -> List[SExpression]:
+    def expansions_for_type(self, typ: TypeWithEnvironment) -> List[SExpression]:
         """
         Possible expansions for the given type.
 
@@ -67,7 +67,7 @@ class DSL:
                 production.symbol(),
                 tuple(Hole.of(t) for t in arg_types),
             )
-            for production, arg_types in self._productions_for_type(type)
+            for production, arg_types in self._productions_for_type(typ)
         ]
 
     def get_production(self, symbol: str) -> Production:
