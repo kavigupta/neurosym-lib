@@ -27,12 +27,11 @@ from neurosym.near.neural_dsl import (
     create_modules,
 )
 from neurosym.near.search_graph import near_graph
-from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
-from .utils import test_enumerate_dsl
+from .utils import assertDSLEnumerable
 
 
 class TestNEARSequentialDSL(unittest.TestCase):
@@ -146,4 +145,4 @@ class TestNEARSequentialDSL(unittest.TestCase):
         self.maxDiff = None
         dsl = example_rnn_dsl(10, 4)
 
-        test_enumerate_dsl(dsl, "([$fL]) -> [$fO]")
+        assertDSLEnumerable(dsl, "([$fL]) -> [$fO]")

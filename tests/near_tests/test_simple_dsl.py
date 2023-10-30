@@ -19,7 +19,7 @@ from neurosym.programs.s_expression import SExpression
 from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
-from .utils import test_enumerate_dsl
+from .utils import assertDSLEnumerable
 
 
 class TestNEARSimpleDSL(unittest.TestCase):
@@ -102,4 +102,4 @@ class TestNEARSimpleDSL(unittest.TestCase):
         self.maxDiff = None
         dsl = differentiable_arith_dsl(10)
 
-        test_enumerate_dsl(dsl, "$fL")
+        assertDSLEnumerable(dsl, "$fL")
