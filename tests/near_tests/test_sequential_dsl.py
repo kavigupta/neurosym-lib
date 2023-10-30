@@ -30,7 +30,6 @@ from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
-from neurosym.types.type import ArrowType, ListType, TensorType, float_t
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
 

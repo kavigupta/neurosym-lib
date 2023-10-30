@@ -11,7 +11,6 @@ NEAR Integration tests.
 
 import unittest
 
-import pytest
 import torch
 
 from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
@@ -82,8 +81,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             xx = dsl.compute(dsl.initialize(x))
             if isinstance(xx, torch.Tensor):
                 return torch.all(torch.eq(xx, fours))
-            else:
-                return False
+            return False
 
         g = near_graph(dsl, parse_type("{f, 10}"), is_goal=checker)
 
