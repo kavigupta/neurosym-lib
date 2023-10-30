@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import cached_property
 from typing import List, Tuple, Dict
 import uuid
 import numpy as np
@@ -102,16 +103,14 @@ class Type(ABC):
         """
         return len(self.get_type_vars()) > 0
 
+    @cached_property
     def depth(self):
         """
         Return the depth of the type tree.
         """
-        if not hasattr(self, "_depth"):
-            children = [child.depth() for child in self.children()]
-            depth = max(children + [0]) + np.log2(len(children) + 1)
-            object.__setattr__(self, "_depth", depth)
-
-        return self._depth
+        children = [child.depth for child in self.children()]
+        depth = max(children + [0]) + np.log2(len(children) + 1)
+        return depth
 
 
 class UnificationError(Exception):

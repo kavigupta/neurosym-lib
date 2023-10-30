@@ -128,7 +128,7 @@ class DSL:
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe.typ.depth() > type_depth_limit or twe in rules:
+            if twe.typ.depth > type_depth_limit or twe in rules:
                 continue
             rules[twe] = []
             for prod, twes in self._productions_for_type(twe):

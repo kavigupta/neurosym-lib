@@ -229,7 +229,7 @@ def bottom_up_enumerate_types(
     assert (
         min(max_expansion_steps, max_overall_depth) < np.inf
     ), "must specify either max_expansion_steps or max_overall_depth"
-    current_with_depth = [(t, t.depth(), 0) for t in terminals]
+    current_with_depth = [(t, t.depth, 0) for t in terminals]
     current_with_depth = [
         (t, d, n)
         for t, d, n in current_with_depth
