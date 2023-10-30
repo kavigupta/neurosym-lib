@@ -2,10 +2,11 @@
 Check that all neural modules have desired input-output signatures.
 """
 import unittest
+
 import torch
 
 from neurosym.near.models.mlp import MLP, MLPConfig
-from neurosym.near.models.rnn import Seq2ClassRNN, Seq2SeqRNN, RNNConfig
+from neurosym.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
 
 
 class TestNeuralModels(unittest.TestCase):

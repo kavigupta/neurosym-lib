@@ -1,7 +1,7 @@
 import unittest
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.types.type import ListType, ArrowType
+from neurosym.types.type import ArrowType, ListType
 from neurosym.types.type_signature import bottom_up_enumerate_types, expansions
 from neurosym.types.type_string_repr import parse_type, render_type
 

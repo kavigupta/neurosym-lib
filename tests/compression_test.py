@@ -1,12 +1,12 @@
-from functools import lru_cache
 import unittest
+from functools import lru_cache
 
 import numpy as np
+
 from neurosym.compression.process_abstraction import (
     multi_step_compression,
     single_step_compression,
 )
-
 from neurosym.dsl.pcfg import PCFGPattern
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
@@ -109,6 +109,6 @@ class BasicProcessDSL(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            render_s_expression(dsl2.productions[-1]._body, set()),
-            "(lam_0 (+ #0 ($0_0)))",
+            dsl2.productions[-1].render().strip(),
+            "__10 :: i -> (i, i) -> i = (lam (#0) (lam_0 (+ #0 ($0_0))))",
         )

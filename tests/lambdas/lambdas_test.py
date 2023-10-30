@@ -3,15 +3,15 @@ import unittest
 
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.basic_arith import basic_arith_dsl
+from neurosym.programs.s_expression_render import (
+    parse_s_expression,
+    render_s_expression,
+)
 from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
-from neurosym.programs.s_expression_render import (
-    parse_s_expression,
-    render_s_expression,
-)
 
 
 def make_compute_dsl():
@@ -237,7 +237,7 @@ def make_varied_type_dsl():
     return dslf.finalize()
 
 
-class TestEnumerateBasicArithmetic(unittest.TestCase):
+class TestVariedTypes(unittest.TestCase):
     def test_show_dsl(self):
         self.maxDiff = None
         expected = """

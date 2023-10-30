@@ -38,7 +38,7 @@ def compute_abstraction_production(
         if isinstance(x, AbstractionIndexParameter)
         else None,
     ).typ
-    type_signature = FunctionTypeSignature(type_arguments, type_out)
+    type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
 
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
 

@@ -11,31 +11,28 @@ NEAR Integration tests.
 """
 
 import unittest
-from neurosym.near.models.mlp import mlp_factory
-from neurosym.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
-from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
-from neurosym.near.search_graph import near_graph
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import symbols
 
-from neurosym.search.bounded_astar import bounded_astar
-
-from neurosym.near.dsls.sequential_differentiable_dsl import (
-    example_rnn_dsl,
-)
-from neurosym.near.models.torch_program_module import TorchProgramModule
+import pytest
 import torch
 
-from neurosym.types.type import ArrowType, ListType, TensorType, float_t
-from neurosym.near.datasets.load_data import numpy_dataset_from_github, DatasetWrapper
-from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from neurosym.near.datasets.load_data import DatasetWrapper
+from neurosym.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
+from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
+from neurosym.near.models.mlp import mlp_factory
+from neurosym.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
+from neurosym.near.models.torch_program_module import TorchProgramModule
 from neurosym.near.neural_dsl import (
     NeuralDSL,
     PartialProgramNotFoundError,
     create_modules,
 )
+from neurosym.near.search_graph import near_graph
+from neurosym.programs.s_expression_render import symbols
+from neurosym.search.bounded_astar import bounded_astar
+from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from neurosym.examples.datasets import near_data_example
 
-import pytest
+from .utils import assertDSLEnumerable
 
 
 class TestNEARSequentialDSL(unittest.TestCase):
@@ -47,14 +44,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
         """
-        dataset_gen = numpy_dataset_from_github(
-            "https://github.com/trishullab/near/tree/master/near_code/data/example",
-            "train_ex_data.npy",
-            "train_ex_labels.npy",
-            "test_ex_data.npy",
-            "test_ex_labels.npy",
-        )
-        datamodule: DatasetWrapper = dataset_gen(train_seed=0)
+        datamodule: DatasetWrapper = near_data_example.data(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = NEARTrainerConfig(
@@ -147,32 +137,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        input_dim = 10
-        output_dim = 4
-        max_depth = 5
-        t = TypeDefiner(L=input_dim, O=output_dim)
-        t.typedef("fL", "{f, $L}")
-        t.typedef("fO", "{f, $O}")
-        dsl = example_rnn_dsl(input_dim, output_dim)
+        dsl = example_rnn_dsl(10, 4)
 
-        def checker(x):
-            """Initialize and return True"""
-            x = x.program
-            xx = dsl.compute(dsl.initialize(x))
-            print(xx)
-            return True
-
-        g = near_graph(
-            dsl,
-            t("([$fL]) -> [$fO]"),
-            is_goal=checker,
-        )
-
-        def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
-            return 0
-
-        # succeed if this raises StopIteration
-        for _ in bounded_astar(g, cost, max_depth=max_depth):
-            pass
+        assertDSLEnumerable(dsl, "([$fL]) -> [$fO]")
