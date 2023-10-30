@@ -94,10 +94,10 @@ class NeuralDSL(DSL):
         if isinstance(program, Hole):
             try:
                 prog = self.get_partial_program(program)
-            except KeyError:
+            except KeyError as e:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
-                )
+                ) from e
         else:
             prog = program
 

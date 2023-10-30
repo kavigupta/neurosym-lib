@@ -19,6 +19,7 @@ class Hole:
     def __to_pair__(self, for_stitch: bool) -> str:
         from neurosym.types.type_string_repr import render_type
 
+        del for_stitch
         env_short = self.twe.env.short_repr()
         if env_short:
             env_short = "|" + env_short
@@ -38,10 +39,9 @@ def replace_holes(
 
     assert len(holes) == len(hole_replacements)
     if isinstance(program, Hole):
-        if program in holes:
-            return hole_replacements[holes.index(program)]
-        else:
+        if program not in holes:
             return program
+        return hole_replacements[holes.index(program)]
     return SExpression(
         program.symbol,
         tuple(

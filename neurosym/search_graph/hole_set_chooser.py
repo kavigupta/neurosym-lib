@@ -12,7 +12,6 @@ class HoleSetChooser(ABC):
         Returns a list of sets of holes, where each set of holes will be expanded
         simultaneously
         """
-        pass
 
 
 class ChooseFirst(HoleSetChooser):

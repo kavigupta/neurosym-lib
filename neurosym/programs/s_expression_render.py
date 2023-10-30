@@ -91,8 +91,10 @@ def parse_s_expression(s: str, should_not_be_leaf: Set[str]) -> SExpression:
     Returns:
         The SExpression representing the string.
     """
-    [pair] = parse(s, ParserConfig((), dots_are_cons=False))
-    return from_pair(pair, should_not_be_leaf=should_not_be_leaf)
+    pairs = parse(s, ParserConfig((), dots_are_cons=False))
+    if len(pairs) != 1:
+        raise ValueError(f"Expected one expression, got {len(pairs)}")
+    return from_pair(pairs[0], should_not_be_leaf=should_not_be_leaf)
 
 
 def symbols(s: SExpression) -> List[str]:

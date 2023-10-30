@@ -11,14 +11,12 @@ class MetadataComputer(ABC):
         """
         Return the metadata for the initial node in the search graph.
         """
-        pass
 
     @abstractmethod
     def for_expanded_node(self, node, expanded_node):
         """
         Return the metadata for the expanded node in the search graph.
         """
-        pass
 
 
 class NoMetadataComputer(MetadataComputer):
