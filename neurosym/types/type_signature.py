@@ -1,3 +1,8 @@
+"""
+Type signatures are used to represent the types of functions in the
+DSL.
+"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import itertools
@@ -282,7 +287,8 @@ def expansions(
     for var in exclude_variables:
         if var not in depth_by_var:
             raise ValueError(
-                f"Variable {var} not in type signature {render_type(sig)}, cannot exclude. Valid options: {sorted(depth_by_var)}"
+                f"Variable {var} not in type signature {render_type(sig)}, "
+                + f"cannot exclude. Valid options: {sorted(depth_by_var)}"
             )
         del depth_by_var[var]
     enumerations_by_var = {
