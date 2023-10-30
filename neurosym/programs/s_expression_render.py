@@ -1,5 +1,6 @@
 from typing import List, Set
-from s_expression_parser import parse, ParserConfig, Pair, nil, Renderer
+
+from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 
 from neurosym.programs.s_expression import SExpression
 

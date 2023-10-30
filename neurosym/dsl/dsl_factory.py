@@ -1,14 +1,16 @@
 from typing import Dict, List
+
+import numpy as np
+
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
-    VariableProduction,
     Production,
+    VariableProduction,
 )
-from neurosym.types.type_string_repr import TypeDefiner
-import numpy as np
+from neurosym.types.type import ArrowType, AtomicType, TypeVariable
 from neurosym.types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
@@ -17,7 +19,7 @@ from neurosym.types.type_signature import (
     signature_expansions,
     type_universe,
 )
-from neurosym.types.type import ArrowType, AtomicType, TypeVariable
+from neurosym.types.type_string_repr import TypeDefiner
 
 
 class DSLFactory:

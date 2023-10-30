@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-
-from .s_expression import SExpression
 from ..types.type_with_environment import TypeWithEnvironment
+from .s_expression import SExpression
 
 
 @dataclass(eq=True, frozen=True)

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List
+
 from neurosym.dsl.abstraction import AbstractionIndexParameter, AbstractionParameter
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import LambdaProduction, VariableProduction

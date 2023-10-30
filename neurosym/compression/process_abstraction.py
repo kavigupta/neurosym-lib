@@ -1,6 +1,8 @@
 import itertools
 from typing import Union
+
 import stitch_core
+
 from neurosym.dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import (

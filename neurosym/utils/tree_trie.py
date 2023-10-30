@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-
-from typing import List, Set, TypeVar, Generic, Dict, Tuple
+from typing import Dict, Generic, List, Set, Tuple, TypeVar
 
 K, V = TypeVar("K"), TypeVar("V")
 

@@ -1,8 +1,10 @@
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import List, Tuple
+
 import torch
 from torch import nn
-from collections import OrderedDict
+
 from .base import BaseConfig
 
 

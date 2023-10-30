@@ -1,17 +1,15 @@
-from abc import ABC
 import itertools
+from abc import ABC
 from typing import Callable
 
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
-
 from ..dsl.dsl import DSL
 from ..programs.hole import Hole, all_holes, replace_holes
 from ..programs.s_expression import SExpression
 from ..types.type import Type
-
 from .hole_set_chooser import HoleSetChooser
 from .search_graph import SearchGraph
 

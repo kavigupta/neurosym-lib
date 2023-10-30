@@ -1,4 +1,5 @@
 from functools import reduce
+
 from neurosym.dsl.dsl_factory import DSLFactory
 
 

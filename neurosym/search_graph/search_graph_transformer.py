@@ -1,5 +1,6 @@
-from abc import abstractmethod
 import itertools
+from abc import abstractmethod
+
 from .search_graph import SearchGraph
 
 

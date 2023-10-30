@@ -1,8 +1,9 @@
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Tuple, Dict
-import uuid
+from typing import Dict, List, Tuple
+
 import numpy as np
 
 

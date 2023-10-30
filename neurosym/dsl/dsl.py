@@ -11,7 +11,6 @@ from neurosym.utils.tree_trie import TreeTrie
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import Type, TypeVariable
-
 from .production import Production
 
 

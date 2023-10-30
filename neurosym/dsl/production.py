@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import KW_ONLY, dataclass
 from typing import Callable, Dict
 
-
 from ..types.type_signature import (
     LambdaTypeSignature,
     TypeSignature,

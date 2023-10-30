@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict
+
 from neurosym.programs.s_expression import SExpression
 
 

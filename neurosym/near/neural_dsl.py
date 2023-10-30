@@ -1,15 +1,15 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Tuple
 
-from neurosym.types.type_signature import FunctionTypeSignature
-
-from ..programs.hole import Hole
-from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import AtomicType, ListType, TensorType, Type, ArrowType
 from torch import nn
 
-from ..dsl.production import Production, ParameterizedProduction
+from neurosym.types.type_signature import FunctionTypeSignature
+
 from ..dsl.dsl import DSL
+from ..dsl.production import ParameterizedProduction, Production
+from ..programs.hole import Hole
+from ..programs.s_expression import InitializedSExpression, SExpression
+from ..types.type import ArrowType, AtomicType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):

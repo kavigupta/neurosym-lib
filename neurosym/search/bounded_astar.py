@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
 import queue
+from dataclasses import dataclass, field
 from typing import Callable
+
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
 

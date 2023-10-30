@@ -1,11 +1,10 @@
 import io
-import requests
 
-import torch
-import pytorch_lightning as pl
-
-from permacache import permacache
 import numpy as np
+import pytorch_lightning as pl
+import requests
+import torch
+from permacache import permacache
 
 
 def get_raw_url(github_folder, filename):

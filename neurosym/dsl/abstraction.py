@@ -3,9 +3,9 @@ from typing import Dict
 
 from neurosym.programs.s_expression_render import render_s_expression
 
-from .production import FunctionLikeProduction
-from ..types.type_signature import TypeSignature
 from ..programs.s_expression import InitializedSExpression, SExpression
+from ..types.type_signature import TypeSignature
+from .production import FunctionLikeProduction
 
 
 @dataclass

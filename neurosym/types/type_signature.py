@@ -3,19 +3,19 @@ Type signatures are used to represent the types of functions in the
 DSL.
 """
 
+import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import itertools
-from typing import Callable, List, Tuple
 from itertools import product
-from frozendict import frozendict
+from typing import Callable, List, Tuple
 
 import numpy as np
+from frozendict import frozendict
 
 from neurosym.types.type import (
     ArrowType,
-    Type,
     ListType,
+    Type,
     TypeVariable,
     UnificationError,
 )
