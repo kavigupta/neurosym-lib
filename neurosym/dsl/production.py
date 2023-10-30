@@ -207,6 +207,7 @@ class ParameterizedProduction(ConcreteProduction):
     initializers: Dict[str, Callable[[], object]]
 
     def with_index(self, index):
+        # pylint: disable=unexpected-keyword-arg
         return ParameterizedProduction(
             self._symbol,
             self._type_signature,

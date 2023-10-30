@@ -57,6 +57,7 @@ class NeuralDSL(DSL):
             count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
             identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
+            # pylint: disable=unexpected-keyword-arg
             module_c_prod = ParameterizedProduction(
                 identifier,
                 FunctionTypeSignature([], fn_type),
