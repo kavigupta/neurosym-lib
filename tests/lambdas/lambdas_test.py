@@ -237,7 +237,7 @@ def make_varied_type_dsl():
     return dslf.finalize()
 
 
-class TestEnumerateBasicArithmetic(unittest.TestCase):
+class TestVariedTypes(unittest.TestCase):
     def test_show_dsl(self):
         self.maxDiff = None
         expected = """
