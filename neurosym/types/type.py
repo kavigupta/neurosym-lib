@@ -23,7 +23,7 @@ class Type(ABC):
             "_type": self.__class__.__name__,
             **self.inherent_parameters(),
         }
-        summary_dict = {k: v for k, v in sorted(summary_dict.items())}
+        summary_dict = dict(sorted(summary_dict.items()))
         return str(summary_dict)
 
     @abstractmethod
@@ -169,6 +169,7 @@ class TensorType(Type):
         yield from []
 
     def subst_type_vars(self, subst: Dict[str, Type]):
+        del subst
         assert not self.has_type_vars()
         return self
 
@@ -176,14 +177,12 @@ class TensorType(Type):
         self, other: "Type", already_tried_other_direction=False
     ) -> Dict[str, "Type"]:
         if isinstance(other, TensorType):
-            if self.shape == other.shape:
-                return self.dtype.unify(other.dtype)
-            else:
+            if self.shape != other.shape:
                 raise UnificationError(f"{self} != {other}")
-        elif already_tried_other_direction:
+            return self.dtype.unify(other.dtype)
+        if already_tried_other_direction:
             raise UnificationError(f"{self} != {other}")
-        else:
-            return other.unify(self, already_tried_other_direction=True)
+        return other.unify(self, already_tried_other_direction=True)
 
 
 @dataclass(frozen=True, eq=True)
@@ -212,10 +211,9 @@ class ListType(Type):
     ) -> Dict[str, "Type"]:
         if isinstance(other, ListType):
             return self.element_type.unify(other.element_type)
-        elif already_tried_other_direction:
+        if already_tried_other_direction:
             raise UnificationError(f"{self} != {other}")
-        else:
-            return other.unify(self, already_tried_other_direction=True)
+        return other.unify(self, already_tried_other_direction=True)
 
 
 @dataclass(frozen=True, eq=True)
@@ -255,8 +253,7 @@ class ArrowType(Type):
         if not isinstance(other, ArrowType):
             if already_tried_other_direction:
                 raise UnificationError(f"{self} != {other}")
-            else:
-                return other.unify(self, already_tried_other_direction=True)
+            return other.unify(self, already_tried_other_direction=True)
         if len(self.input_type) != len(other.input_type):
             raise UnificationError(f"{self} != {other}")
         individuals = []
