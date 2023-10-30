@@ -7,7 +7,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import itertools
 from typing import Callable, List, Tuple
+from itertools import product
 from frozendict import frozendict
+
+import numpy as np
 
 from neurosym.types.type import (
     ArrowType,
@@ -17,8 +20,6 @@ from neurosym.types.type import (
     UnificationError,
 )
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
-from itertools import product
-import numpy as np
 
 
 class TypeSignature(ABC):
@@ -28,7 +29,7 @@ class TypeSignature(ABC):
     """
 
     @abstractmethod
-    def unify_return(self, type: TypeWithEnvironment) -> List[TypeWithEnvironment]:
+    def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
         """
         Returns a list of types, one for each of the arguments, or None
         if the type cannot be unified.
@@ -74,9 +75,12 @@ class FunctionTypeSignature(TypeSignature):
     return_type: Type
 
     @classmethod
-    def from_type(cls, type: Type) -> "FunctionTypeSignature":
-        assert isinstance(type, ArrowType)
-        return cls(list(type.input_type), type.output_type)
+    def from_type(cls, typ: Type) -> "FunctionTypeSignature":
+        """
+        Create a function type signature from a type, which must be an arrow type.
+        """
+        assert isinstance(typ, ArrowType)
+        return cls(list(typ.input_type), typ.output_type)
 
     def unify_return(self, twe: TypeWithEnvironment) -> List[TypeWithEnvironment]:
         try:
@@ -113,6 +117,10 @@ class FunctionTypeSignature(TypeSignature):
         return len(self.arguments)
 
     def astype(self) -> Type:
+        """
+        Convert this type signature to an arrow type, which is the
+            type of the function that this signature represents.
+        """
         return ArrowType(tuple(self.arguments), self.return_type)
 
     def render(self) -> str:
@@ -134,6 +142,10 @@ class LambdaTypeSignature(TypeSignature):
         return 1
 
     def function_arity(self) -> int:
+        """
+        Get the arity of the function represented by the lambda,
+            i.e., the number of arguments.
+        """
         return len(self.input_types)
 
     def render(self) -> str:
@@ -237,12 +249,11 @@ def bottom_up_enumerate_types(
             ]
             for subentities in itertools.product(will_work, repeat=arity):
                 types = [t for t, _, _ in subentities]
-                depth = max([d for _, d, _ in subentities]) + additional_depth
-                steps = max([n for _, _, n in subentities]) + 1
+                depth = max((d for _, d, _ in subentities)) + additional_depth
+                steps = max((n for _, _, n in subentities)) + 1
                 assert depth <= max_overall_depth
                 assert steps <= max_expansion_steps
-                new_type = fn(*types)
-                res = (new_type, depth, steps)
+                res = (fn(*types), depth, steps)
                 if res in overall:
                     continue
                 current_with_depth.append(res)
@@ -258,6 +269,12 @@ def signature_expansions(
     max_expansion_steps=np.inf,
     max_overall_depth=np.inf,
 ):
+    """
+    Returns a list of all possible expansions of the given type signature.
+
+    Any type variables that appear in both the arguments and return type
+        will be kept, while any other type variables will be expanded.
+    """
     variables_in_arguments = {
         var for arg in sig.arguments for var in arg.max_depth_per_type_variable()
     }
@@ -281,6 +298,9 @@ def expansions(
     max_overall_depth=np.inf,
     exclude_variables=(),
 ):
+    """
+    Returns a list of all possible expansions of the given type.
+    """
     from neurosym.types.type_string_repr import render_type
 
     depth_by_var = sig.max_depth_per_type_variable()
@@ -308,6 +328,15 @@ def expansions(
 
 
 def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
+    """
+    Produce a type universe from the given types.
+
+    Returns a tuple of (atomic_types, constructors), where atomic_types
+        represents the atomic types in the universe, and constructors
+        is a list of tuples of the form (arity, constructor), where
+        constructor is a function that takes `arity` types and
+        produces a new type.
+    """
     atomic_types = set()
     num_arrow_args = set()
     has_list = False
