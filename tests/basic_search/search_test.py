@@ -16,7 +16,7 @@ from neurosym.types.type_string_repr import parse_type
 dsl = basic_arith_dsl()
 
 
-class TestSmoke(unittest.TestCase):
+class TestSearch(unittest.TestCase):
     def test_bfs(self):
         g = DSLSearchGraph(
             dsl,
