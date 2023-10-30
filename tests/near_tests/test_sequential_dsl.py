@@ -15,7 +15,7 @@ import unittest
 import pytest
 import torch
 
-from neurosym.near.datasets.load_data import DatasetWrapper, numpy_dataset_from_github
+from neurosym.near.datasets.load_data import DatasetWrapper
 from neurosym.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
 from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
 from neurosym.near.models.mlp import mlp_factory
@@ -30,6 +30,7 @@ from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from neurosym.examples.datasets import near_data_example
 
 from .utils import assertDSLEnumerable
 
@@ -43,14 +44,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
         """
-        dataset_gen = numpy_dataset_from_github(
-            "https://github.com/trishullab/near/tree/master/near_code/data/example",
-            "train_ex_data.npy",
-            "train_ex_labels.npy",
-            "test_ex_data.npy",
-            "test_ex_labels.npy",
-        )
-        datamodule: DatasetWrapper = dataset_gen(train_seed=0)
+        datamodule: DatasetWrapper = near_data_example.data(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = NEARTrainerConfig(

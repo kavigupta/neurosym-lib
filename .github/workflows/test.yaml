@@ -26,4 +26,4 @@ jobs:
           pytest tests
       - name: Lint with pylint
         run: |
-          pylint neurosym
+          pylint neurosym setup.py tests
