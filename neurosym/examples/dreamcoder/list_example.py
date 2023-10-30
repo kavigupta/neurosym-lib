@@ -27,9 +27,6 @@ def list_dsl(*output_types):
     dslf.concrete("not", f"b -> b", lambda x: not x)
     dslf.concrete("and", f"(b, b) -> b", lambda x, y: x and y)
     dslf.concrete("or", f"(b, b) -> b", lambda x, y: x or y)
-    # for T in types:
-    #     dslf.concrete(f"if_{T}", f"(b, {T}, {T}) -> {T}", lambda x, y, z: y if x else z)
-    #     dslf.concrete(f"sort_{T}", f"([{T}]) -> [{T}]", lambda x: sorted(x))
     dslf.concrete("if", f"(b, #T, #T) -> #T", lambda x, y, z: y if x else z)
     dslf.concrete("sort", f"([#T]) -> [#T]", lambda x: sorted(x))
     dslf.concrete("+", f"(i, i) -> i", lambda x, y: x + y)
