@@ -109,6 +109,6 @@ class BasicProcessDSL(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            render_s_expression(dsl2.productions[-1]._body, set()),
-            "(lam_0 (+ #0 ($0_0)))",
+            dsl2.productions[-1].render().strip(),
+            "__10 :: i -> (i, i) -> i = (lam (#0) (lam_0 (+ #0 ($0_0))))",
         )
