@@ -433,8 +433,9 @@ disable=raw-checker-failed,
         use-implicit-booleaness-not-comparison-to-zero,
         invalid-sequence-index,
         use-dict-literal,
+        unnecessary-lambda-assignment,
         # deal with this later
-        missing-function-docstring,missing-class-docstring,missing-module-docstring,import-outside-toplevel,too-many-arguments,too-many-locals
+        missing-function-docstring,missing-class-docstring,missing-module-docstring,import-outside-toplevel,too-many-arguments,too-many-locals,too-many-instance-attributes
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

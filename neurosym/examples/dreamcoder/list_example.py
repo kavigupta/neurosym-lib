@@ -29,7 +29,7 @@ def list_dsl(*output_types):
     dslf.concrete("and", "(b, b) -> b", lambda x, y: x and y)
     dslf.concrete("or", "(b, b) -> b", lambda x, y: x or y)
     dslf.concrete("i", "(b, #T, #T) -> #T", lambda x, y, z: y if x else z)
-    dslf.concrete("sort", "([#T]) -> [#T]", lambda x: sorted(x))
+    dslf.concrete("sort", "([#T]) -> [#T]", sorted)
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("*", "(i, i) -> i", lambda x, y: x * y)
     dslf.concrete("negate", "i -> i", lambda x: -x)
@@ -42,7 +42,7 @@ def list_dsl(*output_types):
         lambda x: x > 1 and all(x % i for i in range(2, min(1 + int(x**0.5), x))),
     )
     dslf.concrete("is-square", "i -> b", lambda x: x > 1 and int(x**0.5) ** 2 == x)
-    dslf.concrete("sum", "[i] -> i", lambda x: sum(x))
+    dslf.concrete("sum", "[i] -> i", sum)
     # # (lambda (lambda (reduce (lambda (lambda (+ $0 $1))) 0 $0)))
     dslf.concrete("reverse", "[#T] -> [#T]", lambda x: x[::-1])
     # (lambda (reduce (lambda (lambda (++ (singleton $0) $1))) empty $0))
@@ -65,11 +65,25 @@ def list_dsl(*output_types):
         "((#T) -> b, [#T]) -> [#T]",
         lambda f: lambda x: [i for i in x if f(i)],
     )
-    # (lambda (lambda (reduce (lambda (lambda (++ $1 (if ($3 $0) (singleton $0) empty)))) empty $0)))
-    dslf.concrete(
-        "slice", "(i, i, [#T]) -> [#T]", lambda x: lambda y: lambda z: z[x:y]
-    )
-    # (lambda (lambda (lambda (reducei (lambda (lambda (lambda (++ $2 (if (and (or (gt? $1 $5) (eq? $1 $5)) (not (or (gt? $4 $1) (eq? $1 $4)))) (singleton $0) empty))))) empty $0))))
+    # (lambda (lambda
+    #   (reduce
+    #       (lambda (lambda (++ $1 (if ($3 $0) (singleton $0) empty))))
+    #       empty
+    #       $0)))
+    dslf.concrete("slice", "(i, i, [#T]) -> [#T]", lambda x: lambda y: lambda z: z[x:y])
+    # (lambda (lambda (lambda
+    #   (reducei
+    #     (lambda (lambda (lambda
+    #         (++
+    #             $2
+    #             (if
+    #                 (and
+    #                     (or (gt? $1 $5) (eq? $1 $5))
+    #                     (not (or (gt? $4 $1) (eq? $1 $4))))
+    #                 (singleton $0)
+    #                 empty)))))
+    #     empty
+    #     $0))))
 
     dslf.no_zeroadic()
 

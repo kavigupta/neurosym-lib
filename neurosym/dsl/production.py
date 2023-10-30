@@ -119,10 +119,10 @@ class ConcreteProduction(FunctionLikeProduction):
         assert state == {}
         try:
             return self._compute(*inputs)
-        except TypeError:
+        except TypeError as exc:
             raise TypeError(
                 f"Error computing {self.symbol()} on inputs {inputs} with state {state}"
-            )
+            ) from exc
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
