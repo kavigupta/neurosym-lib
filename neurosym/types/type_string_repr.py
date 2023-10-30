@@ -5,7 +5,7 @@ from neurosym.types.type import (
     TensorType,
     TypeVariable,
 )
-from neurosym.types.type_signature import ConcreteTypeSignature
+from neurosym.types.type_signature import FunctionTypeSignature
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
@@ -19,7 +19,7 @@ class TypeDefiner:
 
     def sig(self, type_str):
         typ = self(type_str)
-        return ConcreteTypeSignature(list(typ.input_type), typ.output_type)
+        return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
     def typedef(self, key, type_str):
         self.env[key] = self(type_str)

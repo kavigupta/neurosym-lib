@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Tuple
 
-from neurosym.types.type_signature import ConcreteTypeSignature
+from neurosym.types.type_signature import FunctionTypeSignature
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
@@ -59,7 +59,7 @@ class NeuralDSL(DSL):
             type_to_symbol[fn_type] = identifier
             module_c_prod = ParameterizedProduction(
                 identifier,
-                ConcreteTypeSignature([], fn_type),
+                FunctionTypeSignature([], fn_type),
                 lambda initialized_module: initialized_module,
                 index=None,
                 initializers=dict(initialized_module=module_template),

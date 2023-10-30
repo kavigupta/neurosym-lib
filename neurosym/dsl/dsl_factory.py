@@ -10,7 +10,7 @@ from neurosym.dsl.production import (
 from neurosym.types.type_string_repr import TypeDefiner
 import numpy as np
 from neurosym.types.type_signature import (
-    ConcreteTypeSignature,
+    FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
     expansions,
@@ -129,7 +129,7 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         prods = [
-            constructor(symbol, ConcreteTypeSignature.from_type(expansion), *args)
+            constructor(symbol, FunctionTypeSignature.from_type(expansion), *args)
             for expansion in sigs
         ]
 

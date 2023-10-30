@@ -64,7 +64,7 @@ class TypeSignature(ABC):
 
 
 @dataclass
-class ConcreteTypeSignature(TypeSignature):
+class FunctionTypeSignature(TypeSignature):
     """
     Represents a concrete type signature, where the return type is known and the
     arguments are known.
@@ -74,7 +74,7 @@ class ConcreteTypeSignature(TypeSignature):
     return_type: Type
 
     @classmethod
-    def from_type(cls, type: Type) -> "ConcreteTypeSignature":
+    def from_type(cls, type: Type) -> "FunctionTypeSignature":
         assert isinstance(type, ArrowType)
         return cls(list(type.input_type), type.output_type)
 
@@ -252,7 +252,7 @@ def bottom_up_enumerate_types(
 
 
 def signature_expansions(
-    sig: ConcreteTypeSignature,
+    sig: FunctionTypeSignature,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
     max_expansion_steps=np.inf,

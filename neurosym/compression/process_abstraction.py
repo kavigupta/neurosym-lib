@@ -8,7 +8,7 @@ from neurosym.programs.s_expression_render import (
     render_s_expression,
     symbols,
 )
-from neurosym.types.type_signature import ConcreteTypeSignature
+from neurosym.types.type_signature import FunctionTypeSignature
 
 
 def compute_abstraction_production(
@@ -36,7 +36,7 @@ def compute_abstraction_production(
         if isinstance(x, AbstractionIndexParameter)
         else None,
     ).typ
-    type_signature = ConcreteTypeSignature(type_arguments, type_out)
+    type_signature = FunctionTypeSignature(type_arguments, type_out)
 
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
 
