@@ -32,6 +32,8 @@ from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
+from .utils import test_enumerate_dsl
+
 
 class TestNEARSequentialDSL(unittest.TestCase):
     def test_sequential_dsl_astar(self):
@@ -142,32 +144,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        input_dim = 10
-        output_dim = 4
-        max_depth = 5
-        t = TypeDefiner(L=input_dim, O=output_dim)
-        t.typedef("fL", "{f, $L}")
-        t.typedef("fO", "{f, $O}")
-        dsl = example_rnn_dsl(input_dim, output_dim)
+        dsl = example_rnn_dsl(10, 4)
 
-        def checker(x):
-            """Initialize and return True"""
-            x = x.program
-            xx = dsl.compute(dsl.initialize(x))
-            print(xx)
-            return True
-
-        g = near_graph(
-            dsl,
-            t("([$fL]) -> [$fO]"),
-            is_goal=checker,
-        )
-
-        def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
-            return 0
-
-        # succeed if this raises StopIteration
-        for _ in bounded_astar(g, cost, max_depth=max_depth):
-            pass
+        test_enumerate_dsl(dsl, "([$fL]) -> [$fO]")

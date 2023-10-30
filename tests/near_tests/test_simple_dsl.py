@@ -19,6 +19,7 @@ from neurosym.programs.s_expression import SExpression
 from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from .utils import test_enumerate_dsl
 
 
 class TestNEARSimpleDSL(unittest.TestCase):
@@ -99,29 +100,6 @@ class TestNEARSimpleDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        input_dim = 10
-        output_dim = 4
-        max_depth = 5
-        t = TypeDefiner(L=input_dim, O=output_dim)
-        t.typedef("fL", "{f, $L}")
-        t.typedef("fO", "{f, $O}")
+        dsl = differentiable_arith_dsl(10)
 
-        dsl = differentiable_arith_dsl(input_dim)
-
-        def checker(x):
-            """Initialize and return True always"""
-            x = x.program
-            xx = dsl.compute(dsl.initialize(x))
-            print(xx)
-            return True
-
-        g = near_graph(dsl, parse_type("{f, 10}"), is_goal=checker)
-
-        def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
-            return 0
-
-        # should not raise StopIteration.
-        for _ in bounded_astar(g, cost, max_depth=max_depth):
-            pass
+        test_enumerate_dsl(dsl, "$fL")
