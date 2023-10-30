@@ -435,6 +435,7 @@ disable=raw-checker-failed,
         use-dict-literal,
         unnecessary-lambda-assignment,
         too-few-public-methods,
+        unspecified-encoding,
         # deal with this later
         missing-function-docstring,missing-class-docstring,missing-module-docstring,import-outside-toplevel,too-many-arguments,too-many-locals,too-many-instance-attributes,too-many-return-statements
 
