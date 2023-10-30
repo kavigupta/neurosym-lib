@@ -124,6 +124,7 @@ class FunctionTypeSignature(TypeSignature):
         return ArrowType(tuple(self.arguments), self.return_type)
 
     def render(self) -> str:
+        # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
 
         return render_type(self.astype())
@@ -149,6 +150,7 @@ class LambdaTypeSignature(TypeSignature):
         return len(self.input_types)
 
     def render(self) -> str:
+        # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
 
         body = TypeVariable("body")
@@ -193,6 +195,7 @@ class VariableTypeSignature(TypeSignature):
         return 0
 
     def render(self) -> str:
+        # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
 
         return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
@@ -301,6 +304,7 @@ def expansions(
     """
     Returns a list of all possible expansions of the given type.
     """
+    # pylint: disable=cyclic-import
     from neurosym.types.type_string_repr import render_type
 
     depth_by_var = sig.max_depth_per_type_variable()

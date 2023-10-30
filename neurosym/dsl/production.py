@@ -157,6 +157,7 @@ class LambdaProduction(Production):
         """
         Apply this production to the given children.
         """
+        # pylint: disable=cyclic-import
         from neurosym.dsl.lambdas import LambdaFunction
 
         [body] = children

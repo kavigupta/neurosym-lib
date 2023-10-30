@@ -9,7 +9,7 @@ from ..dsl.dsl import DSL
 from ..dsl.production import ParameterizedProduction, Production
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import ArrowType, AtomicType, ListType, TensorType, Type
+from ..types.type import ArrowType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):

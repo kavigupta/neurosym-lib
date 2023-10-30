@@ -15,7 +15,7 @@ def get_raw_url(github_folder, filename):
     ----------
     github_folder : str
         The github folder containing the file. As a url.
-            E.g., github_folder = https://github.com/trishullab/near/tree/master/near_code/data/example
+        E.g., github_folder = https://github.com/trishullab/near/tree/master/near_code/data/example
     filename : str
         The name of the file.
             E.g., filename = test_ex_data.npy
@@ -24,7 +24,7 @@ def get_raw_url(github_folder, filename):
     -------
     raw_url : str
         The raw url for the file.
-            E.g., https://github.com/trishullab/near/raw/master/near_code/data/example/test_ex_data.npy
+        E.g., https://github.com/trishullab/near/raw/master/near_code/data/example/test_ex_data.npy
     """
     raw_url = github_folder.replace("tree", "raw") + "/" + filename
     return raw_url
@@ -45,6 +45,7 @@ def load_npy(url):
     data : np.ndarray
         The data in the numpy file.
     """
+    # pylint: disable=missing-timeout
     data = requests.get(url).content
     data = np.load(io.BytesIO(data))
     return data

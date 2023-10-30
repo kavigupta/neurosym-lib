@@ -23,6 +23,8 @@ def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
         fringe.put(AStarNode(cost_plus_heuristic(node), node))
 
     add_to_fringe(g.initial_node())
+    # this is similar to the BFS algorithm
+    # pylint: disable=duplicate-code
     while not fringe.empty():
         node = fringe.get().node
         if node in visited:
