@@ -7,7 +7,7 @@ from neurosym.dsl.production import (
     VariableProduction,
     Production,
 )
-from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from neurosym.types.type_string_repr import TypeDefiner
 import numpy as np
 from neurosym.types.type_signature import (
     ConcreteTypeSignature,
@@ -17,8 +17,7 @@ from neurosym.types.type_signature import (
     signature_expansions,
     type_universe,
 )
-from neurosym.types.type import ArrowType, AtomicType, ListType, TypeVariable
-from neurosym.types.type_string_repr import render_type
+from neurosym.types.type import ArrowType, AtomicType, TypeVariable
 
 
 class DSLFactory:
