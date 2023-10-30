@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from frozendict import frozendict
 
@@ -41,11 +41,12 @@ class Environment:
         }
         return Environment(frozendict(result))
 
-    def merge(self, other):
+    def merge(self, other: "Environment"):
         """
         Merge two environments.
         """
         result = dict(self._elements)
+        # pylint: disable=protected-access
         for i, typ in other._elements.items():
             if i in result:
                 assert result[i] == typ
@@ -54,12 +55,13 @@ class Environment:
         return Environment(frozendict(result))
 
     @classmethod
-    def merge_all(cls, *environments):
+    def merge_all(cls, *environments: List["Environment"]):
         """
         Merge a list of environments.
         """
         result = {}
         for env in environments:
+            # pylint: disable=protected-access
             result.update(env._elements)
         return Environment(frozendict(result))
 
@@ -78,12 +80,15 @@ class Environment:
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:
     def child(self, *new_types: Tuple[Type]):
+        del new_types
         return self
 
     def parent(self, new_types):
+        del new_types
         return self
 
     def contains_type_at(self, typ: Type, index: int):
+        del typ, index
         return True
 
     def __len__(self):
