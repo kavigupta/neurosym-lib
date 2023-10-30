@@ -77,18 +77,13 @@ class DSL:
         assert isinstance(symbol, str), f"Expected string, got {type(symbol)}: {symbol}"
         return self._production_by_symbol[symbol]
 
-    def initialize(
-        self, program: SExpression, hole_callback=None
-    ) -> InitializedSExpression:
+    def initialize(self, program: SExpression) -> InitializedSExpression:
         """
         Initializes all the productions in the given program.
 
         Returns a new program with the same structure, but with all the productions
         initialized.
         """
-        if isinstance(program, Hole):
-            assert hole_callback is not None
-            return hole_callback(program)
         if hasattr(program, "__initialize__"):
             return program.__initialize__(self)
         prod = self.get_production(program.symbol)
