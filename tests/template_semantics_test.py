@@ -1,8 +1,7 @@
 import unittest
+
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.programs.s_expression_render import render_s_expression
-
-
 from neurosym.types.type_string_repr import parse_type
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 

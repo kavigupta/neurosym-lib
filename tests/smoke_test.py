@@ -3,14 +3,13 @@ Just checks that the package can be imported
 """
 
 import unittest
+
+from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.programs.s_expression import SExpression
 from neurosym.search.astar import astar
-
 from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
-
-from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
 

@@ -1,6 +1,6 @@
 import unittest
 
-from neurosym.types.type import AtomicType, TensorType, ListType, ArrowType
+from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
 from neurosym.types.type_string_repr import lex, parse_type, render_type
 
 

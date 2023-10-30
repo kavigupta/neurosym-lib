@@ -11,31 +11,27 @@ NEAR Integration tests.
 """
 
 import unittest
-from neurosym.near.models.mlp import mlp_factory
-from neurosym.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
-from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
-from neurosym.near.search_graph import near_graph
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import symbols
 
-from neurosym.search.bounded_astar import bounded_astar
-
-from neurosym.near.dsls.sequential_differentiable_dsl import (
-    example_rnn_dsl,
-)
-from neurosym.near.models.torch_program_module import TorchProgramModule
+import pytest
 import torch
 
-from neurosym.types.type import ArrowType, ListType, TensorType, float_t
-from neurosym.near.datasets.load_data import numpy_dataset_from_github, DatasetWrapper
-from neurosym.types.type_string_repr import TypeDefiner, parse_type
+from neurosym.near.datasets.load_data import DatasetWrapper, numpy_dataset_from_github
+from neurosym.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
+from neurosym.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
+from neurosym.near.models.mlp import mlp_factory
+from neurosym.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
+from neurosym.near.models.torch_program_module import TorchProgramModule
 from neurosym.near.neural_dsl import (
     NeuralDSL,
     PartialProgramNotFoundError,
     create_modules,
 )
-
-import pytest
+from neurosym.near.search_graph import near_graph
+from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression_render import symbols
+from neurosym.search.bounded_astar import bounded_astar
+from neurosym.types.type import ArrowType, ListType, TensorType, float_t
+from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
 
 class TestNEARSequentialDSL(unittest.TestCase):

@@ -1,10 +1,9 @@
 import unittest
+
 from neurosym.examples.dreamcoder.list_example import list_dsl
 from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression_render import render_s_expression
-
 from neurosym.search.bfs import bfs
-
 from neurosym.types.type_string_repr import parse_type
 
 ldsl = list_dsl("[i] -> i")
@@ -36,7 +35,7 @@ class TestListDSL(unittest.TestCase):
                 if fn([0, 7, 3, 5]) != 7:
                     return False
                 return True
-            except: # pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 return False
 
         g = near_graph(

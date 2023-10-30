@@ -12,15 +12,13 @@ NEAR Integration tests.
 import unittest
 
 import pytest
-from neurosym.near.search_graph import near_graph
-from neurosym.programs.s_expression import SExpression
-
-from neurosym.search.bfs import bfs
-from neurosym.search.bounded_astar import bounded_astar
-
-from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
 import torch
 
+from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
+from neurosym.near.search_graph import near_graph
+from neurosym.programs.s_expression import SExpression
+from neurosym.search.bfs import bfs
+from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 
 

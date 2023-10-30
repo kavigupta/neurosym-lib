@@ -1,12 +1,12 @@
-from functools import lru_cache
 import unittest
+from functools import lru_cache
 
 import numpy as np
+
 from neurosym.compression.process_abstraction import (
     multi_step_compression,
     single_step_compression,
 )
-
 from neurosym.dsl.pcfg import PCFGPattern
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
