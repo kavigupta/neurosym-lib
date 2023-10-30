@@ -36,7 +36,7 @@ class TestListDSL(unittest.TestCase):
                 if fn([0, 7, 3, 5]) != 7:
                     return False
                 return True
-            except:
+            except: # pylint: disable=bare-except
                 return False
 
         g = near_graph(

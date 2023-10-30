@@ -1,9 +1,5 @@
-import itertools
 import unittest
 from neurosym.dsl.dsl_factory import DSLFactory
-
-
-from neurosym.examples.basic_arith import basic_arith_dsl
 
 
 class EnumerationRegressionTest(unittest.TestCase):
@@ -14,7 +10,9 @@ class EnumerationRegressionTest(unittest.TestCase):
             {line.strip() for line in expected.strip().split("\n")},
         )
 
-    def rendered_dsl(self, lambdas_kwargs={}):
+    def rendered_dsl(self, lambdas_kwargs=None):
+        if lambdas_kwargs is None:
+            lambdas_kwargs = {}
         dslf = DSLFactory()
         dslf.known_types("i")
         dslf.lambdas(**lambdas_kwargs)
