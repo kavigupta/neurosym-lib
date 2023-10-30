@@ -30,11 +30,11 @@ def render_type(t):
         return t.name
     if isinstance(t, TypeVariable):
         return "#" + t.name
-    elif isinstance(t, TensorType):
+    if isinstance(t, TensorType):
         return "{" + ", ".join([render_type(t.dtype), *map(str, t.shape)]) + "}"
-    elif isinstance(t, ListType):
+    if isinstance(t, ListType):
         return "[" + render_type(t.element_type) + "]"
-    elif isinstance(t, ArrowType):
+    if isinstance(t, ArrowType):
         if len(t.input_type) == 1 and not isinstance(t.input_type[0], ArrowType):
             return render_type(t.input_type[0]) + " -> " + render_type(t.output_type)
         return (
@@ -43,17 +43,16 @@ def render_type(t):
             + ") -> "
             + render_type(t.output_type)
         )
-    else:
-        raise NotImplementedError(f"Unknown type {t}")
+    raise NotImplementedError(f"Unknown type {t}")
 
 
 def parse_type_from_buf(reversed_buf, env):
     first_tok = reversed_buf.pop()
     if first_tok.isnumeric():
         return int(first_tok)
-    elif first_tok.startswith("$"):
+    if first_tok.startswith("$"):
         return env[first_tok[1:]]
-    elif first_tok == "{":
+    if first_tok == "{":
         internal_type = parse_type_from_buf(reversed_buf, env)
         shape = []
         while True:
@@ -64,12 +63,12 @@ def parse_type_from_buf(reversed_buf, env):
             size = parse_type_from_buf(reversed_buf, env)
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
-    elif first_tok == "[":
+    if first_tok == "[":
         internal_type = parse_type_from_buf_multi(reversed_buf, env)
         close_bracket = reversed_buf.pop()
         assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
-    elif first_tok == "(":
+    if first_tok == "(":
         input_types = []
         while True:
             if reversed_buf[-1] == ")":
@@ -84,10 +83,9 @@ def parse_type_from_buf(reversed_buf, env):
         assert tok == "->", f"Expected '->' but got {tok}"
         output_type = parse_type_from_buf_multi(reversed_buf, env)
         return ArrowType(tuple(input_types), output_type)
-    elif first_tok.startswith("#"):
+    if first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
-    else:
-        return AtomicType(first_tok)
+    return AtomicType(first_tok)
 
 
 def parse_type_from_buf_multi(reversed_buf, env):

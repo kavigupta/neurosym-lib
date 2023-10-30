@@ -36,8 +36,8 @@ class PCFGPattern:
             valid_mask[symbol_to_idx["<root>"], 0, symbol_to_idx[root_sym]] = 1
         for _, rules in rules_for.items():
             for root_sym, child_types in rules:
-                for i in range(len(child_types)):
-                    for child_sym, _ in rules_for[child_types[i]]:
+                for i, ct in enumerate(child_types):
+                    for child_sym, _ in rules_for[ct]:
                         valid_mask[
                             symbol_to_idx[root_sym], i, symbol_to_idx[child_sym]
                         ] = 1

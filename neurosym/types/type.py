@@ -138,14 +138,12 @@ class AtomicType(Type):
         self, other: "Type", already_tried_other_direction=False
     ) -> Dict[str, "Type"]:
         if isinstance(other, AtomicType):
-            if self.name == other.name:
-                return {}
-            else:
+            if self.name != other.name:
                 raise UnificationError(f"{self} != {other}")
-        elif already_tried_other_direction:
+            return {}
+        if already_tried_other_direction:
             raise UnificationError(f"{self} != {other}")
-        else:
-            return other.unify(self, already_tried_other_direction=True)
+        return other.unify(self, already_tried_other_direction=True)
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         return self
