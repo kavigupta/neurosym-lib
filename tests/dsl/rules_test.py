@@ -1,5 +1,6 @@
 import unittest
 
+import neurosym as ns
 from neurosym.types.type_string_repr import TypeDefiner
 
 
