@@ -1,4 +1,4 @@
-from neurosym.near.search_graph import near_graph
+from neurosym.examples.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
