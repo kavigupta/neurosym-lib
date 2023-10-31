@@ -6,18 +6,16 @@ import unittest
 
 import neurosym as ns
 
-from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
 
-dsl = basic_arith_dsl()
+dsl = ns.examples.basic_arith_dsl()
 
 
 class TestSearch(unittest.TestCase):
     def test_bfs(self):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             dsl,
             parse_type("i"),
             ChooseFirst(),
@@ -49,7 +47,7 @@ class TestSearch(unittest.TestCase):
         )
 
     def test_astar(self):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             dsl,
             parse_type("i"),
             ChooseFirst(),

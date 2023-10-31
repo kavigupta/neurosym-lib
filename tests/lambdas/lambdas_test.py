@@ -8,7 +8,6 @@ from neurosym.programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
 )
-from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
@@ -139,7 +138,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         )
 
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             basic_arith_dsl(True),
             parse_type(typ),
             ChooseFirst(),
@@ -259,7 +258,7 @@ class TestVariedTypes(unittest.TestCase):
         )
 
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             make_varied_type_dsl(),
             parse_type(typ),
             ChooseFirst(),
