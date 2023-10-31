@@ -1,13 +1,13 @@
 import itertools
 import unittest
 
+import neurosym as ns
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
 )
-from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
@@ -149,7 +149,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
         res = [
             render_s_expression(prog.program, False)
-            for prog in itertools.islice(bfs(g, 1000), 10)
+            for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
         print(res)

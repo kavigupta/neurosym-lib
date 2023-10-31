@@ -4,10 +4,10 @@ Just checks that the package can be imported
 
 import unittest
 
+import neurosym as ns
+
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.programs.s_expression import SExpression
-from neurosym.search.astar import astar
-from neurosym.search.bfs import bfs
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
@@ -25,7 +25,7 @@ class TestSearch(unittest.TestCase):
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=NoMetadataComputer(),
         )
-        node = next(bfs(g)).program
+        node = next(ns.search.bfs(g)).program
         self.assertEqual(
             node,
             SExpression(
@@ -63,7 +63,7 @@ class TestSearch(unittest.TestCase):
                 return len(str(x.program.children[0]))
             return 0
 
-        node = next(astar(g, cost)).program
+        node = next(ns.search.astar(g, cost)).program
         print(node)
         self.assertEqual(
             node,

@@ -13,10 +13,10 @@ import unittest
 
 import torch
 
+import neurosym as ns
 from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from neurosym.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
-from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import parse_type
 from .utils import assertDSLEnumerable
@@ -39,7 +39,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             parse_type("f"),
             is_goal=lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
         )
-        node = next(bfs(g)).program
+        node = next(ns.search.bfs(g)).program
         self.assertEqual(
             str(node),
             str(
