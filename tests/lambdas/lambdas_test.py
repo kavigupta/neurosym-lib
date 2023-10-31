@@ -2,16 +2,10 @@ import itertools
 import unittest
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.programs.s_expression_render import (
-    parse_s_expression,
-    render_s_expression,
-)
-from neurosym.search_graph.hole_set_chooser import ChooseFirst
 
 
 def make_compute_dsl():
-    dslf = DSLFactory()
+    dslf = ns.DSLFactory()
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("double", "(i) -> i", lambda x: x * 2)
@@ -45,7 +39,7 @@ class TestEvaluate(unittest.TestCase):
 
     def evaluate(self, code):
         return compute_dsl.compute(
-            compute_dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
+            compute_dsl.initialize(ns.parse_s_expression(code, should_not_be_leaf=set()))
         )
 
     def test_constant(self):
@@ -138,13 +132,13 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         g = ns.DSLSearchGraph(
             ns.examples.basic_arith_dsl(True),
             ns.parse_type(typ),
-            ChooseFirst(),
+            ns.ChooseFirst(),
             filt,
             metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [
-            render_s_expression(prog.program, False)
+            ns.render_s_expression(prog.program, False)
             for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
@@ -223,7 +217,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
 
 def make_varied_type_dsl():
-    dslf = DSLFactory()
+    dslf = ns.DSLFactory()
     dslf.concrete("^", "(f, i) -> f", lambda x, y: x**y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("1f", "() -> f", lambda x: 1.0)
@@ -258,13 +252,13 @@ class TestVariedTypes(unittest.TestCase):
         g = ns.DSLSearchGraph(
             make_varied_type_dsl(),
             ns.parse_type(typ),
-            ChooseFirst(),
+            ns.ChooseFirst(),
             filt,
             metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [
-            render_s_expression(prog.program, False)
+            ns.render_s_expression(prog.program, False)
             for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 

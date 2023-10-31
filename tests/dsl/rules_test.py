@@ -1,12 +1,11 @@
 import unittest
 
 import neurosym as ns
-from neurosym.types.type_string_repr import TypeDefiner
 
 
 class TestAllRules(unittest.TestCase):
     def test_basic_arith(self):
-        t = TypeDefiner()
+        t = ns.TypeDefiner()
         self.maxDiff = None
         self.assertEqual(
             {
