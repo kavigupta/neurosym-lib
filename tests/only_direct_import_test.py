@@ -35,4 +35,4 @@ class OnlyDirectImportsTest(unittest.TestCase):
         imports = {imp for imp in imports if "neurosym" in imp}
         if not imports:
             return
-        self.assertIn(imports, {"import neurosym as ns"})
+        self.assertEqual(imports, {"import neurosym as ns"})

@@ -1,11 +1,8 @@
 import unittest
 
 import neurosym as ns
-from neurosym.examples.dreamcoder.list_example import list_dsl
-from neurosym.examples.near.search_graph import near_graph
-from neurosym.programs.s_expression_render import render_s_expression
 
-ldsl = list_dsl("[i] -> i")
+ldsl = ns.examples.dreamcoder.list_dsl("[i] -> i")
 
 
 class TestListDSL(unittest.TestCase):
@@ -37,7 +34,7 @@ class TestListDSL(unittest.TestCase):
             except:  # pylint: disable=bare-except
                 return False
 
-        g = near_graph(
+        g = ns.examples.near.near_graph(
             dsl,
             ns.parse_type("[i] -> i"),
             is_goal=is_goal,
@@ -45,5 +42,6 @@ class TestListDSL(unittest.TestCase):
         it = ns.search.bfs(g)
         node = next(it).program
         self.assertEqual(
-            render_s_expression(node, for_stitch=False), "(lam_11 (index (1) ($0_3)))"
+            ns.render_s_expression(node, for_stitch=False),
+            "(lam_11 (index (1) ($0_3)))",
         )
