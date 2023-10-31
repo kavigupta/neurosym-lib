@@ -15,7 +15,7 @@ import unittest
 import pytest
 import torch
 
-from neurosym.examples.near.datasets.load_data import DatasetWrapper
+from neurosym.datasets import DatasetWrapper
 from neurosym.examples.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
 from neurosym.examples.near.methods.near_example_trainer import (
     NEARTrainer,
