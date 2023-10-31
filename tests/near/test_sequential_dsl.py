@@ -16,22 +16,9 @@ import pytest
 import torch
 
 import neurosym as ns
+from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.examples import near
 from neurosym.examples.datasets import near_data_example
-from neurosym.datasets.load_data import DatasetWrapper
-from neurosym.examples.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
-from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
-    NEARTrainerConfig,
-)
-from neurosym.examples.near.models.mlp import mlp_factory
-from neurosym.examples.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
-from neurosym.examples.near.neural_dsl import (
-    NeuralDSL,
-    PartialProgramNotFoundError,
-    create_modules,
-)
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
@@ -50,8 +37,8 @@ class TestNEARSequentialDSL(unittest.TestCase):
         """
         datamodule: DatasetWrapper = near_data_example.data(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
-        original_dsl = example_rnn_dsl(input_dim, output_dim)
-        trainer_cfg = NEARTrainerConfig(
+        original_dsl = near.example_rnn_dsl(input_dim, output_dim)
+        trainer_cfg = near.NEARTrainerConfig(
             max_seq_len=100,
             n_epochs=10,
             num_labels=output_dim,
@@ -60,23 +47,23 @@ class TestNEARSequentialDSL(unittest.TestCase):
         t = TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
-        neural_dsl = NeuralDSL.from_dsl(
+        neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
             modules={
-                **create_modules(
+                **near.create_modules(
                     "mlp",
                     [t("($fL) -> $fL"), t("($fL) -> $fO")],
-                    mlp_factory(hidden_size=10),
+                    near.mlp_factory(hidden_size=10),
                 ),
-                **create_modules(
+                **near.create_modules(
                     "rnn_seq2seq",
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
                     rnn_factory_seq2seq(hidden_size=10),
                 ),
-                **create_modules(
+                **near.create_modules(
                     "rnn_seq2class",
                     [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
-                    rnn_factory_seq2class(hidden_size=10),
+                    near.rnn_factory_seq2class(hidden_size=10),
                 ),
             },
         )
@@ -94,15 +81,15 @@ class TestNEARSequentialDSL(unittest.TestCase):
             )
             try:
                 initialized_p = neural_dsl.initialize(node.program)
-            except PartialProgramNotFoundError:
+            except near.PartialProgramNotFoundError:
                 return 10000
 
             model = neural_dsl.compute(initialized_p)
             if not isinstance(model, torch.nn.Module):
                 del model
                 del initialized_p
-                model = TorchProgramModule(dsl=neural_dsl, program=node.program)
-            pl_model = NEARTrainer(model, config=trainer_cfg)
+                model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
+            pl_model = near.NEARTrainer(model, config=trainer_cfg)
             trainer.fit(
                 pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
             )
@@ -141,6 +128,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        dsl = example_rnn_dsl(10, 4)
+        dsl = near.example_rnn_dsl(10, 4)
 
         assertDSLEnumerable(dsl, "([$fL]) -> [$fO]")
