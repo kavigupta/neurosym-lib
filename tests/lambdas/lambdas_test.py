@@ -269,7 +269,7 @@ class TestVariedTypes(unittest.TestCase):
 
         res = [
             render_s_expression(prog.program, False)
-            for prog in itertools.islice(bfs(g, 1000), 10)
+            for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
         print(res)
