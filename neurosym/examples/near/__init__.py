@@ -1,4 +1,7 @@
 from neurosym.examples.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
+from neurosym.examples.near.dsls.simple_differentiable_dsl import (
+    differentiable_arith_dsl,
+)
 from neurosym.examples.near.methods.near_example_trainer import (
     NEARTrainer,
     NEARTrainerConfig,

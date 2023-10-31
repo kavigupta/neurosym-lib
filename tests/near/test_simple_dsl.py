@@ -15,10 +15,6 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.dsls.simple_differentiable_dsl import (
-    differentiable_arith_dsl,
-)
-from neurosym.search.bounded_astar import bounded_astar
 
 from .utils import assertDSLEnumerable
 
@@ -34,7 +30,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
         """
         self.maxDiff = None
         input_dim = 10
-        dsl = differentiable_arith_dsl(input_dim)
+        dsl = near.differentiable_arith_dsl(input_dim)
         g = near.near_graph(
             dsl,
             ns.parse_type("f"),
@@ -92,7 +88,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
                 return len(str(x.program.children[0]))
             return 0
 
-        node = next(bounded_astar(g, cost, max_depth=7)).program
+        node = next(ns.search.bounded_astar(g, cost, max_depth=7)).program
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):
