@@ -21,6 +21,7 @@ from neurosym.programs.s_expression import SExpression
 from neurosym.search.bfs import bfs
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import parse_type
+
 from .utils import assertDSLEnumerable
 
 
