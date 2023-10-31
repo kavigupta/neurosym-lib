@@ -18,7 +18,7 @@ import torch
 import neurosym as ns
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.examples import near
-from neurosym.examples.datasets import near_data_example
+from neurosym.datasets import near_data_example
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
