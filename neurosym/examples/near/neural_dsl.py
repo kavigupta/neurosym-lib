@@ -5,11 +5,11 @@ from torch import nn
 
 from neurosym.types.type_signature import FunctionTypeSignature
 
-from ..dsl.dsl import DSL
-from ..dsl.production import ParameterizedProduction, Production
-from ..programs.hole import Hole
-from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import ArrowType, ListType, TensorType, Type
+from ...dsl.dsl import DSL
+from ...dsl.production import ParameterizedProduction, Production
+from ...programs.hole import Hole
+from ...programs.s_expression import InitializedSExpression, SExpression
+from ...types.type import ArrowType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):

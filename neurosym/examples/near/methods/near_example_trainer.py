@@ -4,7 +4,7 @@ import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
-from neurosym.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
+from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
 
 
 @dataclass
