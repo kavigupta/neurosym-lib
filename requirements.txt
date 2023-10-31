@@ -2,6 +2,7 @@
 -e .
 # Tests
 pytest
+parameterized
 torch
 torchvision
 torchaudio

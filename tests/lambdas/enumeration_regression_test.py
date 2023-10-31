@@ -1,6 +1,6 @@
 import unittest
 
-from neurosym.dsl.dsl_factory import DSLFactory
+import neurosym as ns
 
 
 class EnumerationRegressionTest(unittest.TestCase):
@@ -14,7 +14,7 @@ class EnumerationRegressionTest(unittest.TestCase):
     def rendered_dsl(self, lambdas_kwargs=None):
         if lambdas_kwargs is None:
             lambdas_kwargs = {}
-        dslf = DSLFactory()
+        dslf = ns.DSLFactory()
         dslf.known_types("i")
         dslf.lambdas(**lambdas_kwargs)
         return dslf.finalize().render()

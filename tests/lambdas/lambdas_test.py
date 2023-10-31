@@ -1,21 +1,11 @@
 import itertools
 import unittest
 
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.programs.s_expression_render import (
-    parse_s_expression,
-    render_s_expression,
-)
-from neurosym.search.bfs import bfs
-from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
-from neurosym.search_graph.hole_set_chooser import ChooseFirst
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
-from neurosym.types.type_string_repr import parse_type
+import neurosym as ns
 
 
 def make_compute_dsl():
-    dslf = DSLFactory()
+    dslf = ns.DSLFactory()
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("double", "(i) -> i", lambda x: x * 2)
@@ -49,7 +39,9 @@ class TestEvaluate(unittest.TestCase):
 
     def evaluate(self, code):
         return compute_dsl.compute(
-            compute_dsl.initialize(parse_s_expression(code, should_not_be_leaf=set()))
+            compute_dsl.initialize(
+                ns.parse_s_expression(code, should_not_be_leaf=set())
+            )
         )
 
     def test_constant(self):
@@ -132,24 +124,24 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         $1_0 :: V<i@1>
         $2_0 :: V<i@2>
         """
-        actual = basic_arith_dsl(True).render()
+        actual = ns.examples.basic_arith_dsl(True).render()
         self.assertEqual(
             {line.strip() for line in actual.strip().split("\n")},
             {line.strip() for line in expected.strip().split("\n")},
         )
 
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
-        g = DSLSearchGraph(
-            basic_arith_dsl(True),
-            parse_type(typ),
-            ChooseFirst(),
+        g = ns.DSLSearchGraph(
+            ns.examples.basic_arith_dsl(True),
+            ns.parse_type(typ),
+            ns.ChooseFirst(),
             filt,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [
-            render_s_expression(prog.program, False)
-            for prog in itertools.islice(bfs(g, 1000), 10)
+            ns.render_s_expression(prog.program, False)
+            for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
         print(res)
@@ -227,7 +219,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
 
 def make_varied_type_dsl():
-    dslf = DSLFactory()
+    dslf = ns.DSLFactory()
     dslf.concrete("^", "(f, i) -> f", lambda x, y: x**y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("1f", "() -> f", lambda x: 1.0)
@@ -259,17 +251,17 @@ class TestVariedTypes(unittest.TestCase):
         )
 
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             make_varied_type_dsl(),
-            parse_type(typ),
-            ChooseFirst(),
+            ns.parse_type(typ),
+            ns.ChooseFirst(),
             filt,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [
-            render_s_expression(prog.program, False)
-            for prog in itertools.islice(bfs(g, 1000), 10)
+            ns.render_s_expression(prog.program, False)
+            for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
         print(res)

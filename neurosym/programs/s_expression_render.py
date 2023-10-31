@@ -97,5 +97,5 @@ def parse_s_expression(s: str, should_not_be_leaf: Set[str]) -> SExpression:
     return from_pair(pairs[0], should_not_be_leaf=should_not_be_leaf)
 
 
-def symbols(s: SExpression) -> List[str]:
-    return [s.symbol] + [sym for x in s.children for sym in symbols(x)]
+def symbols_for_program(s: SExpression) -> List[str]:
+    return [s.symbol] + [sym for x in s.children for sym in symbols_for_program(x)]

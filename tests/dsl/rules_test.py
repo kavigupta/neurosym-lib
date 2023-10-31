@@ -1,12 +1,11 @@
 import unittest
 
-from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.types.type_string_repr import TypeDefiner
+import neurosym as ns
 
 
 class TestAllRules(unittest.TestCase):
     def test_basic_arith(self):
-        t = TypeDefiner()
+        t = ns.TypeDefiner()
         self.maxDiff = None
         self.assertEqual(
             {
@@ -15,7 +14,7 @@ class TestAllRules(unittest.TestCase):
                     ("1", []),
                 ]
             },
-            basic_arith_dsl().all_rules(
+            ns.examples.basic_arith_dsl().all_rules(
                 t("i"), care_about_variables=False, type_depth_limit=float("inf")
             ),
         )

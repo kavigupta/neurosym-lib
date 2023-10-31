@@ -8,7 +8,7 @@ from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
-    symbols,
+    symbols_for_program,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
 
@@ -179,7 +179,7 @@ def single_step_compression(dsl, programs):
     rewritten = [
         rewriter.from_stitch(parse_s_expression(x, {abstr.name})) for x in res.rewritten
     ]
-    user = next(x for x in rewritten if abstr.name in symbols(x))
+    user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
     abstr_body = rewriter.from_stitch(parse_s_expression(abstr.body, {abstr.name}))
     prod = compute_abstraction_production(dsl, user, abstr.name, abstr_body)
     dsl2 = dsl.add_production(prod)

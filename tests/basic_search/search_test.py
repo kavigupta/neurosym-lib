@@ -4,84 +4,77 @@ Just checks that the package can be imported
 
 import unittest
 
-from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.programs.s_expression import SExpression
-from neurosym.search.astar import astar
-from neurosym.search.bfs import bfs
-from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
-from neurosym.search_graph.hole_set_chooser import ChooseFirst
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
-from neurosym.types.type_string_repr import parse_type
+import neurosym as ns
 
-dsl = basic_arith_dsl()
+dsl = ns.examples.basic_arith_dsl()
 
 
 class TestSearch(unittest.TestCase):
     def test_bfs(self):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             dsl,
-            parse_type("i"),
-            ChooseFirst(),
+            ns.parse_type("i"),
+            ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
-        node = next(bfs(g)).program
+        node = next(ns.search.bfs(g)).program
         self.assertEqual(
             node,
-            SExpression(
+            ns.SExpression(
                 symbol="+",
                 children=(
-                    SExpression(
+                    ns.SExpression(
                         symbol="+",
                         children=(
-                            SExpression(
+                            ns.SExpression(
                                 symbol="+",
                                 children=(
-                                    SExpression(symbol="1", children=()),
-                                    SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
                                 ),
                             ),
-                            SExpression(symbol="1", children=()),
+                            ns.SExpression(symbol="1", children=()),
                         ),
                     ),
-                    SExpression(symbol="1", children=()),
+                    ns.SExpression(symbol="1", children=()),
                 ),
             ),
         )
 
     def test_astar(self):
-        g = DSLSearchGraph(
+        g = ns.DSLSearchGraph(
             dsl,
-            parse_type("i"),
-            ChooseFirst(),
+            ns.parse_type("i"),
+            ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
+            if isinstance(x.program, ns.SExpression) and x.program.children:
                 return len(str(x.program.children[0]))
             return 0
 
-        node = next(astar(g, cost)).program
+        node = next(ns.search.astar(g, cost)).program
         print(node)
         self.assertEqual(
             node,
-            SExpression(
+            ns.SExpression(
                 symbol="+",
                 children=(
-                    SExpression(symbol="1", children=()),
-                    SExpression(
+                    ns.SExpression(symbol="1", children=()),
+                    ns.SExpression(
                         symbol="+",
                         children=(
-                            SExpression(
+                            ns.SExpression(
                                 symbol="+",
                                 children=(
-                                    SExpression(symbol="1", children=()),
-                                    SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
                                 ),
                             ),
-                            SExpression(symbol="1", children=()),
+                            ns.SExpression(symbol="1", children=()),
                         ),
                     ),
                 ),
