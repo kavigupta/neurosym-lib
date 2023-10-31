@@ -1,11 +1,8 @@
 import unittest
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
-dslf = DSLFactory()
+dslf = ns.DSLFactory()
 dslf.concrete("1", "() -> i -> i", lambda: 1)
 dslf.concrete("+", "(#t -> i, #t -> i) -> #t -> i", lambda x, y: lambda t: x(t) + y(t))
 dslf.concrete("id", "#a -> #a", lambda x: x)
@@ -35,9 +32,9 @@ class TestEnumeratability(unittest.TestCase):
 
     def test_basic_enumerate(self):
         expans = {
-            render_s_expression(prog, False)
+            ns.render_s_expression(prog, False)
             for prog in dsl.expansions_for_type(
-                TypeWithEnvironment(ns.parse_type("i -> i"), Environment.empty())
+                ns.TypeWithEnvironment(ns.parse_type("i -> i"), ns.Environment.empty())
             )
         }
         print(expans)
