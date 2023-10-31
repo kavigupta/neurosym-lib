@@ -17,7 +17,10 @@ import torch
 
 from neurosym.examples.near.datasets.load_data import DatasetWrapper
 from neurosym.examples.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
-from neurosym.examples.near.methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
+from neurosym.examples.near.methods.near_example_trainer import (
+    NEARTrainer,
+    NEARTrainerConfig,
+)
 from neurosym.examples.near.models.mlp import mlp_factory
 from neurosym.examples.near.models.rnn import rnn_factory_seq2class, rnn_factory_seq2seq
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule

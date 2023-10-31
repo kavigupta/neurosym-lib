@@ -13,7 +13,9 @@ import unittest
 
 import torch
 
-from neurosym.examples.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
+from neurosym.examples.near.dsls.simple_differentiable_dsl import (
+    differentiable_arith_dsl,
+)
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.programs.s_expression import SExpression
 from neurosym.search.bfs import bfs
