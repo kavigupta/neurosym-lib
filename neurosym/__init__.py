@@ -1,3 +1,6 @@
+from neurosym.types.type import ArrowType, ListType
+from neurosym.types.type_signature import bottom_up_enumerate_types, expansions
+
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .dsl.pcfg import PCFGPattern

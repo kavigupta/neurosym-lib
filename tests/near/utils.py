@@ -1,11 +1,9 @@
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.search.bounded_astar import bounded_astar
-from neurosym.types.type_string_repr import TypeDefiner
 
 
 def assertDSLEnumerable(dsl, out_t, max_depth=5):
-    t = TypeDefiner(L=10, O=4)
+    t = ns.TypeDefiner(L=10, O=4)
     t.typedef("fL", "{f, $L}")
     t.typedef("fO", "{f, $O}")
 
@@ -24,5 +22,5 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
         return 0
 
     # should not raise StopIteration.
-    for _ in bounded_astar(g, cost, max_depth=max_depth):
+    for _ in ns.search.bounded_astar(g, cost, max_depth=max_depth):
         pass

@@ -1,25 +1,24 @@
 import unittest
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.types.type import ArrowType, ListType
-from neurosym.types.type_signature import bottom_up_enumerate_types, expansions
-from neurosym.types.type_string_repr import render_type
 
 
 class TestTypeRegresion(unittest.TestCase):
     def assertExpansions(self, actual, expected):
         self.maxDiff = None
-        actual = set(render_type(x) for x in actual)
+        actual = set(ns.render_type(x) for x in actual)
         expected = set(expected)
         print(actual)
         self.assertEqual(actual, expected)
 
     def test_enumerate_types(self):
         self.assertExpansions(
-            bottom_up_enumerate_types(
+            ns.bottom_up_enumerate_types(
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(1, ListType), (2, lambda x, y: ArrowType((x,), y))],
+                constructors=[
+                    (1, ns.ListType),
+                    (2, lambda x, y: ns.ArrowType((x,), y)),
+                ],
                 max_overall_depth=4,
                 max_expansion_steps=3,
             ),
@@ -157,10 +156,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_1(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("[#a] -> #b"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [
@@ -181,10 +180,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_2(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("([#a], [#b]) -> #c"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [
@@ -217,10 +216,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_3(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("[[[[([#a], [#b]) -> #c]]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_overall_depth=4,
             ),
             [],
@@ -228,10 +227,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_1(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("[#a] -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_expansion_steps=1,
             ),
             [
@@ -246,10 +245,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_2(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_expansion_steps=1,
             ),
             [
@@ -264,10 +263,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_all_variables(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_expansion_steps=1,
                 exclude_variables=["a"],
             ),
@@ -276,10 +275,10 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_just_one(self):
         self.assertExpansions(
-            expansions(
+            ns.expansions(
                 ns.parse_type("(#a, #b) -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
-                constructors=[(2, lambda x, y: ArrowType((x,), y))],
+                constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
                 max_expansion_steps=1,
                 exclude_variables=["a"],
             ),
@@ -307,7 +306,7 @@ class TestDSLExpand(unittest.TestCase):
         self.assertEqual(dsl, expected)
 
     def test_basic_expand(self):
-        dslf = DSLFactory()
+        dslf = ns.DSLFactory()
         dslf.concrete("+", "i -> i -> i", lambda x: lambda y: x + y)
         dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
@@ -356,7 +355,7 @@ class TestDSLExpand(unittest.TestCase):
         )
 
     def test_basic_expand_two(self):
-        dslf = DSLFactory(max_overall_depth=3)
+        dslf = ns.DSLFactory(max_overall_depth=3)
         dslf.concrete("even?", "i -> b", lambda x: lambda y: x + y)
         dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
@@ -370,7 +369,7 @@ class TestDSLExpand(unittest.TestCase):
         )
 
     def test_larger_expand(self):
-        dslf = DSLFactory()
+        dslf = ns.DSLFactory()
         dslf.concrete("1", "() -> i", lambda: 1)
         dslf.concrete("ite", "(b, #b, #a, #a) -> #a", lambda x: x)
         dsl = dslf.finalize()
