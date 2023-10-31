@@ -17,9 +17,6 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.programs.s_expression_render import symbols_for_program
-from neurosym.search.bounded_astar import bounded_astar
-from neurosym.types.type_string_repr import TypeDefiner
 
 from .utils import assertDSLEnumerable
 
@@ -42,7 +39,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
             num_labels=output_dim,
             train_steps=len(datamodule.train),
         )
-        t = TypeDefiner(L=input_dim, O=output_dim)
+        t = ns.TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
@@ -99,7 +96,10 @@ class TestNEARSequentialDSL(unittest.TestCase):
             The hole checking is done before this function will
             be called so we can assume that the program has no holes.
             """
-            return set(symbols_for_program(node.program)) - set(original_dsl.symbols()) == set()
+            return (
+                set(ns.symbols_for_program(node.program)) - set(original_dsl.symbols())
+                == set()
+            )
 
         g = near.near_graph(
             neural_dsl,
@@ -111,7 +111,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = bounded_astar(g, validation_cost, max_depth=3)
+            iterator = ns.search.bounded_astar(g, validation_cost, max_depth=3)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1
