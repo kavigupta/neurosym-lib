@@ -1,4 +1,4 @@
-from . import compression, examples, search
+from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .dsl.pcfg import PCFGPattern
 from .programs.s_expression import SExpression

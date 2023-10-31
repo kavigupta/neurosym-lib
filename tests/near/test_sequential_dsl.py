@@ -16,9 +16,7 @@ import pytest
 import torch
 
 import neurosym as ns
-from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.examples import near
-from neurosym.datasets import near_data_example
 from neurosym.programs.s_expression_render import symbols
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
@@ -35,7 +33,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
         """
-        datamodule: DatasetWrapper = near_data_example.data(train_seed=0)
+        datamodule = ns.datasets.near_data_example(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = near.NEARTrainerConfig(
