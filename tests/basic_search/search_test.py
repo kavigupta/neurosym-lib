@@ -6,8 +6,6 @@ import unittest
 
 import neurosym as ns
 
-from neurosym.types.type_string_repr import parse_type
-
 dsl = ns.examples.basic_arith_dsl()
 
 
@@ -15,7 +13,7 @@ class TestSearch(unittest.TestCase):
     def test_bfs(self):
         g = ns.DSLSearchGraph(
             dsl,
-            parse_type("i"),
+            ns.parse_type("i"),
             ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=ns.NoMetadataComputer(),
@@ -47,7 +45,7 @@ class TestSearch(unittest.TestCase):
     def test_astar(self):
         g = ns.DSLSearchGraph(
             dsl,
-            parse_type("i"),
+            ns.parse_type("i"),
             ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=ns.NoMetadataComputer(),

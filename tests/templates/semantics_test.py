@@ -2,7 +2,6 @@ import unittest
 
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.types.type_string_repr import parse_type
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 dslf = DSLFactory()
@@ -37,7 +36,7 @@ class TestEnumeratability(unittest.TestCase):
         expans = {
             render_s_expression(prog, False)
             for prog in dsl.expansions_for_type(
-                TypeWithEnvironment(parse_type("i -> i"), Environment.empty())
+                TypeWithEnvironment(ns.parse_type("i -> i"), Environment.empty())
             )
         }
         print(expans)

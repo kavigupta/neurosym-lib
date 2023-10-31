@@ -1,7 +1,7 @@
 import unittest
 
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
-from neurosym.types.type_string_repr import lex, parse_type, render_type
+from neurosym.types.type_string_repr import lex, render_type
 
 
 class TestRender(unittest.TestCase):
@@ -133,37 +133,37 @@ class TestLex(unittest.TestCase):
 
 class TestParse(unittest.TestCase):
     def test_atomic(self):
-        self.assertEqual(parse_type("int"), AtomicType("int"))
+        self.assertEqual(ns.parse_type("int"), AtomicType("int"))
 
     def test_tensor(self):
         self.assertEqual(
-            parse_type("{int, 3, 4}"), TensorType(AtomicType("int"), (3, 4))
+            ns.parse_type("{int, 3, 4}"), TensorType(AtomicType("int"), (3, 4))
         )
 
     def test_list(self):
-        self.assertEqual(parse_type("[int]"), ListType(AtomicType("int")))
+        self.assertEqual(ns.parse_type("[int]"), ListType(AtomicType("int")))
 
     def test_arrow(self):
         self.assertEqual(
-            parse_type("(int, float) -> bool"),
+            ns.parse_type("(int, float) -> bool"),
             ArrowType((AtomicType("int"), AtomicType("float")), AtomicType("bool")),
         )
 
     def test_arrow_single_arg(self):
         self.assertEqual(
-            parse_type("int -> bool"),
+            ns.parse_type("int -> bool"),
             ArrowType((AtomicType("int"),), AtomicType("bool")),
         )
 
     def test_arrow_single_arg_list(self):
         self.assertEqual(
-            parse_type("[int] -> bool"),
+            ns.parse_type("[int] -> bool"),
             ArrowType((ListType(AtomicType("int")),), AtomicType("bool")),
         )
 
     def test_arrow_returns_arrow(self):
         self.assertEqual(
-            parse_type("int -> int -> bool"),
+            ns.parse_type("int -> int -> bool"),
             ArrowType(
                 (AtomicType("int"),),
                 ArrowType((AtomicType("int"),), AtomicType("bool")),
@@ -173,19 +173,19 @@ class TestParse(unittest.TestCase):
     def test_multi_arg_arrow_returns_arrow(self):
         t = "(int, float) -> int -> bool"
         self.assertEqual(
-            render_type(parse_type(t)),
+            render_type(ns.parse_type(t)),
             t,
         )
 
     def test_no_args(self):
         self.assertEqual(
-            parse_type("() -> bool"),
+            ns.parse_type("() -> bool"),
             ArrowType((), AtomicType("bool")),
         )
 
     def test_nested(self):
         self.assertEqual(
-            parse_type("({int, 3, 4}, [float]) -> bool"),
+            ns.parse_type("({int, 3, 4}, [float]) -> bool"),
             ArrowType(
                 (
                     TensorType(AtomicType("int"), (3, 4)),
@@ -197,17 +197,17 @@ class TestParse(unittest.TestCase):
 
     def test_single_arg(self):
         self.assertEqual(
-            render_type(parse_type("([{f, 10}]) -> {f, 20}")),
+            render_type(ns.parse_type("([{f, 10}]) -> {f, 20}")),
             "[{f, 10}] -> {f, 20}",
         )
 
     def test_unparenthesized_arrow_inside_argument(self):
         t = "(i -> b, [i]) -> [i]"
-        self.assertEqual(render_type(parse_type(t)), t)
+        self.assertEqual(render_type(ns.parse_type(t)), t)
 
     def test_bad_parse(self):
-        self.assertRaises(Exception, lambda: render_type(parse_type("f -> f]")))
+        self.assertRaises(Exception, lambda: render_type(ns.parse_type("f -> f]")))
 
     def test_list_of_arrows(self):
         t = "[i -> i]"
-        self.assertEqual(render_type(parse_type(t)), t)
+        self.assertEqual(render_type(ns.parse_type(t)), t)

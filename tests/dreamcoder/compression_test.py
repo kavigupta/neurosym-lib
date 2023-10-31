@@ -3,6 +3,7 @@ from functools import lru_cache
 
 import numpy as np
 
+import neurosym as ns
 from neurosym.compression.process_abstraction import (
     multi_step_compression,
     single_step_compression,
@@ -14,9 +15,8 @@ from neurosym.programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
 )
-from neurosym.types.type_string_repr import parse_type
 
-out_t = parse_type("(i) -> i")
+out_t = ns.parse_type("(i) -> i")
 
 
 @lru_cache(maxsize=None)

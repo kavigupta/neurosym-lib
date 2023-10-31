@@ -4,7 +4,6 @@ import neurosym as ns
 from neurosym.examples.dreamcoder.list_example import list_dsl
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.types.type_string_repr import parse_type
 
 ldsl = list_dsl("[i] -> i")
 
@@ -40,7 +39,7 @@ class TestListDSL(unittest.TestCase):
 
         g = near_graph(
             dsl,
-            parse_type("[i] -> i"),
+            ns.parse_type("[i] -> i"),
             is_goal=is_goal,
         )
         it = ns.search.bfs(g)
