@@ -3,7 +3,6 @@ import unittest
 
 import neurosym as ns
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -129,7 +128,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         $1_0 :: V<i@1>
         $2_0 :: V<i@2>
         """
-        actual = basic_arith_dsl(True).render()
+        actual = ns.examples.basic_arith_dsl(True).render()
         self.assertEqual(
             {line.strip() for line in actual.strip().split("\n")},
             {line.strip() for line in expected.strip().split("\n")},
@@ -137,7 +136,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
     def assertEnumerateType(self, typ, expected, filt=lambda x: True):
         g = ns.DSLSearchGraph(
-            basic_arith_dsl(True),
+            ns.examples.basic_arith_dsl(True),
             ns.parse_type(typ),
             ChooseFirst(),
             filt,

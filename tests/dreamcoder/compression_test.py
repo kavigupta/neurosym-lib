@@ -5,7 +5,6 @@ import numpy as np
 
 import neurosym as ns
 from neurosym.dsl.pcfg import PCFGPattern
-from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
 from neurosym.programs.s_expression_render import (
     parse_s_expression,
@@ -81,8 +80,8 @@ class CompressionTest(unittest.TestCase):
 
 class BasicProcessDSL(unittest.TestCase):
     def setUp(self):
-        self.dsl = basic_arith_dsl(True)
-        print(basic_arith_dsl(True).render())
+        self.dsl = ns.examples.basic_arith_dsl(True)
+        print(ns.examples.basic_arith_dsl(True).render())
         self.fn_code = "(lam_0 (+ ($1_0) ($0_0)))"
 
     def test_compute(self):
@@ -99,7 +98,7 @@ class BasicProcessDSL(unittest.TestCase):
             "(lam_0 (+ (1) ($0_0)))",
         ]
         code = [parse_s_expression(x, set()) for x in code]
-        dsl2, rewritten = single_step_compression(self.dsl, code)
+        dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
         self.assertEqual(len(rewritten), len(code))
         self.assertEqual(
             [render_s_expression(x, for_stitch=False) for x in rewritten],
