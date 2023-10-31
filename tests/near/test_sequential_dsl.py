@@ -58,7 +58,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 **near.create_modules(
                     "rnn_seq2seq",
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                    rnn_factory_seq2seq(hidden_size=10),
+                    near.rnn_factory_seq2seq(hidden_size=10),
                 ),
                 **near.create_modules(
                     "rnn_seq2class",
