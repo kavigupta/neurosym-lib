@@ -71,7 +71,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
         """
         self.maxDiff = None
         input_size = 10
-        dsl = differentiable_arith_dsl(input_size)
+        dsl = near.differentiable_arith_dsl(input_size)
         fours = torch.full((input_size,), 4.0)
 
         def checker(x):
@@ -97,6 +97,6 @@ class TestNEARSimpleDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        dsl = differentiable_arith_dsl(10)
+        dsl = near.differentiable_arith_dsl(10)
 
         assertDSLEnumerable(dsl, "$fL")
