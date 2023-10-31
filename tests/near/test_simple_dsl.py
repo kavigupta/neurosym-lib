@@ -16,7 +16,6 @@ import torch
 import neurosym as ns
 from neurosym.near.dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from neurosym.near.search_graph import near_graph
-from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import parse_type
 from .utils import assertDSLEnumerable
@@ -43,19 +42,19 @@ class TestNEARSimpleDSL(unittest.TestCase):
         self.assertEqual(
             str(node),
             str(
-                SExpression(
+                ns.SExpression(
                     symbol="int_int_add",
                     children=(
-                        SExpression(symbol="one", children=()),
-                        SExpression(
+                        ns.SExpression(symbol="one", children=()),
+                        ns.SExpression(
                             symbol="int_int_add",
                             children=(
-                                SExpression(symbol="one", children=()),
-                                SExpression(
+                                ns.SExpression(symbol="one", children=()),
+                                ns.SExpression(
                                     symbol="int_int_add",
                                     children=(
-                                        SExpression(symbol="one", children=()),
-                                        SExpression(symbol="one", children=()),
+                                        ns.SExpression(symbol="one", children=()),
+                                        ns.SExpression(symbol="one", children=()),
                                     ),
                                 ),
                             ),
@@ -87,12 +86,12 @@ class TestNEARSimpleDSL(unittest.TestCase):
         g = near_graph(dsl, parse_type("{f, 10}"), is_goal=checker)
 
         def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
+            if isinstance(x.program, ns.SExpression) and x.program.children:
                 return len(str(x.program.children[0]))
             return 0
 
         node = next(bounded_astar(g, cost, max_depth=7)).program
-        self.assertEqual(node.children[0], SExpression(symbol="ones", children=()))
+        self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):
         """

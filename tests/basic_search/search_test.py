@@ -7,7 +7,6 @@ import unittest
 import neurosym as ns
 
 from neurosym.examples.basic_arith import basic_arith_dsl
-from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
@@ -28,23 +27,23 @@ class TestSearch(unittest.TestCase):
         node = next(ns.search.bfs(g)).program
         self.assertEqual(
             node,
-            SExpression(
+            ns.SExpression(
                 symbol="+",
                 children=(
-                    SExpression(
+                    ns.SExpression(
                         symbol="+",
                         children=(
-                            SExpression(
+                            ns.SExpression(
                                 symbol="+",
                                 children=(
-                                    SExpression(symbol="1", children=()),
-                                    SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
                                 ),
                             ),
-                            SExpression(symbol="1", children=()),
+                            ns.SExpression(symbol="1", children=()),
                         ),
                     ),
-                    SExpression(symbol="1", children=()),
+                    ns.SExpression(symbol="1", children=()),
                 ),
             ),
         )
@@ -59,7 +58,7 @@ class TestSearch(unittest.TestCase):
         )
 
         def cost(x):
-            if isinstance(x.program, SExpression) and x.program.children:
+            if isinstance(x.program, ns.SExpression) and x.program.children:
                 return len(str(x.program.children[0]))
             return 0
 
@@ -67,21 +66,21 @@ class TestSearch(unittest.TestCase):
         print(node)
         self.assertEqual(
             node,
-            SExpression(
+            ns.SExpression(
                 symbol="+",
                 children=(
-                    SExpression(symbol="1", children=()),
-                    SExpression(
+                    ns.SExpression(symbol="1", children=()),
+                    ns.SExpression(
                         symbol="+",
                         children=(
-                            SExpression(
+                            ns.SExpression(
                                 symbol="+",
                                 children=(
-                                    SExpression(symbol="1", children=()),
-                                    SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
+                                    ns.SExpression(symbol="1", children=()),
                                 ),
                             ),
-                            SExpression(symbol="1", children=()),
+                            ns.SExpression(symbol="1", children=()),
                         ),
                     ),
                 ),
