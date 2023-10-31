@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.near.operations.basic import ite_torch
-from neurosym.near.operations.lists import fold_torch, map_torch
+from neurosym.examples.near.operations.basic import ite_torch
+from neurosym.examples.near.operations.lists import fold_torch, map_torch
 
 
 def example_rnn_dsl(L, O):

@@ -5,8 +5,8 @@ import unittest
 
 import torch
 
-from neurosym.near.models.mlp import MLP, MLPConfig
-from neurosym.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
+from neurosym.examples.near.models.mlp import MLP, MLPConfig
+from neurosym.examples.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
 
 
 class TestNeuralModels(unittest.TestCase):
