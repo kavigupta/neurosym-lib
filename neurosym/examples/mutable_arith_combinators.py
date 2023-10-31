@@ -55,4 +55,4 @@ dslf.parameterized(
     dict(counter=lambda: [0]),
 )
 
-mutable_arith_combinators = dslf.finalize()
+mutable_arith_combinators_dsl = dslf.finalize()
