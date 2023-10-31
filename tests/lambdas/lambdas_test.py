@@ -9,7 +9,6 @@ from neurosym.programs.s_expression_render import (
     render_s_expression,
 )
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
 
 
@@ -143,7 +142,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
             parse_type(typ),
             ChooseFirst(),
             filt,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [
@@ -263,7 +262,7 @@ class TestVariedTypes(unittest.TestCase):
             parse_type(typ),
             ChooseFirst(),
             filt,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         res = [

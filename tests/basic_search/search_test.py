@@ -6,8 +6,6 @@ import unittest
 
 import neurosym as ns
 
-from neurosym.search_graph.hole_set_chooser import ChooseFirst
-from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.types.type_string_repr import parse_type
 
 dsl = ns.examples.basic_arith_dsl()
@@ -18,9 +16,9 @@ class TestSearch(unittest.TestCase):
         g = ns.DSLSearchGraph(
             dsl,
             parse_type("i"),
-            ChooseFirst(),
+            ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
         node = next(ns.search.bfs(g)).program
         self.assertEqual(
@@ -50,9 +48,9 @@ class TestSearch(unittest.TestCase):
         g = ns.DSLSearchGraph(
             dsl,
             parse_type("i"),
-            ChooseFirst(),
+            ns.ChooseFirst(),
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
-            metadata_computer=NoMetadataComputer(),
+            metadata_computer=ns.NoMetadataComputer(),
         )
 
         def cost(x):
