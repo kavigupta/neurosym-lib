@@ -17,7 +17,7 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.datasets import near_data_example
+
 from neurosym.examples.near.datasets.load_data import DatasetWrapper
 from neurosym.examples.near.dsls.sequential_differentiable_dsl import example_rnn_dsl
 from neurosym.examples.near.methods.near_example_trainer import (
@@ -48,7 +48,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
         """
-        datamodule: DatasetWrapper = near_data_example.data(train_seed=0)
+        datamodule: DatasetWrapper = ns.examples.near_data_example.data(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = NEARTrainerConfig(
