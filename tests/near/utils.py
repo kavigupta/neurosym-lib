@@ -1,5 +1,5 @@
 import neurosym as ns
-from neurosym.examples.near.search_graph import near_graph
+from neurosym.examples import near
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
 
@@ -16,7 +16,7 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
         print(xx)
         return True
 
-    g = near_graph(dsl, t(out_t), is_goal=checker)
+    g = near.near_graph(dsl, t(out_t), is_goal=checker)
 
     def cost(x):
         if isinstance(x.program, ns.SExpression) and x.program.children:

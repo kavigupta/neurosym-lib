@@ -14,10 +14,10 @@ import unittest
 import torch
 
 import neurosym as ns
+from neurosym.examples import near
 from neurosym.examples.near.dsls.simple_differentiable_dsl import (
     differentiable_arith_dsl,
 )
-from neurosym.examples.near.search_graph import near_graph
 from neurosym.search.bounded_astar import bounded_astar
 
 from .utils import assertDSLEnumerable
@@ -35,7 +35,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
         self.maxDiff = None
         input_dim = 10
         dsl = differentiable_arith_dsl(input_dim)
-        g = near_graph(
+        g = near.near_graph(
             dsl,
             ns.parse_type("f"),
             is_goal=lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
@@ -85,7 +85,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
                 return torch.all(torch.eq(xx, fours))
             return False
 
-        g = near_graph(dsl, ns.parse_type("{f, 10}"), is_goal=checker)
+        g = near.near_graph(dsl, ns.parse_type("{f, 10}"), is_goal=checker)
 
         def cost(x):
             if isinstance(x.program, ns.SExpression) and x.program.children:

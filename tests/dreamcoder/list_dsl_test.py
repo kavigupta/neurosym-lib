@@ -1,6 +1,7 @@
 import unittest
 
 import neurosym as ns
+from neurosym.examples import near
 
 ldsl = ns.examples.dreamcoder.list_dsl("[i] -> i")
 
@@ -34,7 +35,7 @@ class TestListDSL(unittest.TestCase):
             except:  # pylint: disable=bare-except
                 return False
 
-        g = ns.examples.near.near_graph(
+        g = near.near_graph(
             dsl,
             ns.parse_type("[i] -> i"),
             is_goal=is_goal,
