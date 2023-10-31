@@ -17,7 +17,7 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.programs.s_expression_render import symbols
+from neurosym.programs.s_expression_render import symbols_for_program
 from neurosym.search.bounded_astar import bounded_astar
 from neurosym.types.type_string_repr import TypeDefiner
 
@@ -99,7 +99,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
             The hole checking is done before this function will
             be called so we can assume that the program has no holes.
             """
-            return set(symbols(node.program)) - set(original_dsl.symbols()) == set()
+            return set(symbols_for_program(node.program)) - set(original_dsl.symbols()) == set()
 
         g = near.near_graph(
             neural_dsl,
