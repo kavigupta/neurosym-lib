@@ -1,4 +1,4 @@
-from . import examples, search
+from . import compression, examples, search
 from .programs.s_expression import SExpression
 from .search_graph.dsl_search_graph import DSLSearchGraph
 from .search_graph.hole_set_chooser import ChooseFirst

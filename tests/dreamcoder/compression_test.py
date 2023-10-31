@@ -4,10 +4,6 @@ from functools import lru_cache
 import numpy as np
 
 import neurosym as ns
-from neurosym.compression.process_abstraction import (
-    multi_step_compression,
-    single_step_compression,
-)
 from neurosym.dsl.pcfg import PCFGPattern
 from neurosym.examples.basic_arith import basic_arith_dsl
 from neurosym.examples.mutable_arith_combinators import mutable_arith_combinators
@@ -57,7 +53,9 @@ class CompressionTest(unittest.TestCase):
         self.assertEqual(outputs_1, outputs_2)
 
     def test_single_step(self):
-        dsl2, rewritten = single_step_compression(mutable_arith_combinators, corpus())
+        dsl2, rewritten = ns.compression.single_step_compression(
+            mutable_arith_combinators, corpus()
+        )
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
@@ -68,7 +66,9 @@ class CompressionTest(unittest.TestCase):
             )
 
     def test_multi_step(self):
-        dsl2, rewritten = multi_step_compression(mutable_arith_combinators, corpus(), 5)
+        dsl2, rewritten = ns.compression.multi_step_compression(
+            mutable_arith_combinators, corpus(), 5
+        )
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
