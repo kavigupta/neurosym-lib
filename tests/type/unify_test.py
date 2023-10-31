@@ -1,7 +1,6 @@
 import unittest
 
 import neurosym as ns
-from neurosym.types.type import UnificationError
 
 
 class TestUnify(unittest.TestCase):
@@ -12,7 +11,7 @@ class TestUnify(unittest.TestCase):
         )
 
     def test_unify_atomic_fail(self):
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("int").unify(ns.parse_type("float"))
 
     def test_unify_var_atomic(self):
@@ -38,10 +37,10 @@ class TestUnify(unittest.TestCase):
         )
 
     def test_unify_tensor_fail(self):
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("{int, 3, 4}").unify(ns.parse_type("{int, 3, 5}"))
 
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("{int, 3, 4}").unify(ns.parse_type("{float, 3, 4}"))
 
     def test_unify_list(self):
@@ -65,7 +64,7 @@ class TestUnify(unittest.TestCase):
         )
 
     def test_unify_list_fail(self):
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("[int]").unify(ns.parse_type("[float]"))
 
     def test_unify_arrow(self):
@@ -95,20 +94,20 @@ class TestUnify(unittest.TestCase):
         )
 
     def test_unify_arrow_fail(self):
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("(int, float) -> bool").unify(
                 ns.parse_type("(int, int) -> bool")
             )
 
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("(int, float) -> bool").unify(
                 ns.parse_type("(float, int) -> bool")
             )
 
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("(int, float) -> bool").unify(
                 ns.parse_type("(#a, #a) -> bool")
             )
 
-        with self.assertRaises(UnificationError):
+        with self.assertRaises(ns.UnificationError):
             ns.parse_type("int -> bool").unify(ns.parse_type("#a -> #a"))

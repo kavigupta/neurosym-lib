@@ -1,4 +1,11 @@
-from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, Type
+from neurosym.types.type import (
+    ArrowType,
+    AtomicType,
+    ListType,
+    TensorType,
+    Type,
+    UnificationError,
+)
 from neurosym.types.type_signature import bottom_up_enumerate_types, expansions
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
