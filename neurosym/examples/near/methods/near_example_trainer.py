@@ -30,6 +30,8 @@ class NEARTrainer(BaseTrainer):
                 self.loss_fn = nn.BCEWithLogitsLoss()
             case "MSELoss":
                 self.loss_fn = nn.MSELoss()
+            case "NLLLoss":
+                self.loss_fn = nn.NLLLoss()
             case _:
                 raise NotImplementedError(
                     f"Loss function {self.config.loss_fn} not implemented"
@@ -66,11 +68,25 @@ class NEARTrainer(BaseTrainer):
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
-        if len(predictions.shape) == 3 and self.config.loss_fn == "CrossEntropyLoss":
+        if len(predictions.shape) == 3:
             "Handling seq2seq classification loss."
-            assert len(targets.shape) == 2, "Targets must be 2D for classification"
-            predictions = predictions.view(-1, predictions.shape[-1])
-            targets = targets.view(-1)
+            match self.config.loss_fn:
+                case "CrossEntropyLoss":
+                    targets = targets.squeeze(-1)
+                    assert len(targets.shape) == 2, "Targets must be 2D for classification"
+                    predictions = predictions.view(-1, predictions.shape[-1])
+                    targets = targets.view(-1)
+                case "MSELoss":
+                    targets = torch.nn.functional.one_hot(targets.squeeze(-1), num_classes=self.config.num_labels).float()
+                    predictions = predictions.view(-1, predictions.shape[-1])
+                    targets = targets.view(-1, targets.shape[-1])
+                case "NLLLoss":
+                    predictions = predictions.view(-1, predictions.shape[-1]).clamp(min=1e-10).log().log_softmax(dim=-1)
+                    targets = targets.view(-1)
+                case _:
+                    raise NotImplementedError(
+                        f"Loss function {self.config.loss_fn} not implemented for seq2seq models"
+                    )
         loss = self.loss_fn(predictions, targets)
         return loss
 
@@ -93,3 +109,51 @@ class NEARTrainer(BaseTrainer):
             predictions, targets, self.config.num_labels
         )
         self.logger.log_metrics(correctness, step=self.global_step)
+
+if __name__ == "__main__":
+    import pytorch_lightning as pl
+    from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+    dataset_factory = lambda train_seed: DatasetWrapper(
+            DatasetFromNpy(
+                "../data/classification_example/train_ex_data.npy",
+                "../data/classification_example/train_ex_labels.npy",
+                train_seed,
+            ),
+            DatasetFromNpy(
+                "../data/classification_example/test_ex_data.npy",
+                "../data/classification_example/test_ex_labels.npy",
+                None,
+            ),
+            batch_size=200,
+        )
+    datamodule = dataset_factory(42)
+    # model = nn.Sequential(
+    #     nn.Linear(2, 100),
+    #     nn.ReLU(),
+    #     nn.Linear(100, 2),
+    # )
+    model = nn.Linear(2, 2)
+    # model.weight.data = torch.tensor([[0., 1.], [0., 0.]])
+    # model.bias.data = torch.tensor([0., 0.])
+    trainer_cfg = NEARTrainerConfig(
+        lr=1e-4,
+        max_seq_len=100,
+        n_epochs=10000,
+        num_labels=2,
+        train_steps=len(datamodule.train),
+        loss_fn='NLLLoss',
+    )
+    pl_model = NEARTrainer(model, config=trainer_cfg)
+    trainer = pl.Trainer(
+        max_epochs=trainer_cfg.n_epochs,
+        devices="auto",
+        accelerator="cpu",
+        enable_checkpointing=False,
+        enable_model_summary=False,
+        logger=False,
+        callbacks=[],
+    )
+    trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
+    trainer.validate(pl_model, datamodule.val_dataloader())
+
+    print(trainer.callback_metrics)
