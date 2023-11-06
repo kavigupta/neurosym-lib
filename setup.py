@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="neurosym",
-    version="0.0.3",
+    version="0.0.4",
     author="Kavi Gupta",
     author_email="kavig+neurosym@mit.edu",
     description="Neurosymbolic library.",
@@ -19,5 +19,16 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
-    install_requires=["frozendict==2.3.8"],
+    install_requires=[
+        "frozendict==2.3.8",
+        "torch",
+        "torchvision",
+        "torchaudio",
+        "numpy",
+        "pytorch-lightning",
+        "permacache",
+        "stitch-core",
+        "scikit-learn",
+        "s-exp-parser @ git+https://github.com/kavigupta/s-exp-parser@bfb01df5df8f61486cdddeeea45f10d962faa7e2",
+    ],
 )
