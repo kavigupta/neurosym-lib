@@ -73,15 +73,24 @@ class NEARTrainer(BaseTrainer):
             match self.config.loss_fn:
                 case "CrossEntropyLoss":
                     targets = targets.squeeze(-1)
-                    assert len(targets.shape) == 2, "Targets must be 2D for classification"
+                    assert (
+                        len(targets.shape) == 2
+                    ), "Targets must be 2D for classification"
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1)
                 case "MSELoss":
-                    targets = torch.nn.functional.one_hot(targets.squeeze(-1), num_classes=self.config.num_labels).float()
+                    targets = torch.nn.functional.one_hot(
+                        targets.squeeze(-1), num_classes=self.config.num_labels
+                    ).float()
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1, targets.shape[-1])
                 case "NLLLoss":
-                    predictions = predictions.view(-1, predictions.shape[-1]).clamp(min=1e-10).log().log_softmax(dim=-1)
+                    predictions = (
+                        predictions.view(-1, predictions.shape[-1])
+                        .clamp(min=1e-10)
+                        .log()
+                        .log_softmax(dim=-1)
+                    )
                     targets = targets.view(-1)
                 case _:
                     raise NotImplementedError(
@@ -110,22 +119,24 @@ class NEARTrainer(BaseTrainer):
         )
         self.logger.log_metrics(correctness, step=self.global_step)
 
+
 if __name__ == "__main__":
     import pytorch_lightning as pl
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+
     dataset_factory = lambda train_seed: DatasetWrapper(
-            DatasetFromNpy(
-                "../data/classification_example/train_ex_data.npy",
-                "../data/classification_example/train_ex_labels.npy",
-                train_seed,
-            ),
-            DatasetFromNpy(
-                "../data/classification_example/test_ex_data.npy",
-                "../data/classification_example/test_ex_labels.npy",
-                None,
-            ),
-            batch_size=200,
-        )
+        DatasetFromNpy(
+            "../data/classification_example/train_ex_data.npy",
+            "../data/classification_example/train_ex_labels.npy",
+            train_seed,
+        ),
+        DatasetFromNpy(
+            "../data/classification_example/test_ex_data.npy",
+            "../data/classification_example/test_ex_labels.npy",
+            None,
+        ),
+        batch_size=200,
+    )
     datamodule = dataset_factory(42)
     # model = nn.Sequential(
     #     nn.Linear(2, 100),
@@ -141,7 +152,7 @@ if __name__ == "__main__":
         n_epochs=10000,
         num_labels=2,
         train_steps=len(datamodule.train),
-        loss_fn='NLLLoss',
+        loss_fn="NLLLoss",
     )
     pl_model = NEARTrainer(model, config=trainer_cfg)
     trainer = pl.Trainer(

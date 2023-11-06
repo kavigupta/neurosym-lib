@@ -50,7 +50,7 @@ def load_npy(path_or_url):
     if os.path.exists(path_or_url):
         # Load from local path
         data = np.load(path_or_url)
-    else:    
+    else:
         data = requests.get(path_or_url).content
         data = np.load(io.BytesIO(data))
     return data
