@@ -29,6 +29,6 @@ setuptools.setup(
         "permacache",
         "stitch-core",
         "scikit-learn",
-        "s-exp-parser @ git+https://github.com/kavigupta/s-exp-parser@bfb01df5df8f61486cdddeeea45f10d962faa7e2",
+        "s-exp-parser==1.3.1",
     ],
 )
