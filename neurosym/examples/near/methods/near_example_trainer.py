@@ -4,7 +4,7 @@ import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
-from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
+from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
 @dataclass
@@ -122,6 +122,7 @@ class NEARTrainer(BaseTrainer):
 
 if __name__ == "__main__":
     import pytorch_lightning as pl
+
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
     dataset_factory = lambda train_seed: DatasetWrapper(

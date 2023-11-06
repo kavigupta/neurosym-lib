@@ -3,14 +3,14 @@ from typing import Union
 
 import stitch_core
 
-from neurosym.dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import (
+from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
+from ..programs.s_expression import SExpression
+from ..programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
     symbols_for_program,
 )
-from neurosym.types.type_signature import FunctionTypeSignature
+from ..types.type_signature import FunctionTypeSignature
 
 
 def compute_abstraction_production(

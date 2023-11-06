@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from neurosym.programs.s_expression_render import render_s_expression
-
 from ..programs.s_expression import InitializedSExpression, SExpression
+from ..programs.s_expression_render import render_s_expression
 from ..types.type_signature import TypeSignature
 from .production import FunctionLikeProduction
 
