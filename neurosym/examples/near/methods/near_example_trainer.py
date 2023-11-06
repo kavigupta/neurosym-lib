@@ -50,10 +50,9 @@ class NEARTrainer(BaseTrainer):
                 unweighted_avg_f1=unweighted_avg_f1,
                 all_f1s=all_f1,
             )
-        else:
-            avg_f1 = 1 - f1_score(targets, predictions, average="binary")
-            all_f1 = 1 - f1_score(targets, predictions, average=None)
-            return dict(avg_f1=avg_f1, all_f1s=all_f1)
+        avg_f1 = 1 - f1_score(targets, predictions, average="binary")
+        all_f1 = 1 - f1_score(targets, predictions, average=None)
+        return dict(avg_f1=avg_f1, all_f1s=all_f1)
 
     @staticmethod
     def label_correctness(
@@ -68,8 +67,9 @@ class NEARTrainer(BaseTrainer):
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
+        # pylint: disable=arguments-differ
         if len(predictions.shape) == 3:
-            "Handling seq2seq classification loss."
+            # Handling seq2seq classification loss.
             match self.config.loss_fn:
                 case "CrossEntropyLoss":
                     targets = targets.squeeze(-1)
@@ -79,6 +79,7 @@ class NEARTrainer(BaseTrainer):
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1)
                 case "MSELoss":
+                    # pylint: disable=not-callable
                     targets = torch.nn.functional.one_hot(
                         targets.squeeze(-1), num_classes=self.config.num_labels
                     ).float()
@@ -100,6 +101,8 @@ class NEARTrainer(BaseTrainer):
         return loss
 
     def _step(self, inputs, outputs, validation=False, **kwargs):
+        # pylint: disable=arguments-differ
+        del kwargs
         predictions = self.model(inputs)
         losses = dict(loss=self.loss(predictions, outputs))
 
@@ -109,6 +112,7 @@ class NEARTrainer(BaseTrainer):
         return losses
 
     def _log_program_accuracy(self, predictions, outputs, inputs):
+        del inputs
         if self.config.num_labels > 1:
             predictions = torch.argmax(predictions, dim=-1)
         else:
@@ -120,7 +124,7 @@ class NEARTrainer(BaseTrainer):
         self.logger.log_metrics(correctness, step=self.global_step)
 
 
-if __name__ == "__main__":
+def main():
     import pytorch_lightning as pl
 
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
@@ -169,3 +173,7 @@ if __name__ == "__main__":
     trainer.validate(pl_model, datamodule.val_dataloader())
 
     print(trainer.callback_metrics)
+
+
+if __name__ == "__main__":
+    main()
