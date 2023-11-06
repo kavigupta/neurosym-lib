@@ -1,3 +1,4 @@
+import os
 import io
 
 import numpy as np
@@ -31,14 +32,14 @@ def get_raw_url(github_folder, filename):
 
 
 @permacache("neurosym/data/load_data/load_npy")
-def load_npy(url):
+def load_npy(path_or_url):
     """
-    Load a numpy file from a url.
+    Load a numpy file from a path or url.
 
     Parameters
     ----------
-    url : str
-        The url of the numpy file.
+    path_or_url : str
+        The path or url of the numpy file.
 
     Returns
     -------
@@ -46,8 +47,12 @@ def load_npy(url):
         The data in the numpy file.
     """
     # pylint: disable=missing-timeout
-    data = requests.get(url).content
-    data = np.load(io.BytesIO(data))
+    if os.path.exists(path_or_url):
+        # Load from local path
+        data = np.load(path_or_url)
+    else:    
+        data = requests.get(path_or_url).content
+        data = np.load(io.BytesIO(data))
     return data
 
 
