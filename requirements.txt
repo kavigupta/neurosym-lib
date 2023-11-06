@@ -1,5 +1,7 @@
 # Module
-.
+-e .
 # Tests
 pytest
 parameterized
+# Lint
+pylint
