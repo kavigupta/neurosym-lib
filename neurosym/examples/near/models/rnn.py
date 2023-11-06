@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from .base import BaseConfig
 
@@ -18,7 +18,7 @@ class RNN(nn.Module):
     """Abstract RNN module."""
 
     def __init__(self, config: RNNConfig):
-        super(RNN, self).__init__()
+        super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
         self.rnn = nn.RNN(
@@ -38,7 +38,7 @@ class RNN(nn.Module):
         :param x : (batch_size, seq_length, input_size)
         :return out : (batch_size, output_size)
         """
-        b, s, _ = x.shape
+        b, _, _ = x.shape
         h0 = (
             torch.zeros(1, b, self.hidden_size, device=x.device)
             if hidden is None
@@ -63,15 +63,18 @@ class RNN(nn.Module):
         out = self.fc(out.contiguous().view(b * s, -1)).view(b, s, -1)
         return out
 
+    def forward(self, inp, hidden: torch.Tensor = None):
+        pass
+
 
 class Seq2SeqRNN(RNN):
-    def forward(self, input: torch.Tensor, hidden: torch.Tensor = None):
-        return self.seq2seq(input, hidden)
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+        return self.seq2seq(inp, hidden)
 
 
 class Seq2ClassRNN(RNN):
-    def forward(self, input: torch.Tensor, hidden: torch.Tensor = None):
-        return self.seq2class(input, hidden)
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+        return self.seq2class(inp, hidden)
 
 
 def rnn_factory_seq2seq(**kwargs):

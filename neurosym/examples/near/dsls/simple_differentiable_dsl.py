@@ -11,7 +11,7 @@ DSL of the form:
 # Linear_c :: LinearQbj
 """
 import torch
-import torch.nn as nn
+from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
 
