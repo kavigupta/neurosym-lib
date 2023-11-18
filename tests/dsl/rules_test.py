@@ -15,6 +15,6 @@ class TestAllRules(unittest.TestCase):
                 ]
             },
             ns.examples.basic_arith_dsl().all_rules(
-                t("i"), care_about_variables=False, type_depth_limit=float("inf")
+                care_about_variables=False, valid_root_types=[t("i")]
             ),
         )
