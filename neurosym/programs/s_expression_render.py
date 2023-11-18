@@ -65,7 +65,7 @@ def from_pair(pair: Pair, should_not_be_leaf: Set[str]) -> SExpression:
     return SExpression(head, tail)
 
 
-def render_s_expression(s_exp: SExpression, for_stitch: bool) -> str:
+def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     """
     Render an SExpression as a string.
 

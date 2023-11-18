@@ -43,6 +43,6 @@ class TestListDSL(unittest.TestCase):
         it = ns.search.bfs(g)
         node = next(it).program
         self.assertEqual(
-            ns.render_s_expression(node, for_stitch=False),
+            ns.render_s_expression(node),
             "(lam_11 (index (1) ($0_3)))",
         )

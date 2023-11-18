@@ -140,7 +140,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         )
 
         res = [
-            ns.render_s_expression(prog.program, False)
+            ns.render_s_expression(prog.program)
             for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 
@@ -260,7 +260,7 @@ class TestVariedTypes(unittest.TestCase):
         )
 
         res = [
-            ns.render_s_expression(prog.program, False)
+            ns.render_s_expression(prog.program)
             for prog in itertools.islice(ns.search.bfs(g, 1000), 10)
         ]
 

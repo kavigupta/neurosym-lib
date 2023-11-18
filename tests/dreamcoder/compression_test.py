@@ -83,7 +83,7 @@ class BasicProcessDSL(unittest.TestCase):
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
         self.assertEqual(len(rewritten), len(code))
         self.assertEqual(
-            [ns.render_s_expression(x, for_stitch=False) for x in rewritten],
+            [ns.render_s_expression(x) for x in rewritten],
             [
                 "(__10 (+ (1) (1)))",
                 "(__10 (1))",
