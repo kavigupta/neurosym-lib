@@ -72,6 +72,8 @@ class NeuralDSL(DSL):
 
         return cls(
             productions=productions,
+            valid_root_types=dsl.valid_root_types,
+            max_type_depth=dsl.max_type_depth,
             type_to_symbol=type_to_symbol,
         )
 

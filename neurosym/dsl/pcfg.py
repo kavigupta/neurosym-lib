@@ -16,9 +16,7 @@ class PCFGPattern:
     def of(cls, dsl, *out_ts):
         symbols = ["<root>"] + [x.symbol() for x in dsl.productions]
         symbol_to_idx = {sym: i for i, sym in enumerate(symbols)}
-        rules_for = dsl.all_rules(
-            *out_ts, care_about_variables=False, type_depth_limit=float("inf")
-        )
+        rules_for = dsl.all_rules(care_about_variables=False, valid_root_types=out_ts)
         arities = [None] * len(symbols)
         arities[0] = 1
         for _, rules in rules_for.items():
