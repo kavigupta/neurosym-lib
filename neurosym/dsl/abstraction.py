@@ -78,9 +78,9 @@ class AbstractionProduction(FunctionLikeProduction):
         return dsl.compute(with_index_parameters(initialized_body, inputs))
 
     def render_as_lambda(self):
-        body = render_s_expression(self._body, False)
+        body = render_s_expression(self._body)
         arguments = " ".join(
-            render_s_expression(AbstractionIndexParameter(i), False)
+            render_s_expression(AbstractionIndexParameter(i))
             for i in range(self._type_signature.arity())
         )
         return f"(lam ({arguments}) {body})"

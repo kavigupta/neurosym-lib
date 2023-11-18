@@ -32,7 +32,7 @@ class TestEnumeratability(unittest.TestCase):
 
     def test_basic_enumerate(self):
         expans = {
-            ns.render_s_expression(prog, False)
+            ns.render_s_expression(prog)
             for prog in dsl.expansions_for_type(
                 ns.TypeWithEnvironment(ns.parse_type("i -> i"), ns.Environment.empty())
             )
