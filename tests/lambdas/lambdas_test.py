@@ -38,11 +38,7 @@ class TestEvaluate(unittest.TestCase):
         )
 
     def evaluate(self, code):
-        return compute_dsl.compute(
-            compute_dsl.initialize(
-                ns.parse_s_expression(code, should_not_be_leaf=set())
-            )
-        )
+        return compute_dsl.compute(compute_dsl.initialize(ns.parse_s_expression(code)))
 
     def test_constant(self):
         fn = self.evaluate("(lam_1 (1))")

@@ -23,7 +23,7 @@ def corpus():
 
 class BasicDSLTest(unittest.TestCase):
     def test_independent_mutability(self):
-        prog = ns.parse_s_expression("(ite (even? (x)) (count) (count))", set())
+        prog = ns.parse_s_expression("(ite (even? (x)) (count) (count))")
         fn_1 = dsl.compute(dsl.initialize(prog))
         fn_2 = dsl.compute(dsl.initialize(prog))
         self.assertEqual([fn_1(2), fn_1(4), fn_1(8)], [1, 2, 3])
@@ -67,9 +67,7 @@ class BasicProcessDSL(unittest.TestCase):
         self.fn_code = "(lam_0 (+ ($1_0) ($0_0)))"
 
     def test_compute(self):
-        fn = self.dsl.compute(
-            self.dsl.initialize(ns.parse_s_expression(self.fn_code, set()))
-        )
+        fn = self.dsl.compute(self.dsl.initialize(ns.parse_s_expression(self.fn_code)))
         self.assertEqual(fn(1, 2), 3)
         self.assertEqual(fn(3, 4), 7)
         self.assertEqual(fn(1000, -24), 976)
@@ -79,7 +77,7 @@ class BasicProcessDSL(unittest.TestCase):
             "(lam_0 (+ (+ (1) (1)) ($0_0)))",
             "(lam_0 (+ (1) ($0_0)))",
         ]
-        code = [ns.parse_s_expression(x, set()) for x in code]
+        code = [ns.parse_s_expression(x) for x in code]
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
         self.assertEqual(len(rewritten), len(code))
         self.assertEqual(
