@@ -1,6 +1,6 @@
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
-from .dsl.pcfg import PCFGPattern
+from .program_dist.bigram import BigramProgramDistributionFamily
 from .programs.s_expression import SExpression
 from .programs.s_expression_render import (
     parse_s_expression,
