@@ -79,7 +79,7 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
 
 
-def parse_s_expression(s: str, should_not_be_leaf: Set[str]) -> SExpression:
+def parse_s_expression(s: str, should_not_be_leaf: Set[str] = None) -> SExpression:
     """
     Parse a string into an SExpression.
 
@@ -91,6 +91,8 @@ def parse_s_expression(s: str, should_not_be_leaf: Set[str]) -> SExpression:
     Returns:
         The SExpression representing the string.
     """
+    if should_not_be_leaf is None:
+        should_not_be_leaf = set()
     pairs = parse(s, ParserConfig((), dots_are_cons=False))
     if len(pairs) != 1:
         raise ValueError(f"Expected one expression, got {len(pairs)}")
