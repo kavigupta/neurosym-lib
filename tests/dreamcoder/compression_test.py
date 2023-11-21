@@ -12,11 +12,10 @@ out_t = ns.parse_type("(i) -> i")
 
 @lru_cache(maxsize=None)
 def corpus():
+    fam = ns.BigramProgramDistributionFamily(dsl, valid_root_types=[out_t])
+    dist = fam.uniform()
     return sorted(
-        {
-            ns.PCFGPattern.of(dsl, out_t).uniform().sample(np.random.RandomState(i), 20)
-            for i in range(100)
-        },
+        set(fam.sample(dist, 100, np.random.RandomState(0), depth_limit=20)),
         key=str,
     )
 

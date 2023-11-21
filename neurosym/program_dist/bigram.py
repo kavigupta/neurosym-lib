@@ -109,10 +109,20 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
         dist: BigramProgramDistribution,
         num_samples: int,
         rng: np.random.RandomState,
+        *,
+        depth_limit=float("inf"),
     ) -> SExpression:
         results = []
         for _ in range(num_samples):
-            [s_exp] = self._sample_symbol(dist, rng, symbol_idx=0).children
+            while True:
+                try:
+                    [s_exp] = self._sample_symbol(
+                        dist, rng, depth_limit=depth_limit, symbol_idx=0
+                    ).children
+                except TooDeepError:
+                    continue
+                else:
+                    break
             results.append(s_exp)
         return results
 
@@ -120,15 +130,18 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
         self,
         dist: BigramProgramDistribution,
         rng: np.random.RandomState,
+        depth_limit,
         symbol_idx: int,
     ) -> SExpression:
+        if depth_limit < 0:
+            raise TooDeepError()
         root_sym = self._symbols[symbol_idx]
         children = []
         for i in range(self._arities[symbol_idx]):
             child_idx = rng.choice(
                 dist.distribution.shape[-1], p=dist.distribution[symbol_idx, i]
             )
-            children.append(self._sample_symbol(dist, rng, child_idx))
+            children.append(self._sample_symbol(dist, rng, depth_limit - 1, child_idx))
         return SExpression(root_sym, tuple(children))
 
     def uniform(self):
@@ -174,3 +187,7 @@ def counts_to_probabilities(counts):
         out=np.zeros_like(counts, dtype=np.float32),
         where=counts != 0,
     )
+
+
+class TooDeepError(Exception):
+    pass

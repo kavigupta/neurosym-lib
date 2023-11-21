@@ -55,7 +55,12 @@ class ProgramDistributionFamily(ABC):
 
     @abstractmethod
     def sample(
-        self, dist: ProgramDistribution, num_samples: int, rng: np.random.RandomState
+        self,
+        dist: ProgramDistribution,
+        num_samples: int,
+        rng: np.random.RandomState,
+        *,
+        depth_limit=float("inf")
     ) -> SExpression:
         """
         Samples programs from this distribution.
