@@ -1,17 +1,10 @@
+import copy
 from typing import Dict, List
 
 import numpy as np
 
-from neurosym.dsl.dsl import DSL
-from neurosym.dsl.production import (
-    ConcreteProduction,
-    LambdaProduction,
-    ParameterizedProduction,
-    Production,
-    VariableProduction,
-)
-from neurosym.types.type import ArrowType, AtomicType, TypeVariable
-from neurosym.types.type_signature import (
+from ..types.type import ArrowType, AtomicType, TypeVariable
+from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
@@ -19,7 +12,15 @@ from neurosym.types.type_signature import (
     signature_expansions,
     type_universe,
 )
-from neurosym.types.type_string_repr import TypeDefiner
+from ..types.type_string_repr import TypeDefiner
+from .dsl import DSL
+from .production import (
+    ConcreteProduction,
+    LambdaProduction,
+    ParameterizedProduction,
+    Production,
+    VariableProduction,
+)
 
 
 class DSLFactory:
@@ -240,7 +241,9 @@ class DSLFactory:
             sym_to_productions["<variable>"] = clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = make_dsl(sym_to_productions)
+        dsl = make_dsl(
+            sym_to_productions, copy.copy(self.target_types), self.max_overall_depth
+        )
         return dsl
 
 
@@ -254,8 +257,12 @@ def clean_variables(variable_productions):
     return variable_productions
 
 
-def make_dsl(sym_to_productions):
-    return DSL([prod for prods in sym_to_productions.values() for prod in prods])
+def make_dsl(sym_to_productions, valid_root_types, max_type_depth):
+    return DSL(
+        [prod for prods in sym_to_productions.values() for prod in prods],
+        valid_root_types,
+        max_type_depth,
+    )
 
 
 def prune(
@@ -266,12 +273,8 @@ def prune(
     type_depth_limit,
     stable_symbols,
 ):
-    dsl = make_dsl(sym_to_productions)
-    symbols = dsl.constructible_symbols(
-        *target_types,
-        care_about_variables=care_about_variables,
-        type_depth_limit=type_depth_limit,
-    )
+    dsl = make_dsl(sym_to_productions, target_types, type_depth_limit)
+    symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
         new_sym_to_productions[original_symbol] = [

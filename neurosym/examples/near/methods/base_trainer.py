@@ -50,6 +50,8 @@ class BaseTrainer(pl.LightningModule):
         raise NotImplementedError("Step function not implemented.")
 
     def training_step(self, train_batch, batch_idx):
+        # pylint: disable=arguments-differ
+        del batch_idx
         losses = self._step(validation=False, **train_batch)
         train_loss = sum(losses.values()) / len(losses)
         for key, value in losses.items():
@@ -59,6 +61,8 @@ class BaseTrainer(pl.LightningModule):
         return {"loss": train_loss}
 
     def evaluation_step(self, evaluation_batch, batch_idx, split):
+        # pylint: disable=arguments-differ
+        del batch_idx
         losses = self._step(validation=True, **evaluation_batch)
         evaluation_loss = sum(losses.values()) / len(losses)
         for key, value in losses.items():
@@ -68,16 +72,18 @@ class BaseTrainer(pl.LightningModule):
         return {f"{split}_loss": evaluation_loss}
 
     def validation_step(self, val_batch, batch_idx):
+        # pylint: disable=arguments-differ
         return self.evaluation_step(val_batch, batch_idx, "val")
 
     def test_step(self, test_batch, batch_idx):
+        # pylint: disable=arguments-differ
         return self.evaluation_step(test_batch, batch_idx, "test")
 
     @staticmethod
     def filter_parameters(named_parameters: dict, filter_param_list: list):
         params = []
         for name, param in named_parameters:
-            valid_name = not any([x in name for x in filter_param_list])
+            valid_name = not any(x in name for x in filter_param_list)
             if param.requires_grad and valid_name:
                 params.append(param)
             else:
@@ -103,7 +109,7 @@ class BaseTrainer(pl.LightningModule):
 
         return f
 
-    def step_lr_scheduler(total_steps: int):
+    def step_lr_scheduler(self, total_steps: int):
         def f(step: int):
             if step < total_steps * 0.3:
                 factor = 1
@@ -119,6 +125,7 @@ class BaseTrainer(pl.LightningModule):
         """
         A rather verbose function that instantiates the optimizer and scheduler.
         """
+        # pylint: disable=protected-access
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )

@@ -2,11 +2,12 @@
 RNN example
 """
 import torch
-import torch.nn as nn
+from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.near.operations.basic import ite_torch
-from neurosym.examples.near.operations.lists import fold_torch, map_torch
+
+from ..operations.basic import ite_torch
+from ..operations.lists import fold_torch, map_torch
 
 
 def example_rnn_dsl(L, O):
@@ -33,7 +34,7 @@ def example_rnn_dsl(L, O):
     dslf.concrete(
         "ite",
         "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        ite_torch,
     )
     dslf.concrete(
         "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)

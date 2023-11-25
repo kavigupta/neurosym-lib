@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple
+from types import NoneType
+from typing import Callable, Dict, List, Tuple, Union
 
 from neurosym.types.type_with_environment import (
     Environment,
@@ -16,7 +17,13 @@ from .production import Production
 
 @dataclass
 class DSL:
+    # list of productions
     productions: List[Production]
+    # list of types that can be used as the root of a program. If None, all types can be
+    # used as the root.
+    valid_root_types: Union[List[Type], NoneType]
+    # max depth of a valid type for a program in this DSL
+    max_type_depth: float
 
     def __post_init__(self):
         symbols = set()
@@ -100,7 +107,7 @@ class DSL:
         return prod.apply(self, program.state, program.children)
 
     def all_rules(
-        self, *target_types: Tuple[Type], care_about_variables, type_depth_limit
+        self, care_about_variables, valid_root_types=None
     ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
         """
         Returns a dictionary of all the rules in the DSL, where the keys are the types
@@ -110,6 +117,13 @@ class DSL:
 
         This is useful for generating a PCFG.
         """
+        if valid_root_types is None:
+            if self.valid_root_types is not None:
+                valid_root_types = self.valid_root_types
+            else:
+                raise ValueError(
+                    "Cannot generate rules for a DSL with no valid root types."
+                )
         twes_to_expand = [
             TypeWithEnvironment(
                 type,
@@ -117,12 +131,12 @@ class DSL:
                 if care_about_variables
                 else PermissiveEnvironmment(),
             )
-            for type in target_types
+            for type in valid_root_types
         ]
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe.typ.depth > type_depth_limit or twe in rules:
+            if twe.typ.depth > self.max_type_depth or twe in rules:
                 continue
             rules[twe] = []
             for prod, twes in self._productions_for_type(twe):
@@ -138,16 +152,13 @@ class DSL:
             }
         return rules
 
-    def constructible_symbols(
-        self, *target_types, care_about_variables, type_depth_limit
-    ):
+    def constructible_symbols(self, care_about_variables, valid_root_types=None):
         """
         Returns all the symbols that can be constructed from the given target types.
         """
         type_to_rules = self.all_rules(
-            *target_types,
             care_about_variables=care_about_variables,
-            type_depth_limit=type_depth_limit,
+            valid_root_types=valid_root_types,
         )
 
         constructible = set()
@@ -194,4 +205,6 @@ class DSL:
         return "\n".join(production.render() for production in self.productions)
 
     def add_production(self, prod):
-        return DSL(self.productions + [prod])
+        return DSL(
+            self.productions + [prod], self.valid_root_types, self.max_type_depth
+        )
