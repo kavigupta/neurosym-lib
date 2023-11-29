@@ -182,6 +182,8 @@ def single_step_compression(dsl, programs):
         1,
         no_curried_bodies=True,
         no_curried_metavars=True,
+        # eta_long=True,
+        # no_mismatch_check=True,
         abstraction_prefix=next_symbol(dsl),
     )
     if not res.abstractions:
