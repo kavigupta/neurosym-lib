@@ -177,10 +177,15 @@ def single_step_compression(dsl, programs):
     )
     abstr = res.abstractions[-1]
     rewritten = [
-        rewriter.from_stitch(parse_s_expression(x, {abstr.name})) for x in res.rewritten
+        rewriter.from_stitch(
+            parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
+        )
+        for x in res.rewritten
     ]
     user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
-    abstr_body = rewriter.from_stitch(parse_s_expression(abstr.body, {abstr.name}))
+    abstr_body = rewriter.from_stitch(
+        parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
+    )
     prod = compute_abstraction_production(dsl, user, abstr.name, abstr_body)
     dsl2 = dsl.add_production(prod)
     return dsl2, rewritten

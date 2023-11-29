@@ -23,6 +23,8 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
         return s_exp.__to_pair__(for_stitch=for_stitch)
     assert isinstance(s_exp, SExpression), f"Expected SExpression, got {s_exp}"
     if for_stitch and not s_exp.children:
+        if s_exp.symbol.startswith("$"):
+            return s_exp.symbol
         return "leaf-" + s_exp.symbol
     elements = [s_exp.symbol] + [
         to_pair(x, for_stitch=for_stitch) for x in s_exp.children
@@ -33,7 +35,9 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     return result
 
 
-def from_pair(pair: Pair, should_not_be_leaf: Set[str]) -> SExpression:
+def from_pair(
+    pair: Pair, should_not_be_leaf: Set[str], for_stitch: bool
+) -> SExpression:
     """
     Convert a Pair to an SExpression.
 
@@ -41,15 +45,19 @@ def from_pair(pair: Pair, should_not_be_leaf: Set[str]) -> SExpression:
         pair: The Pair to convert.
         should_not_be_leaf: A set of symbols that should not be converted to leaves.
             Instead, they should be converted to SExpressions with no children.
+        for_stitch: Whether the Pair is being converted for use with stitch.
 
     Returns:
         The SExpression representing the Pair.
     """
     if isinstance(pair, str):
-        if pair.startswith("leaf-"):
-            return SExpression(pair[5:], [])
+        if for_stitch:
+            if pair.startswith("leaf-"):
+                return SExpression(pair[5:], ())
+            if pair.startswith("$"):
+                return SExpression(pair, ())
         if pair in should_not_be_leaf:
-            return SExpression(pair, [])
+            return SExpression(pair, ())
         return pair
     assert isinstance(pair, Pair), f"Expected pair, got {pair}"
     elements = []
@@ -58,11 +66,11 @@ def from_pair(pair: Pair, should_not_be_leaf: Set[str]) -> SExpression:
         if not elements:
             assert isinstance(car, str), f"Expected string, got {pair.car}"
         else:
-            car = from_pair(car, should_not_be_leaf)
+            car = from_pair(car, should_not_be_leaf, for_stitch=for_stitch)
         elements.append(car)
         pair = pair.cdr
     head, *tail = elements
-    return SExpression(head, tail)
+    return SExpression(head, tuple(tail))
 
 
 def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
@@ -79,7 +87,9 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
 
 
-def parse_s_expression(s: str, should_not_be_leaf: Set[str] = None) -> SExpression:
+def parse_s_expression(
+    s: str, *, should_not_be_leaf: Set[str] = None, for_stitch: bool = False
+) -> SExpression:
     """
     Parse a string into an SExpression.
 
@@ -87,6 +97,7 @@ def parse_s_expression(s: str, should_not_be_leaf: Set[str] = None) -> SExpressi
         s: The string to parse.
         should_not_be_leaf: A set of symbols that should not be converted to leaves.
             Instead, they should be converted to SExpressions with no children.
+        for_stitch: Whether the Pair is being converted for use with stitch.
 
     Returns:
         The SExpression representing the string.
@@ -96,7 +107,9 @@ def parse_s_expression(s: str, should_not_be_leaf: Set[str] = None) -> SExpressi
     pairs = parse(s, ParserConfig((), dots_are_cons=False))
     if len(pairs) != 1:
         raise ValueError(f"Expected one expression, got {len(pairs)}")
-    return from_pair(pairs[0], should_not_be_leaf=should_not_be_leaf)
+    return from_pair(
+        pairs[0], should_not_be_leaf=should_not_be_leaf, for_stitch=for_stitch
+    )
 
 
 def symbols_for_program(s: SExpression) -> List[str]:
