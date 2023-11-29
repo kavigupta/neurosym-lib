@@ -170,6 +170,7 @@ def single_step_compression(dsl, programs):
     """
     Run a single step of compression on a list of programs.
     """
+    programs_orig = programs
     rewriter = StitchLambdaRewriter(dsl)
     print([render_s_expression(prog) for prog in programs])
     programs = [rewriter.to_stitch(prog) for prog in programs]
@@ -183,6 +184,8 @@ def single_step_compression(dsl, programs):
         no_curried_metavars=True,
         abstraction_prefix=next_symbol(dsl),
     )
+    if not res.abstractions:
+        return dsl, programs_orig
     abstr = res.abstractions[-1]
     print(res.rewritten)
     rewritten = [
