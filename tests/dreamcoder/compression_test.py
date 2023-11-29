@@ -116,6 +116,14 @@ class BasicProcessDSL(unittest.TestCase):
             "__10 :: i -> (i, i) -> i = (lam-abstr (#0) (lam_0 (+ #0 ($0_0))))",
         )
 
+    def test_multi_argument(self):
+        code = [
+            "(lam_0 (+ (1) ($1_0)))",
+            "(lam_0 (+ (1) (2)))",
+        ]
+        code = [ns.parse_s_expression(x) for x in code]
+        ns.compression.single_step_compression(self.dsl, code)
+
     def test_compress_yoinking_variables(self):
         code = [
             "(lam_0 (lam_0 (+ (1) ($1_0))))",
