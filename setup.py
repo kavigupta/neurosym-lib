@@ -27,7 +27,7 @@ setuptools.setup(
         "numpy",
         "pytorch-lightning",
         "permacache",
-        "stitch-core",
+        "stitch-core==0.1.23",
         "scikit-learn",
         "s-exp-parser==1.3.1",
     ],
