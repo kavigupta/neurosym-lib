@@ -21,6 +21,31 @@ def corpus():
 
 
 class BasicDSLTest(unittest.TestCase):
+    def assertDSL(self, dsl, expected):
+        dsl = "\n".join(
+            sorted([line.strip() for line in dsl.split("\n") if line.strip()])
+        )
+        expected = "\n".join(
+            sorted([line.strip() for line in expected.split("\n") if line.strip()])
+        )
+        print(dsl)
+        self.maxDiff = None
+        self.assertEqual(dsl, expected)
+
+    def test_basic_expand(self):
+        self.assertDSL(
+            dsl.render(),
+            """
+            * :: (i -> i, i -> i) -> i -> i
+            + :: (i -> i, i -> i) -> i -> i
+            1 :: () -> i -> i
+            count[counter] :: () -> i -> i
+            even? :: (i -> i) -> i -> i
+            ite :: (i -> i, i -> i, i -> i) -> i -> i
+            x :: () -> i -> i
+            """,
+        )
+
     def test_independent_mutability(self):
         prog = ns.parse_s_expression("(ite (even? (x)) (count) (count))")
         fn_1 = dsl.compute(dsl.initialize(prog))
@@ -75,6 +100,26 @@ class BasicProcessDSL(unittest.TestCase):
         code = [
             "(lam_0 (+ (+ (1) (1)) ($0_0)))",
             "(lam_0 (+ (1) ($0_0)))",
+        ]
+        code = [ns.parse_s_expression(x) for x in code]
+        dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
+        self.assertEqual(len(rewritten), len(code))
+        self.assertEqual(
+            [ns.render_s_expression(x) for x in rewritten],
+            [
+                "(__10 (+ (1) (1)))",
+                "(__10 (1))",
+            ],
+        )
+        self.assertEqual(
+            dsl2.productions[-1].render().strip(),
+            "__10 :: i -> (i, i) -> i = (lam-abstr (#0) (lam_0 (+ #0 ($0_0))))",
+        )
+
+    def test_compress_yoinking_variables(self):
+        code = [
+            "(lam_0 (lam_0 (+ (1) ($1_0))))",
+            "(lam_0 (+ (1) (2)))",
         ]
         code = [ns.parse_s_expression(x) for x in code]
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)

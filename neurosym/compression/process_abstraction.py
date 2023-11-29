@@ -104,6 +104,9 @@ class StitchLambdaRewriter:
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
         ) = multi_lambda_to_single_lambda(dsl)
+
+        print(self.zero_arg_lambda_index_original)
+        print(self.multi_to_single)
         self.zero_arg_lambda_symbol = next_symbol(dsl)
 
         self.first_single_to_multi = {
@@ -153,7 +156,9 @@ class StitchLambdaRewriter:
         index = int(s_exp.symbol[4:])
         original = self.first_single_to_multi[index]
         for i in range(len(self.multi_to_single[original])):
-            assert s_exp.symbol == f"lam_{self.multi_to_single[original][i]}"
+            print(s_exp, i)
+            expected = f"lam_{self.multi_to_single[original][i]}"
+            assert s_exp.symbol == expected, f"{s_exp.symbol} != {expected}"
             [s_exp] = s_exp.children
         return SExpression(
             f"lam_{original}",
@@ -166,8 +171,11 @@ def single_step_compression(dsl, programs):
     Run a single step of compression on a list of programs.
     """
     rewriter = StitchLambdaRewriter(dsl)
+    print([render_s_expression(prog) for prog in programs])
     programs = [rewriter.to_stitch(prog) for prog in programs]
+    print([render_s_expression(prog) for prog in programs])
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
+    print(rendered)
     res = stitch_core.compress(
         rendered,
         1,
@@ -176,12 +184,13 @@ def single_step_compression(dsl, programs):
         abstraction_prefix=next_symbol(dsl),
     )
     abstr = res.abstractions[-1]
+    print(res.rewritten)
     rewritten = [
-        rewriter.from_stitch(
-            parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
-        )
+        parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
         for x in res.rewritten
     ]
+    print(rewritten)
+    rewritten = [rewriter.from_stitch(x) for x in rewritten]
     user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
     abstr_body = rewriter.from_stitch(
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
