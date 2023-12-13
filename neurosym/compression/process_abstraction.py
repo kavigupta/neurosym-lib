@@ -113,6 +113,14 @@ class StitchLambdaRewriter:
             single[0]: multi for multi, single in self.multi_to_single.items()
         }
 
+        self.fused_lambda_tags = ",".join(
+            sorted(
+                {str(tag) for tags in self.multi_to_single.values() for tag in tags[1:]}
+            )
+        )
+
+        print(self.fused_lambda_tags)
+
     def to_stitch(self, s_exp):
         if isinstance(s_exp, str):
             return s_exp
@@ -184,6 +192,7 @@ def single_step_compression(dsl, programs):
         no_curried_metavars=True,
         # eta_long=True,
         # no_mismatch_check=True,
+        fused_lambda_tags=rewriter.fused_lambda_tags,
         abstraction_prefix=next_symbol(dsl),
     )
     if not res.abstractions:
