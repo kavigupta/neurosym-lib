@@ -19,8 +19,6 @@ import neurosym as ns
 from neurosym.examples import near
 
 from .utils import assertDSLEnumerable
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.near.models.constant import ConstantConfig, Constant
 
 
 class TestNEARSequentialDSL(unittest.TestCase):
@@ -144,22 +142,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         self.maxDiff = None
         input_size = 10
         # make constant dsl.
-        constant_dslf = DSLFactory(L=input_size, max_overall_depth=5)
-        constant_dslf.typedef("fL", "{f, $L}")
-        constant_dslf.concrete("ones", "() -> $fL", lambda: torch.ones(input_size))
-        constant_dslf.concrete("add", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x + y)
-        constant_dslf.parameterized(
-            "constant",
-            "() -> $fL",
-            lambda const: const,
-            dict(
-                const=lambda: Constant(
-                    ConstantConfig(name="constant", size=10, init="random")
-                )
-            ),
-        )
-        # constant_dslf.prune_to("() -> $fL")
-        constant_dsl = constant_dslf.finalize()
+        constant_dsl = near.simple_constants_dsl(input_size)
 
         datamodule = ns.datasets.const_data_example(train_seed=0)
         trainer_cfg = near.NEARTrainerConfig(
@@ -216,12 +199,10 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 set(ns.symbols_for_program(node.program)) - set(constant_dsl.symbols())
                 == set()
             )
-        
+
         g = near.near_graph(
             neural_dsl,
-            ns.parse_type(
-                s="() -> {f, $L}", env=dict(L=input_size)
-            ),
+            ns.parse_type(s="() -> {f, $L}", env=dict(L=input_size)),
             is_goal=checker,
         )
 
