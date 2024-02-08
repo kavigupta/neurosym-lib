@@ -86,8 +86,8 @@ class NEARTrainer(BaseTrainer):
                         targets = torch.nn.functional.one_hot(
                             targets, num_classes=self.config.num_labels
                         ).float()
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
+                    predictions = predictions.view(-1, predictions.shape[-1]).float()
+                    targets = targets.view(-1, targets.shape[-1]).float()
                 case "NLLLoss":
                     predictions = (
                         predictions.view(-1, predictions.shape[-1])

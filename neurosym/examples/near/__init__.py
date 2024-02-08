@@ -9,6 +9,11 @@ from .models.rnn import (
     rnn_factory_seq2class,
     rnn_factory_seq2seq,
 )
+from .models.constant import (
+    Constant,
+    ConstantConfig,
+    constant_factory,
+)
 from .models.torch_program_module import TorchProgramModule
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph
