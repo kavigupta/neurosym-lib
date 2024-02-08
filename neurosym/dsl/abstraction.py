@@ -83,7 +83,7 @@ class AbstractionProduction(FunctionLikeProduction):
             render_s_expression(AbstractionIndexParameter(i))
             for i in range(self._type_signature.arity())
         )
-        return f"(lam ({arguments}) {body})"
+        return f"(lam-abstr ({arguments}) {body})"
 
     def render(self):
         return f"{self._symbol:>15} :: {self._type_signature.render()} = {self.render_as_lambda()}"
