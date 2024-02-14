@@ -9,7 +9,7 @@ from ...dsl.dsl import DSL
 from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
-from ...types.type import ArrowType, ListType, TensorType, Type
+from ...types.type import ArrowType, AtomicType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):
@@ -25,7 +25,7 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     Required to run NEAR.
     """
-
+    neural_fn_tag = "__neural_dsl_internal__"
     # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
 
@@ -55,7 +55,7 @@ class NeuralDSL(DSL):
                 fn_type, ArrowType
             ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
             count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
-            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
+            identifier = f"{cls.neural_fn_tag}_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
             # pylint: disable=unexpected-keyword-arg
             module_c_prod = ParameterizedProduction(
@@ -141,6 +141,8 @@ def compute_io_shape(t):
                 return get_shape(element_type)
             case t if isinstance(t, Tuple):
                 return len(t)
+            case AtomicType(_):
+                return (1,)
             case _:
                 raise NotImplementedError(f"Cannot compute shape for type {type(t)}")
 

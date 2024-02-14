@@ -1,6 +1,7 @@
 import itertools
 from abc import ABC
 from typing import Callable
+from neurosym.programs.s_expression_render import render_s_expression
 
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer

@@ -73,6 +73,13 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         self.is_regression = is_regression
         self.inputs = load_npy(input_url)
         self.outputs = load_npy(output_url)
+        # conver float64 to float32
+        if np.issubdtype(self.inputs.dtype, np.float64):
+            self.inputs = self.inputs.astype(np.float32)
+        
+        if np.issubdtype(self.outputs.dtype, np.float64):
+            self.outputs = self.outputs.astype(np.float32)
+
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(
@@ -84,7 +91,13 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     def get_io_dims(self):
         if self.is_regression:
             return self.inputs.shape[-1], self.outputs.shape[-1]
-        return self.inputs.shape[-1], len(np.unique(self.outputs))
+        
+        if np.issubdtype(self.outputs.dtype, np.integer):
+            n_classes = len(np.unique(self.outputs))
+        else:
+            n_classes = self.outputs.shape[-1]
+
+        return self.inputs.shape[-1], n_classes
 
     def __len__(self):
         return len(self.inputs)

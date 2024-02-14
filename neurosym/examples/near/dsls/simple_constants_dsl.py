@@ -11,7 +11,6 @@ DSL of the form:
 # Linear_c :: LinearQbj
 """
 import torch
-from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.models.constant import ConstantConfig, Constant

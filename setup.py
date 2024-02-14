@@ -29,6 +29,7 @@ setuptools.setup(
         "permacache",
         "stitch-core==0.1.25",
         "scikit-learn",
+        "pandas",
         "s-exp-parser==1.3.1",
     ],
 )

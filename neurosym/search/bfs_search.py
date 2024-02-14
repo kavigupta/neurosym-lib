@@ -1,3 +1,4 @@
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
 
 

@@ -96,6 +96,9 @@ class NEARTrainer(BaseTrainer):
                         .log_softmax(dim=-1)
                     )
                     targets = targets.view(-1)
+                case "MultiLabelSoftMarginLoss":
+                    # Available in pytorch.
+                    raise NotImplementedError("TODO")
                 case _:
                     raise NotImplementedError(
                         f"Loss function {self.config.loss_fn} not implemented for seq2seq models"
@@ -113,6 +116,10 @@ class NEARTrainer(BaseTrainer):
             self._log_program_accuracy(predictions, outputs, inputs)
 
         return losses
+    def _compute_auroc(self, predictions, outputs):
+        # scikit learn.
+        # F1 score
+        raise NotImplementedError("TODO")
 
     def _log_program_accuracy(self, predictions, outputs, inputs):
         del inputs
