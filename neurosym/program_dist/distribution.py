@@ -65,3 +65,9 @@ class ProgramDistributionFamily(ABC):
         """
         Samples programs from this distribution.
         """
+
+    @abstractmethod
+    def default_distribution(self) -> ProgramDistribution:
+        """
+        Returns the default distribution for this family.
+        """
