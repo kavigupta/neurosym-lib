@@ -30,14 +30,13 @@ class TypeDefiner:
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
-        assert key[0] == "%", f"Filtered type variable must start with %, but got {key}"
-        self.env[key] = type_filter
+        self.filters[key] = type_filter
 
     def lookup_type(self, key):
         return self.env[key]
 
     def lookup_filter(self, key):
-        return self.env[key]
+        return self.filters[key]
 
 
 def render_type(t):
