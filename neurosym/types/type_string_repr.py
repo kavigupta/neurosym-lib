@@ -1,6 +1,10 @@
+from types import NoneType
+from typing import Union
+
 from neurosym.types.type import (
     ArrowType,
     AtomicType,
+    FilteredTypeVariable,
     ListType,
     TensorType,
     TypeVariable,
@@ -13,9 +17,10 @@ SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 class TypeDefiner:
     def __init__(self, **env):
         self.env = env
+        self.filters = {}
 
     def __call__(self, type_str):
-        return parse_type(type_str, self.env)
+        return parse_type(type_str, self)
 
     def sig(self, type_str):
         typ = self(type_str)
@@ -24,12 +29,24 @@ class TypeDefiner:
     def typedef(self, key, type_str):
         self.env[key] = self(type_str)
 
+    def filtered_type_variable(self, key, type_filter):
+        assert key[0] == "%", f"Filtered type variable must start with %, but got {key}"
+        self.env[key] = type_filter
+
+    def lookup_type(self, key):
+        return self.env[key]
+
+    def lookup_filter(self, key):
+        return self.env[key]
+
 
 def render_type(t):
     if isinstance(t, AtomicType):
         return t.name
     if isinstance(t, TypeVariable):
         return "#" + t.name
+    if isinstance(t, FilteredTypeVariable):
+        return "%" + t.name
     if isinstance(t, TensorType):
         return "{" + ", ".join([render_type(t.dtype), *map(str, t.shape)]) + "}"
     if isinstance(t, ListType):
@@ -46,12 +63,13 @@ def render_type(t):
     raise NotImplementedError(f"Unknown type {t}")
 
 
-def parse_type_from_buf(reversed_buf, env):
+def parse_type_from_buf(reversed_buf, env: TypeDefiner):
+    assert isinstance(env, TypeDefiner)
     first_tok = reversed_buf.pop()
     if first_tok.isnumeric():
         return int(first_tok)
     if first_tok.startswith("$"):
-        return env[first_tok[1:]]
+        return env.lookup_type(first_tok[1:])
     if first_tok == "{":
         internal_type = parse_type_from_buf(reversed_buf, env)
         shape = []
@@ -85,6 +103,9 @@ def parse_type_from_buf(reversed_buf, env):
         return ArrowType(tuple(input_types), output_type)
     if first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
+    if first_tok.startswith("%"):
+        name = first_tok[1:]
+        return FilteredTypeVariable(name, type_filter=env.lookup_filter(name))
     return AtomicType(first_tok)
 
 
@@ -114,9 +135,10 @@ def lex(s):
     return [tok for tok in buf if tok != ""]
 
 
-def parse_type(s, env=None):
+def parse_type(s, env: Union[TypeDefiner, NoneType] = None):
     if env is None:
-        env = {}
+        env = TypeDefiner()
+    assert isinstance(env, TypeDefiner)
     buf = lex(s)[::-1]
     t = parse_type_from_buf_multi(buf, env)
     assert buf == [], f"Extra tokens {buf[::-1]}"

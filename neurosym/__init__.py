@@ -16,6 +16,7 @@ from .types.type import (
     ListType,
     TensorType,
     Type,
+    TypeVariable,
     UnificationError,
 )
 from .types.type_signature import bottom_up_enumerate_types, expansions
