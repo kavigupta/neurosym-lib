@@ -43,6 +43,14 @@ class ProgramDistributionFamily(ABC):
         """
 
     @abstractmethod
+    def counts_to_distribution(
+        self, counts: ProgramsCountTensor
+    ) -> ProgramDistribution:
+        """
+        Converts the counts to a distribution.
+        """
+
+    @abstractmethod
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: ProgramsCountTensor
     ) -> torch.float32:
