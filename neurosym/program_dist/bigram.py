@@ -73,6 +73,13 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
                 )
         return BigramProgramCountTensor(torch.tensor(counts))
 
+    def counts_to_distribution(
+        self, counts: BigramProgramCountTensor
+    ) -> BigramProgramDistribution:
+        return BigramProgramDistribution(
+            counts_to_probabilities(counts.counts.numpy().sum(0))
+        )
+
     def _count_program(
         self,
         program: SExpression,
