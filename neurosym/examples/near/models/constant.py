@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import prod
 from typing import List, Tuple
 
 import torch
@@ -26,14 +27,15 @@ class Constant(nn.Module):
                 self.constant = torch.nn.Parameter(torch.zeros(config.size))
         
         if config.sample_categorical:
-            self.dist = torch.distributions.Categorical(torch.ones(config.size) / config.size)
+            self.probs = torch.nn.Parameter(torch.ones(config.size) / config.size)
 
     def forward(self, x=None):
-        dims = x.shape[:-1] + (self.config.size,)
+        dims = x.shape[:-1] + (1,)
         if self.config.sample_categorical:
-            return self.dist.sample(dims[:-1])
+            out = torch.multinomial(self.probs, num_samples=prod(dims), replacement=True).reshape(dims)
         else:        
-            return self.constant.expand(dims)
+            out = self.constant.expand(dims)
+        return out
 
 
 def constant_factory(**kwargs):
