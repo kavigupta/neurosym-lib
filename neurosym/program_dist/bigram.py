@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
 from typing import List, Union
@@ -6,10 +7,11 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_dist_enumerator import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
 
-from .distribution import ProgramDistributionFamily
+from .distribution import TreeProgramDistributionFamily
 
 
 @dataclass
@@ -22,7 +24,7 @@ class BigramProgramCountTensor:
     counts: torch.tensor
 
 
-class BigramProgramDistributionFamily(ProgramDistributionFamily):
+class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
         self._dsl = dsl
         self._symbols, self._arities, self._valid_mask = bigram_mask(
@@ -153,6 +155,22 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
 
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
+
+    def tree_distribution(
+        self, distribution: BigramProgramDistribution
+    ) -> TreeDistribution:
+        dist = defaultdict(list)
+        for parent, position, child in zip(*np.where(distribution.distribution > 0)):
+            dist[parent, position].append(
+                (child, np.log(distribution.distribution[parent, position, child]))
+            )
+        dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+
+        return TreeDistribution(
+            limit=1,
+            distribution=dist,
+            symbols=[(sym, arity) for sym, arity in zip(self._symbols, self._arities)],
+        )
 
 
 def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):
