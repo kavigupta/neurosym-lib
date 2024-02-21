@@ -6,6 +6,8 @@ import lightning as L
 import torch
 from torch import nn
 
+class TrainingError(Exception):
+    pass
 
 @dataclass
 class BaseTrainerConfig:

@@ -203,7 +203,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
 
         g = near.near_graph(
             neural_dsl,
-            ns.parse_type(s="() -> {f, $L}", env=dict(L=input_size)),
+            ns.parse_type(s="() -> {f, $L}", env=ns.TypeDefiner(L=input_size)),
             is_goal=checker,
         )
 

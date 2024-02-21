@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 import torch
-from sklearn.metrics import f1_score, hamming_loss
+from sklearn.metrics import f1_score, hamming_loss, roc_auc_score
 from torch import nn
 
-from .base_trainer import BaseTrainer, BaseTrainerConfig
+from .base_trainer import BaseTrainer, BaseTrainerConfig, TrainingError
 
 
 @dataclass
@@ -67,6 +67,7 @@ class ECGTrainer(BaseTrainer):
         f1_scores = ECGTrainer.compute_average_f1_score(
             predictions, targets, num_labels
         )  # noqa: E501
+        
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
@@ -108,8 +109,7 @@ class ECGTrainer(BaseTrainer):
             match self.config.loss_fn:
                 case "CrossEntropyLoss":
                     targets = targets.argmax(dim=-1)
-                    predictions = predictions.softmax(dim=-1)
-                    
+                    # predictions = predictions.softmax(dim=-1)
         
         loss = self.loss_fn(predictions, targets)
         return loss
@@ -118,31 +118,32 @@ class ECGTrainer(BaseTrainer):
         del kwargs
         try:
             predictions = self.model(inputs.float())
+            predictions = predictions.clamp(min=1e-10, max=1e10)
+            metrics_dict = self.program_accuracy(predictions.detach().cpu(), outputs.cpu(), inputs.cpu())
             losses = dict(loss=self.loss(predictions, outputs))
+            if validation:
+                self.log('val_acc', metrics_dict['hamming_accuracy'])
+                self.log('val_auroc', metrics_dict['auroc'])
+            else:
+                self.log('train_acc', metrics_dict['hamming_accuracy'])
+                self.log('train_auroc', metrics_dict['auroc'])
         except Exception as e:
-            print("Training error")
-            import IPython; IPython.embed()
-
-        if validation and self.logger is not None and self.current_epoch % 2 == 0:
-            self._log_program_accuracy(predictions, outputs, inputs)
-
+            raise TrainingError(e)
         return losses
-    def _compute_auroc(self, predictions, outputs):
-        # scikit learn.
-        # F1 score
-        raise NotImplementedError("TODO")
 
-    def _log_program_accuracy(self, predictions, outputs, inputs):
+    def program_accuracy(self, predictions, outputs, inputs):
         del inputs
         if self.config.num_labels > 1:
-            predictions = torch.argmax(predictions, dim=-1)
+            predictions = predictions.softmax(dim=-1)
         else:
             predictions = torch.round(torch.sigmoid(predictions))
-        targets = outputs
-        correctness = ECGTrainer.label_correctness(
-            predictions, targets, self.config.num_labels
+        metrics_dict = ECGTrainer.label_correctness(
+            predictions.argmax(dim=-1),
+            outputs.argmax(dim=-1),
+            self.config.num_labels
         )
-        self.logger.log_metrics(correctness, step=self.global_step)
+        metrics_dict['auroc'] = roc_auc_score(y_true=outputs, y_score=predictions)
+        return metrics_dict
 
 
 def main():

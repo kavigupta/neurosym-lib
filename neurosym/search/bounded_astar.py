@@ -4,6 +4,8 @@ from typing import Callable
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
+from tqdm.auto import tqdm
+from neurosym.programs.s_expression_render import render_s_expression
 
 
 def bounded_astar(
@@ -27,6 +29,8 @@ def bounded_astar(
         fringe.put(BoundedAStarNode(cost_plus_heuristic(node), node, depth))
 
     add_to_fringe(g.initial_node(), 0)
+    best_node = None
+    pbar = tqdm(leave=False)
     while not fringe.empty():
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
@@ -37,6 +41,11 @@ def bounded_astar(
             yield node
         for child in g.expand_node(node):
             add_to_fringe(child, depth + 1)
+
+        if best_node is None or fringe_var.cost < best_node.cost:
+            best_node = fringe_var
+        pbar.set_description(f"Depth: {best_node.depth}, Cost: {best_node.cost:.4}, Program: {render_s_expression(best_node.node.program):.50}")
+        pbar.update(1)
 
 
 @dataclass(order=True)

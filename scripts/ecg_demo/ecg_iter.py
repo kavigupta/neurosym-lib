@@ -1,11 +1,9 @@
-import logging
 import os
-
 import numpy as np
-from lightning import Trainer
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import torch
 import torch.nn as nn
+from lightning import Trainer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 import neurosym as ns
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
@@ -13,8 +11,15 @@ from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.programs.s_expression_render import render_s_expression
+from neurosym.types.type import ArrowType, AtomicType
 
-
+import warnings
+warnings.filterwarnings("ignore")
+import logging
+logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
+logging.getLogger("lightning.pytorch.accelerators.cuda").setLevel(logging.WARNING)
+logging.getLogger("lightning.pytorch.loops.evaluation_loop").setLevel(logging.WARNING)
+                                                                    
 def load_dataset_npz(features_pth, label_pth):
     assert os.path.exists(features_pth), f"{features_pth} does not exist."
     assert os.path.exists(label_pth), f"{label_pth} does not exist."
@@ -29,7 +34,7 @@ def filter_multilabel(split):
     X = np.load(x_fname)
     y = np.load(y_fname)
 
-    mask = y.sum(-1) > 1
+    mask = y.sum(-1) == 1
 
     # filter
     X = X[mask]
@@ -67,7 +72,7 @@ def create_dataset_factory(train_seed, is_regression, n_workers):
             seed=0,
             is_regression=is_regression,
         ),
-        batch_size=500,
+        batch_size=1000,
         n_workers=n_workers,
     )
 
@@ -92,8 +97,7 @@ def subset_selector(x, channel, feat, typ):
     feat_idx = feat_dim * feat(x).squeeze(-1)
     ch_idx = channel_dim * channel(x).squeeze(-1)
     idx = ch_idx + feat_idx + typ_idx
-    # import IPython; IPython.embed()
-    return x.gather(dim=-1, index=idx[...,None])
+    return x.gather(dim=-1, index=idx[..., None])
 
 
 def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
@@ -118,10 +122,22 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     dslf.typedef("fFeat", "{f, $F}")
 
     for i in range(12):
-        dslf.concrete(f"channel_{i}", "() -> () -> channel", lambda: lambda x: torch.full(tuple(x.shape[:-1] + (1,) ), i, device=x.device))
+        dslf.concrete(
+            f"channel_{i}",
+            "() -> () -> channel",
+            lambda: lambda x: torch.full(
+                tuple(x.shape[:-1] + (1,)), i, device=x.device
+            ),
+        )
 
     for i in range(6):
-        dslf.concrete(f"feature_{i}", "() -> () -> feature", lambda: lambda x: torch.full(tuple(x.shape[:-1] + (1,) ), i, device=x.device))
+        dslf.concrete(
+            f"feature_{i}",
+            "() -> () -> feature",
+            lambda: lambda x: torch.full(
+                tuple(x.shape[:-1] + (1,)), i, device=x.device
+            ),
+        )
 
     dslf.concrete(
         "select_interval",
@@ -129,7 +145,12 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         lambda ch, feat: lambda x: subset_selector(x, ch, feat, "interval"),
     )
 
-    # dslf.concrete("select_amplitude", "(channel, feature) -> ($fInp) -> $fFeat", lambda ch, feat: lambda x: subset_selector(x, ch, feat, 'amplitude') )
+    dslf.concrete(
+        "select_amplitude",
+        "(() -> channel, () -> feature) -> ($fInp) -> $fFeat",
+        lambda ch, feat: lambda x: subset_selector(x, ch, feat, "amplitude"),
+    )
+
     def guard_callables(fn, **kwargs):
         is_callable = [callable(kwargs[k]) for k in kwargs]
         if any(is_callable):
@@ -142,9 +163,32 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         else:
             return fn(**kwargs)
 
-    dslf.concrete("add", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x + y, x=x, y=y),)
-    dslf.concrete("mul", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),)
-    dslf.concrete("sub", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),)
+    def filter_constants(x):
+        match x:
+            case ArrowType(a, b):
+                return filter_constants(a) and filter_constants(b)
+            case AtomicType(a):
+                return a not in ["channel", "feature"]
+            case _:
+                return True
+
+    dslf.filtered_type_variable("num", lambda x: filter_constants(x))
+    dslf.concrete(
+        "add",
+        "(%num, %num) -> %num",
+        lambda x, y: guard_callables(fn=lambda x, y: x + y, x=x, y=y),
+    )
+    dslf.concrete(
+        "mul",
+        "(%num, %num) -> %num",
+        lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),
+    )
+    dslf.concrete(
+        "sub",
+        "(%num, %num) -> %num",
+        lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),
+    )
+
     # dslf.parameterized("linear_bool", "() -> $fFeat -> $fFeat", lambda lin: lin, dict(lin=lambda: nn.Linear(input_dim, 1)))
     dslf.parameterized(
         "linear",
@@ -200,14 +244,10 @@ neural_dsl = near.NeuralDSL.from_dsl(
             [t("() -> channel"), t("() -> feature")],
             near.constant_factory(sample_categorical=True),
             known_atom_shapes=dict(channel=(12,), feature=(6,)),
-        )
+        ),
     },
 )
 
-
-# Disable PyTorch Lightning verbose logging
-logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
-logging.getLogger("lightning.pytorch.accelerators.cuda").setLevel(logging.WARNING)
 
 # Configuration for NEARTrainer
 trainer_cfg = near.ECGTrainerConfig(
@@ -240,7 +280,7 @@ def validation_cost(node):
     # Initialize the trainer with the given configuration
 
     early_stop_callback = EarlyStopping(
-        monitor="val_loss", min_delta=1e-4, patience=5, verbose=False, mode="min"
+        monitor="train_acc", min_delta=1e-2, patience=5, verbose=False, mode="max"
     )
     trainer = Trainer(
         max_epochs=100,
@@ -272,16 +312,20 @@ def validation_cost(node):
     # Initialize NEARTrainer with the model and configuration
     pl_model = near.ECGTrainer(model, config=trainer_cfg)
 
-    # Fit the model using the training and validation data loaders
-    trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
+    try:
+        trainer.fit(pl_model, datamodule.train_dataloader())
+        trainer.validate(pl_model, datamodule.val_dataloader(), verbose=False)
+    except near.TrainingError as e:
+        print("Training error\n", e, "\n", render_s_expression(node.program))
+        return 10000.0
 
     # Return the validation loss
-    return trainer.callback_metrics["val_loss"].item()
+    return trainer.callback_metrics["val_acc"].item()
 
 def cost_plus_heuristic(node):
-    cost = validation_cost(node)
-    number_of_holes = len(ns.holes(node.program))
-
+    cost = validation_cost(node) # accuracy [0, 1]
+    n_holes = len(list(ns.all_holes(node.program))) # more holes = costlier program
+    return (-1 * cost) + (0.25 * n_holes)
 
 
 def checker(node):
@@ -295,14 +339,33 @@ def checker(node):
 
 g = near.near_graph(
     neural_dsl,
-    ns.parse_type(s="({f, $L}) -> {f, $O}", env=dict(L=input_dim, O=output_dim)),
+    ns.parse_type(
+        s="({f, $L}) -> {f, $O}", env=ns.TypeDefiner(L=input_dim, O=output_dim)
+    ),
     is_goal=checker,
 )
-iterator = ns.search.bounded_astar(g, validation_cost, max_depth=7)
+iterator = ns.search.bounded_astar(g, cost_plus_heuristic, max_depth=7)
 best_program_nodes = []
 for node in iterator:
     cost = validation_cost(node)
     best_program_nodes.append((node, cost))
 
+# save the best program nodes
+import pickle
+with open("best_program_nodes.pkl", "wb") as f:
+    pickle.dump(best_program_nodes, f)
 
+# import asyncio
+
+# async def find_best_programs():
+#     iterator = ns.search.async_bounded_astar(g, cost_plus_heuristic, max_depth=7)
+#     best_program_nodes = []
+#     async for node in iterator:
+#         cost = validation_cost(node)
+#         best_program_nodes.append((node, cost))
+
+#     return best_program_nodes
+
+# loop = asyncio.get_event_loop()
+# best_program_nodes = loop.run_until_complete(find_best_programs())
 import IPython; IPython.embed()

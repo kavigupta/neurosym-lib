@@ -7,6 +7,7 @@ from .programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
+from .programs.hole import all_holes
 from .search_graph.dsl_search_graph import DSLSearchGraph
 from .search_graph.hole_set_chooser import ChooseFirst
 from .search_graph.metadata_computer import NoMetadataComputer
