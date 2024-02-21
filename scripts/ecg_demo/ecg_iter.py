@@ -1,12 +1,9 @@
-from functools import partial
 import logging
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import pytorch_lightning as pl
-import seaborn as sns
+from lightning import Trainer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import torch
 import torch.nn as nn
 
@@ -43,46 +40,7 @@ def filter_multilabel(split):
     np.save(y_fname.replace(f"{split}", f"{split}_filtered"), y)
 
 
-# X_train, y_train = load_dataset_npz("data/ecg_multitask_example/x_train.npy", "data/ecg_multitask_example/y_train.npy")
-# X_test, y_test = load_dataset_npz("data/ecg_multitask_example/x_test.npy", "data/ecg_multitask_example/y_test.npy")
-
-# print("train", X_train.shape, y_train.shape)
-# print("test", X_test.shape, y_test.shape)
-
-
-def plot_feature_label_correlation(X, y, figsize=(12, 8)):
-    """
-    Plots a heatmap of the correlation between features in X and labels in y.
-
-    Parameters:
-    X (numpy.ndarray): The feature matrix.
-    y (numpy.ndarray): The label matrix.
-    figsize (tuple): The size of the figure (width, height).
-    """
-
-    # Convert numpy arrays to pandas DataFrame for easier manipulation
-    df_X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(X.shape[1])])
-    df_y = pd.DataFrame(y, columns=[f"Label_{i}" for i in range(y.shape[1])])
-
-    # Concatenate the DataFrames
-    df = pd.concat([df_X, df_y], axis=1)
-
-    # Calculate the correlation matrix
-    corr_matrix = df.corr()
-
-    # Extract the relevant portion of the correlation matrix (features vs labels)
-    relevant_corr = corr_matrix.iloc[: X.shape[1], X.shape[1] :]
-
-    # Create the heatmap
-    plt.figure(figsize=figsize)
-    sns.heatmap(relevant_corr, annot=True, cmap="coolwarm", fmt=".2f")
-    plt.title("Correlation between Features and Labels")
-    plt.xlabel("Labels")
-    plt.ylabel("Features")
-    plt.show()
-
-
-def create_dataset_factory(train_seed, is_regression):
+def create_dataset_factory(train_seed, is_regression, n_workers):
     """Creates a dataset factory for generating training and testing datasets.
 
     This factory function wraps the training and testing datasets with the
@@ -109,11 +67,12 @@ def create_dataset_factory(train_seed, is_regression):
             seed=0,
             is_regression=is_regression,
         ),
-        batch_size=200,
+        batch_size=500,
+        n_workers=n_workers,
     )
 
 
-datamodule = create_dataset_factory(train_seed=42, is_regression=False)
+datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_workers=0)
 # Retrieve input and output dimensions from the training dataset
 input_dim, output_dim = datamodule.train.get_io_dims()
 
@@ -130,9 +89,10 @@ def subset_selector(x, channel, feat, typ):
     feat_dim = typ_dim * 2
     channel_dim = feat_dim * 6
     typ_idx = typ_dim * (0 if typ == "interval" else 1)
-    feat_idx = feat_dim * feat(x)
-    ch_idx = channel_dim * channel(x)
+    feat_idx = feat_dim * feat(x).squeeze(-1)
+    ch_idx = channel_dim * channel(x).squeeze(-1)
     idx = ch_idx + feat_idx + typ_idx
+    # import IPython; IPython.embed()
     return x.gather(dim=-1, index=idx[...,None])
 
 
@@ -158,10 +118,10 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     dslf.typedef("fFeat", "{f, $F}")
 
     for i in range(12):
-        dslf.concrete(f"channel_{i}", "() -> () -> channel", lambda: lambda x: torch.full(tuple(x.shape[:-1]), i))
+        dslf.concrete(f"channel_{i}", "() -> () -> channel", lambda: lambda x: torch.full(tuple(x.shape[:-1] + (1,) ), i, device=x.device))
 
     for i in range(6):
-        dslf.concrete(f"feature_{i}", "() -> () -> feature", lambda: lambda x: torch.full(tuple(x.shape[:-1]), i))
+        dslf.concrete(f"feature_{i}", "() -> () -> feature", lambda: lambda x: torch.full(tuple(x.shape[:-1] + (1,) ), i, device=x.device))
 
     dslf.concrete(
         "select_interval",
@@ -182,21 +142,9 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         else:
             return fn(**kwargs)
 
-    dslf.concrete(
-        "add",
-        "(#a, #a) -> #a",
-        lambda x, y: guard_callables(fn=lambda x, y: x + y, x=x, y=y),
-    )
-    dslf.concrete(
-        "mul",
-        "(#a, #a) -> #a",
-        lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),
-    )
-    dslf.concrete(
-        "sub",
-        "(#a, #a) -> #a",
-        lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),
-    )
+    dslf.concrete("add", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x + y, x=x, y=y),)
+    dslf.concrete("mul", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),)
+    dslf.concrete("sub", "(#a, #a) -> #a", lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),)
     # dslf.parameterized("linear_bool", "() -> $fFeat -> $fFeat", lambda lin: lin, dict(lin=lambda: nn.Linear(input_dim, 1)))
     dslf.parameterized(
         "linear",
@@ -251,14 +199,15 @@ neural_dsl = near.NeuralDSL.from_dsl(
             "constant_int",
             [t("() -> channel"), t("() -> feature")],
             near.constant_factory(sample_categorical=True),
+            known_atom_shapes=dict(channel=(12,), feature=(6,)),
         )
     },
 )
 
 
 # Disable PyTorch Lightning verbose logging
-logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.WARNING)
-logging.getLogger("pytorch_lightning.accelerators.cuda").setLevel(logging.WARNING)
+logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
+logging.getLogger("lightning.pytorch.accelerators.cuda").setLevel(logging.WARNING)
 
 # Configuration for NEARTrainer
 trainer_cfg = near.ECGTrainerConfig(
@@ -289,13 +238,15 @@ def validation_cost(node):
         near.PartialProgramNotFoundError: If the partial program is not found.
     """
     # Initialize the trainer with the given configuration
-    early_stop_callback = pl.callbacks.EarlyStopping(
+
+    early_stop_callback = EarlyStopping(
         monitor="val_loss", min_delta=1e-4, patience=5, verbose=False, mode="min"
     )
-    trainer = pl.Trainer(
+    trainer = Trainer(
         max_epochs=100,
         devices="auto",
         accelerator="cpu",
+        # accelerator="gpu",
         enable_checkpointing=False,
         enable_model_summary=False,
         logger=False,
@@ -327,6 +278,11 @@ def validation_cost(node):
     # Return the validation loss
     return trainer.callback_metrics["val_loss"].item()
 
+def cost_plus_heuristic(node):
+    cost = validation_cost(node)
+    number_of_holes = len(ns.holes(node.program))
+
+
 
 def checker(node):
     """
@@ -347,3 +303,6 @@ best_program_nodes = []
 for node in iterator:
     cost = validation_cost(node)
     best_program_nodes.append((node, cost))
+
+
+import IPython; IPython.embed()

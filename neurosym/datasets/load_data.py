@@ -2,7 +2,7 @@ import io
 import os
 
 import numpy as np
-import pytorch_lightning as pl
+import lightning as L
 import requests
 import torch
 from permacache import permacache
@@ -109,26 +109,29 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         )
 
 
-class DatasetWrapper(pl.LightningDataModule):
+class DatasetWrapper(L.LightningDataModule):
     def __init__(
         self,
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
         batch_size: int = 32,
+        n_workers: int = 0,
     ):
         super().__init__()
         self.train = train
         self.test = test
         self.batch_size = batch_size
+        self.n_workers = n_workers
+        self.pin_memory = True
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
 
 
 def numpy_dataset_from_github(

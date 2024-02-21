@@ -2,7 +2,7 @@ import sys
 from dataclasses import dataclass
 from typing import Tuple
 
-import pytorch_lightning as pl
+import lightning as L
 import torch
 from torch import nn
 
@@ -23,7 +23,7 @@ class BaseTrainerConfig:
     optimizer: str = "adam"
 
 
-class BaseTrainer(pl.LightningModule):
+class BaseTrainer(L.LightningModule):
     """
     An abstract class that defines the supporting code to
     train a neural module. We use pytorch-lightning as the

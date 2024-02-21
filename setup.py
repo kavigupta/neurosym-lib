@@ -25,7 +25,7 @@ setuptools.setup(
         "torchvision",
         "torchaudio",
         "numpy",
-        "pytorch-lightning",
+        "lightning",
         "permacache",
         "stitch-core==0.1.25",
         "scikit-learn",
