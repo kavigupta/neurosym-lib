@@ -6,13 +6,13 @@ class TorchProgramModule(nn.Module):
         super().__init__()
         self.dsl = dsl
         self.program = program
-        self.initalized_program = dsl.initialize(program)
+        self.initialized_program = dsl.initialize(program)
         self.contained_modules = nn.ModuleList(
-            list(self.initalized_program.all_state_values())
+            list(self.initialized_program.all_state_values())
         )
 
     def forward(self, *args):
-        return self.dsl.compute(self.initalized_program)(*args)
+        return self.dsl.compute(self.initialized_program)(*args)
 
 
     def __repr__(self):
