@@ -127,6 +127,9 @@ class TestRender(unittest.TestCase):
             "{f, 10} -> {f, 10}",
         )
 
+    def test_variable(self):
+        self.assertEqual(ns.render_type(ns.TypeVariable(name="f")), "#f")
+
 
 class TestLex(unittest.TestCase):
     def test_tensor(self):

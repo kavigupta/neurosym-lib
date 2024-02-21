@@ -419,3 +419,21 @@ class TestDSLExpand(unittest.TestCase):
                 ite_39 :: (b, i, #a, #a) -> #a
             """,
         )
+
+    def test_filtered_variable(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("1", "() -> i", lambda: 1)
+        dslf.concrete("1f", "() -> f", lambda: 1)
+        dslf.filtered_type_variable(
+            "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
+        )
+        dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
+        dsl = dslf.finalize()
+        self.assertDSL(
+            dsl.render(),
+            """
+                1 :: () -> i
+                1f :: () -> f
+                + :: %num -> %num -> %num
+            """,
+        )

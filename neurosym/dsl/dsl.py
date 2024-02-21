@@ -11,7 +11,7 @@ from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import Type, TypeVariable
+from ..types.type import GenericTypeVariable, Type
 from .production import Production
 
 
@@ -41,7 +41,7 @@ class DSL:
             self._out_type_to_prod_idx.insert(
                 prod.type_signature().return_type_template(),
                 i,
-                is_wildcard_predicate=lambda x: isinstance(x, TypeVariable),
+                is_wildcard_predicate=lambda x: isinstance(x, GenericTypeVariable),
             )
 
     def symbols(self):
