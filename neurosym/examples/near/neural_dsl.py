@@ -139,8 +139,10 @@ def compute_io_shape(t):
                 return shape
             case ListType(element_type):
                 return get_shape(element_type)
+            case t if isinstance(t, Tuple):
+                return len(t)
             case _:
-                raise NotImplementedError(f"Cannot compute shape for type {t}")
+                raise NotImplementedError(f"Cannot compute shape for type {type(t)}")
 
     input_shape = [get_shape(t) for t in input_types]
     output_shape = get_shape(output_type)

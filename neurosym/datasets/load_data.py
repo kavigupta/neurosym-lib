@@ -31,7 +31,7 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-@permacache("neurosym/data/load_data/load_npy")
+# @permacache("neurosym/data/load_data/load_npy")
 def load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
@@ -63,13 +63,14 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     TODO test/val split
     """
 
-    def __init__(self, input_url, output_url, seed):
+    def __init__(self, input_url, output_url, seed, is_regression=False):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
+        self.is_regression = is_regression
         self.inputs = load_npy(input_url)
         self.outputs = load_npy(output_url)
         assert len(self.inputs) == len(self.outputs)
@@ -81,6 +82,8 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             self.ordering = np.arange(len(self.inputs))
 
     def get_io_dims(self):
+        if self.is_regression:
+            return self.inputs.shape[-1], self.outputs.shape[-1]
         return self.inputs.shape[-1], len(np.unique(self.outputs))
 
     def __len__(self):

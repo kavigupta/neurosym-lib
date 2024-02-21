@@ -12,6 +12,7 @@ class NEARTrainerConfig(BaseTrainerConfig):
     max_seq_len: int = 100
     loss_fn: str = "CrossEntropyLoss"
     num_labels: int = -1  # Set Programmatically
+    is_regression: bool = False
 
 
 class NEARTrainer(BaseTrainer):
@@ -23,6 +24,7 @@ class NEARTrainer(BaseTrainer):
     def __init__(self, model: nn.Module, config: NEARTrainerConfig):
         super().__init__(model=model, config=config)
         assert config.num_labels > 0, "Number of labels must be set programmatically"
+        self.is_regression = config.is_regression
         match self.config.loss_fn:
             case "CrossEntropyLoss":
                 self.loss_fn = nn.CrossEntropyLoss()
@@ -79,12 +81,13 @@ class NEARTrainer(BaseTrainer):
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1)
                 case "MSELoss":
-                    # pylint: disable=not-callable
-                    targets = torch.nn.functional.one_hot(
-                        targets.squeeze(-1), num_classes=self.config.num_labels
-                    ).float()
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
+                    if not self.is_regression:
+                        targets = targets.squeeze(-1)
+                        targets = torch.nn.functional.one_hot(
+                            targets, num_classes=self.config.num_labels
+                        ).float()
+                    predictions = predictions.view(-1, predictions.shape[-1]).float()
+                    targets = targets.view(-1, targets.shape[-1]).float()
                 case "NLLLoss":
                     predictions = (
                         predictions.view(-1, predictions.shape[-1])

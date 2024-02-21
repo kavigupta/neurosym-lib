@@ -60,6 +60,11 @@ class TestNEARSequentialDSL(unittest.TestCase):
                     [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
                     near.rnn_factory_seq2class(hidden_size=10),
                 ),
+                **near.create_modules(
+                    "constant",
+                    [t("() -> $fL"), t("() -> $fO")],
+                    near.constant_factory(init="random"),
+                ),
             },
         )
 
@@ -129,3 +134,85 @@ class TestNEARSequentialDSL(unittest.TestCase):
         dsl = near.example_rnn_dsl(10, 4)
 
         assertDSLEnumerable(dsl, "([$fL]) -> [$fO]")
+
+    def test_constant_support(self):
+        """
+        Check to see if a simple DSL that initializes a constant works as intended.
+        """
+        self.maxDiff = None
+        input_size = 10
+        # make constant dsl.
+        constant_dsl = near.simple_constants_dsl(input_size)
+
+        datamodule = ns.datasets.const_data_example(train_seed=0)
+        trainer_cfg = near.NEARTrainerConfig(
+            max_seq_len=100,
+            n_epochs=10,
+            num_labels=input_size,
+            train_steps=len(datamodule.train),
+            is_regression=True,
+            loss_fn="MSELoss",
+        )
+
+        t = ns.TypeDefiner(L=input_size)
+        t.typedef("fL", "{f, $L}")
+        neural_dsl = near.NeuralDSL.from_dsl(
+            dsl=constant_dsl,
+            modules={
+                **near.create_modules(
+                    "constant",
+                    [t("() -> $fL")],
+                    near.constant_factory(init="random"),
+                ),
+            },
+        )
+
+        def validation_cost(node):
+            import pytorch_lightning as pl
+
+            trainer = pl.Trainer(
+                max_epochs=10,
+                devices="auto",
+                accelerator="cpu",
+                enable_checkpointing=False,
+                logger=False,
+                callbacks=[],
+            )
+            try:
+                initialized_p = neural_dsl.initialize(node.program)
+            except near.PartialProgramNotFoundError:
+                return 10000
+
+            model = neural_dsl.compute(initialized_p)
+            if not isinstance(model, torch.nn.Module):
+                del model
+                del initialized_p
+                model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
+            pl_model = near.NEARTrainer(model, config=trainer_cfg)
+            trainer.fit(
+                pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
+            )
+            return trainer.callback_metrics["val_loss"].item()
+
+        def checker(node):
+            return (
+                set(ns.symbols_for_program(node.program)) - set(constant_dsl.symbols())
+                == set()
+            )
+
+        g = near.near_graph(
+            neural_dsl,
+            ns.parse_type(s="() -> {f, $L}", env=dict(L=input_size)),
+            is_goal=checker,
+        )
+
+        with pytest.raises(StopIteration):
+            n_iter = 0
+            iterator = ns.search.bounded_astar(g, validation_cost, max_depth=3)
+            while True:
+                print("iteration: ", n_iter)
+                n_iter += 1
+                node = next(iterator)
+                self.assertIsNotNone(node)
+                if n_iter > 30:
+                    break

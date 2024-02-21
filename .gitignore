@@ -7,3 +7,4 @@ env
 *.egg-info
 dist
 build
+.DS_Store
