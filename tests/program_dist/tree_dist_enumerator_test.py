@@ -29,8 +29,8 @@ def enumerated(*args, **kwargs):
 
 
 class TreeDistributionTest(unittest.TestCase):
-    def enumerate_dsl(self, fam, dist):
-        result = list(fam.enumerate(dist, min_likelihood=-6))
+    def enumerate_dsl(self, family, dist):
+        result = list(family.enumerate(dist, min_likelihood=-6))
         result = sorted(result, key=lambda x: x[1], reverse=True)
         result = [
             (

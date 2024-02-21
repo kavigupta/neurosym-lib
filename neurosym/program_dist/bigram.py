@@ -166,11 +166,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             )
         dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
 
-        return TreeDistribution(
-            limit=1,
-            distribution=dist,
-            symbols=[(sym, arity) for sym, arity in zip(self._symbols, self._arities)],
-        )
+        return TreeDistribution(1, dist, list(zip(self._symbols, self._arities)))
 
 
 def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):
