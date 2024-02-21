@@ -106,7 +106,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
     @abstractmethod
     def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
         """
-        Returns the underlying tree distribution.
+        Returns a tree distribution representing the given program distribution.
         """
 
     def enumerate(
@@ -116,16 +116,6 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         min_likelihood: float = float("-inf"),
         chunk_size: float = 10,
     ):
-        """
-        Enumerate all programs using iterative deepening. Yields (program, likelihood).
-
-        Args:
-            dist: The distribution to sample from.
-            chunk_size: The amount of likelihood to consider at once. If this is
-                too small, we will spend a lot of time doing the same work over and
-                over again. If this is too large, we will spend a lot of time
-                doing work that we don't need to do.
-        """
         tree_dist = self.tree_distribution(dist)
         return enumerate_tree_dist(
             tree_dist, min_likelihood=min_likelihood, chunk_size=chunk_size
