@@ -113,16 +113,16 @@ class NeuralDSL(DSL):
         )
 
 
-def create_module_for_type(module_factory, t):
-    shape = compute_io_shape(t)
+def create_module_for_type(module_factory, t, known_atom_shapes):
+    shape = compute_io_shape(t, known_atom_shapes)
     return lambda: module_factory(*shape)
 
 
-def create_modules(tag, types, module_factory):
-    return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
+def create_modules(tag, types, module_factory, known_atom_shapes=dict()):
+    return {t: (tag, create_module_for_type(module_factory, t, known_atom_shapes)) for t in types}
 
 
-def compute_io_shape(t):
+def compute_io_shape(t, known_atom_shapes):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
@@ -141,8 +141,9 @@ def compute_io_shape(t):
                 return get_shape(element_type)
             case t if isinstance(t, Tuple):
                 return len(t)
-            case AtomicType(_):
-                return (1,)
+            case AtomicType(k):
+                assert k in known_atom_shapes, f"Unknown shape for type {k}"
+                return known_atom_shapes[k]
             case _:
                 raise NotImplementedError(f"Cannot compute shape for type {type(t)}")
 
