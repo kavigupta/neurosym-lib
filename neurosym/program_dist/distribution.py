@@ -6,6 +6,7 @@ import torch
 
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.tree_dist_enumerator import (
+    DEFAULT_CHUNK_SIZE,
     TreeDistribution,
     enumerate_tree_dist,
 )
@@ -84,7 +85,7 @@ class ProgramDistributionFamily(ABC):
         dist: ProgramDistribution,
         *,
         min_likelihood: float = float("-inf"),
-        chunk_size: float = 10,
+        chunk_size: float = DEFAULT_CHUNK_SIZE,
     ):
         """
         Enumerate all programs using iterative deepening. Yields (program, likelihood).
@@ -114,7 +115,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         dist: ProgramDistribution,
         *,
         min_likelihood: float = float("-inf"),
-        chunk_size: float = 10,
+        chunk_size: float = DEFAULT_CHUNK_SIZE,
     ):
         tree_dist = self.tree_distribution(dist)
         return enumerate_tree_dist(
