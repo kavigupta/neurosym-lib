@@ -40,6 +40,9 @@ def filter_multilabel(split):
     X = X[mask]
     y = y[mask]
 
+    # normalize each column of X to [-1, 1]
+    X = (X - X.min(0)) / (X.max(0) - X.min(0))
+
     # save as filtered
     np.save(x_fname.replace(f"{split}", f"{split}_filtered"), X)
     np.save(y_fname.replace(f"{split}", f"{split}_filtered"), y)
@@ -99,6 +102,11 @@ def subset_selector(x, channel, feat, typ):
     idx = ch_idx + feat_idx + typ_idx
     return x.gather(dim=-1, index=idx[..., None])
 
+def subset_selector_all_feat(x, channel, typ):
+    x = x.reshape(-1, 12, 6, 2)
+    typ_idx = torch.full(size=(x.shape[0],), fill_value=(0 if typ == "interval" else 1), device=x.device)
+    ch_idx = channel(x).flatten()[:x.shape[0]] # [B]
+    return x[torch.arange(x.shape[0]), ch_idx, :, typ_idx]
 
 def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     """Creates a domain-specific language (DSL) for neural symbolic computation.
@@ -113,7 +121,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     Returns:
         DSLFactory: An instance of `DSLFactory` with the defined operations and types.
     """
-    feature_dim = 1
+    feature_dim = 6
     dslf = DSLFactory(
         I=input_dim, O=output_dim, F=feature_dim, max_overall_depth=max_overall_depth
     )
@@ -130,25 +138,25 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
             ),
         )
 
-    for i in range(6):
-        dslf.concrete(
-            f"feature_{i}",
-            "() -> () -> feature",
-            lambda: lambda x: torch.full(
-                tuple(x.shape[:-1] + (1,)), i, device=x.device
-            ),
-        )
+    # for i in range(6):
+    #     dslf.concrete(
+    #         f"feature_{i}",
+    #         "() -> () -> feature",
+    #         lambda: lambda x: torch.full(
+    #             tuple(x.shape[:-1] + (1,)), i, device=x.device
+    #         ),
+    #     )
 
     dslf.concrete(
         "select_interval",
-        "(() -> channel, () -> feature) -> ($fInp) -> $fFeat",
-        lambda ch, feat: lambda x: subset_selector(x, ch, feat, "interval"),
+        "(() -> channel) -> ($fInp) -> $fFeat",
+        lambda ch: lambda x: subset_selector_all_feat(x, ch, "interval"),
     )
 
     dslf.concrete(
         "select_amplitude",
-        "(() -> channel, () -> feature) -> ($fInp) -> $fFeat",
-        lambda ch, feat: lambda x: subset_selector(x, ch, feat, "amplitude"),
+        "(() -> channel) -> ($fInp) -> $fFeat",
+        lambda ch: lambda x: subset_selector_all_feat(x, ch, "amplitude"),
     )
 
     def guard_callables(fn, **kwargs):
@@ -192,9 +200,9 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     # dslf.parameterized("linear_bool", "() -> $fFeat -> $fFeat", lambda lin: lin, dict(lin=lambda: nn.Linear(input_dim, 1)))
     dslf.parameterized(
         "linear",
-        "(($fInp) -> $fFeat) -> $fInp -> $fFeat",
+        "(($fInp) -> $fFeat) -> $fInp -> {f, 1}",
         lambda f, lin: lambda x: lin(f(x)),
-        dict(lin=lambda: nn.Linear(feature_dim, feature_dim)),
+        dict(lin=lambda: nn.Linear(feature_dim, 1)),
     )
 
     dslf.parameterized(
@@ -207,7 +215,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     # dslf.concrete("iteA", "(#a -> $fFeat, #a -> #a, #a -> #a) -> #a -> #a", lambda cond, fx, fy: ite_torch(cond, fx, fy))
     dslf.concrete(
         "ite",
-        "(#a -> $fFeat, #a -> #b, #a -> #b) -> #a -> #b",
+        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
         # lambda cond, fx, fy: guard_callables(fn=partial(ite_torch, condition=cond), if_true=fx, if_else=fy),
     )
@@ -216,32 +224,33 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     # dslf.concrete("fold", "((#a, #a) -> #a) -> [#a] -> #a", lambda f: lambda x: fold_torch(f, x))
 
     dslf.prune_to("($fInp) -> $fOut")
-    return dslf.finalize()
+    return dslf.finalize(), dslf.t
 
 
 print("input_dim", input_dim, "output_dim", output_dim)
-dsl = ecg_dsl(input_dim, output_dim, max_overall_depth=6)
+dsl, dsl_type_env = ecg_dsl(input_dim, output_dim, max_overall_depth=6)
 print("DSL")
 print(dsl.render())
-t = ns.TypeDefiner(I=input_dim, O=output_dim)
-t.typedef("fI", "{f, $I}")
-t.typedef("fO", "{f, $O}")
+# t = ns.TypeDefiner(I=input_dim, O=output_dim)
+# t.typedef("fI", "{f, $I}")
+# t.typedef("fO", "{f, $O}")
 neural_dsl = near.NeuralDSL.from_dsl(
     dsl=dsl,
     modules={
         **near.create_modules(
             "mlp",
             [
-                t("($fI) -> $fI"),
-                t("($fI) -> $fO"),
-                t("($fI) -> {f, 1}"),
+                dsl_type_env("($fInp) -> $fInp"),
+                dsl_type_env("($fInp) -> $fOut"),
+                dsl_type_env("($fInp) -> $fFeat"),
+                dsl_type_env("($fInp) -> {f, 1}"),
                 #  t("([$fI]) -> [$fI]"), t("([$fI]) -> [$fO]")
             ],
             near.mlp_factory(hidden_size=10),
         ),
         **near.create_modules(
             "constant_int",
-            [t("() -> channel"), t("() -> feature")],
+            [dsl_type_env("() -> channel")],
             near.constant_factory(sample_categorical=True),
             known_atom_shapes=dict(channel=(12,), feature=(6,)),
         ),
@@ -324,8 +333,8 @@ def validation_cost(node):
 
 def cost_plus_heuristic(node):
     cost = validation_cost(node) # accuracy [0, 1]
-    n_holes = len(list(ns.all_holes(node.program))) # more holes = costlier program
-    return (-1 * cost) + (0.25 * n_holes)
+    # n_holes = len(list(ns.all_holes(node.program)))
+    return (-1 * cost)
 
 
 def checker(node):

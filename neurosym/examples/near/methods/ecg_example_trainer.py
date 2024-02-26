@@ -128,6 +128,8 @@ class ECGTrainer(BaseTrainer):
                 self.log('train_acc', metrics_dict['hamming_accuracy'])
                 self.log('train_auroc', metrics_dict['auroc'])
         except Exception as e:
+            # print("training error")
+            # import IPython; IPython.embed()
             raise TrainingError(e)
         return losses
 
