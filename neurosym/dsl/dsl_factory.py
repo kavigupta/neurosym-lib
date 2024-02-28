@@ -150,11 +150,15 @@ class DSLFactory:
     ):
         result = {}
         for arg in args:
-            result.update(
-                self._expansions_for_single_production(
-                    expand_to, terminals, type_constructors, *arg
-                )
+            for_prod = self._expansions_for_single_production(
+                expand_to, terminals, type_constructors, *arg
             )
+            duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
+            if duplicate_keys:
+                raise ValueError(
+                    f"Duplicate declarations for production: {duplicate_keys[0]}"
+                )
+            result.update(for_prod)
         return result
 
     def finalize(self):
