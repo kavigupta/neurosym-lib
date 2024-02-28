@@ -296,7 +296,6 @@ class TestTypeRegresion(unittest.TestCase):
 
 
 class TestDSLExpand(unittest.TestCase):
-
     def test_basic_expand(self):
         dslf = ns.DSLFactory()
         dslf.concrete("+", "i -> i -> i", lambda x: lambda y: x + y)
