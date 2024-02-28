@@ -1,11 +1,11 @@
 import unittest
 
 import neurosym as ns
+
 from ..utils import assertDSL
 
 
 class TestPruning(unittest.TestCase):
-
     def test_basic_pruning(self):
         dslf = ns.DSLFactory()
         dslf.concrete("1", "() -> i", lambda x: x)
