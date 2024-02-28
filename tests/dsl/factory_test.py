@@ -5,6 +5,18 @@ import neurosym as ns
 from ..utils import assertDSL
 
 
+class TestDuplicateProduction(unittest.TestCase):
+    def test_basic_duplicate(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("1", "() -> i", lambda x: x)
+        dslf.concrete("1", "() -> i", lambda x: x)
+        self.assertRaisesRegex(
+            ValueError,
+            "Duplicate declarations for production: 1",
+            dslf.finalize,
+        )
+
+
 class TestPruning(unittest.TestCase):
     def test_basic_pruning(self):
         dslf = ns.DSLFactory()
