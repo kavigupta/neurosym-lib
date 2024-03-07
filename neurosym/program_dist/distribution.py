@@ -105,10 +105,25 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
     """
 
     @abstractmethod
-    def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
+    def compute_tree_distribution(
+        self, distribution: ProgramDistribution
+    ) -> TreeDistribution:
         """
         Returns a tree distribution representing the given program distribution.
         """
+
+    def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
+        """
+        Cached version of `compute_tree_distribution`.
+        """
+        # This is a bit of a hack, but it reduces the need to pass around
+        # the tree distribution everywhere, or to compute it multiple times.
+        # pylint: disable=protected-access
+        if not hasattr(distribution, "_tree_distribution"):
+            distribution._tree_distribution = self.compute_tree_distribution(
+                distribution
+            )
+        return distribution._tree_distribution
 
     def enumerate(
         self,
