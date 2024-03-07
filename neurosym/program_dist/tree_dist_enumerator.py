@@ -13,9 +13,9 @@ Our algorithm here is based on iterative deepening. We have a method that
 Likelihood is defined as the log probability of the program.
 """
 
-from functools import cached_property
 import itertools
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Dict, List, Tuple
 
 from neurosym.programs.s_expression import SExpression
@@ -87,7 +87,7 @@ class TreeDistribution:
             return -float("inf")
         for i, child in enumerate(program.children):
             likelihood += self.compute_likelihood(
-                child, (start_index + (top_symbol,))[-self.limit:], start_position=i
+                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
             )
         return likelihood
 

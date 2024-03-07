@@ -269,7 +269,6 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
 
 class BigramLikelihoodTest(unittest.TestCase):
-
     def assertLikelihood(self, dist, program, str_prob):
         likelihood = fam.compute_likelihood(dist, ns.parse_s_expression(program))
         prob = np.exp(likelihood)
