@@ -2,6 +2,8 @@ import unittest
 
 import neurosym as ns
 
+from ..utils import assertDSL
+
 
 class TestTypeRegresion(unittest.TestCase):
     def assertExpansions(self, actual, expected):
@@ -294,23 +296,13 @@ class TestTypeRegresion(unittest.TestCase):
 
 
 class TestDSLExpand(unittest.TestCase):
-    def assertDSL(self, dsl, expected):
-        dsl = "\n".join(
-            sorted([line.strip() for line in dsl.split("\n") if line.strip()])
-        )
-        expected = "\n".join(
-            sorted([line.strip() for line in expected.split("\n") if line.strip()])
-        )
-        print(dsl)
-        self.maxDiff = None
-        self.assertEqual(dsl, expected)
-
     def test_basic_expand(self):
         dslf = ns.DSLFactory()
         dslf.concrete("+", "i -> i -> i", lambda x: lambda y: x + y)
         dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
-        self.assertDSL(
+        assertDSL(
+            self,
             dsl.render(),
             """
             + :: i -> i -> i
@@ -359,7 +351,8 @@ class TestDSLExpand(unittest.TestCase):
         dslf.concrete("even?", "i -> b", lambda x: lambda y: x + y)
         dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
-        self.assertDSL(
+        assertDSL(
+            self,
             dsl.render(),
             """
             even? :: i -> b
@@ -373,7 +366,8 @@ class TestDSLExpand(unittest.TestCase):
         dslf.concrete("1", "() -> i", lambda: 1)
         dslf.concrete("ite", "(b, #b, #a, #a) -> #a", lambda x: x)
         dsl = dslf.finalize()
-        self.assertDSL(
+        assertDSL(
+            self,
             dsl.render(),
             """
                 1 :: () -> i

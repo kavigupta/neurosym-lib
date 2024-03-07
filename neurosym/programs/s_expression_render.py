@@ -21,6 +21,8 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     """
     if hasattr(s_exp, "__to_pair__"):
         return s_exp.__to_pair__(for_stitch=for_stitch)
+    if isinstance(s_exp, str):
+        return s_exp
     assert isinstance(s_exp, SExpression), f"Expected SExpression, got {s_exp}"
     if for_stitch and not s_exp.children:
         if s_exp.symbol.startswith("$"):
