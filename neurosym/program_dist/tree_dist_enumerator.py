@@ -15,6 +15,7 @@ Likelihood is defined as the log probability of the program.
 
 import itertools
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Dict, List, Tuple
 
 from neurosym.programs.s_expression import SExpression
@@ -61,6 +62,34 @@ class TreeDistribution:
     distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
+
+    @cached_property
+    def symbol_to_index(self) -> Dict[str, int]:
+        return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
+
+    @cached_property
+    def distribution_dict(self) -> Dict[Tuple[int, ...], Dict[int, float]]:
+        return {k: dict(v) for k, v in self.distribution.items()}
+
+    def compute_likelihood(
+        self,
+        program: SExpression,
+        start_index: Tuple[int] = (0,),
+        start_position: int = 0,
+    ) -> float:
+        """
+        Compute the likelihood of the program.
+        """
+        key = start_index + (start_position,)
+        top_symbol = self.symbol_to_index[program.symbol]
+        likelihood = self.distribution_dict[key].get(top_symbol, -float("inf"))
+        if likelihood == -float("inf"):
+            return -float("inf")
+        for i, child in enumerate(program.children):
+            likelihood += self.compute_likelihood(
+                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
+            )
+        return likelihood
 
 
 def enumerate_tree_dist(

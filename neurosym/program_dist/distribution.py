@@ -136,3 +136,11 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         return enumerate_tree_dist(
             tree_dist, min_likelihood=min_likelihood, chunk_size=chunk_size
         )
+
+    def compute_likelihood(
+        self, dist: ProgramDistribution, program: SExpression
+    ) -> float:
+        """
+        Compute the likelihood of a program under a distribution.
+        """
+        return self.tree_distribution(dist).compute_likelihood(program)
