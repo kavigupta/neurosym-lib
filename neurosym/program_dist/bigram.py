@@ -156,7 +156,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
 
-    def tree_distribution(
+    def compute_tree_distribution(
         self, distribution: BigramProgramDistribution
     ) -> TreeDistribution:
         dist = defaultdict(list)
