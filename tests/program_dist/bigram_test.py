@@ -1,4 +1,5 @@
 import unittest
+from fractions import Fraction
 
 import numpy as np
 import torch
@@ -265,3 +266,23 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
             [["(+ (1) (2))"], ["(+ (1) (2))"]],
             [-(np.log(1 / 2) + np.log(1 / 3) * 2), -3 * np.log(1 / 3)],
         )
+
+
+class BigramLikelihoodTest(unittest.TestCase):
+
+    def assertLikelihood(self, dist, program, str_prob):
+        likelihood = fam.compute_likelihood(dist, ns.parse_s_expression(program))
+        prob = np.exp(likelihood)
+        prob = Fraction.from_float(float(prob)).limit_denominator(1000)
+        result = f"log({prob})"
+        print(result)
+        self.assertEqual(result, str_prob)
+
+    def test_leaf(self):
+        self.assertLikelihood(fam.uniform(), "(1)", "log(1/3)")
+
+    def test_plus(self):
+        self.assertLikelihood(fam.uniform(), "(+ (1) (2))", "log(1/27)")
+
+    def test_plus_nested(self):
+        self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
