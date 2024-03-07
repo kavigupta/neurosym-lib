@@ -107,8 +107,6 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         """
         actual = actual.counts.to(parameters.device)
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
-        print(parameters[0])
-        print(actual[0])
         combination = actual * parameters
         combination = combination.reshape(combination.shape[0], -1)
         return -combination.sum(-1)
