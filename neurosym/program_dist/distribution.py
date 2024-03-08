@@ -71,7 +71,6 @@ class ProgramDistributionFamily(ABC):
     def sample(
         self,
         dist: ProgramDistribution,
-        num_samples: int,
         rng: np.random.RandomState,
         *,
         depth_limit=float("inf"),
