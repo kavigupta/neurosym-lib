@@ -144,3 +144,14 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         Compute the likelihood of a program under a distribution.
         """
         return self.tree_distribution(dist).compute_likelihood(program)
+
+    def sample(
+        self,
+        dist: ProgramDistribution,
+        num_samples: int,
+        rng: np.random.RandomState,
+        *,
+        depth_limit=float("inf"),
+    ) -> SExpression:
+        tree_dist = self.tree_distribution(dist)
+        return tree_dist.sample(num_samples, rng, depth_limit=depth_limit)
