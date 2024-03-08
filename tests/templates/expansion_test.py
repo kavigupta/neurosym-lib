@@ -423,7 +423,8 @@ class TestDSLExpand(unittest.TestCase):
         )
         dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
         dsl = dslf.finalize()
-        self.assertDSL(
+        assertDSL(
+            self,
             dsl.render(),
             """
                 1 :: () -> i
