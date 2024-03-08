@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Tuple
 
+import numpy as np
+
 from neurosym.programs.s_expression import SExpression
 
 # Let c be the chunk size, h be the likelihood of the program we are trying to
@@ -71,6 +73,18 @@ class TreeDistribution:
     def distribution_dict(self) -> Dict[Tuple[int, ...], Dict[int, float]]:
         return {k: dict(v) for k, v in self.distribution.items()}
 
+    @cached_property
+    def sampling_dict_arrays(
+        self,
+    ) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
+        return {
+            k: (
+                np.array([x[0] for x in v]),
+                np.exp([x[1] for x in v]),
+            )
+            for k, v in self.distribution.items()
+        }
+
     def compute_likelihood(
         self,
         program: SExpression,
@@ -90,6 +104,28 @@ class TreeDistribution:
                 child, (start_index + (top_symbol,))[-self.limit :], start_position=i
             )
         return likelihood
+
+    def sample(self, num_samples, rng, depth_limit=float("inf")) -> List[SExpression]:
+        """
+        Sample a program from the distribution.
+        """
+        results = []
+        for _ in range(num_samples):
+            while True:
+                try:
+                    [s_exp] = attempt_to_sample_tree_dist(
+                        self, rng, depth_limit=depth_limit, parents=(0,)
+                    ).children
+                except TooDeepError:
+                    continue
+                else:
+                    break
+            results.append(s_exp)
+        return results
+
+
+class TooDeepError(Exception):
+    pass
 
 
 def enumerate_tree_dist(
@@ -176,3 +212,38 @@ def enumerate_children_and_likelihoods_dfs(
             tree_dist, min_likelihood - last_likelihood, parents, num_children - 1
         ):
             yield rest_children + [last_child], last_likelihood + rest_likelihood
+
+
+def attempt_to_sample_tree_dist(
+    dist: TreeDistribution,
+    rng: np.random.RandomState,
+    depth_limit,
+    parents: list[int],
+) -> SExpression:
+    """
+    Attempt to sample a program from the distribution, conditioned on the depth limit.
+
+    Args:
+        rng: The random number generator to use.
+        depth_limit: The maximum depth of the program.
+        parents: The parents of the current node, to a limit of dist.limit
+
+    Raises:
+        TooDeepError: If the program is too deep.
+    """
+    if depth_limit < 0:
+        raise TooDeepError()
+    root_sym, root_arity = dist.symbols[parents[-1]]
+    children = []
+    for i in range(root_arity):
+        key = parents + (i,)
+        possibilites, weights = dist.sampling_dict_arrays[key]
+        child_idx = rng.choice(possibilites, p=weights)
+        child_parents = parents + (child_idx,)
+        child_parents = child_parents[-dist.limit :]
+        children.append(
+            attempt_to_sample_tree_dist(
+                dist, rng, depth_limit - 1, parents=child_parents
+            )
+        )
+    return SExpression(root_sym, tuple(children))
