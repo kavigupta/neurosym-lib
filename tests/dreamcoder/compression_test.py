@@ -17,8 +17,8 @@ def corpus():
     return sorted(
         set(
             [
-                fam.sample(dist, np.random.RandomState(0), depth_limit=20)
-                for _ in range(100)
+                fam.sample(dist, np.random.RandomState(i), depth_limit=20)
+                for i in range(100)
             ]
         ),
         key=str,
