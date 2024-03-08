@@ -44,7 +44,7 @@ class BigramSamplerTest(ProbabilityTester):
         pdelta = 0.015
         dist = fam.uniform()
         self.assertSameProbDist(dist, uniform)
-        samples = [fam.sample(dist, np.random.RandomState(0)) for _ in range(n)]
+        samples = [fam.sample(dist, np.random.RandomState(i)) for i in range(n)]
         samples = [ns.render_s_expression(x) for x in samples]
         self.assertBinomial(n, 1 / 3, pdelta, samples.count("(1)"))
         for plus_two_things in (
@@ -93,7 +93,7 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
         dist = fam.with_parameters(parameters[None])[0]
         n = 10_000
-        samples = [fam.sample(dist, np.random.RandomState(0)) for _ in range(n)]
+        samples = [fam.sample(dist, np.random.RandomState(i)) for i in range(n)]
         samples = [ns.render_s_expression(x) for x in samples]
         self.assertEqual(set(samples), {"(1)", "(2)", "(+ (1) (2))"})
 
@@ -108,7 +108,7 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
         dist = fam.with_parameters(parameters[None])[0]
         n = 10_000
-        samples = [fam.sample(dist, np.random.RandomState(0)) for _ in range(n)]
+        samples = [fam.sample(dist, np.random.RandomState(i)) for i in range(n)]
         samples = [ns.render_s_expression(x) for x in samples]
         self.assertEqual(set(samples), {"(1)", "(2)"})
 
@@ -124,7 +124,7 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
         dist = fam.with_parameters(parameters[None])[0]
         n = 10_000
-        samples = [fam.sample(dist, np.random.RandomState(0)) for _ in range(n)]
+        samples = [fam.sample(dist, np.random.RandomState(i)) for i in range(n)]
         samples = [ns.render_s_expression(x) for x in samples]
         self.assertEqual(set(samples), {"(1)", "(2)"})
 

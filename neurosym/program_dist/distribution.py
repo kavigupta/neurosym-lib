@@ -154,4 +154,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         depth_limit=float("inf"),
     ) -> SExpression:
         tree_dist = self.tree_distribution(dist)
-        return sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
+        element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
+        assert element.symbol == "<root>"
+        [element] = element.children
+        return element
