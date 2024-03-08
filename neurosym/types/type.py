@@ -2,7 +2,7 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
@@ -272,12 +272,12 @@ class ArrowType(Type):
 
 
 @dataclass(frozen=True, eq=True)
-class TypeVariable(Type):
+class GenericTypeVariable(Type):
     name: str
 
     @classmethod
     def fresh(cls):
-        return TypeVariable(f"_{uuid.uuid4().hex}")
+        return cls(f"_{uuid.uuid4().hex}")
 
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
@@ -301,6 +301,22 @@ class TypeVariable(Type):
         self, other: "Type", already_tried_other_direction=False
     ) -> Dict[str, "Type"]:
         return {self.name: other}
+
+
+class TypeVariable(GenericTypeVariable):
+    pass
+
+
+@dataclass(frozen=True, eq=True)
+class FilteredTypeVariable(GenericTypeVariable):
+    type_filter: Callable[[Type], bool]
+
+    def unify(
+        self, other: "Type", already_tried_other_direction=False
+    ) -> Dict[str, "Type"]:
+        if self.type_filter(other):
+            return {self.name: other}
+        raise UnificationError(f"{self} does not match {other}")
 
 
 float_t = AtomicType("f")
