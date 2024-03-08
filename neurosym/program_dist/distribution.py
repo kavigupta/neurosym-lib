@@ -9,6 +9,7 @@ from neurosym.program_dist.tree_dist_enumerator import (
     DEFAULT_CHUNK_SIZE,
     TreeDistribution,
     enumerate_tree_dist,
+    sample_tree_dist,
 )
 from neurosym.programs.s_expression import SExpression
 
@@ -148,10 +149,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
     def sample(
         self,
         dist: ProgramDistribution,
-        num_samples: int,
         rng: np.random.RandomState,
         *,
         depth_limit=float("inf"),
     ) -> SExpression:
         tree_dist = self.tree_distribution(dist)
-        return tree_dist.sample(num_samples, rng, depth_limit=depth_limit)
+        return sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)

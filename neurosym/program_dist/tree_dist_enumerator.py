@@ -105,24 +105,6 @@ class TreeDistribution:
             )
         return likelihood
 
-    def sample(self, num_samples, rng, depth_limit=float("inf")) -> List[SExpression]:
-        """
-        Sample a program from the distribution.
-        """
-        results = []
-        for _ in range(num_samples):
-            while True:
-                try:
-                    [s_exp] = attempt_to_sample_tree_dist(
-                        self, rng, depth_limit=depth_limit, parents=(0,)
-                    ).children
-                except TooDeepError:
-                    continue
-                else:
-                    break
-            results.append(s_exp)
-        return results
-
 
 class TooDeepError(Exception):
     pass
@@ -247,3 +229,24 @@ def attempt_to_sample_tree_dist(
             )
         )
     return SExpression(root_sym, tuple(children))
+
+
+def sample_tree_dist(
+    dist: TreeDistribution,
+    rng: np.random.RandomState,
+    depth_limit,
+    parents: list[int] = (0,),
+) -> SExpression:
+    """
+    Sample a program from the distribution, conditioned on the depth limit.
+
+    Args:
+        rng: The random number generator to use.
+        depth_limit: The maximum depth of the program.
+        parents: The parents of the current node, to a limit of dist.limit
+    """
+    while True:
+        try:
+            return attempt_to_sample_tree_dist(dist, rng, depth_limit, parents)
+        except TooDeepError:
+            continue
