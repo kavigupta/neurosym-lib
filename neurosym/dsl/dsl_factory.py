@@ -58,6 +58,12 @@ class DSLFactory:
         """
         self.t.typedef(key, type_str)
 
+    def filtered_type_variable(self, key, type_filter):
+        """
+        Define a filtered type variable.
+        """
+        self.t.filtered_type_variable(key, type_filter)
+
     def known_types(self, *types):
         """
         Add known types to the DSL.
