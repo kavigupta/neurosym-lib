@@ -28,6 +28,7 @@ class BigramProgramDistributionBatch:
     distribution_batch: np.ndarray
 
     def __post_init__(self):
+        assert isinstance(self.distribution_batch, np.ndarray), type(self.distribution_batch)
         assert self.distribution_batch.ndim == 4
         assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
 

@@ -141,7 +141,7 @@ class BigramCountProgramsTest(unittest.TestCase):
         counts = fam.count_programs(data)
         self.assertEqual(
             counts,
-            ns.BigramProgramDistributionBatch(
+            ns.BigramProgramCountsBatch(
                 [
                     ns.BigramProgramCounts(
                         {
@@ -164,7 +164,7 @@ class BigramCountProgramsTest(unittest.TestCase):
         counts = fam.count_programs(data)
         self.assertEqual(
             counts,
-            ns.BigramProgramDistributionBatch(
+            ns.BigramProgramCountsBatch(
                 [
                     ns.BigramProgramCounts(
                         {
@@ -188,7 +188,7 @@ class BigramCountProgramsTest(unittest.TestCase):
         counts = fam.count_programs(data)
         np.testing.assert_equal(
             counts,
-            ns.BigramProgramDistributionBatch(
+            ns.BigramProgramCountsBatch(
                 [
                     ns.BigramProgramCounts(
                         {

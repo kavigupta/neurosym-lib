@@ -2,7 +2,7 @@ from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import (
     BigramProgramCounts,
-    BigramProgramDistributionBatch,
+    BigramProgramCountsBatch,
     BigramProgramDistributionFamily,
 )
 from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
