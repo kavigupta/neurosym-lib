@@ -104,7 +104,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         min_likelihood: float = float("-inf"),
         chunk_size: float = DEFAULT_CHUNK_SIZE,
     ):
-        from neurosym.program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
+        from neurosym.program_dist.tree_distribution.tree_dist_enumerator import (
+            enumerate_tree_dist,
+        )
 
         tree_dist = self.tree_distribution(dist)
 
@@ -127,7 +129,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         *,
         depth_limit=float("inf"),
     ) -> SExpression:
-        from neurosym.program_dist.tree_distribution.tree_dist_sampler import sample_tree_dist
+        from neurosym.program_dist.tree_distribution.tree_dist_sampler import (
+            sample_tree_dist,
+        )
 
         tree_dist = self.tree_distribution(dist)
         element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
