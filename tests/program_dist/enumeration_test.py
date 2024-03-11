@@ -5,10 +5,11 @@ from fractions import Fraction
 import numpy as np
 
 import neurosym as ns
+import neurosym.program_dist.tree_distribution.tree_distribution
 
 from .bigram_test import fam
 
-arith_dist = ns.TreeDistribution(
+arith_dist = neurosym.program_dist.tree_distribution.tree_distribution.TreeDistribution(
     1,
     {
         (0, 0): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
