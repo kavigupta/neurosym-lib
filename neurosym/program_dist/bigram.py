@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
-from typing import List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
@@ -20,8 +20,18 @@ class BigramProgramDistribution:
 
 
 @dataclass
-class BigramProgramCountTensor:
-    counts: torch.tensor
+class BigramProgramCounts:
+    # map from (parent_sym, parent_child_idx) to map from child_sym to count
+    numerators: Dict[Tuple[int, int], Dict[int, int]]
+
+    # TODO handle denominators
+
+    def to_distribution(self, num_symbols, max_arity):
+        numerators = np.zeros((num_symbols, max_arity, num_symbols), dtype=np.int32)
+        for (parent_sym, parent_child_idx), children in self.numerators.items():
+            for child_sym, count in children.items():
+                numerators[parent_sym, parent_child_idx, child_sym] = count
+        return BigramProgramDistribution(counts_to_probabilities(numerators))
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
@@ -30,6 +40,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._symbols, self._arities, self._valid_mask = bigram_mask(
             dsl, valid_root_types=valid_root_types
         )
+        self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
 
     def underlying_dsl(self) -> DSL:
@@ -66,21 +77,20 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             for params in parameters.detach().cpu().numpy()
         ]
 
-    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountTensor:
-        counts = np.zeros((len(data), *self.parameters_shape()), dtype=np.float32)
+    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCounts:
+        counts = defaultdict(int)
         for i, programs in enumerate(data):
             for program in programs:
                 self._count_program(
                     program, counts, i, parent_sym=0, parent_child_idx=0
                 )
-        return BigramProgramCountTensor(torch.tensor(counts))
+        return BigramProgramCounts(numerators=counts)
 
     def counts_to_distribution(
-        self, counts: BigramProgramCountTensor
+        self, counts: BigramProgramCounts
     ) -> BigramProgramDistribution:
-        return BigramProgramDistribution(
-            counts_to_probabilities(counts.counts.numpy().sum(0))
-        )
+
+        return counts.to_distribution(len(self._symbols), self._max_arity)
 
     def _count_program(
         self,
@@ -100,11 +110,13 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return torch.tensor(counts)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCountTensor
+        self, parameters: torch.tensor, actual: BigramProgramCounts
     ) -> torch.float32:
         """
         E[log Q(|x)]
         """
+        # TODO fix this
+        raise NotImplementedError
         actual = actual.counts.to(parameters.device)
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
         combination = actual * parameters
