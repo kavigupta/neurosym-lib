@@ -122,11 +122,11 @@ def train_recogintion_model(
     def data_epoch():
         for t, b, log_prob in zip(tasks, beam_counts, task_log_probs):
             if rng.rand() < probability_dreaming:
-                program = theta.sample_program(dsl, rng)
                 # TODO allow this to happen in parallel in some producer-consumery way
-                yield domain.sample_task(program, rng), [
-                    family.count_programs(program)
-                ], domain.task_log_prob(program, t)
+                program = theta.sample_program(dsl, rng)
+                task = domain.sample_task(program, rng)
+                counts = [family.count_programs(program)]
+                yield task, counts, log_prob
             else:
                 yield t, b, log_prob
 
