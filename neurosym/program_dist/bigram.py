@@ -18,10 +18,30 @@ from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 class BigramProgramDistribution:
     distribution: np.ndarray
 
+    def __post_init__(self):
+        assert self.distribution.ndim == 3
+        assert self.distribution.shape[0] == self.distribution.shape[2]
+
 
 @dataclass
-class BigramProgramCountTensor:
+class BigramProgramDistributionBatch:
+    distribution_batch: np.ndarray
+
+    def __post_init__(self):
+        assert self.distribution_batch.ndim == 4
+        assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
+
+    def __getitem__(self, i):
+        return BigramProgramDistribution(self.distribution_batch[i])
+
+
+@dataclass
+class BigramProgramCountTensorBatch:
     counts: torch.tensor
+
+    def __post_init__(self):
+        assert self.counts.ndim == 4
+        assert self.counts.shape[1] == self.counts.shape[3]
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
@@ -56,30 +76,29 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
     def with_parameters(
         self, parameters: torch.Tensor
-    ) -> List[BigramProgramDistribution]:
+    ) -> BigramProgramDistributionBatch:
         assert (
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
         parameters = self.normalize_parameters(parameters, logits=False)
-        return [
-            BigramProgramDistribution(params)
-            for params in parameters.detach().cpu().numpy()
-        ]
+        return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
-    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountTensor:
+    def count_programs(
+        self, data: List[List[SExpression]]
+    ) -> BigramProgramCountTensorBatch:
         counts = np.zeros((len(data), *self.parameters_shape()), dtype=np.float32)
         for i, programs in enumerate(data):
             for program in programs:
                 self._count_program(
                     program, counts, i, parent_sym=0, parent_child_idx=0
                 )
-        return BigramProgramCountTensor(torch.tensor(counts))
+        return BigramProgramCountTensorBatch(torch.tensor(counts))
 
     def counts_to_distribution(
-        self, counts: BigramProgramCountTensor
-    ) -> BigramProgramDistribution:
-        return BigramProgramDistribution(
-            counts_to_probabilities(counts.counts.numpy().sum(0))
+        self, counts: BigramProgramCountTensorBatch
+    ) -> BigramProgramDistributionBatch:
+        return BigramProgramDistributionBatch(
+            counts_to_probabilities(counts.counts.numpy())
         )
 
     def _count_program(
@@ -100,7 +119,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return torch.tensor(counts)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCountTensor
+        self, parameters: torch.tensor, actual: BigramProgramCountTensorBatch
     ) -> torch.float32:
         """
         E[log Q(|x)]
@@ -117,6 +136,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def compute_tree_distribution(
         self, distribution: BigramProgramDistribution
     ) -> TreeDistribution:
+        assert isinstance(distribution, BigramProgramDistribution)
         dist = defaultdict(list)
         for parent, position, child in zip(*np.where(distribution.distribution > 0)):
             dist[parent, position].append(
