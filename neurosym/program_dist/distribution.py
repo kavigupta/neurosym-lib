@@ -9,7 +9,8 @@ from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
 from neurosym.programs.s_expression import SExpression
 
 ProgramDistribution = TypeVar("ProgramDistribution")
-ProgramsCountTensor = TypeVar("ProgramsCountTensor")
+ProgramDistributionBatch = TypeVar("ProgramDistributionBatch")
+ProgramCountsTensorBatch = TypeVar("ProgramCountsTensorBatch")
 
 
 class ProgramDistributionFamily(ABC):
@@ -30,14 +31,14 @@ class ProgramDistributionFamily(ABC):
         """
 
     @abstractmethod
-    def with_parameters(self, parameters: torch.Tensor) -> List[ProgramDistribution]:
+    def with_parameters(self, parameters: torch.Tensor) -> ProgramDistributionBatch:
         """
         Initializes a distribution from the given parameters. The parameters
             should have the shape (batch_size, *self.parameters_shape()).
         """
 
     @abstractmethod
-    def count_programs(self, data: List[List[SExpression]]) -> ProgramsCountTensor:
+    def count_programs(self, data: List[List[SExpression]]) -> ProgramCountsTensorBatch:
         """
         For each program, count its components' occurrences in the data. This
             depends on the type of distribution.
@@ -45,15 +46,15 @@ class ProgramDistributionFamily(ABC):
 
     @abstractmethod
     def counts_to_distribution(
-        self, counts: ProgramsCountTensor
-    ) -> ProgramDistribution:
+        self, counts: ProgramCountsTensorBatch
+    ) -> ProgramDistributionBatch:
         """
         Converts the counts to a distribution.
         """
 
     @abstractmethod
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: ProgramsCountTensor
+        self, parameters: torch.tensor, actual: ProgramCountsTensorBatch
     ) -> torch.float32:
         """
         Returns the loss between the parameters and actual counts, for
