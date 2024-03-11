@@ -153,7 +153,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     ) -> TreeDistribution:
         assert isinstance(distribution, BigramProgramDistribution)
         dist = defaultdict(list)
-        for _, parent, position, child in zip(*np.where(distribution.distribution > 0)):
+        for parent, position, child in zip(*np.where(distribution.distribution > 0)):
             dist[parent, position].append(
                 (child, np.log(distribution.distribution[parent, position, child]))
             )
