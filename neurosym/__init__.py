@@ -1,7 +1,8 @@
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import BigramProgramDistributionFamily
-from .program_dist.tree_dist_enumerator import TreeDistribution, enumerate_tree_dist
+from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
+from .program_dist.tree_distribution.tree_distribution import TreeDistribution
 from .programs.s_expression import SExpression
 from .programs.s_expression_render import (
     parse_s_expression,

@@ -5,12 +5,7 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
-from neurosym.program_dist.tree_dist_enumerator import (
-    DEFAULT_CHUNK_SIZE,
-    TreeDistribution,
-    enumerate_tree_dist,
-    sample_tree_dist,
-)
+from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
 from neurosym.programs.s_expression import SExpression
 
 ProgramDistribution = TypeVar("ProgramDistribution")
@@ -97,63 +92,3 @@ class ProgramDistributionFamily(ABC):
                 over again. If this is too large, we will spend a lot of time
                 doing work that we don't need to do.
         """
-
-
-class TreeProgramDistributionFamily(ProgramDistributionFamily):
-    """
-    See `tree_dist_enumerator.py` for more information.
-    """
-
-    @abstractmethod
-    def compute_tree_distribution(
-        self, distribution: ProgramDistribution
-    ) -> TreeDistribution:
-        """
-        Returns a tree distribution representing the given program distribution.
-        """
-
-    def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
-        """
-        Cached version of `compute_tree_distribution`.
-        """
-        # This is a bit of a hack, but it reduces the need to pass around
-        # the tree distribution everywhere, or to compute it multiple times.
-        # pylint: disable=protected-access
-        if not hasattr(distribution, "_tree_distribution"):
-            distribution._tree_distribution = self.compute_tree_distribution(
-                distribution
-            )
-        return distribution._tree_distribution
-
-    def enumerate(
-        self,
-        dist: ProgramDistribution,
-        *,
-        min_likelihood: float = float("-inf"),
-        chunk_size: float = DEFAULT_CHUNK_SIZE,
-    ):
-        tree_dist = self.tree_distribution(dist)
-        return enumerate_tree_dist(
-            tree_dist, min_likelihood=min_likelihood, chunk_size=chunk_size
-        )
-
-    def compute_likelihood(
-        self, dist: ProgramDistribution, program: SExpression
-    ) -> float:
-        """
-        Compute the likelihood of a program under a distribution.
-        """
-        return self.tree_distribution(dist).compute_likelihood(program)
-
-    def sample(
-        self,
-        dist: ProgramDistribution,
-        rng: np.random.RandomState,
-        *,
-        depth_limit=float("inf"),
-    ) -> SExpression:
-        tree_dist = self.tree_distribution(dist)
-        element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
-        assert element.symbol == "<root>"
-        [element] = element.children
-        return element

@@ -7,11 +7,11 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
-from neurosym.program_dist.tree_dist_enumerator import TreeDistribution
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
 
-from .distribution import TreeProgramDistributionFamily
+from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
 
 @dataclass
