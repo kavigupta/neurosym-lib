@@ -97,7 +97,7 @@ class TreeDistributionTest(unittest.TestCase):
             fam,
             fam.counts_to_distribution(
                 fam.count_programs([[ns.parse_s_expression("(+ (1) (2))")]])
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -111,7 +111,7 @@ class TreeDistributionTest(unittest.TestCase):
                 fam.count_programs(
                     [[ns.parse_s_expression(x) for x in ("(+ (1) (2))", "(+ (2) (1))")]]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -135,7 +135,7 @@ class TreeDistributionTest(unittest.TestCase):
                         ]
                     ]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -168,7 +168,7 @@ class TreeDistributionTest(unittest.TestCase):
                         ]
                     ]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
