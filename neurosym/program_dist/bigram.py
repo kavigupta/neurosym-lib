@@ -77,40 +77,39 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             for params in parameters.detach().cpu().numpy()
         ]
 
-    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCounts:
-        counts = defaultdict(int)
-        for i, programs in enumerate(data):
+    def count_programs(
+        self, data: List[List[SExpression]]
+    ) -> List[BigramProgramCounts]:
+        all_counts = []
+        for programs in data:
+            counts = defaultdict(lambda: defaultdict(int))
             for program in programs:
-                self._count_program(
-                    program, counts, i, parent_sym=0, parent_child_idx=0
-                )
-        return BigramProgramCounts(numerators=counts)
+                self._count_program(program, counts, parent_sym=0, parent_child_idx=0)
+            all_counts.append(
+                BigramProgramCounts(numerators={k: dict(v) for k, v in counts.items()})
+            )
+        return all_counts
 
     def counts_to_distribution(
-        self, counts: BigramProgramCounts
+        self, counts: List[BigramProgramCounts]
     ) -> BigramProgramDistribution:
-
         return counts.to_distribution(len(self._symbols), self._max_arity)
 
     def _count_program(
         self,
         program: SExpression,
         counts: np.ndarray,
-        batch_idx: int,
         *,
         parent_sym: int,
         parent_child_idx: int,
     ):
         this_idx = self._symbol_to_idx[program.symbol]
-        counts[batch_idx, parent_sym, parent_child_idx, this_idx] += 1
+        counts[parent_sym, parent_child_idx][this_idx] += 1
         for j, child in enumerate(program.children):
-            self._count_program(
-                child, counts, batch_idx, parent_sym=this_idx, parent_child_idx=j
-            )
-        return torch.tensor(counts)
+            self._count_program(child, counts, parent_sym=this_idx, parent_child_idx=j)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCounts
+        self, parameters: torch.tensor, actual: List[BigramProgramCounts]
     ) -> torch.float32:
         """
         E[log Q(|x)]
