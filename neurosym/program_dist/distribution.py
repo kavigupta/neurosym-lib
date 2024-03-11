@@ -10,7 +10,7 @@ from neurosym.programs.s_expression import SExpression
 
 ProgramDistribution = TypeVar("ProgramDistribution")
 ProgramDistributionBatch = TypeVar("ProgramDistributionBatch")
-ProgramsCountTensorBatch = TypeVar("ProgramsCountTensorBatch")
+ProgramCountsTensorBatch = TypeVar("ProgramCountsTensorBatch")
 
 
 class ProgramDistributionFamily(ABC):
@@ -38,7 +38,7 @@ class ProgramDistributionFamily(ABC):
         """
 
     @abstractmethod
-    def count_programs(self, data: List[List[SExpression]]) -> ProgramsCountTensorBatch:
+    def count_programs(self, data: List[List[SExpression]]) -> ProgramCountsTensorBatch:
         """
         For each program, count its components' occurrences in the data. This
             depends on the type of distribution.
@@ -46,7 +46,7 @@ class ProgramDistributionFamily(ABC):
 
     @abstractmethod
     def counts_to_distribution(
-        self, counts: ProgramsCountTensorBatch
+        self, counts: ProgramCountsTensorBatch
     ) -> ProgramDistributionBatch:
         """
         Converts the counts to a distribution.
@@ -54,7 +54,7 @@ class ProgramDistributionFamily(ABC):
 
     @abstractmethod
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: ProgramsCountTensorBatch
+        self, parameters: torch.tensor, actual: ProgramCountsTensorBatch
     ) -> torch.float32:
         """
         Returns the loss between the parameters and actual counts, for
