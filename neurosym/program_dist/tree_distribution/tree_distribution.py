@@ -104,6 +104,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         min_likelihood: float = float("-inf"),
         chunk_size: float = DEFAULT_CHUNK_SIZE,
     ):
+        # pylint: disable=cyclic-import
         from neurosym.program_dist.tree_distribution.tree_dist_enumerator import (
             enumerate_tree_dist,
         )
@@ -129,6 +130,8 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         *,
         depth_limit=float("inf"),
     ) -> SExpression:
+        # pylint: disable=cyclic-import
+
         from neurosym.program_dist.tree_distribution.tree_dist_sampler import (
             sample_tree_dist,
         )
