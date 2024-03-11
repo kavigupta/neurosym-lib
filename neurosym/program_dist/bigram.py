@@ -40,31 +40,26 @@ class BigramProgramCounts:
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
     numerators: Dict[Tuple[int, int], Dict[int, int]]
 
-    # TODO handle denominators
-
-    def _add_to_numerator_array(self, arr, batch_idx):
+    def add_to_numerator_array(self, arr, batch_idx):
         for (parent_sym, parent_child_idx), children in self.numerators.items():
             for child_sym, count in children.items():
                 arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
         return arr
 
-    @classmethod
-    def to_distribution(
-        cls, distributions: List["BigramProgramCounts"], num_symbols, max_arity
-    ):
-        numerators = np.zeros(
-            (len(distributions), num_symbols, max_arity, num_symbols), dtype=np.int32
-        )
-        for i, dist in enumerate(distributions):
-            # pylint: disable=protected-access
-            dist._add_to_numerator_array(numerators, i)
-
-        return BigramProgramDistribution(counts_to_probabilities(numerators))
-
 
 @dataclass
 class BigramProgramCountsBatch:
     counts: List[BigramProgramCounts]
+
+    def to_distribution(self, num_symbols, max_arity):
+        numerators = np.zeros(
+            (len(self.counts), num_symbols, max_arity, num_symbols), dtype=np.int32
+        )
+        for i, dist in enumerate(self.counts):
+            dist.add_to_numerator_array(numerators, i)
+        # TODO handle denominators
+
+        return BigramProgramDistribution(counts_to_probabilities(numerators))
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
@@ -107,9 +102,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         parameters = self.normalize_parameters(parameters, logits=False)
         return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
-    def count_programs(
-        self, data: List[List[SExpression]]
-    ) -> List[BigramProgramCounts]:
+    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
         all_counts = []
         for programs in data:
             counts = defaultdict(lambda: defaultdict(int))
@@ -118,14 +111,12 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             all_counts.append(
                 BigramProgramCounts(numerators={k: dict(v) for k, v in counts.items()})
             )
-        return all_counts
+        return BigramProgramCountsBatch(all_counts)
 
     def counts_to_distribution(
-        self, counts: List[BigramProgramCounts]
+        self, counts: BigramProgramCountsBatch
     ) -> BigramProgramDistribution:
-        return BigramProgramCounts.to_distribution(
-            counts, len(self._symbols), self._max_arity
-        )
+        return counts.to_distribution(len(self._symbols), self._max_arity)
 
     def _count_program(
         self,
