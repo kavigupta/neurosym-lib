@@ -36,7 +36,7 @@ class BigramProgramDistributionBatch:
 
 
 @dataclass
-class BigramProgramCountTensorBatch:
+class BigramProgramCountsTensorBatch:
     counts: torch.tensor
 
     def __post_init__(self):
@@ -85,17 +85,17 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
     def count_programs(
         self, data: List[List[SExpression]]
-    ) -> BigramProgramCountTensorBatch:
+    ) -> BigramProgramCountsTensorBatch:
         counts = np.zeros((len(data), *self.parameters_shape()), dtype=np.float32)
         for i, programs in enumerate(data):
             for program in programs:
                 self._count_program(
                     program, counts, i, parent_sym=0, parent_child_idx=0
                 )
-        return BigramProgramCountTensorBatch(torch.tensor(counts))
+        return BigramProgramCountsTensorBatch(torch.tensor(counts))
 
     def counts_to_distribution(
-        self, counts: BigramProgramCountTensorBatch
+        self, counts: BigramProgramCountsTensorBatch
     ) -> BigramProgramDistributionBatch:
         return BigramProgramDistributionBatch(
             counts_to_probabilities(counts.counts.numpy())
@@ -119,7 +119,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return torch.tensor(counts)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCountTensorBatch
+        self, parameters: torch.tensor, actual: BigramProgramCountsTensorBatch
     ) -> torch.float32:
         """
         E[log Q(|x)]
