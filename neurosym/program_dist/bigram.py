@@ -105,7 +105,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def counts_to_distribution(
         self, counts: List[BigramProgramCounts]
     ) -> BigramProgramDistribution:
-        return counts.to_distribution(len(self._symbols), self._max_arity)
+        return BigramProgramCounts.to_distribution(
+            counts, len(self._symbols), self._max_arity
+        )
 
     def _count_program(
         self,
@@ -141,7 +143,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self, distribution: BigramProgramDistribution
     ) -> TreeDistribution:
         dist = defaultdict(list)
-        for parent, position, child in zip(*np.where(distribution.distribution > 0)):
+        for _, parent, position, child in zip(*np.where(distribution.distribution > 0)):
             dist[parent, position].append(
                 (child, np.log(distribution.distribution[parent, position, child]))
             )
