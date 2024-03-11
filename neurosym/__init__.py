@@ -4,7 +4,7 @@ from .program_dist.bigram import BigramProgramCounts, BigramProgramDistributionF
 from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
 from .program_dist.tree_distribution.tree_distribution import TreeDistribution
 from .programs.s_expression import SExpression
-from .sprograms.s_expression_render import (
+from .programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
     symbols_for_program,

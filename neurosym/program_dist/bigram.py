@@ -26,11 +26,23 @@ class BigramProgramCounts:
 
     # TODO handle denominators
 
-    def to_distribution(self, num_symbols, max_arity):
-        numerators = np.zeros((num_symbols, max_arity, num_symbols), dtype=np.int32)
+    def _add_to_numerator_array(self, arr, batch_idx):
         for (parent_sym, parent_child_idx), children in self.numerators.items():
             for child_sym, count in children.items():
-                numerators[parent_sym, parent_child_idx, child_sym] = count
+                arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
+        return arr
+
+    @classmethod
+    def to_distribution(
+        cls, distributions: List["BigramProgramCounts"], num_symbols, max_arity
+    ):
+        numerators = np.zeros(
+            (len(distributions), num_symbols, max_arity, num_symbols), dtype=np.int32
+        )
+        for i, dist in enumerate(distributions):
+            # pylint: disable=protected-access
+            dist._add_to_numerator_array(numerators, i)
+
         return BigramProgramDistribution(counts_to_probabilities(numerators))
 
 
