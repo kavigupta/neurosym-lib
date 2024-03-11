@@ -1,0 +1,249 @@
+"""
+We want to enumerate programs as trees. Specifically, we have some distribution
+    P(tree) = prod_{node in tree} P(node | ancestors(node)[:limit]).
+
+Here, limit is a value that the distribution guarantees us. This is useful
+    because we can use this to optimize our enumeration algorithm (since it
+    reduces the amount of memory we need to save for each hole).
+
+Our algorithm here is based on iterative deepening. We have a method that
+    keeps a minimum and maximum likelihood, and enumerates all programs
+    that are within this likelihood range.
+
+Likelihood is defined as the log probability of the program.
+"""
+
+import itertools
+from dataclasses import dataclass
+from functools import cached_property
+from typing import Dict, List, Tuple
+
+import numpy as np
+
+from neurosym.programs.s_expression import SExpression
+
+# Let c be the chunk size, h be the likelihood of the program we are trying to
+# find, and T be the number of iterations we need to do.
+#
+# We have that the total time taken is
+#     sum_{t=0}^{T - 1} e^{c * t} + f * e^{c * T}
+# where f is the fraction of the last chunk. We can compute this in expectation
+# as 1/2, which leads us to
+#     sum_{t=0}^{T - 1} e^{c * t} + e^{c * T} / 2
+# which can be computed as
+#     (e^{c * (T + 1)} - 1) / (e^c - 1) - e^{c * T} / 2
+# which can be approximated closely as
+#     e^{cT} * e^c / (e^c - 1) - e^{c * T} / 2
+# which is equal to
+#     e^{cT} * (e^c / (e^c - 1) - 1/2)
+# we then know that T = ceil(h / c), and letting g = T - h / c, we have
+#     e^{cT} = e^{c * (h / c + g)} = e^h * e^{c * g}
+# if we assume g is uniformly distributed between 0 and 1, we have
+#     e^{c * g} = (e^c - 1) / c
+# we then have that the expected time is
+#     (e^c - 1) / c * (e^c / (e^c - 1) - 1/2)
+# which is optimized per wolfram at
+#     W(1/e) + 1
+# which is approximately 1.28.
+DEFAULT_CHUNK_SIZE = 1.278
+
+
+@dataclass
+class TreeDistribution:
+    """
+    Distribution over SExpressions as trees.
+
+    Internally, we represent the productions in the language as integers, which we
+        call indices.
+    """
+
+    limit: int
+    # input: tuple of ancestor production indices followed by
+    #   the position of the node in its parent's children
+    # output: list of (production index, likelihood) pairs
+    distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
+    # production index -> (symbol, arity). at 0 should be the root.
+    symbols: List[Tuple[str, int]]
+
+    @cached_property
+    def symbol_to_index(self) -> Dict[str, int]:
+        return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
+
+    @cached_property
+    def distribution_dict(self) -> Dict[Tuple[int, ...], Dict[int, float]]:
+        return {k: dict(v) for k, v in self.distribution.items()}
+
+    @cached_property
+    def sampling_dict_arrays(
+        self,
+    ) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
+        return {
+            k: (
+                np.array([x[0] for x in v]),
+                np.exp([x[1] for x in v]),
+            )
+            for k, v in self.distribution.items()
+        }
+
+    def compute_likelihood(
+        self,
+        program: SExpression,
+        start_index: Tuple[int] = (0,),
+        start_position: int = 0,
+    ) -> float:
+        """
+        Compute the likelihood of the program.
+        """
+        key = start_index + (start_position,)
+        top_symbol = self.symbol_to_index[program.symbol]
+        likelihood = self.distribution_dict[key].get(top_symbol, -float("inf"))
+        if likelihood == -float("inf"):
+            return -float("inf")
+        for i, child in enumerate(program.children):
+            likelihood += self.compute_likelihood(
+                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
+            )
+        return likelihood
+
+    def sample(self, num_samples, rng, depth_limit=float("inf")) -> List[SExpression]:
+        """
+        Sample a program from the distribution.
+        """
+        results = []
+        for _ in range(num_samples):
+            while True:
+                try:
+                    [s_exp] = attempt_to_sample_tree_dist(
+                        self, rng, depth_limit=depth_limit, parents=(0,)
+                    ).children
+                except TooDeepError:
+                    continue
+                else:
+                    break
+            results.append(s_exp)
+        return results
+
+
+class TooDeepError(Exception):
+    pass
+
+
+def enumerate_tree_dist(
+    tree_dist: TreeDistribution,
+    *,
+    chunk_size: float = DEFAULT_CHUNK_SIZE,
+    min_likelihood: float = float("-inf"),
+):
+    """
+    Enumerate all programs using iterative deepening.
+
+    Args:
+        tree_dist: The distribution to sample from.
+        chunk_size: The amount of likelihood to consider at once. If this is
+            too small, we will spend a lot of time doing the same work over and
+            over again. If this is too large, we will spend a lot of time
+            doing work that we don't need to do.
+    """
+    for chunk in itertools.count(1):
+        likelihood_bound = -chunk * chunk_size
+        for program, likelihood in enumerate_tree_dist_dfs(
+            tree_dist, likelihood_bound, (0,), 0
+        ):
+            if (
+                max(likelihood_bound, min_likelihood)
+                < likelihood
+                <= likelihood_bound + chunk_size
+            ):
+                yield program, likelihood
+        if likelihood_bound <= min_likelihood:
+            return
+
+
+def enumerate_tree_dist_dfs(
+    tree_dist: TreeDistribution,
+    min_likelihood: float,
+    parents: Tuple[int],
+    position: int,
+):
+    """
+    Enumerate all programs that are within the likelihood range, with the given parents.
+    """
+
+    if min_likelihood > 0:
+        # We can stop searching deeper.
+        return
+
+    assert len(parents) <= tree_dist.limit
+
+    # Performed recursively for now.
+
+    distribution = tree_dist.distribution[(*parents, position)]
+    for node, likelihood in distribution:
+        new_parents = parents + (node,)
+        new_parents = new_parents[-tree_dist.limit :]
+        symbol, arity = tree_dist.symbols[node]
+        for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
+            tree_dist,
+            min_likelihood - likelihood,
+            new_parents,
+            num_children=arity,
+        ):
+            yield SExpression(symbol, children), child_likelihood + likelihood
+
+
+def enumerate_children_and_likelihoods_dfs(
+    tree_dist: TreeDistribution,
+    min_likelihood: float,
+    parents: Tuple[int],
+    num_children: int,
+):
+    """
+    Enumerate all children and their likelihoods.
+    """
+
+    if num_children == 0:
+        yield [], 0
+        return
+
+    for last_child, last_likelihood in enumerate_tree_dist_dfs(
+        tree_dist, min_likelihood, parents, num_children - 1
+    ):
+        for rest_children, rest_likelihood in enumerate_children_and_likelihoods_dfs(
+            tree_dist, min_likelihood - last_likelihood, parents, num_children - 1
+        ):
+            yield rest_children + [last_child], last_likelihood + rest_likelihood
+
+
+def attempt_to_sample_tree_dist(
+    dist: TreeDistribution,
+    rng: np.random.RandomState,
+    depth_limit,
+    parents: list[int],
+) -> SExpression:
+    """
+    Attempt to sample a program from the distribution, conditioned on the depth limit.
+
+    Args:
+        rng: The random number generator to use.
+        depth_limit: The maximum depth of the program.
+        parents: The parents of the current node, to a limit of dist.limit
+
+    Raises:
+        TooDeepError: If the program is too deep.
+    """
+    if depth_limit < 0:
+        raise TooDeepError()
+    root_sym, root_arity = dist.symbols[parents[-1]]
+    children = []
+    for i in range(root_arity):
+        key = parents + (i,)
+        possibilites, weights = dist.sampling_dict_arrays[key]
+        child_idx = rng.choice(possibilites, p=weights)
+        child_parents = parents + (child_idx,)
+        child_parents = child_parents[-dist.limit :]
+        children.append(
+            attempt_to_sample_tree_dist(
+                dist, rng, depth_limit - 1, parents=child_parents
+            )
+        )
+    return SExpression(root_sym, tuple(children))

@@ -50,12 +50,19 @@ class DSLFactory:
         self.prune = False
         self.target_types = None
         self.prune_variables = False
+        self.tolerate_pruning_entire_productions = False
 
     def typedef(self, key, type_str):
         """
         Define a type.
         """
         self.t.typedef(key, type_str)
+
+    def filtered_type_variable(self, key, type_filter):
+        """
+        Define a filtered type variable.
+        """
+        self.t.filtered_type_variable(key, type_filter)
 
     def known_types(self, *types):
         """
@@ -108,7 +115,12 @@ class DSLFactory:
         )
         self._signatures.append(sig)
 
-    def prune_to(self, *target_types, prune_variables=True):
+    def prune_to(
+        self,
+        *target_types,
+        prune_variables=True,
+        tolerate_pruning_entire_productions=False,
+    ):
         """
         Prune the DSL to only include productions that can be constructed from the given
         target types.
@@ -116,6 +128,7 @@ class DSLFactory:
         self.prune = True
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
+        self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def _expansions_for_single_production(
         self, terminals, type_constructors, constructor, symbol, sig, *args
@@ -143,11 +156,15 @@ class DSLFactory:
     ):
         result = {}
         for arg in args:
-            result.update(
-                self._expansions_for_single_production(
-                    expand_to, terminals, type_constructors, *arg
-                )
+            for_prod = self._expansions_for_single_production(
+                expand_to, terminals, type_constructors, *arg
             )
+            duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
+            if duplicate_keys:
+                raise ValueError(
+                    f"Duplicate declarations for production: {duplicate_keys[0]}"
+                )
+            result.update(for_prod)
         return result
 
     def finalize(self):
@@ -228,6 +245,7 @@ class DSLFactory:
                 care_about_variables=False,
                 type_depth_limit=self.max_overall_depth,
                 stable_symbols=stable_symbols,
+                tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
             if self.prune_variables:
                 sym_to_productions = prune(
@@ -236,6 +254,7 @@ class DSLFactory:
                     care_about_variables=True,
                     type_depth_limit=self.max_overall_depth,
                     stable_symbols=stable_symbols,
+                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
                 )
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = clean_variables(
@@ -272,6 +291,7 @@ def prune(
     care_about_variables,
     type_depth_limit,
     stable_symbols,
+    tolerate_pruning_entire_productions,
 ):
     dsl = make_dsl(sym_to_productions, target_types, type_depth_limit)
     symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
@@ -280,7 +300,10 @@ def prune(
         new_sym_to_productions[original_symbol] = [
             x for x in prods if x.symbol() in symbols
         ]
-        if len(new_sym_to_productions[original_symbol]) == 0:
+        if (
+            len(new_sym_to_productions[original_symbol]) == 0
+            and not tolerate_pruning_entire_productions
+        ):
             raise TypeError(
                 f"All productions for {original_symbol} were pruned. "
                 f"Check that the target types are correct."

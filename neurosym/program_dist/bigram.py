@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
 from typing import List, Union
@@ -6,10 +7,11 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_dist_enumerator import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
 
-from .distribution import ProgramDistributionFamily
+from .distribution import TreeProgramDistributionFamily
 
 
 @dataclass
@@ -22,7 +24,7 @@ class BigramProgramCountTensor:
     counts: torch.tensor
 
 
-class BigramProgramDistributionFamily(ProgramDistributionFamily):
+class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
         self._dsl = dsl
         self._symbols, self._arities, self._valid_mask = bigram_mask(
@@ -73,6 +75,13 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
                 )
         return BigramProgramCountTensor(torch.tensor(counts))
 
+    def counts_to_distribution(
+        self, counts: BigramProgramCountTensor
+    ) -> BigramProgramDistribution:
+        return BigramProgramDistribution(
+            counts_to_probabilities(counts.counts.numpy().sum(0))
+        )
+
     def _count_program(
         self,
         program: SExpression,
@@ -98,54 +107,24 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
         """
         actual = actual.counts.to(parameters.device)
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
-        print(parameters[0])
-        print(actual[0])
         combination = actual * parameters
         combination = combination.reshape(combination.shape[0], -1)
         return -combination.sum(-1)
 
-    def sample(
-        self,
-        dist: BigramProgramDistribution,
-        num_samples: int,
-        rng: np.random.RandomState,
-        *,
-        depth_limit=float("inf"),
-    ) -> SExpression:
-        results = []
-        for _ in range(num_samples):
-            while True:
-                try:
-                    [s_exp] = self._sample_symbol(
-                        dist, rng, depth_limit=depth_limit, symbol_idx=0
-                    ).children
-                except TooDeepError:
-                    continue
-                else:
-                    break
-            results.append(s_exp)
-        return results
-
-    def _sample_symbol(
-        self,
-        dist: BigramProgramDistribution,
-        rng: np.random.RandomState,
-        depth_limit,
-        symbol_idx: int,
-    ) -> SExpression:
-        if depth_limit < 0:
-            raise TooDeepError()
-        root_sym = self._symbols[symbol_idx]
-        children = []
-        for i in range(self._arities[symbol_idx]):
-            child_idx = rng.choice(
-                dist.distribution.shape[-1], p=dist.distribution[symbol_idx, i]
-            )
-            children.append(self._sample_symbol(dist, rng, depth_limit - 1, child_idx))
-        return SExpression(root_sym, tuple(children))
-
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
+
+    def compute_tree_distribution(
+        self, distribution: BigramProgramDistribution
+    ) -> TreeDistribution:
+        dist = defaultdict(list)
+        for parent, position, child in zip(*np.where(distribution.distribution > 0)):
+            dist[parent, position].append(
+                (child, np.log(distribution.distribution[parent, position, child]))
+            )
+        dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+
+        return TreeDistribution(1, dist, list(zip(self._symbols, self._arities)))
 
 
 def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):
@@ -187,7 +166,3 @@ def counts_to_probabilities(counts):
         out=np.zeros_like(counts, dtype=np.float32),
         where=counts != 0,
     )
-
-
-class TooDeepError(Exception):
-    pass
