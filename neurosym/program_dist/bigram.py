@@ -28,7 +28,9 @@ class BigramProgramDistributionBatch:
     distribution_batch: np.ndarray
 
     def __post_init__(self):
-        assert isinstance(self.distribution_batch, np.ndarray), type(self.distribution_batch)
+        assert isinstance(self.distribution_batch, np.ndarray), type(
+            self.distribution_batch
+        )
         assert self.distribution_batch.ndim == 4
         assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
 
@@ -52,12 +54,16 @@ class BigramProgramCounts:
 class BigramProgramCountsBatch:
     counts: List[BigramProgramCounts]
 
-    def to_distribution(self, num_symbols, max_arity):
+    def numerators(self, num_symbols, max_arity):
         numerators = np.zeros(
             (len(self.counts), num_symbols, max_arity, num_symbols), dtype=np.int32
         )
         for i, dist in enumerate(self.counts):
             dist.add_to_numerator_array(numerators, i)
+        return numerators
+
+    def to_distribution(self, num_symbols, max_arity):
+        numerators = self.numerators(num_symbols, max_arity)
         # TODO handle denominators
 
         return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
@@ -138,9 +144,10 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         """
         E[log Q(|x)]
         """
-        # TODO fix this
-        raise NotImplementedError
-        actual = actual.counts.to(parameters.device)
+        # TODO fix this to take into account the denominator
+        actual = torch.tensor(
+            actual.numerators(len(self._symbols), self._max_arity)
+        ).to(parameters.device)
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
         combination = actual * parameters
         combination = combination.reshape(combination.shape[0], -1)
