@@ -60,7 +60,7 @@ class BigramProgramCountsBatch:
             dist.add_to_numerator_array(numerators, i)
         # TODO handle denominators
 
-        return BigramProgramDistribution(counts_to_probabilities(numerators))
+        return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
