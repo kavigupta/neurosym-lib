@@ -1,6 +1,10 @@
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
-from .program_dist.bigram import BigramProgramCounts, BigramProgramDistributionFamily
+from .program_dist.bigram import (
+    BigramProgramCounts,
+    BigramProgramDistributionBatch,
+    BigramProgramDistributionFamily,
+)
 from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
 from .program_dist.tree_distribution.tree_distribution import TreeDistribution
 from .programs.s_expression import SExpression
