@@ -1,4 +1,3 @@
-from .program_dist.tree_distribution.tree_distribution import TreeDistribution
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import BigramProgramDistributionFamily
