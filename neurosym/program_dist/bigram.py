@@ -61,10 +61,6 @@ class BigramProgramCountsBatch:
 
         return BigramProgramDistribution(counts_to_probabilities(numerators))
 
-    def __post_init__(self):
-        assert self.counts.ndim == 4
-        assert self.counts.shape[1] == self.counts.shape[3]
-
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
