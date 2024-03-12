@@ -51,6 +51,14 @@ class BigramProgramCounts:
                 arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
         return arr
 
+    def add_to_denominator_array(self, arr, batch_idx, backmap):
+        for (parent_sym, parent_child_idx), children in self.denominators.items():
+            for child_syms, count in children.items():
+                arr[
+                    batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
+                ] = count
+        return arr
+
 
 @dataclass
 class BigramProgramCountsBatch:
@@ -63,6 +71,24 @@ class BigramProgramCountsBatch:
         for i, dist in enumerate(self.counts):
             dist.add_to_numerator_array(numerators, i)
         return numerators
+
+    def denominators(self, num_symbols, max_arity):
+        denominator_keys = {
+            key
+            for counts in self.counts
+            for mapping in counts.denominators.values()
+            for key in mapping.keys()
+        }
+        denominator_keys = sorted(denominator_keys)
+        denominator_keys_backmap = {key: i for i, key in enumerate(denominator_keys)}
+        denominators = np.zeros(
+            (len(self.counts), num_symbols, max_arity, len(denominator_keys)),
+            dtype=np.int32,
+        )
+        for i, counts in enumerate(self.counts):
+            counts.add_to_denominator_array(denominators, i, denominator_keys_backmap)
+
+        return denominators, denominator_keys
 
     def to_distribution(self, num_symbols, max_arity):
         numerators = self.numerators(num_symbols, max_arity)
@@ -159,16 +185,67 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
         """
-        E[log Q(|x)]
+        Let p be a program, g be an ngram, s be a symbol, and d be the `denominator`
+            (i.e., the set of possible children for a given parent and position).
+
+        sum_p log P(p | theta)
+            = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
+            = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
+            = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
+            = [sum_p sum_{(g, s, d) in p} theta_{g, s}] - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
+            = [numer] - [denom]
+
+        numer
+            = sum_p sum_{(g, s, d) in p} theta_{g, s}
+            = sum_g sum_s numcount_{g, s} theta_{g, s}
+            = (numcount * theta).sum()
+
+        denom
+            = sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})
+            = sum_g sum_d dencount_{g, d} log sum_{s' in d} exp(theta_{g, s'})
+
+        theta_by_denom(g, s', d) = theta_{g, s'} if s' in d, else -inf
+
+        denom
+            = sum_g sum_d dencount_{g, d} log sum_{s'} exp(theta_by_denom{g, s', d})
+
+        agg_theta_by_denom(g, d) = logsumexp(theta_by_denom(g, *, d))
+
+        denom
+            = sum_g sum_d dencount_{g, d} agg_theta_by_denom(g, d)
+            = (dencount * agg_theta_by_denom).sum()
+
         """
-        # TODO fix this to take into account the denominator
-        actual = torch.tensor(
-            actual.numerators(len(self._symbols), self._max_arity)
-        ).to(parameters.device)
+
+        assert parameters.shape[1:] == self.parameters_shape()
+        assert len(parameters.shape) == 4
+
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
-        combination = actual * parameters
-        combination = combination.reshape(combination.shape[0], -1)
-        return -combination.sum(-1)
+
+        numcount = actual.numerators(len(self._symbols), self._max_arity)
+        dencount, den_keys = actual.denominators(len(self._symbols), self._max_arity)
+        numcount, dencount = [
+            torch.tensor(x, device=parameters.device, dtype=torch.float32)
+            for x in (numcount, dencount)
+        ]
+
+        def agg_across_all_but_last(x, fn):
+            x = x.reshape(x.shape[0], -1)
+            return fn(x, -1)
+
+        numer = agg_across_all_but_last(numcount * parameters, torch.sum)
+
+        theta_by_denom = parameters[..., None].repeat(1, 1, 1, 1, len(den_keys))
+        for i, key in enumerate(den_keys):
+            print(i, key)
+            mask = torch.ones(
+                len(self._symbols), dtype=torch.bool, device=parameters.device
+            )
+            mask[list(key)] = False
+            theta_by_denom[..., mask, i] = -float("inf")
+        agg_theta_by_denom = torch.logsumexp(theta_by_denom, dim=-2)
+        denom = agg_across_all_but_last(dencount * agg_theta_by_denom, torch.sum)
+        return -(numer - denom)
 
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
