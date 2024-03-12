@@ -57,9 +57,9 @@ class BigramProgramCounts:
     def add_to_denominator_array(self, arr, batch_idx, backmap):
         for (parent_sym, parent_child_idx), children in self.denominators.items():
             for child_syms, count in children.items():
-                arr[
-                    batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
-                ] = count
+                arr[batch_idx, parent_sym, parent_child_idx, backmap[child_syms]] = (
+                    count
+                )
         return arr
 
 
@@ -105,10 +105,10 @@ class BigramProgramCountsBatch:
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
+        if valid_root_types is not None:
+            dsl = dsl.with_valid_root_types(valid_root_types)
         self._dsl = dsl
-        self._symbols, self._arities, self._valid_mask = bigram_mask(
-            dsl, valid_root_types=valid_root_types
-        )
+        self._symbols, self._arities, self._valid_mask = bigram_mask(dsl)
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
 
@@ -271,11 +271,10 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         )
 
 
-def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):
+def bigram_mask(dsl):
     symbols = ["<root>"] + sorted([x.symbol() for x in dsl.productions])
 
-    if valid_root_types is None:
-        valid_root_types = dsl.valid_root_types
+    valid_root_types = dsl.valid_root_types
     symbol_to_idx = {sym: i for i, sym in enumerate(symbols)}
     rules_for = dsl.all_rules(
         care_about_variables=False, valid_root_types=valid_root_types
