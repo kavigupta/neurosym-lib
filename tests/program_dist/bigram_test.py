@@ -232,6 +232,9 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
     def assertUniformLoss(self, programs, target):
         logits = torch.zeros((1, 4, 2, 4))
         self.assertLoss(logits, programs, target)
+        # fill in impossible location +, 0 -> <root>
+        logits[0, 1, 0, 0] = 20
+        self.assertLoss(logits, programs, target)
 
     def test_leaf_program_logit(self):
         self.assertUniformLoss([["(1)"]], [np.log(3)])
