@@ -5,21 +5,27 @@ import numpy as np
 import torch
 
 import neurosym as ns
+from tests.utils import assertDSL
 
 from .utils import ProbabilityTester
 
 
-def get_dsl():
+def get_dsl(with_vars=False):
     dslf = ns.DSLFactory()
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("2", "() -> i", lambda: 2)
+    if with_vars:
+        dslf.concrete("call", "(i -> i, i) -> i", lambda f, x: f(x))
+        dslf.lambdas()
     dslf.prune_to("i")
     return dslf.finalize()
 
 
 dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
+dsl_with_vars = get_dsl(with_vars=True)
+fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
 
 uniform = [
     [
@@ -130,6 +136,38 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
         self.assertBinomial(n, 2 / 3, 0.015, samples.count("(1)"))
         self.assertBinomial(n, 1 / 3, 0.015, samples.count("(2)"))
+
+    def test_fam_with_variables_dsl(self):
+        assertDSL(
+            self,
+            dsl_with_vars.render(),
+            """
+            $0_0 :: V<i@0>
+            $1_0 :: V<i@1>
+            $2_0 :: V<i@2>
+            $3_0 :: V<i@3>
+            + :: (i, i) -> i
+            1 :: () -> i
+            2 :: () -> i
+            call :: (i -> i, i) -> i
+            lam :: L<#body|i> -> i -> #body
+            """,
+        )
+
+    def test_sample_with_variables(self):
+        dist = fam_with_vars.uniform()
+        n = 10000
+        samples = [
+            fam_with_vars.sample(dist, np.random.RandomState(i)) for i in range(n)
+        ]
+        samples = [ns.render_s_expression(x) for x in samples]
+        # note that this is currently incorrect. you shouldn't be able to use
+        # variables at the top level at all
+        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($0_0)"))
+        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($1_0)"))
+        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($2_0)"))
+        self.assertBinomial(n, 1 / 8, 0.015, samples.count("(1)"))
+        self.assertBinomial(n, 1 / 8, 0.015, samples.count("(2)"))
 
 
 class BigramCountProgramsTest(unittest.TestCase):
@@ -288,3 +326,6 @@ class BigramLikelihoodTest(unittest.TestCase):
 
     def test_plus_nested(self):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
+
+    def test_leaf_with_variables(self):
+        self.assertLikelihood(fam_with_vars.uniform(), "(1)", "log(1/8)")

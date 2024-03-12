@@ -69,7 +69,7 @@ class Environment:
         return index in self._elements and self._elements[index] == typ
 
     def __len__(self):
-        return max(self._elements) + 1
+        return 0 if not self._elements else max(self._elements) + 1
 
     def short_repr(self):
         return ",".join(
@@ -92,7 +92,7 @@ class PermissiveEnvironmment:
         return True
 
     def __len__(self):
-        raise NotImplementedError
+        return 0
 
 
 @dataclass(frozen=True, eq=True)
