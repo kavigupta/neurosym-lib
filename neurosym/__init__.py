@@ -1,9 +1,17 @@
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    NoopPreorderMask,
+    PreorderMask,
+)
+
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import (
     BigramProgramCounts,
     BigramProgramCountsBatch,
     BigramProgramDistributionFamily,
+)
+from .program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
+    TypePreorderMask,
 )
 from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
 from .program_dist.tree_distribution.tree_distribution import TreeDistribution
