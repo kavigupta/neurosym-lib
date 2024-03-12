@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
@@ -10,6 +10,9 @@ from neurosym.program_dist.distribution import (
     ProgramDistributionFamily,
 )
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
 from neurosym.programs.s_expression import SExpression
 
 
@@ -29,6 +32,8 @@ class TreeDistribution:
     distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
+    # Preorder mask constructor
+    mask_constructor: Callable[["TreeDistribution"], PreorderMask]
 
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
@@ -50,25 +55,13 @@ class TreeDistribution:
             for k, v in self.distribution.items()
         }
 
-    def compute_likelihood(
-        self,
-        program: SExpression,
-        start_index: Tuple[int] = (0,),
-        start_position: int = 0,
-    ) -> float:
+    def compute_likelihood(self, program: SExpression) -> float:
         """
         Compute the likelihood of the program.
         """
-        key = start_index + (start_position,)
-        top_symbol = self.symbol_to_index[program.symbol]
-        likelihood = self.distribution_dict[key].get(top_symbol, -float("inf"))
-        if likelihood == -float("inf"):
-            return -float("inf")
-        for i, child in enumerate(program.children):
-            likelihood += self.compute_likelihood(
-                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
-            )
-        return likelihood
+        from .tree_dist_likelihood_computer import compute_likelihood
+
+        return compute_likelihood(self, program)
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
