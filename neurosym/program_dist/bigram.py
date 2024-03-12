@@ -128,7 +128,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def _count_program(
         self,
         program: SExpression,
-        counts: np.ndarray,
+        counts: Dict[Tuple[int, int], Dict[int, int]],
         *,
         parent_sym: int,
         parent_child_idx: int,
