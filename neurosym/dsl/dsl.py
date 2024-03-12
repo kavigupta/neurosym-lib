@@ -24,6 +24,8 @@ class DSL:
     valid_root_types: Union[List[Type], NoneType]
     # max depth of a valid type for a program in this DSL
     max_type_depth: float
+    # max depth of a valid environment for a program in this DSL
+    max_env_depth: float
 
     def __post_init__(self):
         symbols = set()
@@ -127,16 +129,22 @@ class DSL:
         twes_to_expand = [
             TypeWithEnvironment(
                 type,
-                Environment.empty()
-                if care_about_variables
-                else PermissiveEnvironmment(),
+                (
+                    Environment.empty()
+                    if care_about_variables
+                    else PermissiveEnvironmment()
+                ),
             )
             for type in valid_root_types
         ]
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe.typ.depth > self.max_type_depth or twe in rules:
+            if (
+                twe.typ.depth > self.max_type_depth
+                or len(twe.env) > self.max_env_depth
+                or twe in rules
+            ):
                 continue
             rules[twe] = []
             for prod, twes in self._productions_for_type(twe):
@@ -206,5 +214,8 @@ class DSL:
 
     def add_production(self, prod):
         return DSL(
-            self.productions + [prod], self.valid_root_types, self.max_type_depth
+            self.productions + [prod],
+            self.valid_root_types,
+            self.max_type_depth,
+            self.max_env_depth,
         )
