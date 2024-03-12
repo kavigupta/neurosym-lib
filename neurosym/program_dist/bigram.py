@@ -7,6 +7,9 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
+    TypePreorderMask,
+)
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
@@ -260,7 +263,12 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             )
         dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
 
-        return TreeDistribution(1, dist, list(zip(self._symbols, self._arities)))
+        return TreeDistribution(
+            1,
+            dist,
+            list(zip(self._symbols, self._arities)),
+            lambda tree_dist: TypePreorderMask(tree_dist, self._dsl),
+        )
 
 
 def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):

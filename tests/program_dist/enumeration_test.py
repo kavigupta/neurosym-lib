@@ -5,6 +5,9 @@ from fractions import Fraction
 import numpy as np
 
 import neurosym as ns
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    NoopPreorderMask,
+)
 
 from .bigram_test import fam, fam_with_vars
 
@@ -16,6 +19,7 @@ arith_dist = ns.TreeDistribution(
         (1, 1): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
     },
     [("root", 1), ("+", 2), ("1", 0)],
+    NoopPreorderMask,
 )
 
 

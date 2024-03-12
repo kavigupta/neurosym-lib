@@ -44,15 +44,22 @@ class TreeDistribution:
         return {k: dict(v) for k, v in self.distribution.items()}
 
     @cached_property
+    def likelihood_arrays(self) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
+        return {
+            k: (
+                np.array([x[0] for x in v]),
+                np.array([x[1] for x in v]),
+            )
+            for k, v in self.distribution.items()
+        }
+
+    @cached_property
     def sampling_dict_arrays(
         self,
     ) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
         return {
-            k: (
-                np.array([x[0] for x in v]),
-                np.exp([x[1] for x in v]),
-            )
-            for k, v in self.distribution.items()
+            k: (syms, np.exp(log_probs))
+            for k, (syms, log_probs) in self.likelihood_arrays.items()
         }
 
 
@@ -108,7 +115,10 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         from .tree_dist_likelihood_computer import compute_likelihood
 
-        return compute_likelihood(self.tree_distribution(dist), program, (0,), 0)
+        dist = self.tree_distribution(dist)
+        preorder_mask = dist.mask_constructor(dist)
+        preorder_mask.on_entry(0, 0)
+        return compute_likelihood(dist, program, (0,), 0, preorder_mask)
 
     def sample(
         self,

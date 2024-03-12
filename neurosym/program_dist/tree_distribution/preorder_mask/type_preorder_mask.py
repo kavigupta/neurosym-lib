@@ -1,5 +1,7 @@
 from typing import List
-from neurosym.types.type_with_environment import TypeWithEnvironment
+
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+
 from .preorder_mask import PreorderMask
 
 
@@ -18,17 +20,20 @@ class TypePreorderMask(PreorderMask):
         # each list represents the types of the children of the current node
         self.type_stack: List[List[TypeWithEnvironment]] = []
 
-    def compute_mask(self, symbols):
+    def compute_mask(self, position, symbols):
+        print(self.type_stack[-1])
         valid_productions = {
-            self.tree_dist.symbol_to_index[sym]
-            for sym, _ in self.dsl.productions_for_type(self.type_stack[-1])
+            self.tree_dist.symbol_to_index[sym.symbol()]
+            for sym, _ in self.dsl.productions_for_type(self.type_stack[-1][position])
         }
         return [i in valid_productions for i in symbols]
 
     def on_entry(self, position, symbol):
         symbol, arity = self.tree_dist.symbols[symbol]
         if symbol == "<root>":
-            self.type_stack.append(self.root_type)
+            self.type_stack.append(
+                [TypeWithEnvironment(self.root_type, Environment.empty())]
+            )
             return
         parent_type = self.type_stack[-1][position]
         production = self.dsl.get_production(symbol)

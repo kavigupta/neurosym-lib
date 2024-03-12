@@ -36,3 +36,18 @@ class PreorderMask(ABC):
 
         This can be used to update the mask.
         """
+
+
+class NoopPreorderMask(PreorderMask):
+    """
+    A mask that does nothing.
+    """
+
+    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
+        return [True] * len(symbols)
+
+    def on_entry(self, position: int, symbol: int):
+        pass
+
+    def on_exit(self, position: int, symbol: int):
+        pass
