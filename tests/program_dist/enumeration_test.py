@@ -6,7 +6,7 @@ import numpy as np
 
 import neurosym as ns
 
-from .bigram_test import fam
+from .bigram_test import fam, fam_with_vars
 
 arith_dist = ns.TreeDistribution(
     1,
@@ -29,8 +29,9 @@ def enumerated(*args, **kwargs):
 
 
 class TreeDistributionTest(unittest.TestCase):
-    def enumerate_dsl(self, family, dist):
-        result = list(family.enumerate(dist, min_likelihood=-6))
+
+    def enumerate_dsl(self, family, dist, min_likelihood=-6):
+        result = list(family.enumerate(dist, min_likelihood=min_likelihood))
         result = sorted(result, key=lambda x: x[1], reverse=True)
         result = [
             (
@@ -178,5 +179,97 @@ class TreeDistributionTest(unittest.TestCase):
                 ("(+ (1) (+ (1) (+ (1) (2))))", Fraction(3, 64)),
                 ("(+ (1) (+ (1) (+ (1) (+ (1) (2)))))", Fraction(3, 256)),
                 ("(+ (1) (+ (1) (+ (1) (+ (1) (+ (1) (2))))))", Fraction(3, 1024)),
+            },
+        )
+
+    def test_enumeration_from_dsl_with_variables_uniform(self):
+        result = self.enumerate_dsl(
+            fam_with_vars, fam_with_vars.uniform(), min_likelihood=-8
+        )
+
+        # note that this is currently incorrect. the types of the variables
+        # are being taken into account, but the environment is not
+
+        self.assertEqual(
+            result,
+            {
+                ("($0_0)", Fraction(1, 8)),
+                ("($1_0)", Fraction(1, 8)),
+                ("($2_0)", Fraction(1, 8)),
+                ("($3_0)", Fraction(1, 8)),
+                ("(1)", Fraction(1, 8)),
+                ("(2)", Fraction(1, 8)),
+                ("(+ ($0_0) ($0_0))", Fraction(1, 512)),
+                ("(+ ($1_0) ($0_0))", Fraction(1, 512)),
+                ("(+ ($2_0) ($0_0))", Fraction(1, 512)),
+                ("(+ ($3_0) ($0_0))", Fraction(1, 512)),
+                ("(+ (1) ($0_0))", Fraction(1, 512)),
+                ("(+ (2) ($0_0))", Fraction(1, 512)),
+                ("(+ ($0_0) ($1_0))", Fraction(1, 512)),
+                ("(+ ($1_0) ($1_0))", Fraction(1, 512)),
+                ("(+ ($2_0) ($1_0))", Fraction(1, 512)),
+                ("(+ ($3_0) ($1_0))", Fraction(1, 512)),
+                ("(+ (1) ($1_0))", Fraction(1, 512)),
+                ("(+ (2) ($1_0))", Fraction(1, 512)),
+                ("(+ ($0_0) ($2_0))", Fraction(1, 512)),
+                ("(+ ($1_0) ($2_0))", Fraction(1, 512)),
+                ("(+ ($2_0) ($2_0))", Fraction(1, 512)),
+                ("(+ ($3_0) ($2_0))", Fraction(1, 512)),
+                ("(+ (1) ($2_0))", Fraction(1, 512)),
+                ("(+ (2) ($2_0))", Fraction(1, 512)),
+                ("(+ ($0_0) ($3_0))", Fraction(1, 512)),
+                ("(+ ($1_0) ($3_0))", Fraction(1, 512)),
+                ("(+ ($2_0) ($3_0))", Fraction(1, 512)),
+                ("(+ ($3_0) ($3_0))", Fraction(1, 512)),
+                ("(+ (1) ($3_0))", Fraction(1, 512)),
+                ("(+ (2) ($3_0))", Fraction(1, 512)),
+                ("(+ ($0_0) (1))", Fraction(1, 512)),
+                ("(+ ($1_0) (1))", Fraction(1, 512)),
+                ("(+ ($2_0) (1))", Fraction(1, 512)),
+                ("(+ ($3_0) (1))", Fraction(1, 512)),
+                ("(+ (1) (1))", Fraction(1, 512)),
+                ("(+ (2) (1))", Fraction(1, 512)),
+                ("(+ ($0_0) (2))", Fraction(1, 512)),
+                ("(+ ($1_0) (2))", Fraction(1, 512)),
+                ("(+ ($2_0) (2))", Fraction(1, 512)),
+                ("(+ ($3_0) (2))", Fraction(1, 512)),
+                ("(+ (1) (2))", Fraction(1, 512)),
+                ("(+ (2) (2))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam (1)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam (2)) ($0_0))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam (1)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam (2)) ($1_0))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam (1)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam (2)) ($2_0))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam (1)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam (2)) ($3_0))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) (1))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) (1))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) (1))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) (1))", Fraction(1, 512)),
+                ("(call (lam (1)) (1))", Fraction(1, 512)),
+                ("(call (lam (2)) (1))", Fraction(1, 512)),
+                ("(call (lam ($0_0)) (2))", Fraction(1, 512)),
+                ("(call (lam ($1_0)) (2))", Fraction(1, 512)),
+                ("(call (lam ($2_0)) (2))", Fraction(1, 512)),
+                ("(call (lam ($3_0)) (2))", Fraction(1, 512)),
+                ("(call (lam (1)) (2))", Fraction(1, 512)),
+                ("(call (lam (2)) (2))", Fraction(1, 512)),
             },
         )
