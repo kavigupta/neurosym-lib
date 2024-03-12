@@ -78,3 +78,24 @@ class TestPruning(unittest.TestCase):
             add :: (i, i) -> i
             """,
         )
+
+    def test_pruning_with_call(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("1", "() -> i", lambda x: x)
+        dslf.concrete("call", "(i -> i, i) -> i", lambda x, y: x(y))
+        dslf.lambdas()
+        dslf.prune_to("i")
+        dsl = dslf.finalize()
+        assertDSL(
+            self,
+            dsl.render(),
+            """
+            $0_0 :: V<i@0>
+            $1_0 :: V<i@1>
+            $2_0 :: V<i@2>
+            $3_0 :: V<i@3>
+            1 :: () -> i
+            call :: (i -> i, i) -> i
+            lam :: L<#body|i> -> i -> #body
+            """,
+        )
