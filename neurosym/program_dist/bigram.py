@@ -221,8 +221,6 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         assert parameters.shape[1:] == self.parameters_shape()
         assert len(parameters.shape) == 4
 
-        parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
-
         numcount = actual.numerators(len(self._symbols), self._max_arity)
         dencount, den_keys = actual.denominators(len(self._symbols), self._max_arity)
         numcount, dencount = [
