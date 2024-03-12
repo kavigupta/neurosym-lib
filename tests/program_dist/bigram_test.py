@@ -261,25 +261,27 @@ class BigramCountProgramsTest(unittest.TestCase):
 
 
 class BigramParameterDifferenceLossTest(unittest.TestCase):
-    def computeLoss(self, logits, programs):
+    def computeLoss(self, logits, programs, family=fam):
         programs = [[ns.parse_s_expression(x) for x in ps] for ps in programs]
         print(programs)
-        loss = fam.parameter_difference_loss(
+        loss = family.parameter_difference_loss(
             logits,
-            fam.count_programs(programs),
+            family.count_programs(programs),
         )
         loss = loss.detach().cpu().numpy()
         return loss
 
-    def assertLoss(self, logits, programs, target):
-        np.testing.assert_almost_equal(self.computeLoss(logits, programs), target)
+    def assertLoss(self, logits, programs, target, **kwargs):
+        np.testing.assert_almost_equal(
+            self.computeLoss(logits, programs, **kwargs), target
+        )
 
-    def assertUniformLoss(self, programs, target):
+    def assertUniformLoss(self, programs, target, **kwargs):
         logits = torch.zeros((1, 4, 2, 4))
-        self.assertLoss(logits, programs, target)
+        self.assertLoss(logits, programs, target, **kwargs)
         # fill in impossible location +, 0 -> <root>
         logits[0, 1, 0, 0] = 20
-        self.assertLoss(logits, programs, target)
+        self.assertLoss(logits, programs, target, **kwargs)
 
     def test_leaf_program_logit(self):
         self.assertUniformLoss([["(1)"]], [np.log(3)])
@@ -306,6 +308,18 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
             logits,
             [["(+ (1) (2))"], ["(+ (1) (2))"]],
             [-(np.log(1 / 2) + np.log(1 / 3) * 2), -3 * np.log(1 / 3)],
+        )
+
+    def test_variables_loss(self):
+        logits = torch.zeros((1, 10, 2, 10))
+        # note that this is currently incorrect. the types of the variables
+        # are being taken into account, but the environment is not
+        self.assertLoss(logits, [["($0_0)"]], [np.log(8)], family=fam_with_vars)
+        self.assertLoss(
+            logits,
+            [["(call (lam ($0_0)) (1))"]],
+            [np.log(8 * 8 * 8)],
+            family=fam_with_vars,
         )
 
 
