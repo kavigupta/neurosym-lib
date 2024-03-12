@@ -64,7 +64,7 @@ class BigramProgramCountsBatch:
 
     def to_distribution(self, num_symbols, max_arity):
         numerators = self.numerators(num_symbols, max_arity)
-        # TODO handle denominators
+        # handle denominators
 
         return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
@@ -144,7 +144,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         """
         E[log Q(|x)]
         """
-        # TODO fix this to take into account the denominator
+        # fix this to take into account the denominator
         actual = torch.tensor(
             actual.numerators(len(self._symbols), self._max_arity)
         ).to(parameters.device)
