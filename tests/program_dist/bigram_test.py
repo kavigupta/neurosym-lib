@@ -328,4 +328,5 @@ class BigramLikelihoodTest(unittest.TestCase):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
 
     def test_leaf_with_variables(self):
+        # this is currently incorrect. it should be 1/3
         self.assertLikelihood(fam_with_vars.uniform(), "(1)", "log(1/8)")
