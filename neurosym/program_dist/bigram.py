@@ -54,9 +54,9 @@ class BigramProgramCounts:
     def add_to_denominator_array(self, arr, batch_idx, backmap):
         for (parent_sym, parent_child_idx), children in self.denominators.items():
             for child_syms, count in children.items():
-                arr[
-                    batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
-                ] = count
+                arr[batch_idx, parent_sym, parent_child_idx, backmap[child_syms]] = (
+                    count
+                )
         return arr
 
 
@@ -228,11 +228,11 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             for x in (numcount, dencount)
         ]
 
-        def agg_across_all_but_last(x, fn):
+        def agg_across_all_but_batch_axis(x, fn):
             x = x.reshape(x.shape[0], -1)
             return fn(x, -1)
 
-        numer = agg_across_all_but_last(numcount * parameters, torch.sum)
+        numer = agg_across_all_but_batch_axis(numcount * parameters, torch.sum)
 
         theta_by_denom = parameters[..., None].repeat(1, 1, 1, 1, len(den_keys))
         for i, key in enumerate(den_keys):
@@ -243,7 +243,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             mask[list(key)] = False
             theta_by_denom[..., mask, i] = -float("inf")
         agg_theta_by_denom = torch.logsumexp(theta_by_denom, dim=-2)
-        denom = agg_across_all_but_last(dencount * agg_theta_by_denom, torch.sum)
+        denom = agg_across_all_but_batch_axis(dencount * agg_theta_by_denom, torch.sum)
         return -(numer - denom)
 
     def uniform(self):
