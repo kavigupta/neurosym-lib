@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
-from typing import List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
@@ -28,6 +28,9 @@ class BigramProgramDistributionBatch:
     distribution_batch: np.ndarray
 
     def __post_init__(self):
+        assert isinstance(self.distribution_batch, np.ndarray), type(
+            self.distribution_batch
+        )
         assert self.distribution_batch.ndim == 4
         assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
 
@@ -36,12 +39,34 @@ class BigramProgramDistributionBatch:
 
 
 @dataclass
-class BigramProgramCountsTensorBatch:
-    counts: torch.tensor
+class BigramProgramCounts:
+    # map from (parent_sym, parent_child_idx) to map from child_sym to count
+    numerators: Dict[Tuple[int, int], Dict[int, int]]
 
-    def __post_init__(self):
-        assert self.counts.ndim == 4
-        assert self.counts.shape[1] == self.counts.shape[3]
+    def add_to_numerator_array(self, arr, batch_idx):
+        for (parent_sym, parent_child_idx), children in self.numerators.items():
+            for child_sym, count in children.items():
+                arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
+        return arr
+
+
+@dataclass
+class BigramProgramCountsBatch:
+    counts: List[BigramProgramCounts]
+
+    def numerators(self, num_symbols, max_arity):
+        numerators = np.zeros(
+            (len(self.counts), num_symbols, max_arity, num_symbols), dtype=np.int32
+        )
+        for i, dist in enumerate(self.counts):
+            dist.add_to_numerator_array(numerators, i)
+        return numerators
+
+    def to_distribution(self, num_symbols, max_arity):
+        numerators = self.numerators(num_symbols, max_arity)
+        # handle denominators
+
+        return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
@@ -50,6 +75,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._symbols, self._arities, self._valid_mask = bigram_mask(
             dsl, valid_root_types=valid_root_types
         )
+        self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
 
     def underlying_dsl(self) -> DSL:
@@ -83,48 +109,45 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         parameters = self.normalize_parameters(parameters, logits=False)
         return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
-    def count_programs(
-        self, data: List[List[SExpression]]
-    ) -> BigramProgramCountsTensorBatch:
-        counts = np.zeros((len(data), *self.parameters_shape()), dtype=np.float32)
-        for i, programs in enumerate(data):
+    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
+        all_counts = []
+        for programs in data:
+            counts = defaultdict(lambda: defaultdict(int))
             for program in programs:
-                self._count_program(
-                    program, counts, i, parent_sym=0, parent_child_idx=0
-                )
-        return BigramProgramCountsTensorBatch(torch.tensor(counts))
+                self._count_program(program, counts, parent_sym=0, parent_child_idx=0)
+            all_counts.append(
+                BigramProgramCounts(numerators={k: dict(v) for k, v in counts.items()})
+            )
+        return BigramProgramCountsBatch(all_counts)
 
     def counts_to_distribution(
-        self, counts: BigramProgramCountsTensorBatch
-    ) -> BigramProgramDistributionBatch:
-        return BigramProgramDistributionBatch(
-            counts_to_probabilities(counts.counts.numpy())
-        )
+        self, counts: BigramProgramCountsBatch
+    ) -> BigramProgramDistribution:
+        return counts.to_distribution(len(self._symbols), self._max_arity)
 
     def _count_program(
         self,
         program: SExpression,
-        counts: np.ndarray,
-        batch_idx: int,
+        counts: Dict[Tuple[int, int], Dict[int, int]],
         *,
         parent_sym: int,
         parent_child_idx: int,
     ):
         this_idx = self._symbol_to_idx[program.symbol]
-        counts[batch_idx, parent_sym, parent_child_idx, this_idx] += 1
+        counts[parent_sym, parent_child_idx][this_idx] += 1
         for j, child in enumerate(program.children):
-            self._count_program(
-                child, counts, batch_idx, parent_sym=this_idx, parent_child_idx=j
-            )
-        return torch.tensor(counts)
+            self._count_program(child, counts, parent_sym=this_idx, parent_child_idx=j)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCountsTensorBatch
+        self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
         """
         E[log Q(|x)]
         """
-        actual = actual.counts.to(parameters.device)
+        # fix this to take into account the denominator
+        actual = torch.tensor(
+            actual.numerators(len(self._symbols), self._max_arity)
+        ).to(parameters.device)
         parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
         combination = actual * parameters
         combination = combination.reshape(combination.shape[0], -1)

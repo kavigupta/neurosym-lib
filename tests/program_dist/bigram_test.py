@@ -171,50 +171,51 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
 
 class BigramCountProgramsTest(unittest.TestCase):
+    def setUp(self):
+        self.maxDiff = None
+
     def test_counts_single_program(self):
         data = [[ns.parse_s_expression("(+ (1) (2))")]]
-        [counts] = fam.count_programs(data).counts
-        np.testing.assert_equal(
-            counts.cpu().numpy(),
-            [
+        counts = fam.count_programs(data)
+        self.assertEqual(
+            counts,
+            ns.BigramProgramCountsBatch(
                 [
-                    # root -> +
-                    [0, 1, 0, 0],
-                    [0] * 4,
-                ],
-                [
-                    # + -> 1 as the first arg
-                    [0, 0, 1, 0],
-                    # + -> 2 as the second arg
-                    [0, 0, 0, 1],
-                ],
-                [[0] * 4] * 2,
-                [[0] * 4] * 2,
-            ],
+                    ns.BigramProgramCounts(
+                        {
+                            # root -> +
+                            (0, 0): {1: 1},
+                            # + -> 1 as the first arg
+                            (1, 0): {2: 1},
+                            # + -> 2 as the second arg
+                            (1, 1): {3: 1},
+                        }
+                    )
+                ]
+            ),
         )
 
     def test_counts_multiple_programs(self):
         data = [
             [ns.parse_s_expression(x) for x in ("(+ (1) (2))", "(+ (1) (1))")],
         ]
-        [counts] = fam.count_programs(data).counts
-        np.testing.assert_equal(
-            counts.cpu().numpy(),
-            [
+        counts = fam.count_programs(data)
+        self.assertEqual(
+            counts,
+            ns.BigramProgramCountsBatch(
                 [
-                    # root -> +
-                    [0, 2, 0, 0],
-                    [0] * 4,
-                ],
-                [
-                    # + -> first arg
-                    [0, 0, 2, 0],
-                    # + -> second arg
-                    [0, 0, 1, 1],
-                ],
-                [[0] * 4] * 2,
-                [[0] * 4] * 2,
-            ],
+                    ns.BigramProgramCounts(
+                        {
+                            # root -> +
+                            (0, 0): {1: 2},
+                            # + -> 1 as the first arg (twice)
+                            (1, 0): {2: 2},
+                            # + -> 1 as the second arg; + -> 2 as the second arg
+                            (1, 1): {2: 1, 3: 1},
+                        }
+                    )
+                ]
+            ),
         )
 
     def test_counts_separate_programs(self):
@@ -222,41 +223,33 @@ class BigramCountProgramsTest(unittest.TestCase):
             [ns.parse_s_expression("(+ (1) (2))")],
             [ns.parse_s_expression("(+ (1) (1))")],
         ]
-        counts = fam.count_programs(data).counts
+        counts = fam.count_programs(data)
         np.testing.assert_equal(
-            counts.cpu().numpy(),
-            [
+            counts,
+            ns.BigramProgramCountsBatch(
                 [
-                    [
-                        # root -> +
-                        [0, 1, 0, 0],
-                        [0] * 4,
-                    ],
-                    [
-                        # + -> first arg
-                        [0, 0, 1, 0],
-                        # + -> second arg
-                        [0, 0, 0, 1],
-                    ],
-                    [[0] * 4] * 2,
-                    [[0] * 4] * 2,
-                ],
-                [
-                    [
-                        # root -> +
-                        [0, 1, 0, 0],
-                        [0] * 4,
-                    ],
-                    [
-                        # + -> first arg
-                        [0, 0, 1, 0],
-                        # + -> second arg
-                        [0, 0, 1, 0],
-                    ],
-                    [[0] * 4] * 2,
-                    [[0] * 4] * 2,
-                ],
-            ],
+                    ns.BigramProgramCounts(
+                        {
+                            # root -> +
+                            (0, 0): {1: 1},
+                            # + -> 1 as the first arg
+                            (1, 0): {2: 1},
+                            # + -> 2 as the second arg
+                            (1, 1): {3: 1},
+                        }
+                    ),
+                    ns.BigramProgramCounts(
+                        {
+                            # root -> +
+                            (0, 0): {1: 1},
+                            # + -> 1 as the first arg
+                            (1, 0): {2: 1},
+                            # + -> 1 as the second arg
+                            (1, 1): {2: 1},
+                        }
+                    ),
+                ]
+            ),
         )
 
 
