@@ -56,7 +56,7 @@ class TreeDistribution:
         """
         from .tree_dist_likelihood_computer import compute_likelihood
 
-        return compute_likelihood(self, program)
+        return compute_likelihood(self, program, start_index=(0,), start_position=0)
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
