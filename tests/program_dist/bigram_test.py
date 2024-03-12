@@ -177,7 +177,6 @@ class BigramCountProgramsTest(unittest.TestCase):
     def test_counts_single_program(self):
         data = [[ns.parse_s_expression("(+ (1) (2))")]]
         counts = fam.count_programs(data)
-        print(counts)
         self.assertEqual(
             counts,
             ns.BigramProgramCountsBatch(
