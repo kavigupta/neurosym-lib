@@ -139,6 +139,7 @@ class BigramCountProgramsTest(unittest.TestCase):
     def test_counts_single_program(self):
         data = [[ns.parse_s_expression("(+ (1) (2))")]]
         counts = fam.count_programs(data)
+        print(counts)
         self.assertEqual(
             counts,
             ns.BigramProgramCountsBatch(
@@ -151,7 +152,14 @@ class BigramCountProgramsTest(unittest.TestCase):
                             (1, 0): {2: 1},
                             # + -> 2 as the second arg
                             (1, 1): {3: 1},
-                        }
+                        },
+                        {
+                            # root -> ?
+                            (0, 0): {(1, 2, 3): 1},
+                            # + -> ?
+                            (1, 0): {(1, 2, 3): 1},
+                            (1, 1): {(1, 2, 3): 1},
+                        },
                     )
                 ]
             ),
@@ -174,7 +182,14 @@ class BigramCountProgramsTest(unittest.TestCase):
                             (1, 0): {2: 2},
                             # + -> 1 as the second arg; + -> 2 as the second arg
                             (1, 1): {2: 1, 3: 1},
-                        }
+                        },
+                        {
+                            # root -> ?
+                            (0, 0): {(1, 2, 3): 2},
+                            # + -> ?
+                            (1, 0): {(1, 2, 3): 2},
+                            (1, 1): {(1, 2, 3): 2},
+                        },
                     )
                 ]
             ),
@@ -198,7 +213,14 @@ class BigramCountProgramsTest(unittest.TestCase):
                             (1, 0): {2: 1},
                             # + -> 2 as the second arg
                             (1, 1): {3: 1},
-                        }
+                        },
+                        {
+                            # root -> ?
+                            (0, 0): {(1, 2, 3): 1},
+                            # + -> ?
+                            (1, 0): {(1, 2, 3): 1},
+                            (1, 1): {(1, 2, 3): 1},
+                        },
                     ),
                     ns.BigramProgramCounts(
                         {
@@ -208,7 +230,14 @@ class BigramCountProgramsTest(unittest.TestCase):
                             (1, 0): {2: 1},
                             # + -> 1 as the second arg
                             (1, 1): {2: 1},
-                        }
+                        },
+                        {
+                            # root -> ?
+                            (0, 0): {(1, 2, 3): 1},
+                            # + -> ?
+                            (1, 0): {(1, 2, 3): 1},
+                            (1, 1): {(1, 2, 3): 1},
+                        },
                     ),
                 ]
             ),

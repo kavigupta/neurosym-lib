@@ -42,6 +42,8 @@ class BigramProgramDistributionBatch:
 class BigramProgramCounts:
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
     numerators: Dict[Tuple[int, int], Dict[int, int]]
+    # map from (parent_sym, parent_child_idx) to map from potential child_sym values to count
+    denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]]
 
     def add_to_numerator_array(self, arr, batch_idx):
         for (parent_sym, parent_child_idx), children in self.numerators.items():
@@ -64,7 +66,7 @@ class BigramProgramCountsBatch:
 
     def to_distribution(self, num_symbols, max_arity):
         numerators = self.numerators(num_symbols, max_arity)
-        # handle denominators
+        # TODO handle denominators
 
         return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
@@ -112,11 +114,17 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
         all_counts = []
         for programs in data:
-            counts = defaultdict(lambda: defaultdict(int))
+            numerators = defaultdict(lambda: defaultdict(int))
+            denominators = defaultdict(lambda: defaultdict(int))
             for program in programs:
-                self._count_program(program, counts, parent_sym=0, parent_child_idx=0)
+                self._count_program(
+                    program, numerators, denominators, parent_sym=0, parent_child_idx=0
+                )
             all_counts.append(
-                BigramProgramCounts(numerators={k: dict(v) for k, v in counts.items()})
+                BigramProgramCounts(
+                    numerators={k: dict(v) for k, v in numerators.items()},
+                    denominators={k: dict(v) for k, v in denominators.items()},
+                )
             )
         return BigramProgramCountsBatch(all_counts)
 
@@ -128,15 +136,21 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def _count_program(
         self,
         program: SExpression,
-        counts: Dict[Tuple[int, int], Dict[int, int]],
+        numerators: Dict[Tuple[int, int], Dict[int, int]],
+        denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]],
         *,
         parent_sym: int,
         parent_child_idx: int,
     ):
         this_idx = self._symbol_to_idx[program.symbol]
-        counts[parent_sym, parent_child_idx][this_idx] += 1
+        numerators[parent_sym, parent_child_idx][this_idx] += 1
+        [elements] = np.where(self._valid_mask[parent_sym, parent_child_idx, :])
+        elements = tuple(int(x) for x in elements)
+        denominators[parent_sym, parent_child_idx][elements] += 1
         for j, child in enumerate(program.children):
-            self._count_program(child, counts, parent_sym=this_idx, parent_child_idx=j)
+            self._count_program(
+                child, numerators, denominators, parent_sym=this_idx, parent_child_idx=j
+            )
 
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
@@ -144,7 +158,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         """
         E[log Q(|x)]
         """
-        # fix this to take into account the denominator
+        # TODO fix this to take into account the denominator
         actual = torch.tensor(
             actual.numerators(len(self._symbols), self._max_arity)
         ).to(parameters.device)
