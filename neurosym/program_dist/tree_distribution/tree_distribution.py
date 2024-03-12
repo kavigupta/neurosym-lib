@@ -50,14 +50,6 @@ class TreeDistribution:
             for k, v in self.distribution.items()
         }
 
-    def compute_likelihood(self, program: SExpression) -> float:
-        """
-        Compute the likelihood of the program.
-        """
-        from .tree_dist_likelihood_computer import compute_likelihood
-
-        return compute_likelihood(self, program, start_index=(0,), start_position=0)
-
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
     """
@@ -109,7 +101,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         Compute the likelihood of a program under a distribution.
         """
-        return self.tree_distribution(dist).compute_likelihood(program)
+        from .tree_dist_likelihood_computer import compute_likelihood
+
+        return compute_likelihood(self.tree_distribution(dist), program, (0,), 0)
 
     def sample(
         self,
