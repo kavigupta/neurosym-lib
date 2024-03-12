@@ -192,7 +192,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
             = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
             = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
-            = [sum_p sum_{(g, s, d) in p} theta_{g, s}] 
+            = [sum_p sum_{(g, s, d) in p} theta_{g, s}]
                 - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
             = [numer] - [denom]
 
