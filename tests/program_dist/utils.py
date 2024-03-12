@@ -14,7 +14,7 @@ class ProbabilityTester(unittest.TestCase):
         prob_mass = scipy.stats.binom.cdf(kmax, n, p) - scipy.stats.binom.cdf(
             kmin - 1, n, p
         )
-        self.assertTrue(kmin > 0)
+        self.assertTrue(kmin > 0, f"Expected kmin > 0, got {kmin}")
         self.assertTrue(kmax < n - 1)
         self.assertTrue(
             prob_mass > 0.99, f"Insufficient probability mass: {prob_mass:.3f}"

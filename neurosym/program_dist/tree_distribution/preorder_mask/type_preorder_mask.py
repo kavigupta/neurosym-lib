@@ -21,7 +21,6 @@ class TypePreorderMask(PreorderMask):
         self.type_stack: List[List[TypeWithEnvironment]] = []
 
     def compute_mask(self, position, symbols):
-        print(self.type_stack[-1])
         valid_productions = {
             self.tree_dist.symbol_to_index[sym.symbol()]
             for sym, _ in self.dsl.productions_for_type(self.type_stack[-1][position])
@@ -38,6 +37,10 @@ class TypePreorderMask(PreorderMask):
         parent_type = self.type_stack[-1][position]
         production = self.dsl.get_production(symbol)
         children_types = production.type_signature().unify_return(parent_type)
+        if children_types is None:
+            raise ValueError(
+                f"Type mismatch in production {production} with parent type {parent_type}"
+            )
         assert len(children_types) == arity
         self.type_stack.append(children_types)
 
