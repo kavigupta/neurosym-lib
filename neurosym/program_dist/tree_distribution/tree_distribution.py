@@ -50,25 +50,13 @@ class TreeDistribution:
             for k, v in self.distribution.items()
         }
 
-    def compute_likelihood(
-        self,
-        program: SExpression,
-        start_index: Tuple[int] = (0,),
-        start_position: int = 0,
-    ) -> float:
+    def compute_likelihood(self, program: SExpression) -> float:
         """
         Compute the likelihood of the program.
         """
-        key = start_index + (start_position,)
-        top_symbol = self.symbol_to_index[program.symbol]
-        likelihood = self.distribution_dict[key].get(top_symbol, -float("inf"))
-        if likelihood == -float("inf"):
-            return -float("inf")
-        for i, child in enumerate(program.children):
-            likelihood += self.compute_likelihood(
-                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
-            )
-        return likelihood
+        from .tree_dist_likelihood_computer import compute_likelihood
+
+        return compute_likelihood(self, program)
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
