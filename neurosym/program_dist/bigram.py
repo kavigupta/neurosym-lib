@@ -66,7 +66,10 @@ class BigramProgramCountsBatch:
 
     def to_distribution(self, num_symbols, max_arity):
         numerators = self.numerators(num_symbols, max_arity)
-        # TODO handle denominators
+
+        # We do not need to handle denominators here, as this is just
+        # a simple conversion from counts to probabilities, and we do
+        # not need to handle the case where the denominator is 0.
 
         return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
