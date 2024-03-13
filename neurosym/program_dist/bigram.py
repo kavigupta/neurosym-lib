@@ -249,7 +249,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
 
     def compute_tree_distribution(
-        self, distribution: BigramProgramDistribution
+        self, distribution: Union[BigramProgramDistribution, NoneType]
     ) -> TreeDistribution:
         if isinstance(distribution, BigramProgramDistribution):
             dist = defaultdict(list)
