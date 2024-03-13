@@ -295,20 +295,13 @@ def counts_to_probabilities(counts):
     )
 
 
-<<<<<<< HEAD
 def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
-=======
-def count_programs(
-    tree_dist: TreeDistribution, valid_mask: np.ndarray, programs: List[SExpression]
-):
->>>>>>> origin/main
     """
     Count the productions in the programs, indexed by the path to the node.
     """
     numerators = defaultdict(lambda: defaultdict(int))
     denominators = defaultdict(lambda: defaultdict(int))
     for program in programs:
-<<<<<<< HEAD
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         preorder_mask.on_entry(0, 0)
         accumulate_counts(
@@ -318,10 +311,6 @@ def count_programs(
             denominators,
             ((0, 0),),
             preorder_mask=preorder_mask,
-=======
-        accumulate_counts(
-            tree_dist, valid_mask, program, numerators, denominators, ((0, 0),)
->>>>>>> origin/main
         )
     numerators = {k: dict(v) for k, v in numerators.items()}
     denominators = {k: dict(v) for k, v in denominators.items()}
@@ -330,15 +319,10 @@ def count_programs(
 
 def accumulate_counts(
     tree_dist: TreeDistribution,
-<<<<<<< HEAD
-=======
-    valid_mask: np.ndarray,
->>>>>>> origin/main
     program: SExpression,
     numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]],
     denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]],
     ancestors: Tuple[Tuple[int, int], ...],
-<<<<<<< HEAD
     preorder_mask: PreorderMask,
 ):
     parent_position = ancestors[-1][1]
@@ -348,19 +332,12 @@ def accumulate_counts(
     mask = preorder_mask.compute_mask(parent_position, possibilities)
     preorder_mask.on_entry(parent_position, this_idx)
     elements = possibilities[mask]
-=======
-):
-    this_idx = tree_dist.symbol_to_index[program.symbol]
-    numerators[ancestors][this_idx] += 1
-    [elements] = np.where(valid_mask[tuple(idx for idxs in ancestors for idx in idxs)])
->>>>>>> origin/main
     elements = tuple(int(x) for x in elements)
     denominators[ancestors][elements] += 1
     for j, child in enumerate(program.children):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
         accumulate_counts(
-<<<<<<< HEAD
             tree_dist,
             child,
             numerators,
@@ -369,7 +346,3 @@ def accumulate_counts(
             preorder_mask=preorder_mask,
         )
     preorder_mask.on_exit(parent_position, this_idx)
-=======
-            tree_dist, valid_mask, child, numerators, denominators, new_ancestors
-        )
->>>>>>> origin/main
