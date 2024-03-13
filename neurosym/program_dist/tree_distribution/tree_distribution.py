@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from types import NoneType
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 
