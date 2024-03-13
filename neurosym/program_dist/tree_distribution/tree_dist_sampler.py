@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
@@ -8,7 +9,8 @@ def attempt_to_sample_tree_dist(
     dist: TreeDistribution,
     rng: np.random.RandomState,
     depth_limit,
-    parents: list[int],
+    ancestors: Tuple[Tuple[int, int], ...],
+    parent: int,
 ) -> SExpression:
     """
     Attempt to sample a program from the distribution, conditioned on the depth limit.
@@ -23,27 +25,23 @@ def attempt_to_sample_tree_dist(
     """
     if depth_limit < 0:
         raise TooDeepError()
-    root_sym, root_arity = dist.symbols[parents[-1]]
+    root_sym, root_arity = dist.symbols[parent]
     children = []
     for i in range(root_arity):
-        key = parents + (i,)
+        key = ancestors + ((parent, i),)
+        key = key[-dist.limit :]
         possibilites, weights = dist.sampling_dict_arrays[key]
         child_idx = rng.choice(possibilites, p=weights)
-        child_parents = parents + (child_idx,)
-        child_parents = child_parents[-dist.limit :]
         children.append(
             attempt_to_sample_tree_dist(
-                dist, rng, depth_limit - 1, parents=child_parents
+                dist, rng, depth_limit - 1, ancestors=key, parent=child_idx
             )
         )
     return SExpression(root_sym, tuple(children))
 
 
 def sample_tree_dist(
-    dist: TreeDistribution,
-    rng: np.random.RandomState,
-    depth_limit,
-    parents: list[int] = (0,),
+    dist: TreeDistribution, rng: np.random.RandomState, depth_limit
 ) -> SExpression:
     """
     Sample a program from the distribution, conditioned on the depth limit.
@@ -55,7 +53,9 @@ def sample_tree_dist(
     """
     while True:
         try:
-            return attempt_to_sample_tree_dist(dist, rng, depth_limit, parents)
+            return attempt_to_sample_tree_dist(
+                dist, rng, depth_limit, ancestors=(), parent=0
+            )
         except TooDeepError:
             continue
 
