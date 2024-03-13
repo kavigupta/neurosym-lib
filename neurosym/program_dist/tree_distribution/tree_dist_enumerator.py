@@ -95,11 +95,11 @@ def enumerate_children_and_likelihoods_dfs(
     Enumerate all children and their likelihoods.
     """
 
-    if num_children == 0:
+    if starting_index == num_children:
         yield [], 0
         return
 
-    new_parents = parents + ((most_recent_parent, num_children - 1),)
+    new_parents = parents + ((most_recent_parent, starting_index),)
     new_parents = new_parents[-tree_dist.limit :]
 
     for first_child, first_likelihood in enumerate_tree_dist_dfs(
@@ -110,7 +110,7 @@ def enumerate_children_and_likelihoods_dfs(
             min_likelihood - first_likelihood,
             parents,
             most_recent_parent,
-            num_children - 1,
+            num_children,
             starting_index + 1,
         ):
             yield [first_child] + rest_children, first_likelihood + rest_likelihood
