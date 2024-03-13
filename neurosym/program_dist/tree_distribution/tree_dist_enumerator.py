@@ -40,7 +40,7 @@ def enumerate_tree_dist(
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size
         for program, likelihood in enumerate_tree_dist_dfs(
-            tree_dist, likelihood_bound, (0,), 0
+            tree_dist, likelihood_bound, ((0, 0),)
         ):
             if (
                 max(likelihood_bound, min_likelihood)
@@ -55,8 +55,7 @@ def enumerate_tree_dist(
 def enumerate_tree_dist_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
-    parents: Tuple[int],
-    position: int,
+    parents: Tuple[Tuple[int, int], ...],
 ):
     """
     Enumerate all programs that are within the likelihood range, with the given parents.
@@ -70,15 +69,14 @@ def enumerate_tree_dist_dfs(
 
     # Performed recursively for now.
 
-    distribution = tree_dist.distribution[(*parents, position)]
+    distribution = tree_dist.distribution[parents]
     for node, likelihood in distribution:
-        new_parents = parents + (node,)
-        new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
         for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
-            new_parents,
+            parents,
+            node,
             num_children=arity,
         ):
             yield SExpression(symbol, children), child_likelihood + likelihood
@@ -87,7 +85,8 @@ def enumerate_tree_dist_dfs(
 def enumerate_children_and_likelihoods_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
-    parents: Tuple[int],
+    parents: Tuple[Tuple[int, int], ...],
+    most_recent_parent: int,
     num_children: int,
 ):
     """
@@ -98,10 +97,17 @@ def enumerate_children_and_likelihoods_dfs(
         yield [], 0
         return
 
+    new_parents = parents + ((most_recent_parent, num_children - 1),)
+    new_parents = new_parents[-tree_dist.limit :]
+
     for last_child, last_likelihood in enumerate_tree_dist_dfs(
-        tree_dist, min_likelihood, parents, num_children - 1
+        tree_dist, min_likelihood, new_parents
     ):
         for rest_children, rest_likelihood in enumerate_children_and_likelihoods_dfs(
-            tree_dist, min_likelihood - last_likelihood, parents, num_children - 1
+            tree_dist,
+            min_likelihood - last_likelihood,
+            parents,
+            most_recent_parent,
+            num_children - 1,
         ):
             yield rest_children + [last_child], last_likelihood + rest_likelihood

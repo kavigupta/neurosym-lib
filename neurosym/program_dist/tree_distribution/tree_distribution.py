@@ -23,10 +23,11 @@ class TreeDistribution:
     """
 
     limit: int
-    # input: tuple of ancestor production indices followed by
-    #   the position of the node in its parent's children
+    # input: tuple of tuples of (ancestor index, position)
+    #        which is the path to the current node, with the
+    #        most immediate ancestor at the end.
     # output: list of (production index, likelihood) pairs
-    distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
+    distribution: Dict[Tuple[Tuple[int, int], ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
 
@@ -49,26 +50,6 @@ class TreeDistribution:
             )
             for k, v in self.distribution.items()
         }
-
-    def compute_likelihood(
-        self,
-        program: SExpression,
-        start_index: Tuple[int] = (0,),
-        start_position: int = 0,
-    ) -> float:
-        """
-        Compute the likelihood of the program.
-        """
-        key = start_index + (start_position,)
-        top_symbol = self.symbol_to_index[program.symbol]
-        likelihood = self.distribution_dict[key].get(top_symbol, -float("inf"))
-        if likelihood == -float("inf"):
-            return -float("inf")
-        for i, child in enumerate(program.children):
-            likelihood += self.compute_likelihood(
-                child, (start_index + (top_symbol,))[-self.limit :], start_position=i
-            )
-        return likelihood
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
@@ -121,7 +102,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         Compute the likelihood of a program under a distribution.
         """
-        return self.tree_distribution(dist).compute_likelihood(program)
+        from .tree_dist_likelihood_computer import compute_likelihood
+
+        return compute_likelihood(self.tree_distribution(dist), program, ((0, 0),))
 
     def sample(
         self,
