@@ -97,6 +97,7 @@ def enumerate_tree_dist_dfs(
             parents,
             node,
             num_children=arity,
+            starting_index=0,
             preorder_mask=preorder_mask_copy,
         ):
             yield SExpression(symbol, children), child_likelihood + likelihood
@@ -110,27 +111,30 @@ def enumerate_children_and_likelihoods_dfs(
     parents: Tuple[Tuple[int, int], ...],
     most_recent_parent: int,
     num_children: int,
+    starting_index: int,
     preorder_mask: PreorderMask,
 ):
     """
     Enumerate all children and their likelihoods.
     """
-    if num_children == 0:
+
+    if starting_index == num_children:
         yield [], 0
         return
 
-    new_parents = parents + ((most_recent_parent, num_children - 1),)
+    new_parents = parents + ((most_recent_parent, starting_index),)
     new_parents = new_parents[-tree_dist.limit :]
 
-    for last_child, last_likelihood in enumerate_tree_dist_dfs(
+    for first_child, first_likelihood in enumerate_tree_dist_dfs(
         tree_dist, min_likelihood, new_parents, preorder_mask
     ):
         for rest_children, rest_likelihood in enumerate_children_and_likelihoods_dfs(
             tree_dist,
-            min_likelihood - last_likelihood,
+            min_likelihood - first_likelihood,
             parents,
             most_recent_parent,
-            num_children - 1,
+            num_children,
+            starting_index + 1,
             preorder_mask,
         ):
-            yield rest_children + [last_child], last_likelihood + rest_likelihood
+            yield [first_child] + rest_children, first_likelihood + rest_likelihood
