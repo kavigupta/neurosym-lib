@@ -83,7 +83,6 @@ def enumerate_tree_dist_dfs(
     syms, log_probs = tree_dist.likelihood_arrays[parents]
     position = parents[-1][1]
     mask = preorder_mask.compute_mask(position, syms)
-    # mask = np.ones_like(mask, dtype=bool)
     denominator = np.logaddexp.reduce(log_probs[mask])
     for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
         preorder_mask_copy = copy.deepcopy(preorder_mask)
