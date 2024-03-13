@@ -13,10 +13,16 @@ Our algorithm here is based on iterative deepening. We have a method that
 Likelihood is defined as the log probability of the program.
 """
 
+import copy
 import itertools
 from typing import Tuple
 
+import numpy as np
+
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 
@@ -39,8 +45,10 @@ def enumerate_tree_dist(
     """
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size
+        preorder_mask = tree_dist.mask_constructor(tree_dist)
+        preorder_mask.on_entry(0, 0)
         for program, likelihood in enumerate_tree_dist_dfs(
-            tree_dist, likelihood_bound, (0,), 0
+            tree_dist, likelihood_bound, (0,), 0, preorder_mask
         ):
             if (
                 max(likelihood_bound, min_likelihood)
@@ -57,6 +65,7 @@ def enumerate_tree_dist_dfs(
     min_likelihood: float,
     parents: Tuple[int],
     position: int,
+    preorder_mask: PreorderMask,
 ):
     """
     Enumerate all programs that are within the likelihood range, with the given parents.
@@ -67,21 +76,31 @@ def enumerate_tree_dist_dfs(
         return
 
     assert len(parents) <= tree_dist.limit
+    assert isinstance(
+        preorder_mask, PreorderMask
+    ), f"{preorder_mask} is not a PreorderMask"
 
     # Performed recursively for now.
-
-    distribution = tree_dist.distribution[(*parents, position)]
-    for node, likelihood in distribution:
+    syms, log_probs = tree_dist.likelihood_arrays[(*parents, position)]
+    mask = preorder_mask.compute_mask(position, syms)
+    # mask = np.ones_like(mask, dtype=bool)
+    denominator = np.logaddexp.reduce(log_probs[mask])
+    for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
+        preorder_mask_copy = copy.deepcopy(preorder_mask)
         new_parents = parents + (node,)
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
+        preorder_mask_copy.on_entry(position, node)
         for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
             new_parents,
             num_children=arity,
+            preorder_mask=preorder_mask_copy,
         ):
             yield SExpression(symbol, children), child_likelihood + likelihood
+
+        preorder_mask_copy.on_exit(position, node)
 
 
 def enumerate_children_and_likelihoods_dfs(
@@ -89,19 +108,23 @@ def enumerate_children_and_likelihoods_dfs(
     min_likelihood: float,
     parents: Tuple[int],
     num_children: int,
+    preorder_mask: PreorderMask,
 ):
     """
     Enumerate all children and their likelihoods.
     """
-
     if num_children == 0:
         yield [], 0
         return
 
     for last_child, last_likelihood in enumerate_tree_dist_dfs(
-        tree_dist, min_likelihood, parents, num_children - 1
+        tree_dist, min_likelihood, parents, num_children - 1, preorder_mask
     ):
         for rest_children, rest_likelihood in enumerate_children_and_likelihoods_dfs(
-            tree_dist, min_likelihood - last_likelihood, parents, num_children - 1
+            tree_dist,
+            min_likelihood - last_likelihood,
+            parents,
+            num_children - 1,
+            preorder_mask,
         ):
             yield rest_children + [last_child], last_likelihood + rest_likelihood

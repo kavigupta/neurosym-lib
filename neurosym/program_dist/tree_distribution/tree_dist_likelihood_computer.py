@@ -5,10 +5,7 @@ def compute_likelihood(tree_dist, program, start_index, start_position, preorder
     key = start_index + (start_position,)
     syms, log_probs = tree_dist.likelihood_arrays[key]
     mask = preorder_mask.compute_mask(start_position, syms)
-    print([tree_dist.symbols[i] for i in syms])
-    print(mask)
     denominator = np.logaddexp.reduce(log_probs[mask])
-    print(tree_dist.symbol_to_index)
     top_symbol = tree_dist.symbol_to_index[program.symbol]
     likelihood = (
         tree_dist.distribution_dict[key].get(top_symbol, -float("inf")) - denominator

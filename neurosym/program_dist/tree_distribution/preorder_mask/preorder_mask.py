@@ -14,7 +14,7 @@ class PreorderMask(ABC):
         self.tree_dist = tree_dist
 
     @abstractmethod
-    def compute_mask(self, symbols: List[int]) -> List[bool]:
+    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
         """
         Compute the mask at the current position with the current symbols.
 
