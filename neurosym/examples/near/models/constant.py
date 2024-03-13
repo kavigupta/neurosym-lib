@@ -37,7 +37,7 @@ class Constant(nn.Module):
                 self.probs, num_samples=prod(dims), replacement=True
             ).reshape(dims)
         else:
-            out = self.constant.expand(dims)
+            out = self.constant.unsqueeze(-1).expand(dims)
         return out
 
 
