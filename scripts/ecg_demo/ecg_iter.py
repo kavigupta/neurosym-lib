@@ -88,23 +88,22 @@ datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_worker
 input_dim, output_dim = datamodule.train.get_io_dims()
 
 
-# def subset_selector(x, channel, feat, typ):
-#     """
-#     Assuming X looks like this:
-#     [--------------------------------------------------]
-#     <-------ch1—--------->   ..   <-------ch12--------->
-#     <-- f1 -->..<-- f6 --> |
-#     <int><amp>..<int><amp>
-#     """
-#     typ_dim = 1
-#     feat_dim = typ_dim * 2
-#     channel_dim = feat_dim * 6
-#     typ_idx = typ_dim * (0 if typ == "interval" else 1)
-#     feat_idx = feat_dim * feat(x).squeeze(-1)
-#     ch_idx = channel_dim * channel(x).squeeze(-1)
-#     idx = ch_idx + feat_idx + typ_idx
-#     return x.gather(dim=-1, index=idx[..., None])
-
+def subset_selector(x, channel, feat, typ):
+    """
+    Assuming X looks like this:
+    [--------------------------------------------------]
+    <-------ch1—--------->   ..   <-------ch12--------->
+    <-- f1 -->..<-- f6 --> |
+    <int><amp>..<int><amp>
+    """
+    typ_dim = 1
+    feat_dim = typ_dim * 2
+    channel_dim = feat_dim * 6
+    typ_idx = typ_dim * (0 if typ == "interval" else 1)
+    feat_idx = feat_dim * feat(x).squeeze(-1)
+    ch_idx = channel_dim * channel(x).squeeze(-1)
+    idx = ch_idx + feat_idx + typ_idx
+    return x.gather(dim=-1, index=idx[..., None])
 
 def subset_selector_all_feat(x, channel, typ):
     x = x.reshape(-1, 12, 6, 2)
@@ -396,4 +395,6 @@ with open("best_program_nodes.pkl", "wb") as f:
 
 # loop = asyncio.get_event_loop()
 # best_program_nodes = loop.run_until_complete(find_best_programs())
-import IPython; IPython.embed()
+import IPython
+
+IPython.embed()
