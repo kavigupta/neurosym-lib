@@ -347,6 +347,6 @@ class BigramLikelihoodTest(unittest.TestCase):
         self.assertLikelihood(
             fam_with_vars.uniform(),
             "(call (lam ($0_0)) (1))",
-            "log(1/80)",
+            "log(1/512)",
             family=fam_with_vars,
         )

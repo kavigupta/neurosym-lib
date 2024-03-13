@@ -192,17 +192,11 @@ class TreeDistributionTest(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                ("(1)", Fraction(1, 4)),
-                ("(2)", Fraction(1, 4)),
-                ("(+ (1) (1))", Fraction(1, 64)),
-                ("(+ (2) (1))", Fraction(1, 64)),
-                ("(+ (1) (2))", Fraction(1, 64)),
-                ("(+ (2) (2))", Fraction(1, 64)),
-                ("(call (lam ($0_0)) (1))", Fraction(1, 80)),
-                ("(call (lam (1)) (1))", Fraction(1, 80)),
-                ("(call (lam (2)) (1))", Fraction(1, 80)),
-                ("(call (lam ($0_0)) (2))", Fraction(1, 80)),
-                ("(call (lam (1)) (2))", Fraction(1, 80)),
-                ("(call (lam (2)) (2))", Fraction(1, 80)),
+                ("($0_0)", Fraction(1, 8)),
+                ("($1_0)", Fraction(1, 8)),
+                ("($2_0)", Fraction(1, 8)),
+                ("($3_0)", Fraction(1, 8)),
+                ("(1)", Fraction(1, 8)),
+                ("(2)", Fraction(1, 8)),
             },
         )
