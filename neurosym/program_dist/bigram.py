@@ -52,7 +52,7 @@ class BigramProgramCounts:
         return arr
 
     def add_to_denominator_array(self, arr, batch_idx, backmap):
-        for (parent_sym, parent_child_idx), children in self.denominators.items():
+        for [(parent_sym, parent_child_idx)], children in self.denominators.items():
             for child_syms, count in children.items():
                 arr[batch_idx, parent_sym, parent_child_idx, backmap[child_syms]] = (
                     count
@@ -148,10 +148,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
                 tree_dist, self._valid_mask, programs
             )
             all_counts.append(
-                BigramProgramCounts(
-                    numerators={k: dict(v) for k, v in numerators.items()},
-                    denominators={k: dict(v) for k, v in denominators.items()},
-                )
+                BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
         return BigramProgramCountsBatch(all_counts)
 
@@ -301,6 +298,8 @@ def count_programs(
         accumulate_counts(
             tree_dist, valid_mask, program, numerators, denominators, ((0, 0),)
         )
+    numerators = {k: dict(v) for k, v in numerators.items()}
+    denominators = {k: dict(v) for k, v in denominators.items()}
     return numerators, denominators
 
 
