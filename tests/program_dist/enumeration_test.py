@@ -11,9 +11,9 @@ from .bigram_test import fam, fam_with_vars
 arith_dist = ns.TreeDistribution(
     1,
     {
-        (0, 0): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
-        (1, 0): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
-        (1, 1): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
+        ((0, 0),): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
+        ((1, 0),): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
+        ((1, 1),): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
     },
     [("root", 1), ("+", 2), ("1", 0)],
 )

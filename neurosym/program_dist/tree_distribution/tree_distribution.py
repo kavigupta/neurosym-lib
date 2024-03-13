@@ -23,10 +23,11 @@ class TreeDistribution:
     """
 
     limit: int
-    # input: tuple of ancestor production indices followed by
-    #   the position of the node in its parent's children
+    # input: tuple of tuples of (ancestor index, position)
+    #        which is the path to the current node, with the
+    #        most immediate ancestor at the end.
     # output: list of (production index, likelihood) pairs
-    distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
+    distribution: Dict[Tuple[Tuple[int, int], ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
 
