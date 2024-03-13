@@ -7,6 +7,12 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
+    TypePreorderMask,
+)
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
@@ -143,9 +149,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         tree_dist = self.tree_distribution_skeleton
         all_counts = []
         for programs in data:
-            numerators, denominators = count_programs(
-                tree_dist, self._valid_mask, programs
-            )
+            numerators, denominators = count_programs(tree_dist, programs)
             all_counts.append(
                 BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
@@ -228,6 +232,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self, distribution: Union[BigramProgramDistribution, NoneType]
     ) -> TreeDistribution:
         if isinstance(distribution, BigramProgramDistribution):
+            assert isinstance(distribution, BigramProgramDistribution), type(
+                distribution
+            )
             dist = defaultdict(list)
             for parent, position, child in zip(
                 *np.where(distribution.distribution > 0)
@@ -240,7 +247,12 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             assert distribution is None
             dist = None
 
-        return TreeDistribution(1, dist, list(zip(self._symbols, self._arities)))
+        return TreeDistribution(
+            1,
+            dist,
+            list(zip(self._symbols, self._arities)),
+            lambda tree_dist: TypePreorderMask(tree_dist, self._dsl),
+        )
 
 
 def bigram_mask(dsl):
@@ -283,17 +295,22 @@ def counts_to_probabilities(counts):
     )
 
 
-def count_programs(
-    tree_dist: TreeDistribution, valid_mask: np.ndarray, programs: List[SExpression]
-):
+def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
     """
     Count the productions in the programs, indexed by the path to the node.
     """
     numerators = defaultdict(lambda: defaultdict(int))
     denominators = defaultdict(lambda: defaultdict(int))
     for program in programs:
+        preorder_mask = tree_dist.mask_constructor(tree_dist)
+        preorder_mask.on_entry(0, 0)
         accumulate_counts(
-            tree_dist, valid_mask, program, numerators, denominators, ((0, 0),)
+            tree_dist,
+            program,
+            numerators,
+            denominators,
+            ((0, 0),),
+            preorder_mask=preorder_mask,
         )
     numerators = {k: dict(v) for k, v in numerators.items()}
     denominators = {k: dict(v) for k, v in denominators.items()}
@@ -302,20 +319,30 @@ def count_programs(
 
 def accumulate_counts(
     tree_dist: TreeDistribution,
-    valid_mask: np.ndarray,
     program: SExpression,
     numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]],
     denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]],
     ancestors: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
 ):
+    parent_position = ancestors[-1][1]
     this_idx = tree_dist.symbol_to_index[program.symbol]
     numerators[ancestors][this_idx] += 1
-    [elements] = np.where(valid_mask[tuple(idx for idxs in ancestors for idx in idxs)])
+    possibilities = np.arange(len(tree_dist.symbols))
+    mask = preorder_mask.compute_mask(parent_position, possibilities)
+    preorder_mask.on_entry(parent_position, this_idx)
+    elements = possibilities[mask]
     elements = tuple(int(x) for x in elements)
     denominators[ancestors][elements] += 1
     for j, child in enumerate(program.children):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
         accumulate_counts(
-            tree_dist, valid_mask, child, numerators, denominators, new_ancestors
+            tree_dist,
+            child,
+            numerators,
+            denominators,
+            new_ancestors,
+            preorder_mask=preorder_mask,
         )
+    preorder_mask.on_exit(parent_position, this_idx)

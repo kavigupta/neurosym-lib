@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from types import NoneType
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -11,6 +11,9 @@ from neurosym.program_dist.distribution import (
     ProgramDistributionFamily,
 )
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
 from neurosym.programs.s_expression import SExpression
 
 
@@ -31,6 +34,8 @@ class TreeDistribution:
     distribution: Dict[Tuple[Tuple[int, int], ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
+    # Preorder mask constructor
+    mask_constructor: Callable[["TreeDistribution"], PreorderMask]
 
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
@@ -41,15 +46,24 @@ class TreeDistribution:
         return {k: dict(v) for k, v in self.distribution.items()}
 
     @cached_property
-    def sampling_dict_arrays(
+    def likelihood_arrays(
         self,
     ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
         return {
             k: (
                 np.array([x[0] for x in v]),
-                np.exp([x[1] for x in v]),
+                np.array([x[1] for x in v]),
             )
             for k, v in self.distribution.items()
+        }
+
+    @cached_property
+    def sampling_dict_arrays(
+        self,
+    ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
+        return {
+            k: (syms, np.exp(log_probs))
+            for k, (syms, log_probs) in self.likelihood_arrays.items()
         }
 
 
@@ -117,7 +131,10 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         from .tree_dist_likelihood_computer import compute_likelihood
 
-        return compute_likelihood(self.tree_distribution(dist), program, ((0, 0),))
+        dist = self.tree_distribution(dist)
+        preorder_mask = dist.mask_constructor(dist)
+        preorder_mask.on_entry(0, 0)
+        return compute_likelihood(dist, program, ((0, 0),), preorder_mask)
 
     def sample(
         self,

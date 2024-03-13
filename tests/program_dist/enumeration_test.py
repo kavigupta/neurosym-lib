@@ -16,6 +16,7 @@ arith_dist = ns.TreeDistribution(
         ((1, 1),): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
     },
     [("root", 1), ("+", 2), ("1", 0)],
+    ns.NoopPreorderMask,
 )
 
 
@@ -186,17 +187,20 @@ class TreeDistributionTest(unittest.TestCase):
             fam_with_vars, fam_with_vars.uniform(), min_likelihood=-6
         )
 
-        # note that this is currently incorrect. the types of the variables
-        # are being taken into account, but the environment is not
-
         self.assertEqual(
             result,
             {
-                ("($0_0)", Fraction(1, 8)),
-                ("($1_0)", Fraction(1, 8)),
-                ("($2_0)", Fraction(1, 8)),
-                ("($3_0)", Fraction(1, 8)),
-                ("(1)", Fraction(1, 8)),
-                ("(2)", Fraction(1, 8)),
+                ("(1)", Fraction(1, 4)),
+                ("(2)", Fraction(1, 4)),
+                ("(+ (1) (1))", Fraction(1, 64)),
+                ("(+ (2) (1))", Fraction(1, 64)),
+                ("(+ (1) (2))", Fraction(1, 64)),
+                ("(+ (2) (2))", Fraction(1, 64)),
+                ("(call (lam ($0_0)) (1))", Fraction(1, 80)),
+                ("(call (lam (1)) (1))", Fraction(1, 80)),
+                ("(call (lam (2)) (1))", Fraction(1, 80)),
+                ("(call (lam ($0_0)) (2))", Fraction(1, 80)),
+                ("(call (lam (1)) (2))", Fraction(1, 80)),
+                ("(call (lam (2)) (2))", Fraction(1, 80)),
             },
         )

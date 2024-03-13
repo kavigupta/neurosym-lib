@@ -161,13 +161,10 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
             fam_with_vars.sample(dist, np.random.RandomState(i)) for i in range(n)
         ]
         samples = [ns.render_s_expression(x) for x in samples]
-        # note that this is currently incorrect. you shouldn't be able to use
-        # variables at the top level at all
-        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($0_0)"))
-        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($1_0)"))
-        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($2_0)"))
-        self.assertBinomial(n, 1 / 8, 0.01, samples.count("(1)"))
-        self.assertBinomial(n, 1 / 8, 0.01, samples.count("(2)"))
+        self.assertBinomial(n, 1 / 4, 0.01, samples.count("(1)"))
+        self.assertBinomial(n, 1 / 4, 0.01, samples.count("(2)"))
+        # see test_call_with_variables for the math
+        self.assertBinomial(n, 1 / 80, 0.01, samples.count("(call (lam ($0_0)) (1))"))
 
 
 class BigramCountProgramsTest(unittest.TestCase):
@@ -333,13 +330,11 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
     def test_variables_loss(self):
         logits = torch.zeros((1, 10, 2, 10))
-        # note that this is currently incorrect. the types of the variables
-        # are being taken into account, but the environment is not
-        self.assertLoss(logits, [["(1)"]], [np.log(8)], family=fam_with_vars)
+        self.assertLoss(logits, [["(1)"]], [np.log(4)], family=fam_with_vars)
         self.assertLoss(
             logits,
             [["(call (lam ($0_0)) (1))"]],
-            [np.log(512)],
+            [np.log(4 * 5 * 4)],
             family=fam_with_vars,
         )
 
@@ -363,13 +358,11 @@ class BigramLikelihoodTest(unittest.TestCase):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
 
     def test_leaf_with_variables(self):
-        # this is currently incorrect, it should be 1/4
         self.assertLikelihood(
-            fam_with_vars.uniform(), "(1)", "log(1/8)", family=fam_with_vars
+            fam_with_vars.uniform(), "(1)", "log(1/4)", family=fam_with_vars
         )
 
     def test_call_with_variables(self):
-        # this is currently incorrect, it should be 1/80
         # 1/4 for call
         # 1 for lam
         # 1/5 for $0_0
@@ -377,6 +370,6 @@ class BigramLikelihoodTest(unittest.TestCase):
         self.assertLikelihood(
             fam_with_vars.uniform(),
             "(call (lam ($0_0)) (1))",
-            "log(1/512)",
+            "log(1/80)",
             family=fam_with_vars,
         )
