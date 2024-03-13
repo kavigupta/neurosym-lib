@@ -156,18 +156,18 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
 
     def test_sample_with_variables(self):
         dist = fam_with_vars.uniform()
-        n = 10000
+        n = 20000
         samples = [
             fam_with_vars.sample(dist, np.random.RandomState(i)) for i in range(n)
         ]
         samples = [ns.render_s_expression(x) for x in samples]
         # note that this is currently incorrect. you shouldn't be able to use
         # variables at the top level at all
-        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($0_0)"))
-        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($1_0)"))
-        self.assertBinomial(n, 1 / 8, 0.015, samples.count("($2_0)"))
-        self.assertBinomial(n, 1 / 8, 0.015, samples.count("(1)"))
-        self.assertBinomial(n, 1 / 8, 0.015, samples.count("(2)"))
+        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($0_0)"))
+        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($1_0)"))
+        self.assertBinomial(n, 1 / 8, 0.01, samples.count("($2_0)"))
+        self.assertBinomial(n, 1 / 8, 0.01, samples.count("(1)"))
+        self.assertBinomial(n, 1 / 8, 0.01, samples.count("(2)"))
 
 
 class BigramCountProgramsTest(unittest.TestCase):
@@ -317,8 +317,8 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
 
 class BigramLikelihoodTest(unittest.TestCase):
-    def assertLikelihood(self, dist, program, str_prob):
-        likelihood = fam.compute_likelihood(dist, ns.parse_s_expression(program))
+    def assertLikelihood(self, dist, program, str_prob, family=fam):
+        likelihood = family.compute_likelihood(dist, ns.parse_s_expression(program))
         prob = np.exp(likelihood)
         prob = Fraction.from_float(float(prob)).limit_denominator(1000)
         result = f"log({prob})"
