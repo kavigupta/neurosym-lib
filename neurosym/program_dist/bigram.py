@@ -54,9 +54,8 @@ class BigramProgramCounts:
     def add_to_denominator_array(self, arr, batch_idx, backmap):
         for [(parent_sym, parent_child_idx)], children in self.denominators.items():
             for child_syms, count in children.items():
-                arr[
-                    batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
-                ] = count
+                key = batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
+                arr[key] = count
         return arr
 
 
