@@ -42,21 +42,11 @@ class BigramProgramDistributionBatch:
 class BigramProgramCounts:
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
     numerators: Dict[Tuple[int, int], Dict[int, int]]
-    # map from (parent_sym, parent_child_idx) to map from potential child_sym values to count
-    denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]]
 
     def add_to_numerator_array(self, arr, batch_idx):
         for (parent_sym, parent_child_idx), children in self.numerators.items():
             for child_sym, count in children.items():
                 arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
-        return arr
-
-    def add_to_denominator_array(self, arr, batch_idx, backmap):
-        for (parent_sym, parent_child_idx), children in self.denominators.items():
-            for child_syms, count in children.items():
-                arr[batch_idx, parent_sym, parent_child_idx, backmap[child_syms]] = (
-                    count
-                )
         return arr
 
 
@@ -72,30 +62,9 @@ class BigramProgramCountsBatch:
             dist.add_to_numerator_array(numerators, i)
         return numerators
 
-    def denominators(self, num_symbols, max_arity):
-        denominator_keys = {
-            key
-            for counts in self.counts
-            for mapping in counts.denominators.values()
-            for key in mapping.keys()
-        }
-        denominator_keys = sorted(denominator_keys)
-        denominator_keys_backmap = {key: i for i, key in enumerate(denominator_keys)}
-        denominators = np.zeros(
-            (len(self.counts), num_symbols, max_arity, len(denominator_keys)),
-            dtype=np.int32,
-        )
-        for i, counts in enumerate(self.counts):
-            counts.add_to_denominator_array(denominators, i, denominator_keys_backmap)
-
-        return denominators, denominator_keys
-
     def to_distribution(self, num_symbols, max_arity):
         numerators = self.numerators(num_symbols, max_arity)
-
-        # We do not need to handle denominators here, as this is just
-        # a simple conversion from counts to probabilities, and we do
-        # not need to handle the case where the denominator is 0.
+        # handle denominators
 
         return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
 
@@ -143,17 +112,11 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
         all_counts = []
         for programs in data:
-            numerators = defaultdict(lambda: defaultdict(int))
-            denominators = defaultdict(lambda: defaultdict(int))
+            counts = defaultdict(lambda: defaultdict(int))
             for program in programs:
-                self._count_program(
-                    program, numerators, denominators, parent_sym=0, parent_child_idx=0
-                )
+                self._count_program(program, counts, parent_sym=0, parent_child_idx=0)
             all_counts.append(
-                BigramProgramCounts(
-                    numerators={k: dict(v) for k, v in numerators.items()},
-                    denominators={k: dict(v) for k, v in denominators.items()},
-                )
+                BigramProgramCounts(numerators={k: dict(v) for k, v in counts.items()})
             )
         return BigramProgramCountsBatch(all_counts)
 
@@ -165,86 +128,30 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def _count_program(
         self,
         program: SExpression,
-        numerators: Dict[Tuple[int, int], Dict[int, int]],
-        denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]],
+        counts: Dict[Tuple[int, int], Dict[int, int]],
         *,
         parent_sym: int,
         parent_child_idx: int,
     ):
         this_idx = self._symbol_to_idx[program.symbol]
-        numerators[parent_sym, parent_child_idx][this_idx] += 1
-        [elements] = np.where(self._valid_mask[parent_sym, parent_child_idx, :])
-        elements = tuple(int(x) for x in elements)
-        denominators[parent_sym, parent_child_idx][elements] += 1
+        counts[parent_sym, parent_child_idx][this_idx] += 1
         for j, child in enumerate(program.children):
-            self._count_program(
-                child, numerators, denominators, parent_sym=this_idx, parent_child_idx=j
-            )
+            self._count_program(child, counts, parent_sym=this_idx, parent_child_idx=j)
 
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
         """
-        Let p be a program, g be an ngram, s be a symbol, and d be the `denominator`
-            (i.e., the set of possible children for a given parent and position).
-
-        sum_p log P(p | theta)
-            = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
-            = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
-            = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
-            = [sum_p sum_{(g, s, d) in p} theta_{g, s}]
-                - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
-            = [numer] - [denom]
-
-        numer
-            = sum_p sum_{(g, s, d) in p} theta_{g, s}
-            = sum_g sum_s numcount_{g, s} theta_{g, s}
-            = (numcount * theta).sum()
-
-        denom
-            = sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})
-            = sum_g sum_d dencount_{g, d} log sum_{s' in d} exp(theta_{g, s'})
-
-        theta_by_denom(g, s', d) = theta_{g, s'} if s' in d, else -inf
-
-        denom
-            = sum_g sum_d dencount_{g, d} log sum_{s'} exp(theta_by_denom{g, s', d})
-
-        agg_theta_by_denom(g, d) = logsumexp(theta_by_denom(g, *, d))
-
-        denom
-            = sum_g sum_d dencount_{g, d} agg_theta_by_denom(g, d)
-            = (dencount * agg_theta_by_denom).sum()
-
+        E[log Q(|x)]
         """
-
-        assert parameters.shape[1:] == self.parameters_shape()
-        assert len(parameters.shape) == 4
-
-        numcount = actual.numerators(len(self._symbols), self._max_arity)
-        dencount, den_keys = actual.denominators(len(self._symbols), self._max_arity)
-        numcount, dencount = [
-            torch.tensor(x, device=parameters.device, dtype=torch.float32)
-            for x in (numcount, dencount)
-        ]
-
-        def agg_across_all_but_batch_axis(x, fn):
-            x = x.reshape(x.shape[0], -1)
-            return fn(x, -1)
-
-        numer = agg_across_all_but_batch_axis(numcount * parameters, torch.sum)
-
-        theta_by_denom = parameters[..., None].repeat(1, 1, 1, 1, len(den_keys))
-        for i, key in enumerate(den_keys):
-            print(i, key)
-            mask = torch.ones(
-                len(self._symbols), dtype=torch.bool, device=parameters.device
-            )
-            mask[list(key)] = False
-            theta_by_denom[..., mask, i] = -float("inf")
-        agg_theta_by_denom = torch.logsumexp(theta_by_denom, dim=-2)
-        denom = agg_across_all_but_batch_axis(dencount * agg_theta_by_denom, torch.sum)
-        return -(numer - denom)
+        # fix this to take into account the denominator
+        actual = torch.tensor(
+            actual.numerators(len(self._symbols), self._max_arity)
+        ).to(parameters.device)
+        parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
+        combination = actual * parameters
+        combination = combination.reshape(combination.shape[0], -1)
+        return -combination.sum(-1)
 
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
