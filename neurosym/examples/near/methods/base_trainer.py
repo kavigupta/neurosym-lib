@@ -6,8 +6,10 @@ import lightning as L
 import torch
 from torch import nn
 
+
 class TrainingError(Exception):
     pass
+
 
 @dataclass
 class BaseTrainerConfig:
@@ -43,7 +45,7 @@ class BaseTrainer(L.LightningModule):
         super().__init__()
         self.config = config
         self.model = model
-        self.save_hyperparameters(ignore=['model'])
+        self.save_hyperparameters(ignore=["model"])
 
     def loss(self) -> dict:
         raise NotImplementedError("Loss function not implemented.")

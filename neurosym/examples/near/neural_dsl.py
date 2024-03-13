@@ -25,6 +25,7 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     Required to run NEAR.
     """
+
     neural_fn_tag = "__neural_dsl_internal__"
     # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
@@ -120,7 +121,10 @@ def create_module_for_type(module_factory, t, known_atom_shapes):
 
 
 def create_modules(tag, types, module_factory, known_atom_shapes=dict()):
-    return {t: (tag, create_module_for_type(module_factory, t, known_atom_shapes)) for t in types}
+    return {
+        t: (tag, create_module_for_type(module_factory, t, known_atom_shapes))
+        for t in types
+    }
 
 
 def compute_io_shape(t, known_atom_shapes):

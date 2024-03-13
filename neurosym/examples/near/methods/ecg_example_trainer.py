@@ -67,7 +67,7 @@ class ECGTrainer(BaseTrainer):
         f1_scores = ECGTrainer.compute_average_f1_score(
             predictions, targets, num_labels
         )  # noqa: E501
-        
+
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
@@ -110,7 +110,7 @@ class ECGTrainer(BaseTrainer):
                 case "CrossEntropyLoss":
                     targets = targets.argmax(dim=-1)
                     # predictions = predictions.softmax(dim=-1)
-        
+
         loss = self.loss_fn(predictions, targets)
         return loss
 
@@ -119,14 +119,16 @@ class ECGTrainer(BaseTrainer):
         try:
             predictions = self.model(inputs.float())
             predictions = predictions.clamp(min=1e-10, max=1e10)
-            metrics_dict = self.program_accuracy(predictions.detach().cpu(), outputs.cpu(), inputs.cpu())
+            metrics_dict = self.program_accuracy(
+                predictions.detach().cpu(), outputs.cpu(), inputs.cpu()
+            )
             losses = dict(loss=self.loss(predictions, outputs))
             if validation:
-                self.log('val_acc', metrics_dict['hamming_accuracy'])
-                self.log('val_auroc', metrics_dict['auroc'])
+                self.log("val_acc", metrics_dict["hamming_accuracy"])
+                self.log("val_auroc", metrics_dict["auroc"])
             else:
-                self.log('train_acc', metrics_dict['hamming_accuracy'])
-                self.log('train_auroc', metrics_dict['auroc'])
+                self.log("train_acc", metrics_dict["hamming_accuracy"])
+                self.log("train_auroc", metrics_dict["auroc"])
         except Exception as e:
             # print("training error")
             # import IPython; IPython.embed()
@@ -140,11 +142,9 @@ class ECGTrainer(BaseTrainer):
         else:
             predictions = torch.round(torch.sigmoid(predictions))
         metrics_dict = ECGTrainer.label_correctness(
-            predictions.argmax(dim=-1),
-            outputs.argmax(dim=-1),
-            self.config.num_labels
+            predictions.argmax(dim=-1), outputs.argmax(dim=-1), self.config.num_labels
         )
-        metrics_dict['auroc'] = roc_auc_score(y_true=outputs, y_score=predictions)
+        metrics_dict["auroc"] = roc_auc_score(y_true=outputs, y_score=predictions)
         return metrics_dict
 
 
@@ -153,19 +153,21 @@ def main():
 
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
-    dataset_factory = lambda train_seed: DatasetWrapper(
-        DatasetFromNpy(
-            "../data/classification_example/train_ex_data.npy",
-            "../data/classification_example/train_ex_labels.npy",
-            train_seed,
-        ),
-        DatasetFromNpy(
-            "../data/classification_example/test_ex_data.npy",
-            "../data/classification_example/test_ex_labels.npy",
-            None,
-        ),
-        batch_size=200,
-    )
+    def dataset_factory(train_seed):
+        return DatasetWrapper(
+            DatasetFromNpy(
+                "../data/classification_example/train_ex_data.npy",
+                "../data/classification_example/train_ex_labels.npy",
+                train_seed,
+            ),
+            DatasetFromNpy(
+                "../data/classification_example/test_ex_data.npy",
+                "../data/classification_example/test_ex_labels.npy",
+                None,
+            ),
+            batch_size=200,
+        )
+
     datamodule = dataset_factory(42)
     # model = nn.Sequential(
     #     nn.Linear(2, 100),

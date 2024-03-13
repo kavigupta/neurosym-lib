@@ -12,7 +12,8 @@ from .base import BaseConfig
 class ConstantConfig(BaseConfig):
     size: int
     init: str = "random"
-    sample_categorical : bool = False
+    sample_categorical: bool = False
+
 
 class Constant(nn.Module):
     """Simple Constant module."""
@@ -25,15 +26,17 @@ class Constant(nn.Module):
                 self.constant = torch.nn.Parameter(torch.randn(config.size))
             case "zeros":
                 self.constant = torch.nn.Parameter(torch.zeros(config.size))
-        
+
         if config.sample_categorical:
             self.probs = torch.nn.Parameter(torch.ones(config.size) / config.size)
 
     def forward(self, x=None):
         dims = x.shape[:-1] + (1,)
         if self.config.sample_categorical:
-            out = torch.multinomial(self.probs, num_samples=prod(dims), replacement=True).reshape(dims)
-        else:        
+            out = torch.multinomial(
+                self.probs, num_samples=prod(dims), replacement=True
+            ).reshape(dims)
+        else:
             out = self.constant.expand(dims)
         return out
 

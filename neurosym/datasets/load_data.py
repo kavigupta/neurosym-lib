@@ -76,7 +76,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         # conver float64 to float32
         if np.issubdtype(self.inputs.dtype, np.float64):
             self.inputs = self.inputs.astype(np.float32)
-        
+
         if np.issubdtype(self.outputs.dtype, np.float64):
             self.outputs = self.outputs.astype(np.float32)
 
@@ -91,7 +91,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     def get_io_dims(self):
         if self.is_regression:
             return self.inputs.shape[-1], self.outputs.shape[-1]
-        
+
         if np.issubdtype(self.outputs.dtype, np.integer):
             n_classes = len(np.unique(self.outputs))
         else:
@@ -125,13 +125,28 @@ class DatasetWrapper(L.LightningDataModule):
         self.pin_memory = True
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
+        return torch.utils.data.DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size, num_workers=self.n_workers, pin_memory=self.pin_memory)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
 
 def numpy_dataset_from_github(
