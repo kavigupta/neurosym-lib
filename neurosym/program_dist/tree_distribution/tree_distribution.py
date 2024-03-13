@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Tuple
+from types import NoneType
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -59,7 +60,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
 
     @abstractmethod
     def compute_tree_distribution(
-        self, distribution: ProgramDistribution
+        self, distribution: Union[ProgramDistribution, NoneType]
     ) -> TreeDistribution:
         """
         Returns a tree distribution representing the given program distribution.
@@ -77,6 +78,14 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
                 distribution
             )
         return distribution._tree_distribution
+
+    @cached_property
+    def tree_distribution_skeleton(self) -> TreeDistribution:
+        """
+        Cached version of `compute_tree_distribution(None)`.
+        """
+
+        return self.compute_tree_distribution(None)
 
     def enumerate(
         self,

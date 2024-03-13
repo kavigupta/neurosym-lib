@@ -252,13 +252,18 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def compute_tree_distribution(
         self, distribution: BigramProgramDistribution
     ) -> TreeDistribution:
-        assert isinstance(distribution, BigramProgramDistribution)
-        dist = defaultdict(list)
-        for parent, position, child in zip(*np.where(distribution.distribution > 0)):
-            dist[(parent, position),].append(
-                (child, np.log(distribution.distribution[parent, position, child]))
-            )
-        dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+        if isinstance(distribution, BigramProgramDistribution):
+            dist = defaultdict(list)
+            for parent, position, child in zip(
+                *np.where(distribution.distribution > 0)
+            ):
+                dist[(parent, position),].append(
+                    (child, np.log(distribution.distribution[parent, position, child]))
+                )
+            dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+        else:
+            assert distribution is None
+            dist = None
 
         return TreeDistribution(1, dist, list(zip(self._symbols, self._arities)))
 
