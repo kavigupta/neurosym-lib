@@ -144,7 +144,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         tree_dist = self.compute_tree_distribution(None)
         all_counts = []
         for programs in data:
-            numerators, denominators = count_programs(tree_dist, self._valid_mask, programs)
+            numerators, denominators = count_programs(
+                tree_dist, self._valid_mask, programs
+            )
             all_counts.append(
                 BigramProgramCounts(
                     numerators={k: dict(v) for k, v in numerators.items()},
@@ -318,9 +320,6 @@ def accumulate_counts(
     for j, child in enumerate(program.children):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
-        accumulate_counts(tree_dist, valid_mask, child, numerators, denominators, new_ancestors)
-        # self._count_program(
-        #     child, numerators, denominators, parent_sym=this_idx, parent_child_idx=j
-        # )
-    # counts[ancestors][this_idx] += 1
-    # for j, child in enumerate(program.children):
+        accumulate_counts(
+            tree_dist, valid_mask, child, numerators, denominators, new_ancestors
+        )
