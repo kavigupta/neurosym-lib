@@ -119,7 +119,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         dist = self.tree_distribution(dist)
         preorder_mask = dist.mask_constructor(dist)
         preorder_mask.on_entry(0, 0)
-        return compute_likelihood(self.tree_distribution(dist), program, ((0, 0),), preorder_mask)
+        return compute_likelihood(dist, program, ((0, 0),), preorder_mask)
 
     def sample(
         self,

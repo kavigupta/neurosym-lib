@@ -8,7 +8,8 @@ def compute_likelihood(tree_dist, program, parents, preorder_mask):
     denominator = np.logaddexp.reduce(log_probs[mask])
     top_symbol = tree_dist.symbol_to_index[program.symbol]
     likelihood = (
-        tree_dist.distribution_dict[parents].get(top_symbol, -float("inf")) - denominator
+        tree_dist.distribution_dict[parents].get(top_symbol, -float("inf"))
+        - denominator
     )
     if likelihood == -float("inf"):
         return -float("inf")

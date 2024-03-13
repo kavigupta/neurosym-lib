@@ -255,7 +255,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def compute_tree_distribution(
         self, distribution: BigramProgramDistribution
     ) -> TreeDistribution:
-        assert isinstance(distribution, BigramProgramDistribution)
+        assert isinstance(distribution, BigramProgramDistribution), type(distribution)
         dist = defaultdict(list)
         for parent, position, child in zip(*np.where(distribution.distribution > 0)):
             dist[(parent, position),].append(
