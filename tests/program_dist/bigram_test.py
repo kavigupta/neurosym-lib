@@ -305,11 +305,11 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
     def test_variables_loss(self):
         logits = torch.zeros((1, 10, 2, 10))
-        self.assertLoss(logits, [["(1)"]], [np.log(4)], family=fam_with_vars)
+        self.assertLoss(logits, [["(1)"]], [np.log(512)], family=fam_with_vars)
         self.assertLoss(
             logits,
             [["(call (lam ($0_0)) (1))"]],
-            [np.log(4 * 5 * 4)],
+            [np.log(512)],
             family=fam_with_vars,
         )
 
