@@ -41,11 +41,13 @@ class TreeDistribution:
         return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
 
     @cached_property
-    def distribution_dict(self) -> Dict[Tuple[int, ...], Dict[int, float]]:
+    def distribution_dict(self) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, float]]:
         return {k: dict(v) for k, v in self.distribution.items()}
 
     @cached_property
-    def likelihood_arrays(self) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
+    def likelihood_arrays(
+        self,
+    ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
         return {
             k: (
                 np.array([x[0] for x in v]),
