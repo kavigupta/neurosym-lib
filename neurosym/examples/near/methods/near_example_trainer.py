@@ -86,11 +86,11 @@ class NEARTrainer(BaseTrainer):
                         targets = torch.nn.functional.one_hot(
                             targets, num_classes=self.config.num_labels
                         ).float()
-                    predictions = predictions.view(-1, predictions.shape[-1]).float()
+                    predictions = predictions.reshape(-1, predictions.shape[-1]).float()
                     targets = targets.view(-1, targets.shape[-1]).float()
                 case "NLLLoss":
                     predictions = (
-                        predictions.view(-1, predictions.shape[-1])
+                        predictions.reshape(-1, predictions.shape[-1])
                         .clamp(min=1e-10)
                         .log()
                         .log_softmax(dim=-1)
@@ -132,58 +132,3 @@ class NEARTrainer(BaseTrainer):
             predictions, targets, self.config.num_labels
         )
         self.logger.log_metrics(correctness, step=self.global_step)
-
-
-def main():
-    import pytorch_lightning as pl
-
-    from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
-
-    dataset_factory = lambda train_seed: DatasetWrapper(
-        DatasetFromNpy(
-            "../data/classification_example/train_ex_data.npy",
-            "../data/classification_example/train_ex_labels.npy",
-            train_seed,
-        ),
-        DatasetFromNpy(
-            "../data/classification_example/test_ex_data.npy",
-            "../data/classification_example/test_ex_labels.npy",
-            None,
-        ),
-        batch_size=200,
-    )
-    datamodule = dataset_factory(42)
-    # model = nn.Sequential(
-    #     nn.Linear(2, 100),
-    #     nn.ReLU(),
-    #     nn.Linear(100, 2),
-    # )
-    model = nn.Linear(2, 2)
-    # model.weight.data = torch.tensor([[0., 1.], [0., 0.]])
-    # model.bias.data = torch.tensor([0., 0.])
-    trainer_cfg = NEARTrainerConfig(
-        lr=1e-4,
-        max_seq_len=100,
-        n_epochs=10000,
-        num_labels=2,
-        train_steps=len(datamodule.train),
-        loss_fn="NLLLoss",
-    )
-    pl_model = NEARTrainer(model, config=trainer_cfg)
-    trainer = pl.Trainer(
-        max_epochs=trainer_cfg.n_epochs,
-        devices="auto",
-        accelerator="cpu",
-        enable_checkpointing=False,
-        enable_model_summary=False,
-        logger=False,
-        callbacks=[],
-    )
-    trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
-    trainer.validate(pl_model, datamodule.val_dataloader())
-
-    print(trainer.callback_metrics)
-
-
-if __name__ == "__main__":
-    main()
