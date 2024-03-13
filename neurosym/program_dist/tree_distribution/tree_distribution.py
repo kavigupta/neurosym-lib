@@ -23,10 +23,11 @@ class TreeDistribution:
     """
 
     limit: int
-    # input: tuple of ancestor production indices followed by
-    #   the position of the node in its parent's children
+    # input: tuple of tuples of (ancestor index, position)
+    #        which is the path to the current node, with the
+    #        most immediate ancestor at the end.
     # output: list of (production index, likelihood) pairs
-    distribution: Dict[Tuple[int, ...], List[Tuple[int, float]]]
+    distribution: Dict[Tuple[Tuple[int, int], ...], List[Tuple[int, float]]]
     # production index -> (symbol, arity). at 0 should be the root.
     symbols: List[Tuple[str, int]]
 
@@ -35,13 +36,13 @@ class TreeDistribution:
         return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
 
     @cached_property
-    def distribution_dict(self) -> Dict[Tuple[int, ...], Dict[int, float]]:
+    def distribution_dict(self) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, float]]:
         return {k: dict(v) for k, v in self.distribution.items()}
 
     @cached_property
     def sampling_dict_arrays(
         self,
-    ) -> Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]:
+    ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
         return {
             k: (
                 np.array([x[0] for x in v]),
@@ -103,7 +104,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         from .tree_dist_likelihood_computer import compute_likelihood
 
-        return compute_likelihood(self.tree_distribution(dist), program, (0,), 0)
+        return compute_likelihood(self.tree_distribution(dist), program, ((0, 0),))
 
     def sample(
         self,

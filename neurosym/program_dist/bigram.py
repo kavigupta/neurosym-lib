@@ -162,7 +162,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         assert isinstance(distribution, BigramProgramDistribution)
         dist = defaultdict(list)
         for parent, position, child in zip(*np.where(distribution.distribution > 0)):
-            dist[parent, position].append(
+            dist[(parent, position),].append(
                 (child, np.log(distribution.distribution[parent, position, child]))
             )
         dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
