@@ -55,7 +55,7 @@ class DSL:
         """
         return self.get_production(sym).type_signature().arity()
 
-    def _productions_for_type(
+    def productions_for_type(
         self, typ: TypeWithEnvironment
     ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
         for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
@@ -76,7 +76,7 @@ class DSL:
                 production.symbol(),
                 tuple(Hole.of(t) for t in arg_types),
             )
-            for production, arg_types in self._productions_for_type(typ)
+            for production, arg_types in self.productions_for_type(typ)
         ]
 
     def get_production(self, symbol: str) -> Production:
@@ -147,7 +147,7 @@ class DSL:
             ):
                 continue
             rules[twe] = []
-            for prod, twes in self._productions_for_type(twe):
+            for prod, twes in self.productions_for_type(twe):
                 rules[twe].append((prod.symbol(), twes))
                 twes_to_expand.extend(twes)
         if not care_about_variables:
@@ -216,6 +216,14 @@ class DSL:
         return DSL(
             self.productions + [prod],
             self.valid_root_types,
+            self.max_type_depth,
+            self.max_env_depth,
+        )
+
+    def with_valid_root_types(self, valid_root_types):
+        return DSL(
+            self.productions,
+            valid_root_types,
             self.max_type_depth,
             self.max_env_depth,
         )
