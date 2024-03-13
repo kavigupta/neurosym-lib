@@ -305,13 +305,11 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
     def test_variables_loss(self):
         logits = torch.zeros((1, 10, 2, 10))
-        # note that this is currently incorrect. the types of the variables
-        # are being taken into account, but the environment is not
-        self.assertLoss(logits, [["($0_0)"]], [np.log(8)], family=fam_with_vars)
+        self.assertLoss(logits, [["(1)"]], [np.log(4)], family=fam_with_vars)
         self.assertLoss(
             logits,
             [["(call (lam ($0_0)) (1))"]],
-            [np.log(8 * 8 * 8)],
+            [np.log(4 * 5 * 4)],
             family=fam_with_vars,
         )
 
@@ -335,5 +333,20 @@ class BigramLikelihoodTest(unittest.TestCase):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
 
     def test_leaf_with_variables(self):
-        # this is currently incorrect. it should be 1/3
-        self.assertLikelihood(fam_with_vars.uniform(), "(1)", "log(1/8)")
+        # this is currently incorrect, it should be 1/4
+        self.assertLikelihood(
+            fam_with_vars.uniform(), "(1)", "log(1/8)", family=fam_with_vars
+        )
+
+    def test_call_with_variables(self):
+        # this is currently incorrect, it should be 1/80
+        # 1/4 for call
+        # 1 for lam
+        # 1/5 for $0_0
+        # 1/4 for 1
+        self.assertLikelihood(
+            fam_with_vars.uniform(),
+            "(call (lam ($0_0)) (1))",
+            "log(1/80)",
+            family=fam_with_vars,
+        )
