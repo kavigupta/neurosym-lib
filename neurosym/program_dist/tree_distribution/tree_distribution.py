@@ -104,7 +104,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         from .tree_dist_likelihood_computer import compute_likelihood
 
-        return compute_likelihood(self.tree_distribution(dist), program, (0,), 0)
+        return compute_likelihood(self.tree_distribution(dist), program, ((0, 0),))
 
     def sample(
         self,
