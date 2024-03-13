@@ -1,4 +1,6 @@
 import os
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -13,13 +15,14 @@ from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.types.type import ArrowType, AtomicType
 
-import warnings
 warnings.filterwarnings("ignore")
 import logging
+
 logging.getLogger("lightning.pytorch.utilities.rank_zero").setLevel(logging.WARNING)
 logging.getLogger("lightning.pytorch.accelerators.cuda").setLevel(logging.WARNING)
 logging.getLogger("lightning.pytorch.loops.evaluation_loop").setLevel(logging.WARNING)
-                                                                    
+
+
 def load_dataset_npz(features_pth, label_pth):
     assert os.path.exists(features_pth), f"{features_pth} does not exist."
     assert os.path.exists(label_pth), f"{label_pth} does not exist."
@@ -102,11 +105,15 @@ def subset_selector(x, channel, feat, typ):
     idx = ch_idx + feat_idx + typ_idx
     return x.gather(dim=-1, index=idx[..., None])
 
+
 def subset_selector_all_feat(x, channel, typ):
     x = x.reshape(-1, 12, 6, 2)
-    typ_idx = torch.full(size=(x.shape[0],), fill_value=(0 if typ == "interval" else 1), device=x.device)
-    ch_idx = channel(x).flatten()[:x.shape[0]] # [B]
+    typ_idx = torch.full(
+        size=(x.shape[0],), fill_value=(0 if typ == "interval" else 1), device=x.device
+    )
+    ch_idx = channel(x).flatten()[: x.shape[0]]  # [B]
     return x[torch.arange(x.shape[0]), ch_idx, :, typ_idx]
+
 
 def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     """Creates a domain-specific language (DSL) for neural symbolic computation.
@@ -294,8 +301,8 @@ def validation_cost(node):
     trainer = Trainer(
         max_epochs=100,
         devices="auto",
-        accelerator="cpu",
-        # accelerator="gpu",
+        # accelerator="cpu",
+        accelerator="gpu",
         enable_checkpointing=False,
         enable_model_summary=False,
         logger=False,
@@ -307,7 +314,9 @@ def validation_cost(node):
         initialized_p = neural_dsl.initialize(node.program)
     except near.PartialProgramNotFoundError:
         print("Partial program not found\n", render_s_expression(node.program))
-        import IPython; IPython.embed()
+        import IPython
+
+        IPython.embed()
         # Return a high cost if the partial program is not found
         return 10000.0
 
@@ -331,10 +340,11 @@ def validation_cost(node):
     # Return the validation loss
     return trainer.callback_metrics["val_acc"].item()
 
+
 def cost_plus_heuristic(node):
-    cost = validation_cost(node) # accuracy [0, 1]
+    cost = validation_cost(node)  # accuracy [0, 1]
     # n_holes = len(list(ns.all_holes(node.program)))
-    return (-1 * cost)
+    return -1 * cost
 
 
 def checker(node):
@@ -353,7 +363,9 @@ g = near.near_graph(
     ),
     is_goal=checker,
 )
-iterator = ns.search.bounded_astar(g, cost_plus_heuristic, max_depth=7)
+iterator = ns.search.async_bounded_astar(
+    g, cost_plus_heuristic, max_depth=15, max_workers=40
+)
 best_program_nodes = []
 for node in iterator:
     cost = validation_cost(node)
@@ -361,6 +373,7 @@ for node in iterator:
 
 # save the best program nodes
 import pickle
+
 with open("best_program_nodes.pkl", "wb") as f:
     pickle.dump(best_program_nodes, f)
 
@@ -377,4 +390,6 @@ with open("best_program_nodes.pkl", "wb") as f:
 
 # loop = asyncio.get_event_loop()
 # best_program_nodes = loop.run_until_complete(find_best_programs())
-import IPython; IPython.embed()
+import IPython
+
+IPython.embed()
