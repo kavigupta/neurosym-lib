@@ -219,3 +219,11 @@ class DSL:
             self.max_type_depth,
             self.max_env_depth,
         )
+
+    def with_valid_root_types(self, valid_root_types):
+        return DSL(
+            self.productions,
+            valid_root_types,
+            self.max_type_depth,
+            self.max_env_depth,
+        )
