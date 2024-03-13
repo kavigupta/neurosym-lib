@@ -24,6 +24,8 @@ class DSL:
     valid_root_types: Union[List[Type], NoneType]
     # max depth of a valid type for a program in this DSL
     max_type_depth: float
+    # max depth of a valid environment for a program in this DSL
+    max_env_depth: float
 
     def __post_init__(self):
         symbols = set()
@@ -53,7 +55,7 @@ class DSL:
         """
         return self.get_production(sym).type_signature().arity()
 
-    def _productions_for_type(
+    def productions_for_type(
         self, typ: TypeWithEnvironment
     ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
         for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
@@ -74,7 +76,7 @@ class DSL:
                 production.symbol(),
                 tuple(Hole.of(t) for t in arg_types),
             )
-            for production, arg_types in self._productions_for_type(typ)
+            for production, arg_types in self.productions_for_type(typ)
         ]
 
     def get_production(self, symbol: str) -> Production:
@@ -127,19 +129,25 @@ class DSL:
         twes_to_expand = [
             TypeWithEnvironment(
                 type,
-                Environment.empty()
-                if care_about_variables
-                else PermissiveEnvironmment(),
+                (
+                    Environment.empty()
+                    if care_about_variables
+                    else PermissiveEnvironmment()
+                ),
             )
             for type in valid_root_types
         ]
         rules = {}
         while len(twes_to_expand) > 0:
             twe = twes_to_expand.pop()
-            if twe.typ.depth > self.max_type_depth or twe in rules:
+            if (
+                twe.typ.depth > self.max_type_depth
+                or len(twe.env) > self.max_env_depth
+                or twe in rules
+            ):
                 continue
             rules[twe] = []
-            for prod, twes in self._productions_for_type(twe):
+            for prod, twes in self.productions_for_type(twe):
                 rules[twe].append((prod.symbol(), twes))
                 twes_to_expand.extend(twes)
         if not care_about_variables:
@@ -206,5 +214,16 @@ class DSL:
 
     def add_production(self, prod):
         return DSL(
-            self.productions + [prod], self.valid_root_types, self.max_type_depth
+            self.productions + [prod],
+            self.valid_root_types,
+            self.max_type_depth,
+            self.max_env_depth,
+        )
+
+    def with_valid_root_types(self, valid_root_types):
+        return DSL(
+            self.productions,
+            valid_root_types,
+            self.max_type_depth,
+            self.max_env_depth,
         )

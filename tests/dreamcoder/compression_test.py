@@ -15,7 +15,10 @@ def corpus():
     fam = ns.BigramProgramDistributionFamily(dsl, valid_root_types=[out_t])
     dist = fam.uniform()
     return sorted(
-        set(fam.sample(dist, 100, np.random.RandomState(0), depth_limit=20)),
+        {
+            fam.sample(dist, np.random.RandomState(i), depth_limit=20)
+            for i in range(100)
+        },
         key=str,
     )
 

@@ -1,33 +1,117 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
-from typing import List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
+    TypePreorderMask,
+)
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
 
-from .distribution import ProgramDistributionFamily
+from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
 
 @dataclass
 class BigramProgramDistribution:
     distribution: np.ndarray
 
+    def __post_init__(self):
+        assert self.distribution.ndim == 3
+        assert self.distribution.shape[0] == self.distribution.shape[2]
+
 
 @dataclass
-class BigramProgramCountTensor:
-    counts: torch.tensor
+class BigramProgramDistributionBatch:
+    distribution_batch: np.ndarray
 
-
-class BigramProgramDistributionFamily(ProgramDistributionFamily):
-    def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
-        self._dsl = dsl
-        self._symbols, self._arities, self._valid_mask = bigram_mask(
-            dsl, valid_root_types=valid_root_types
+    def __post_init__(self):
+        assert isinstance(self.distribution_batch, np.ndarray), type(
+            self.distribution_batch
         )
+        assert self.distribution_batch.ndim == 4
+        assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
+
+    def __getitem__(self, i):
+        return BigramProgramDistribution(self.distribution_batch[i])
+
+
+@dataclass
+class BigramProgramCounts:
+    # map from (parent_sym, parent_child_idx) to map from child_sym to count
+    numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]
+    # map from (parent_sym, parent_child_idx) to map from potential child_sym values to count
+    denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]]
+
+    def add_to_numerator_array(self, arr, batch_idx):
+        for [(parent_sym, parent_child_idx)], children in self.numerators.items():
+            for child_sym, count in children.items():
+                arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
+        return arr
+
+    def add_to_denominator_array(self, arr, batch_idx, backmap):
+        for [(parent_sym, parent_child_idx)], children in self.denominators.items():
+            for child_syms, count in children.items():
+                key = batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
+                arr[key] = count
+        return arr
+
+
+@dataclass
+class BigramProgramCountsBatch:
+    counts: List[BigramProgramCounts]
+
+    def numerators(self, num_symbols, max_arity):
+        numerators = np.zeros(
+            (len(self.counts), num_symbols, max_arity, num_symbols), dtype=np.int32
+        )
+        for i, dist in enumerate(self.counts):
+            dist.add_to_numerator_array(numerators, i)
+        return numerators
+
+    def denominators(self, num_symbols, max_arity):
+        denominator_keys = {
+            key
+            for counts in self.counts
+            for mapping in counts.denominators.values()
+            for key in mapping.keys()
+        }
+        denominator_keys = sorted(denominator_keys)
+        denominator_keys_backmap = {key: i for i, key in enumerate(denominator_keys)}
+        denominators = np.zeros(
+            (len(self.counts), num_symbols, max_arity, len(denominator_keys)),
+            dtype=np.int32,
+        )
+        for i, counts in enumerate(self.counts):
+            counts.add_to_denominator_array(denominators, i, denominator_keys_backmap)
+
+        return denominators, denominator_keys
+
+    def to_distribution(self, num_symbols, max_arity):
+        numerators = self.numerators(num_symbols, max_arity)
+
+        # We do not need to handle denominators here, as this is just
+        # a simple conversion from counts to probabilities, and we do
+        # not need to handle the case where the denominator is 0.
+
+        return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
+
+
+class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
+    def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
+        if valid_root_types is not None:
+            dsl = dsl.with_valid_root_types(valid_root_types)
+        self._dsl = dsl
+        self._symbols, self._arities, self._valid_mask = bigram_mask(dsl)
+        self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
 
     def underlying_dsl(self) -> DSL:
@@ -54,105 +138,127 @@ class BigramProgramDistributionFamily(ProgramDistributionFamily):
 
     def with_parameters(
         self, parameters: torch.Tensor
-    ) -> List[BigramProgramDistribution]:
+    ) -> BigramProgramDistributionBatch:
         assert (
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
         parameters = self.normalize_parameters(parameters, logits=False)
-        return [
-            BigramProgramDistribution(params)
-            for params in parameters.detach().cpu().numpy()
-        ]
+        return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
-    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountTensor:
-        counts = np.zeros((len(data), *self.parameters_shape()), dtype=np.float32)
-        for i, programs in enumerate(data):
-            for program in programs:
-                self._count_program(
-                    program, counts, i, parent_sym=0, parent_child_idx=0
-                )
-        return BigramProgramCountTensor(torch.tensor(counts))
-
-    def _count_program(
-        self,
-        program: SExpression,
-        counts: np.ndarray,
-        batch_idx: int,
-        *,
-        parent_sym: int,
-        parent_child_idx: int,
-    ):
-        this_idx = self._symbol_to_idx[program.symbol]
-        counts[batch_idx, parent_sym, parent_child_idx, this_idx] += 1
-        for j, child in enumerate(program.children):
-            self._count_program(
-                child, counts, batch_idx, parent_sym=this_idx, parent_child_idx=j
+    def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
+        tree_dist = self.tree_distribution_skeleton
+        all_counts = []
+        for programs in data:
+            numerators, denominators = count_programs(tree_dist, programs)
+            all_counts.append(
+                BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
-        return torch.tensor(counts)
+        return BigramProgramCountsBatch(all_counts)
+
+    def counts_to_distribution(
+        self, counts: BigramProgramCountsBatch
+    ) -> BigramProgramDistribution:
+        return counts.to_distribution(len(self._symbols), self._max_arity)
 
     def parameter_difference_loss(
-        self, parameters: torch.tensor, actual: BigramProgramCountTensor
+        self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
         """
-        E[log Q(|x)]
+        Let p be a program, g be an ngram, s be a symbol, and d be the `denominator`
+            (i.e., the set of possible children for a given parent and position).
+
+        sum_p log P(p | theta)
+            = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
+            = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
+            = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
+            = [sum_p sum_{(g, s, d) in p} theta_{g, s}]
+                - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
+            = [numer] - [denom]
+
+        numer
+            = sum_p sum_{(g, s, d) in p} theta_{g, s}
+            = sum_g sum_s numcount_{g, s} theta_{g, s}
+            = (numcount * theta).sum()
+
+        denom
+            = sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})
+            = sum_g sum_d dencount_{g, d} log sum_{s' in d} exp(theta_{g, s'})
+
+        theta_by_denom(g, s', d) = theta_{g, s'} if s' in d, else -inf
+
+        denom
+            = sum_g sum_d dencount_{g, d} log sum_{s'} exp(theta_by_denom{g, s', d})
+
+        agg_theta_by_denom(g, d) = logsumexp(theta_by_denom(g, *, d))
+
+        denom
+            = sum_g sum_d dencount_{g, d} agg_theta_by_denom(g, d)
+            = (dencount * agg_theta_by_denom).sum()
+
         """
-        actual = actual.counts.to(parameters.device)
-        parameters = self.normalize_parameters(parameters, logits=True, neg_inf=-100)
-        print(parameters[0])
-        print(actual[0])
-        combination = actual * parameters
-        combination = combination.reshape(combination.shape[0], -1)
-        return -combination.sum(-1)
 
-    def sample(
-        self,
-        dist: BigramProgramDistribution,
-        num_samples: int,
-        rng: np.random.RandomState,
-        *,
-        depth_limit=float("inf"),
-    ) -> SExpression:
-        results = []
-        for _ in range(num_samples):
-            while True:
-                try:
-                    [s_exp] = self._sample_symbol(
-                        dist, rng, depth_limit=depth_limit, symbol_idx=0
-                    ).children
-                except TooDeepError:
-                    continue
-                else:
-                    break
-            results.append(s_exp)
-        return results
+        assert parameters.shape[1:] == self.parameters_shape()
+        assert len(parameters.shape) == 4
 
-    def _sample_symbol(
-        self,
-        dist: BigramProgramDistribution,
-        rng: np.random.RandomState,
-        depth_limit,
-        symbol_idx: int,
-    ) -> SExpression:
-        if depth_limit < 0:
-            raise TooDeepError()
-        root_sym = self._symbols[symbol_idx]
-        children = []
-        for i in range(self._arities[symbol_idx]):
-            child_idx = rng.choice(
-                dist.distribution.shape[-1], p=dist.distribution[symbol_idx, i]
+        numcount = actual.numerators(len(self._symbols), self._max_arity)
+        dencount, den_keys = actual.denominators(len(self._symbols), self._max_arity)
+        numcount, dencount = [
+            torch.tensor(x, device=parameters.device, dtype=torch.float32)
+            for x in (numcount, dencount)
+        ]
+
+        def agg_across_all_but_batch_axis(x, fn):
+            x = x.reshape(x.shape[0], -1)
+            return fn(x, -1)
+
+        numer = agg_across_all_but_batch_axis(numcount * parameters, torch.sum)
+
+        theta_by_denom = parameters[..., None].repeat(1, 1, 1, 1, len(den_keys))
+        for i, key in enumerate(den_keys):
+            print(i, key)
+            mask = torch.ones(
+                len(self._symbols), dtype=torch.bool, device=parameters.device
             )
-            children.append(self._sample_symbol(dist, rng, depth_limit - 1, child_idx))
-        return SExpression(root_sym, tuple(children))
+            mask[list(key)] = False
+            theta_by_denom[..., mask, i] = -float("inf")
+        agg_theta_by_denom = torch.logsumexp(theta_by_denom, dim=-2)
+        denom = agg_across_all_but_batch_axis(dencount * agg_theta_by_denom, torch.sum)
+        return -(numer - denom)
 
     def uniform(self):
         return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
 
+    def compute_tree_distribution(
+        self, distribution: Union[BigramProgramDistribution, NoneType]
+    ) -> TreeDistribution:
+        if isinstance(distribution, BigramProgramDistribution):
+            assert isinstance(distribution, BigramProgramDistribution), type(
+                distribution
+            )
+            dist = defaultdict(list)
+            for parent, position, child in zip(
+                *np.where(distribution.distribution > 0)
+            ):
+                dist[(parent, position),].append(
+                    (child, np.log(distribution.distribution[parent, position, child]))
+                )
+            dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+        else:
+            assert distribution is None
+            dist = None
 
-def bigram_mask(dsl, valid_root_types: Union[NoneType, List[Type]] = None):
+        return TreeDistribution(
+            1,
+            dist,
+            list(zip(self._symbols, self._arities)),
+            lambda tree_dist: TypePreorderMask(tree_dist, self._dsl),
+        )
+
+
+def bigram_mask(dsl):
     symbols = ["<root>"] + sorted([x.symbol() for x in dsl.productions])
 
-    if valid_root_types is None:
-        valid_root_types = dsl.valid_root_types
+    valid_root_types = dsl.valid_root_types
     symbol_to_idx = {sym: i for i, sym in enumerate(symbols)}
     rules_for = dsl.all_rules(
         care_about_variables=False, valid_root_types=valid_root_types
@@ -189,5 +295,54 @@ def counts_to_probabilities(counts):
     )
 
 
-class TooDeepError(Exception):
-    pass
+def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
+    """
+    Count the productions in the programs, indexed by the path to the node.
+    """
+    numerators = defaultdict(lambda: defaultdict(int))
+    denominators = defaultdict(lambda: defaultdict(int))
+    for program in programs:
+        preorder_mask = tree_dist.mask_constructor(tree_dist)
+        preorder_mask.on_entry(0, 0)
+        accumulate_counts(
+            tree_dist,
+            program,
+            numerators,
+            denominators,
+            ((0, 0),),
+            preorder_mask=preorder_mask,
+        )
+    numerators = {k: dict(v) for k, v in numerators.items()}
+    denominators = {k: dict(v) for k, v in denominators.items()}
+    return numerators, denominators
+
+
+def accumulate_counts(
+    tree_dist: TreeDistribution,
+    program: SExpression,
+    numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]],
+    denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]],
+    ancestors: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
+):
+    parent_position = ancestors[-1][1]
+    this_idx = tree_dist.symbol_to_index[program.symbol]
+    numerators[ancestors][this_idx] += 1
+    possibilities = np.arange(len(tree_dist.symbols))
+    mask = preorder_mask.compute_mask(parent_position, possibilities)
+    preorder_mask.on_entry(parent_position, this_idx)
+    elements = possibilities[mask]
+    elements = tuple(int(x) for x in elements)
+    denominators[ancestors][elements] += 1
+    for j, child in enumerate(program.children):
+        new_ancestors = ancestors + ((this_idx, j),)
+        new_ancestors = new_ancestors[-tree_dist.limit :]
+        accumulate_counts(
+            tree_dist,
+            child,
+            numerators,
+            denominators,
+            new_ancestors,
+            preorder_mask=preorder_mask,
+        )
+    preorder_mask.on_exit(parent_position, this_idx)
