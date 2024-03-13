@@ -140,7 +140,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
-        tree_dist = self.compute_tree_distribution(None)
+        tree_dist = self.tree_distribution_skeleton
         all_counts = []
         for programs in data:
             numerators, denominators = count_programs(
