@@ -81,7 +81,8 @@ def enumerate_tree_dist_dfs(
 
     # Performed recursively for now.
     syms, log_probs = tree_dist.likelihood_arrays[parents]
-    mask = preorder_mask.compute_mask(parents[-1][1], syms)
+    position = parents[-1][1]
+    mask = preorder_mask.compute_mask(position, syms)
     # mask = np.ones_like(mask, dtype=bool)
     denominator = np.logaddexp.reduce(log_probs[mask])
     for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
@@ -89,7 +90,7 @@ def enumerate_tree_dist_dfs(
         new_parents = parents + (node,)
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
-        preorder_mask_copy.on_entry(parents[-1][1], node)
+        preorder_mask_copy.on_entry(position, node)
         for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
