@@ -41,18 +41,18 @@ class BigramProgramDistributionBatch:
 @dataclass
 class BigramProgramCounts:
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
-    numerators: Dict[Tuple[int, int], Dict[int, int]]
+    numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]
     # map from (parent_sym, parent_child_idx) to map from potential child_sym values to count
-    denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]]
+    denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]]
 
     def add_to_numerator_array(self, arr, batch_idx):
-        for (parent_sym, parent_child_idx), children in self.numerators.items():
+        for [(parent_sym, parent_child_idx)], children in self.numerators.items():
             for child_sym, count in children.items():
                 arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
         return arr
 
     def add_to_denominator_array(self, arr, batch_idx, backmap):
-        for (parent_sym, parent_child_idx), children in self.denominators.items():
+        for [(parent_sym, parent_child_idx)], children in self.denominators.items():
             for child_syms, count in children.items():
                 key = batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
                 arr[key] = count
@@ -140,19 +140,14 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
+        tree_dist = self.tree_distribution_skeleton
         all_counts = []
         for programs in data:
-            numerators = defaultdict(lambda: defaultdict(int))
-            denominators = defaultdict(lambda: defaultdict(int))
-            for program in programs:
-                self._count_program(
-                    program, numerators, denominators, parent_sym=0, parent_child_idx=0
-                )
+            numerators, denominators = count_programs(
+                tree_dist, self._valid_mask, programs
+            )
             all_counts.append(
-                BigramProgramCounts(
-                    numerators={k: dict(v) for k, v in numerators.items()},
-                    denominators={k: dict(v) for k, v in denominators.items()},
-                )
+                BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
         return BigramProgramCountsBatch(all_counts)
 
@@ -160,25 +155,6 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self, counts: BigramProgramCountsBatch
     ) -> BigramProgramDistribution:
         return counts.to_distribution(len(self._symbols), self._max_arity)
-
-    def _count_program(
-        self,
-        program: SExpression,
-        numerators: Dict[Tuple[int, int], Dict[int, int]],
-        denominators: Dict[Tuple[int, int], Dict[Tuple[int, ...], int]],
-        *,
-        parent_sym: int,
-        parent_child_idx: int,
-    ):
-        this_idx = self._symbol_to_idx[program.symbol]
-        numerators[parent_sym, parent_child_idx][this_idx] += 1
-        [elements] = np.where(self._valid_mask[parent_sym, parent_child_idx, :])
-        elements = tuple(int(x) for x in elements)
-        denominators[parent_sym, parent_child_idx][elements] += 1
-        for j, child in enumerate(program.children):
-            self._count_program(
-                child, numerators, denominators, parent_sym=this_idx, parent_child_idx=j
-            )
 
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
@@ -305,3 +281,41 @@ def counts_to_probabilities(counts):
         out=np.zeros_like(counts, dtype=np.float32),
         where=counts != 0,
     )
+
+
+def count_programs(
+    tree_dist: TreeDistribution, valid_mask: np.ndarray, programs: List[SExpression]
+):
+    """
+    Count the productions in the programs, indexed by the path to the node.
+    """
+    numerators = defaultdict(lambda: defaultdict(int))
+    denominators = defaultdict(lambda: defaultdict(int))
+    for program in programs:
+        accumulate_counts(
+            tree_dist, valid_mask, program, numerators, denominators, ((0, 0),)
+        )
+    numerators = {k: dict(v) for k, v in numerators.items()}
+    denominators = {k: dict(v) for k, v in denominators.items()}
+    return numerators, denominators
+
+
+def accumulate_counts(
+    tree_dist: TreeDistribution,
+    valid_mask: np.ndarray,
+    program: SExpression,
+    numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]],
+    denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]],
+    ancestors: Tuple[Tuple[int, int], ...],
+):
+    this_idx = tree_dist.symbol_to_index[program.symbol]
+    numerators[ancestors][this_idx] += 1
+    [elements] = np.where(valid_mask[tuple(idx for idxs in ancestors for idx in idxs)])
+    elements = tuple(int(x) for x in elements)
+    denominators[ancestors][elements] += 1
+    for j, child in enumerate(program.children):
+        new_ancestors = ancestors + ((this_idx, j),)
+        new_ancestors = new_ancestors[-tree_dist.limit :]
+        accumulate_counts(
+            tree_dist, valid_mask, child, numerators, denominators, new_ancestors
+        )
