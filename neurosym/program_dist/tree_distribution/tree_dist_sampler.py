@@ -1,4 +1,5 @@
 from typing import Tuple
+
 import numpy as np
 
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
