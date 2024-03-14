@@ -369,6 +369,18 @@ class BigramLikelihoodTest(unittest.TestCase):
 
     def test_plus_nested(self):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
+        self.assertLikelihoods(
+            fam.uniform(),
+            "(+ (1) (+ (1) (2)))",
+            [
+                ("(+ (1) (+ (1) (2)))", "log(1/3)"),
+                ("(+ (1) (2))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(+ (1) (2))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(2)", "log(1/3)"),
+            ],
+        )
 
     def test_leaf_with_variables(self):
         self.assertLikelihood(
@@ -391,7 +403,7 @@ class BigramLikelihoodTest(unittest.TestCase):
             "(call (lam ($0_0)) (1))",
             [
                 ("(call (lam ($0_0)) (1))", "log(1/4)"),
-                ("(lam ($0_0))", "log(1/1)"),
+                ("(lam ($0_0))", "log(1)"),
                 ("($0_0)", "log(1/5)"),
                 ("(1)", "log(1/4)"),
             ],
