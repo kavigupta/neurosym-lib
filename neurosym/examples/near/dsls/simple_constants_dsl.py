@@ -10,6 +10,7 @@ DSL of the form:
 # Tint_linear :: LinearObj -> tensor[float] -> tensor[float]
 # Linear_c :: LinearQbj
 """
+
 import torch
 
 from neurosym.dsl.dsl_factory import DSLFactory
@@ -27,7 +28,7 @@ def simple_constants_dsl(length):
         lambda const: const,
         dict(
             const=lambda: Constant(
-                ConstantConfig(name="constant", size=length, init="random")
+                ConstantConfig(model_name="constant", size=length, init="random")
             )
         ),
     )

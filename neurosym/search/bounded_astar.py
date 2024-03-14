@@ -51,7 +51,11 @@ def bounded_astar(
             best_node = fringe_var
         if verbose:
             pbar.set_description(
-                f"Depth: {best_node.depth}, Cost: {best_node.cost:.4}, Program: {render_s_expression(best_node.node.program):.50}"
+                "Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}".format(
+                    depth=best_node.depth,
+                    cost=best_node.cost,
+                    program=render_s_expression(best_node.node.program),
+                )
             )
             pbar.update(1)
 

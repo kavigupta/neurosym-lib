@@ -1,6 +1,7 @@
 from functools import partial
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
+
 def create_dataset_factory(train_seed, is_regression):
     """Creates a dataset factory for generating training and testing datasets.
 
@@ -30,5 +31,6 @@ def create_dataset_factory(train_seed, is_regression):
         ),
         batch_size=200,
     )
+
 
 data = partial(create_dataset_factory, is_regression=True)

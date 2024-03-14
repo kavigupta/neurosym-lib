@@ -120,7 +120,7 @@ def create_module_for_type(module_factory, t, known_atom_shapes):
     return lambda: module_factory(*shape)
 
 
-def create_modules(tag, types, module_factory, known_atom_shapes=dict()):
+def create_modules(tag, types, module_factory, known_atom_shapes=None):
     return {
         t: (tag, create_module_for_type(module_factory, t, known_atom_shapes))
         for t in types
@@ -147,6 +147,8 @@ def compute_io_shape(t, known_atom_shapes):
             case t if isinstance(t, Tuple):
                 return len(t)
             case AtomicType(k):
+                assert known_atom_shapes is not None, \
+                "known_atom_shapes must be provided for AtomicType"
                 assert k in known_atom_shapes, f"Unknown shape for type {k}"
                 return known_atom_shapes[k]
             case _:

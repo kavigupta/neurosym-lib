@@ -85,7 +85,7 @@ class ECGTrainer(BaseTrainer):
                 case "MSELoss":
                     if not self.is_regression:
                         targets = targets.squeeze(-1)
-                        targets = torch.nn.functional.one_hot(
+                        targets = torch.nn.functional.one_hot( # pylint: disable=no-member
                             targets, num_classes=self.config.num_labels
                         ).float()
                     predictions = predictions.view(-1, predictions.shape[-1])
@@ -114,7 +114,7 @@ class ECGTrainer(BaseTrainer):
         loss = self.loss_fn(predictions, targets)
         return loss
 
-    def _step(self, inputs, outputs, validation=False, **kwargs):
+    def _step(self, inputs, outputs, validation=False, **kwargs): # pylint: disable=arguments-differ
         del kwargs
         try:
             predictions = self.model(inputs.float())
@@ -132,7 +132,7 @@ class ECGTrainer(BaseTrainer):
         except Exception as e:
             # print("training error")
             # import IPython; IPython.embed()
-            raise TrainingError(e)
+            raise TrainingError(e) from e # pylint: disable=raise-missing-from
         return losses
 
     def program_accuracy(self, predictions, outputs, inputs):

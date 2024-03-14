@@ -1,6 +1,5 @@
 import queue
 from concurrent.futures import Future, ProcessPoolExecutor
-from dataclasses import dataclass, field
 from typing import Callable
 
 from tqdm.auto import tqdm
@@ -8,6 +7,7 @@ from tqdm.auto import tqdm
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
+from neurosym.search.bounded_astar import BoundedAStarNode
 
 
 class FuturePriorityQueue(queue.PriorityQueue):
@@ -60,7 +60,8 @@ def async_bounded_astar(
         The heuristic function should be admissible, i.e. it should never overestimate
         the cost to reach the goal.
     :param max_depth: Maximum depth to search to.
-    :param max_workers: Maximum number of workers to use for evaluating the cost_plus_heuristic function.
+    :param max_workers: Maximum number of workers to use for evaluating
+        the cost_plus_heuristic function.
     """
     assert max_depth > 0, "Cannot have 0 depth."
     assert max_workers > 0, "Cannot have 0 workers."
@@ -95,19 +96,12 @@ def async_bounded_astar(
                     best_node = fringe_var
                 if verbose:
                     pbar.set_description(
-                        f"Depth: {best_node.depth}, Cost: {best_node.cost:.4}, Program: {render_s_expression(best_node.node.program):.50}"
+                        "Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}".format(
+                            depth=best_node.depth,
+                            cost=best_node.cost,
+                            program=render_s_expression(best_node.node.program),
+                        )
                     )
                     pbar.update(1)
             except queue.Empty:
                 pass
-
-
-@dataclass(order=True)
-class BoundedAStarNode:
-    """
-    Represents a node in the A* search tree.
-    """
-
-    cost: float
-    node: SExpression = field(compare=False)
-    depth: int = field(compare=True)

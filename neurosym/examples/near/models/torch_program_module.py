@@ -1,6 +1,7 @@
 from torch import nn
 from neurosym.programs.s_expression_render import render_s_expression
 
+
 class TorchProgramModule(nn.Module):
     def __init__(self, dsl, program):
         super().__init__()
@@ -13,7 +14,6 @@ class TorchProgramModule(nn.Module):
 
     def forward(self, *args):
         return self.dsl.compute(self.initialized_program)(*args)
-
 
     def __repr__(self):
         super_rep = super().__repr__()

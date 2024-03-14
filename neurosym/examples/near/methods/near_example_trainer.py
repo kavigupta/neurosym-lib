@@ -83,7 +83,7 @@ class NEARTrainer(BaseTrainer):
                 case "MSELoss":
                     if not self.is_regression:
                         targets = targets.squeeze(-1)
-                        targets = torch.nn.functional.one_hot(
+                        targets = torch.nn.functional.one_hot( # pylint: disable=no-member
                             targets, num_classes=self.config.num_labels
                         ).float()
                     predictions = predictions.reshape(-1, predictions.shape[-1]).float()
@@ -116,6 +116,7 @@ class NEARTrainer(BaseTrainer):
             self._log_program_accuracy(predictions, outputs, inputs)
 
         return losses
+
     def _compute_auroc(self, predictions, outputs):
         # scikit learn.
         # F1 score
