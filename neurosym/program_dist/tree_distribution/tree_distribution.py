@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 
+import neurosym as ns
 from neurosym.program_dist.distribution import (
     ProgramDistribution,
     ProgramDistributionFamily,
@@ -124,7 +125,10 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         )
 
     def compute_likelihood(
-        self, dist: ProgramDistribution, program: SExpression
+        self,
+        dist: ProgramDistribution,
+        program: SExpression,
+        tracker: Union[NoneType, Callable[[ns.SExpression, float], NoneType]] = None,
     ) -> float:
         """
         Compute the likelihood of a program under a distribution.
@@ -135,7 +139,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         dist = self.tree_distribution(dist)
         preorder_mask = dist.mask_constructor(dist)
         preorder_mask.on_entry(0, 0)
-        return compute_likelihood(dist, program, ((0, 0),), preorder_mask)
+        return compute_likelihood(dist, program, ((0, 0),), preorder_mask, tracker)
 
     def sample(
         self,
