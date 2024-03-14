@@ -124,7 +124,10 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         )
 
     def compute_likelihood(
-        self, dist: ProgramDistribution, program: SExpression
+        self,
+        dist: ProgramDistribution,
+        program: SExpression,
+        tracker: Union[NoneType, Callable[[SExpression, float], NoneType]] = None,
     ) -> float:
         """
         Compute the likelihood of a program under a distribution.
@@ -135,7 +138,24 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         dist = self.tree_distribution(dist)
         preorder_mask = dist.mask_constructor(dist)
         preorder_mask.on_entry(0, 0)
-        return compute_likelihood(dist, program, ((0, 0),), preorder_mask)
+        return compute_likelihood(dist, program, ((0, 0),), preorder_mask, tracker)
+
+    def compute_likelihood_per_node(
+        self,
+        dist: ProgramDistribution,
+        program: SExpression,
+    ) -> Dict[SExpression, float]:
+        """
+        Compute the likelihood of a program under a distribution.
+        """
+        likelihoods = []
+
+        self.compute_likelihood(
+            dist,
+            program,
+            lambda nodes, likelihood: likelihoods.append((nodes, likelihood)),
+        )
+        return likelihoods
 
     def sample(
         self,

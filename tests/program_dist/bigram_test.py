@@ -342,11 +342,24 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 class BigramLikelihoodTest(unittest.TestCase):
     def assertLikelihood(self, dist, program, str_prob, family=fam):
         likelihood = family.compute_likelihood(dist, ns.parse_s_expression(program))
+        self.assertEqual(self.render_likelihood(likelihood), str_prob)
+
+    def assertLikelihoods(self, dist, program, nodes_and_probs, family=fam):
+        likelihoods = family.compute_likelihood_per_node(
+            dist, ns.parse_s_expression(program)
+        )
+        likelihoods = [
+            (ns.render_s_expression(node), self.render_likelihood(prob))
+            for node, prob in likelihoods
+        ]
+        print(likelihoods)
+        self.assertEqual(likelihoods, nodes_and_probs)
+
+    def render_likelihood(self, likelihood):
         prob = np.exp(likelihood)
         prob = Fraction.from_float(float(prob)).limit_denominator(1000)
         result = f"log({prob})"
-        print(result)
-        self.assertEqual(result, str_prob)
+        return result
 
     def test_leaf(self):
         self.assertLikelihood(fam.uniform(), "(1)", "log(1/3)")
@@ -356,6 +369,17 @@ class BigramLikelihoodTest(unittest.TestCase):
 
     def test_plus_nested(self):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
+        self.assertLikelihoods(
+            fam.uniform(),
+            "(+ (1) (+ (1) (2)))",
+            [
+                ("(+ (1) (+ (1) (2)))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(+ (1) (2))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(2)", "log(1/3)"),
+            ],
+        )
 
     def test_leaf_with_variables(self):
         self.assertLikelihood(
@@ -371,5 +395,16 @@ class BigramLikelihoodTest(unittest.TestCase):
             fam_with_vars.uniform(),
             "(call (lam ($0_0)) (1))",
             "log(1/80)",
+            family=fam_with_vars,
+        )
+        self.assertLikelihoods(
+            fam_with_vars.uniform(),
+            "(call (lam ($0_0)) (1))",
+            [
+                ("(call (lam ($0_0)) (1))", "log(1/4)"),
+                ("(lam ($0_0))", "log(1)"),
+                ("($0_0)", "log(1/5)"),
+                ("(1)", "log(1/4)"),
+            ],
             family=fam_with_vars,
         )
