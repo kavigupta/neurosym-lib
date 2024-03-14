@@ -225,7 +225,6 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
         theta_by_denom = parameters[..., None].repeat(1, 1, 1, 1, len(den_keys))
         for i, key in enumerate(den_keys):
-            print(i, key)
             mask = torch.ones(
                 len(self._symbols), dtype=torch.bool, device=parameters.device
             )

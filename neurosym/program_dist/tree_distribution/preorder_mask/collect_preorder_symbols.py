@@ -31,10 +31,10 @@ def collect_preorder_symbols_dfs(
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
     """
-    print(s_exp, position)
-    print(mask.type_stack)
     idxs = np.arange(len(tree_dist.symbols))
-    yield s_exp, tuple(int(x) for x in idxs[mask.compute_mask(position, idxs)])
+    bool_mask = mask.compute_mask(position, idxs)
+    alts = tuple(int(x) for x in idxs[bool_mask])
+    yield s_exp, alts
     mask.on_entry(position, tree_dist.symbol_to_index[s_exp.symbol])
     for idx, child in enumerate(s_exp.children):
         yield from collect_preorder_symbols_dfs(child, tree_dist, mask, idx)
