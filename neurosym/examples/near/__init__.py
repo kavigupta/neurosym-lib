@@ -17,6 +17,11 @@ from .models.constant import (
     ConstantConfig,
     constant_factory,
 )
+from .models.selector import (
+    Selector,
+    SelectorConfig,
+    selector_factory,
+)
 from .models.torch_program_module import TorchProgramModule
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph

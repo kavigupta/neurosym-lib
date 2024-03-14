@@ -88,22 +88,22 @@ datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_worker
 input_dim, output_dim = datamodule.train.get_io_dims()
 
 
-def subset_selector(x, channel, feat, typ):
-    """
-    Assuming X looks like this:
-    [--------------------------------------------------]
-    <-------ch1—--------->   ..   <-------ch12--------->
-    <-- f1 -->..<-- f6 --> |
-    <int><amp>..<int><amp>
-    """
-    typ_dim = 1
-    feat_dim = typ_dim * 2
-    channel_dim = feat_dim * 6
-    typ_idx = typ_dim * (0 if typ == "interval" else 1)
-    feat_idx = feat_dim * feat(x).squeeze(-1)
-    ch_idx = channel_dim * channel(x).squeeze(-1)
-    idx = ch_idx + feat_idx + typ_idx
-    return x.gather(dim=-1, index=idx[..., None])
+# def subset_selector(x, channel, feat, typ):
+#     """
+#     Assuming X looks like this:
+#     [--------------------------------------------------]
+#     <-------ch1—--------->   ..   <-------ch12--------->
+#     <-- f1 -->..<-- f6 --> |
+#     <int><amp>..<int><amp>
+#     """
+#     typ_dim = 1
+#     feat_dim = typ_dim * 2
+#     channel_dim = feat_dim * 6
+#     typ_idx = typ_dim * (0 if typ == "interval" else 1)
+#     feat_idx = feat_dim * feat(x).squeeze(-1)
+#     ch_idx = channel_dim * channel(x).squeeze(-1)
+#     idx = ch_idx + feat_idx + typ_idx
+#     return x.gather(dim=-1, index=idx[..., None])
 
 
 def subset_selector_all_feat(x, channel, typ):
@@ -111,8 +111,9 @@ def subset_selector_all_feat(x, channel, typ):
     typ_idx = torch.full(
         size=(x.shape[0],), fill_value=(0 if typ == "interval" else 1), device=x.device
     )
-    ch_idx = channel(x).flatten()[: x.shape[0]]  # [B]
-    return x[torch.arange(x.shape[0]), ch_idx, :, typ_idx]
+    channel_mask = channel(x.reshape(-1, 144))  # [B, 12]
+    masked_x = (x * channel_mask[..., None, None]).sum(1)
+    return masked_x[torch.arange(x.shape[0]), :, typ_idx]
 
 
 def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
@@ -140,8 +141,13 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         dslf.concrete(
             f"channel_{i}",
             "() -> () -> channel",
-            lambda: lambda x: torch.full(
-                tuple(x.shape[:-1] + (1,)), i, device=x.device
+            # onehot vector where the ith element is 1
+            # lambda: lambda x: torch.full(
+            #     tuple(x.shape[:-1] + (1,)), i, device=x.device
+            # ),
+            lambda: lambda x: torch.nn.functional.one_hot(
+                torch.full(tuple(x.shape[:-1]), i, device=x.device, dtype=torch.long),
+                num_classes=12,
             ),
         )
 
@@ -258,7 +264,7 @@ neural_dsl = near.NeuralDSL.from_dsl(
         **near.create_modules(
             "constant_int",
             [dsl_type_env("() -> channel")],
-            near.constant_factory(sample_categorical=True),
+            near.selector_factory(input_dim=input_dim),
             known_atom_shapes=dict(channel=(12,), feature=(6,)),
         ),
     },
@@ -269,7 +275,7 @@ neural_dsl = near.NeuralDSL.from_dsl(
 trainer_cfg = near.ECGTrainerConfig(
     lr=1e-3,
     max_seq_len=100,
-    n_epochs=25,
+    n_epochs=100,
     num_labels=output_dim,
     train_steps=len(datamodule.train),
     loss_fn="CrossEntropyLoss",
@@ -299,7 +305,7 @@ def validation_cost(node):
         monitor="train_acc", min_delta=1e-2, patience=5, verbose=False, mode="max"
     )
     trainer = Trainer(
-        max_epochs=100,
+        max_epochs=trainer_cfg.n_epochs,
         devices="auto",
         # accelerator="cpu",
         accelerator="gpu",
@@ -364,7 +370,7 @@ g = near.near_graph(
     is_goal=checker,
 )
 iterator = ns.search.async_bounded_astar(
-    g, cost_plus_heuristic, max_depth=15, max_workers=40
+    g, cost_plus_heuristic, max_depth=15, max_workers=40, verbose=True
 )
 best_program_nodes = []
 for node in iterator:
@@ -390,6 +396,4 @@ with open("best_program_nodes.pkl", "wb") as f:
 
 # loop = asyncio.get_event_loop()
 # best_program_nodes = loop.run_until_complete(find_best_programs())
-import IPython
-
-IPython.embed()
+import IPython; IPython.embed()
