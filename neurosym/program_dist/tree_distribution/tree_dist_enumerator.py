@@ -47,7 +47,7 @@ def enumerate_tree_dist(
         likelihood_bound = -chunk * chunk_size
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         preorder_mask.on_entry(0, 0)
-        for program, likelihood in enumerate_tree_dist_dfs(
+        for program, likelihood, _ in enumerate_tree_dist_dfs(
             tree_dist, likelihood_bound, ((0, 0),), preorder_mask
         ):
             if (
@@ -90,7 +90,11 @@ def enumerate_tree_dist_dfs(
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
         preorder_mask_copy.on_entry(position, node)
-        for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
+        for (
+            children,
+            child_likelihood,
+            preorder_mask_copy,
+        ) in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
             parents,
@@ -99,9 +103,10 @@ def enumerate_tree_dist_dfs(
             starting_index=0,
             preorder_mask=preorder_mask_copy,
         ):
-            yield SExpression(symbol, children), child_likelihood + likelihood
-
-        preorder_mask_copy.on_exit(position, node)
+            preorder_mask_copy.on_exit(position, node)
+            yield SExpression(
+                symbol, children
+            ), child_likelihood + likelihood, preorder_mask_copy
 
 
 def enumerate_children_and_likelihoods_dfs(
@@ -118,22 +123,28 @@ def enumerate_children_and_likelihoods_dfs(
     """
 
     if starting_index == num_children:
-        yield [], 0
+        yield [], 0, preorder_mask
         return
 
     new_parents = parents + ((most_recent_parent, starting_index),)
     new_parents = new_parents[-tree_dist.limit :]
 
-    for first_child, first_likelihood in enumerate_tree_dist_dfs(
+    for first_child, first_likelihood, preorder_mask_2 in enumerate_tree_dist_dfs(
         tree_dist, min_likelihood, new_parents, preorder_mask
     ):
-        for rest_children, rest_likelihood in enumerate_children_and_likelihoods_dfs(
+        for (
+            rest_children,
+            rest_likelihood,
+            preorder_mask_3,
+        ) in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - first_likelihood,
             parents,
             most_recent_parent,
             num_children,
             starting_index + 1,
-            preorder_mask,
+            preorder_mask_2,
         ):
-            yield [first_child] + rest_children, first_likelihood + rest_likelihood
+            yield [
+                first_child
+            ] + rest_children, first_likelihood + rest_likelihood, preorder_mask_3
