@@ -101,7 +101,7 @@ class BaseTrainer(L.LightningModule):
                     assert (
                         len(targets.shape) == 2
                     ), "Targets must be 2D for classification"
-                    predictions = predictions.view(-1, predictions.shape[-1])
+                    predictions = predictions.reshape(-1, predictions.shape[-1])
                     targets = targets.view(-1)
                 case "MSELoss":
                     if not self.is_regression:
@@ -110,11 +110,11 @@ class BaseTrainer(L.LightningModule):
                         targets = torch.nn.functional.one_hot(
                             targets, num_classes=self.config.num_labels
                         ).float()
-                    predictions = predictions.view(-1, predictions.shape[-1])
+                    predictions = predictions.reshape(-1, predictions.shape[-1])
                     targets = targets.view(-1, targets.shape[-1])
                 case "NLLLoss":
                     predictions = (
-                        predictions.view(-1, predictions.shape[-1])
+                        predictions.reshape(-1, predictions.shape[-1])
                         .clamp(min=1e-10)
                         .log()
                         .log_softmax(dim=-1)
