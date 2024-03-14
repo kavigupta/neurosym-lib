@@ -129,6 +129,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         Compute the likelihood of a program under a distribution.
         """
+        # pylint: disable=cyclic-import
         from .tree_dist_likelihood_computer import compute_likelihood
 
         dist = self.tree_distribution(dist)
