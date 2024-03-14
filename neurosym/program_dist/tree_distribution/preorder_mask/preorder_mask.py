@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+import numpy as np
+
 
 class PreorderMask(ABC):
     """
@@ -51,3 +53,31 @@ class NoopPreorderMask(PreorderMask):
 
     def on_exit(self, position: int, symbol: int):
         pass
+
+
+class ConjunctionPreorderMask(PreorderMask):
+    """
+    A mask that is the conjunction of multiple masks.
+    """
+
+    def __init__(self, tree_dist, masks):
+        super().__init__(tree_dist)
+        self.masks = masks
+
+    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
+        symbols = np.array(symbols)
+        mask = np.ones(len(symbols), dtype=bool)
+        for m in self.masks:
+            [valid_symbol_idxs] = np.where(mask)
+            mask[valid_symbol_idxs] &= m.compute_mask(
+                position, symbols[valid_symbol_idxs]
+            )
+        return mask.tolist()
+
+    def on_entry(self, position: int, symbol: int):
+        for mask in self.masks:
+            mask.on_entry(position, symbol)
+
+    def on_exit(self, position: int, symbol: int):
+        for mask in self.masks:
+            mask.on_exit(position, symbol)

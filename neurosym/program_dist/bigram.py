@@ -1,13 +1,14 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from types import NoneType
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    ConjunctionPreorderMask,
     PreorderMask,
 )
 from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
@@ -106,13 +107,22 @@ class BigramProgramCountsBatch:
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
-    def __init__(self, dsl: DSL, valid_root_types: Union[NoneType, List[Type]] = None):
+    def __init__(
+        self,
+        dsl: DSL,
+        valid_root_types: Union[NoneType, List[Type]] = None,
+        *,
+        additional_preorder_masks: Tuple[
+            Callable[[DSL, TreeDistribution], PreorderMask]
+        ] = (),
+    ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
         self._dsl = dsl
         self._symbols, self._arities, self._valid_mask = bigram_mask(dsl)
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
+        self._additional_preorder_masks = additional_preorder_masks
 
     def underlying_dsl(self) -> DSL:
         return self._dsl
@@ -251,7 +261,14 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             1,
             dist,
             list(zip(self._symbols, self._arities)),
-            lambda tree_dist: TypePreorderMask(tree_dist, self._dsl),
+            lambda tree_dist: ConjunctionPreorderMask(
+                tree_dist,
+                [TypePreorderMask(tree_dist, self._dsl)]
+                + [
+                    mask(tree_dist, self._dsl)
+                    for mask in self._additional_preorder_masks
+                ],
+            ),
         )
 
 
