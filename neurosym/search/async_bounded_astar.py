@@ -1,3 +1,4 @@
+# pylint: skip-file
 import queue
 from concurrent.futures import Future, ProcessPoolExecutor
 from typing import Callable
@@ -95,12 +96,11 @@ def async_bounded_astar(
                 if best_node is None or fringe_var.cost < best_node.cost:
                     best_node = fringe_var
                 if verbose:
+                    depth = best_node.depth
+                    cost = best_node.cost
+                    program = render_s_expression(best_node.node.program)
                     pbar.set_description(
-                        "Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}".format(
-                            depth=best_node.depth,
-                            cost=best_node.cost,
-                            program=render_s_expression(best_node.node.program),
-                        )
+                        f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}"
                     )
                     pbar.update(1)
             except queue.Empty:
