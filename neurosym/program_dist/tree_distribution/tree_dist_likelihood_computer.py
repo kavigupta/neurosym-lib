@@ -33,9 +33,12 @@ def compute_likelihood(
         tree_dist.distribution_dict[parents].get(top_symbol, -float("inf"))
         - denominator
     )
-    if tracker is None and likelihood == -float("inf"):
+    if tracker is not None:
+        tracker(program, likelihood)
+    # only end early if the tracker is None,
+    # because we want to call the tracker otherwise
+    elif likelihood == -float("inf"):
         return -float("inf")
-    tracker(program, likelihood)
     preorder_mask.on_entry(start_position, top_symbol)
     for i, child in enumerate(program.children):
         likelihood += compute_likelihood(
