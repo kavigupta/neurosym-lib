@@ -1,3 +1,6 @@
+from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
+    annotate_with_alternate_symbols,
+)
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     NoopPreorderMask,
     PreorderMask,
