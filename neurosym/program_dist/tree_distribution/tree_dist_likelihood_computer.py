@@ -1,7 +1,8 @@
 from typing import Tuple
-import neurosym as ns
+
 import numpy as np
 
+import neurosym as ns
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
 )
