@@ -48,7 +48,8 @@ def annotate_with_alternate_symbols(
     summary_fn=lambda chosen, alts: f"{chosen}/{','.join(sorted(alts))}",
 ) -> SExpression:
     """
-    Annotates the S-Expression with the alternate symbols that could have been selected in the tree distribution.
+    Annotates the S-Expression with the alternate symbols that could have been
+    selected in the tree distribution.
     """
     node_id_to_alts = {
         id(node): tuple(tree_dist.symbols[alt][0] for alt in alts)
