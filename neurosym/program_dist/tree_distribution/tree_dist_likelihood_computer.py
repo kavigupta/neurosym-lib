@@ -1,7 +1,23 @@
+from typing import Tuple
+
 import numpy as np
 
+import neurosym as ns
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
-def compute_likelihood(tree_dist, program, parents, preorder_mask):
+
+def compute_likelihood(
+    tree_dist: TreeDistribution,
+    program: ns.SExpression,
+    parents: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
+):
+    """
+    Compute the likelihood of a program under a distribution.
+    """
     syms, log_probs = tree_dist.likelihood_arrays[parents]
     start_position = parents[-1][1]
     mask = preorder_mask.compute_mask(start_position, syms)
