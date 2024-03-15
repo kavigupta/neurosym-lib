@@ -51,6 +51,8 @@ class BigramProgramDistributionBatch:
     def __getitem__(self, i):
         return BigramProgramDistribution(self.distribution_batch[i])
 
+    def __len__(self):
+        return len(self.distribution_batch)
 
 @dataclass
 class BigramProgramCounts:
