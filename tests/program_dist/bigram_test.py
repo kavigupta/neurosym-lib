@@ -408,3 +408,18 @@ class BigramLikelihoodTest(unittest.TestCase):
             ],
             family=fam_with_vars,
         )
+
+    def test_likelihood_clamped(self):
+        dist = fam.counts_to_distribution(
+            fam.count_programs([[ns.parse_s_expression("(1)")]]),
+        )[0]
+        self.assertEqual(
+            fam.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
+        )
+        dist = dist.bound_minimum_likelihood(0.01)
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            fam.compute_likelihood(dist, ns.parse_s_expression("(2)")),
+            np.log(1 / 100),
+            1,
+        )
