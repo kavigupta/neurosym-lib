@@ -29,6 +29,13 @@ class BigramProgramDistribution:
         assert self.distribution.ndim == 3
         assert self.distribution.shape[0] == self.distribution.shape[2]
 
+    def bound_minimum_likelihood(self, min_likelihood: float):
+        assert 0 <= min_likelihood <= 1
+        distribution = self.distribution
+        distribution = np.maximum(distribution, min_likelihood)
+        distribution = distribution / distribution.sum(-1)[..., None]
+        return BigramProgramDistribution(distribution)
+
 
 @dataclass
 class BigramProgramDistributionBatch:
@@ -44,6 +51,8 @@ class BigramProgramDistributionBatch:
     def __getitem__(self, i):
         return BigramProgramDistribution(self.distribution_batch[i])
 
+    def __len__(self):
+        return len(self.distribution_batch)
 
 @dataclass
 class BigramProgramCounts:
