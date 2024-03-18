@@ -9,12 +9,21 @@ class NodeOrdering(ABC):
     """
 
     @abstractmethod
-    def order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
+    def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
         """
         Orders the subnodes of the node with the given symbol index.
 
         None is equivalent to list(range(n_subnodes)).
         """
+
+    def order(self, root_sym_idx: int, n_subnodes: int) -> List[int]:
+        """
+        Orders the subnodes of the node with the given symbol index.
+        """
+        order = self.compute_order(root_sym_idx)
+        if order is None:
+            return range(n_subnodes)
+        return order
 
 
 class DictionaryNodeOrdering(NodeOrdering):
@@ -22,13 +31,10 @@ class DictionaryNodeOrdering(NodeOrdering):
     Orders the subnodes of a node according to a dictionary.
     """
 
-    def __init__(self, dist, ordering: Dict[int, List[int]]):
-        self.ordering = {
-            dist.symbol_to_index[k]: [dist.symbol_to_index[v] for v in vs]
-            for k, vs in ordering.items()
-        }
+    def __init__(self, dist, ordering: Dict[str, List[int]]):
+        self.ordering = {dist.symbol_to_index[k]: vs for k, vs in ordering.items()}
 
-    def order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
+    def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
         return self.ordering.get(root_sym_idx, None)
 
 
@@ -37,5 +43,5 @@ class DefaultNodeOrdering(NodeOrdering):
     Orders the subnodes of a node according to their symbol indices.
     """
 
-    def order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
+    def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
         return None

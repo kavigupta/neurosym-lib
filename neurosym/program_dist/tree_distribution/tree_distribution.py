@@ -69,6 +69,10 @@ class TreeDistribution:
             for k, (syms, log_probs) in self.likelihood_arrays.items()
         }
 
+    @cached_property
+    def ordering(self) -> NodeOrdering:
+        return self.node_ordering(self)
+
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
     """
