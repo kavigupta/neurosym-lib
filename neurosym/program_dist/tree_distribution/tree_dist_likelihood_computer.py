@@ -24,14 +24,10 @@ def compute_likelihood(
         of that node. This can be useful for debugging why a program has a certain
         likelihood.
     """
-    syms, log_probs = tree_dist.likelihood_arrays[parents]
     start_position = parents[-1][1]
-    mask = preorder_mask.compute_mask(start_position, syms)
-    denominator = np.logaddexp.reduce(log_probs[mask])
     top_symbol = tree_dist.symbol_to_index[program.symbol]
-    likelihood = (
-        tree_dist.distribution_dict[parents].get(top_symbol, -float("inf"))
-        - denominator
+    likelihood = symbol_likelihood(
+        tree_dist, parents, preorder_mask, start_position, top_symbol
     )
     if tracker is not None:
         tracker(program, likelihood)
@@ -49,4 +45,18 @@ def compute_likelihood(
             tracker=tracker,
         )
     preorder_mask.on_exit(start_position, top_symbol)
+    return likelihood
+
+
+def symbol_likelihood(tree_dist, parents, preorder_mask, start_position, top_symbol):
+    if parents not in tree_dist.likelihood_arrays:
+        return -float("inf")
+    syms, log_probs = tree_dist.likelihood_arrays[parents]
+    mask = preorder_mask.compute_mask(start_position, syms)
+    denominator = np.logaddexp.reduce(log_probs[mask])
+    likelihood = (
+        tree_dist.distribution_dict[parents].get(top_symbol, -float("inf"))
+        - denominator
+    )
+
     return likelihood
