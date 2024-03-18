@@ -54,6 +54,7 @@ class BigramProgramDistributionBatch:
     def __len__(self):
         return len(self.distribution_batch)
 
+
 @dataclass
 class BigramProgramCounts:
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
