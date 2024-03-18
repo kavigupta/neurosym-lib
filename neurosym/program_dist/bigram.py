@@ -7,6 +7,7 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.ordering import DefaultNodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     ConjunctionPreorderMask,
     PreorderMask,
@@ -125,6 +126,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         additional_preorder_masks: Tuple[
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
+        node_ordering=lambda _: DefaultNodeOrdering(),
     ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
@@ -133,6 +135,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
+        self._node_ordering = node_ordering
 
     def underlying_dsl(self) -> DSL:
         return self._dsl
@@ -278,6 +281,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
                     for mask in self._additional_preorder_masks
                 ],
             ),
+            self._node_ordering,
         )
 
 

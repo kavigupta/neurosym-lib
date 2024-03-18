@@ -17,6 +17,7 @@ arith_dist = ns.TreeDistribution(
     },
     [("root", 1), ("+", 2), ("1", 0)],
     ns.NoopPreorderMask,
+    lambda _: ns.DefaultNodeOrdering(),
 )
 
 
