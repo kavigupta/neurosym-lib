@@ -7,7 +7,7 @@ import torch
 import neurosym as ns
 from tests.utils import assertDSL
 
-from .utils import ProbabilityTester
+from .utils import ChildrenInOrderMask, ProbabilityTester
 
 
 def get_dsl(with_vars=False):
@@ -22,11 +22,24 @@ def get_dsl(with_vars=False):
     return dslf.finalize()
 
 
+def get_dsl_for_ordering():
+    dslf = ns.DSLFactory()
+    dslf.concrete("+", "(i, i, i) -> t", lambda x, y: x + y)
+    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.concrete("2", "() -> i", lambda: 2)
+    dslf.concrete("3", "() -> i", lambda: 2)
+    dslf.prune_to("t")
+    return dslf.finalize()
+
+
 dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
 dsl_with_vars = get_dsl(with_vars=True)
 fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
-
+dsl_for_ordering = get_dsl_for_ordering()
+fam_with_ordering = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderMask]
+)
 uniform = [
     [
         # root -> each
@@ -165,6 +178,15 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
         self.assertBinomial(n, 1 / 4, 0.01, samples.count("(2)"))
         # see test_call_with_variables for the math
         self.assertBinomial(n, 1 / 80, 0.01, samples.count("(call (lam ($0_0)) (1))"))
+
+    def test_sample_with_ordering(self):
+        dist = fam_with_ordering.uniform()
+        n = 10_000
+        samples = [
+            fam_with_ordering.sample(dist, np.random.RandomState(i)) for i in range(n)
+        ]
+        samples = [ns.render_s_expression(x) for x in samples]
+        self.assertEqual(set(samples), {"(+ (1) (2) (3))"})
 
 
 class BigramCountProgramsTest(unittest.TestCase):
@@ -407,6 +429,14 @@ class BigramLikelihoodTest(unittest.TestCase):
                 ("(1)", "log(1/4)"),
             ],
             family=fam_with_vars,
+        )
+
+    def test_ordered(self):
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1)",
+            family=fam_with_ordering,
         )
 
     def test_likelihood_clamped(self):

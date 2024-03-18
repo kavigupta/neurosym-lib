@@ -6,7 +6,7 @@ import numpy as np
 
 import neurosym as ns
 
-from .bigram_test import fam, fam_with_vars
+from .bigram_test import fam, fam_with_ordering, fam_with_vars
 
 arith_dist = ns.TreeDistribution(
     1,
@@ -204,3 +204,9 @@ class TreeDistributionTest(unittest.TestCase):
                 ("(call (lam (2)) (2))", Fraction(1, 80)),
             },
         )
+
+    def test_enumeration_from_dsl_with_ordering(self):
+        result = self.enumerate_dsl(
+            fam_with_ordering, fam_with_ordering.uniform(), min_likelihood=-6
+        )
+        self.assertEqual(result, {("(+ (1) (2) (3))", Fraction(1))})
