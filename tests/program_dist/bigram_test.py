@@ -299,6 +299,62 @@ class BigramCountProgramsTest(unittest.TestCase):
             ),
         )
 
+    def test_counts_variables(self):
+        data = [[ns.parse_s_expression("(call (lam ($0_0)) (1))")]]
+        counts = fam_with_vars.count_programs(data)
+        print(counts)
+        1 / 0
+
+    def test_counts_single_program_ordered(self):
+        data = [[ns.parse_s_expression("(+ (1) (2) (3))")]]
+        counts = fam_with_ordering.count_programs(data)
+        print(counts)
+        self.assertEqual(
+            counts,
+            # BigramProgramCountsBatch(
+            #     counts=[
+            #         BigramProgramCounts(
+            #             numerators={
+            #                 ((0, 0),): {1: 1},
+            #                 ((1, 0),): {2: 1},
+            #                 ((1, 1),): {3: 1},
+            #                 ((1, 2),): {4: 1},
+            #             },
+            #             denominators={
+            #                 ((0, 0),): {(1,): 1},
+            #                 ((1, 0),): {(2,): 1},
+            #                 ((1, 1),): {(3,): 1},
+            #                 ((1, 2),): {(4,): 1},
+            #             },
+            #         )
+            #     ]
+            # ),
+            ns.BigramProgramCountsBatch(
+                [
+                    ns.BigramProgramCounts(
+                        {
+                            # root -> +
+                            ((0, 0),): {1: 1},
+                            # + -> 1 as the first arg
+                            ((1, 0),): {2: 1},
+                            # + -> 2 as the second arg
+                            ((1, 1),): {3: 1},
+                            # + -> 3 as the third arg
+                            ((1, 2),): {4: 1},
+                        },
+                        {
+                            # root -> ?
+                            ((0, 0),): {(1,): 1},
+                            # + -> only the specific arg, others are masked out
+                            ((1, 0),): {(2,): 1},
+                            ((1, 1),): {(3,): 1},
+                            ((1, 2),): {(4,): 1},
+                        },
+                    )
+                ]
+            ),
+        )
+
 
 class BigramParameterDifferenceLossTest(unittest.TestCase):
     def computeLoss(self, logits, programs, family=fam):
