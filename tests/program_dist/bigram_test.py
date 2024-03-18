@@ -193,110 +193,102 @@ class BigramCountProgramsTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
+    def convert(self, family, count):
+        symbol_text = lambda x: family.tree_distribution_skeleton.symbols[x][0]
+        numerators = {
+            tuple((symbol_text(sym), pos) for sym, pos in chain): {
+                symbol_text(sym): count for sym, count in counts.items()
+            }
+            for chain, counts in count.numerators.items()
+        }
+        denominators = {
+            tuple((symbol_text(sym), pos) for sym, pos in chain): {
+                tuple(symbol_text(sym) for sym in syms): count
+                for syms, count in counts.items()
+            }
+            for chain, counts in count.denominators.items()
+        }
+        return numerators, denominators
+
+    def count_programs(self, family, programs):
+        counts = family.count_programs(
+            [[ns.parse_s_expression(x) for x in ps] for ps in programs]
+        )
+        return [self.convert(family, count) for count in counts.counts]
+
     def test_counts_single_program(self):
-        data = [[ns.parse_s_expression("(+ (1) (2))")]]
-        counts = fam.count_programs(data)
+        counts = self.count_programs(fam, [["(+ (1) (2))"]])
         self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 2 as the second arg
-                            ((1, 1),): {3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    )
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"2": 1},
+                    },
+                    {
+                        # all symbols could be anything else
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                )
+            ],
         )
 
     def test_counts_multiple_programs(self):
-        data = [
-            [ns.parse_s_expression(x) for x in ("(+ (1) (2))", "(+ (1) (1))")],
-        ]
-        counts = fam.count_programs(data)
+        counts = self.count_programs(fam, [["(+ (1) (2))", "(+ (1) (1))"]])
+        print(counts)
+
         self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 2},
-                            # + -> 1 as the first arg (twice)
-                            ((1, 0),): {2: 2},
-                            # + -> 1 as the second arg; + -> 2 as the second arg
-                            ((1, 1),): {2: 1, 3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 2},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 2},
-                            ((1, 1),): {(1, 2, 3): 2},
-                        },
-                    )
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 2},
+                        (("+", 0),): {"1": 2},
+                        (("+", 1),): {"2": 1, "1": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 2},
+                        (("+", 0),): {("+", "1", "2"): 2},
+                        (("+", 1),): {("+", "1", "2"): 2},
+                    },
+                )
+            ],
         )
 
     def test_counts_separate_programs(self):
-        data = [
-            [ns.parse_s_expression("(+ (1) (2))")],
-            [ns.parse_s_expression("(+ (1) (1))")],
-        ]
-        counts = fam.count_programs(data)
-        np.testing.assert_equal(
+        counts = self.count_programs(fam, [["(+ (1) (2))"], ["(+ (1) (1))"]])
+        self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 2 as the second arg
-                            ((1, 1),): {3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    ),
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 1 as the second arg
-                            ((1, 1),): {2: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    ),
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"2": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                ),
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"1": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                ),
+            ],
         )
 
 
