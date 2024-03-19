@@ -5,7 +5,6 @@ import numpy as np
 import torch
 
 import neurosym as ns
-from neurosym.program_dist.tree_distribution.ordering import DictionaryNodeOrdering
 from tests.utils import assertDSL
 
 from .utils import ChildrenInOrderMask, ProbabilityTester
@@ -45,7 +44,7 @@ fam_with_ordering_231 = ns.BigramProgramDistributionFamily(
     dsl_for_ordering,
     additional_preorder_masks=[ChildrenInOrderMask],
     # 2 3 1 means go to index 2 first, then 0 second, then 1 third
-    node_ordering=lambda dist: DictionaryNodeOrdering(dist, {"+": [2, 0, 1]}),
+    node_ordering=lambda dist: ns.DictionaryNodeOrdering(dist, {"+": [2, 0, 1]}),
 )
 
 uniform = [
