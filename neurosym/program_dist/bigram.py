@@ -364,7 +364,8 @@ def accumulate_counts(
     elements = possibilities[mask]
     elements = tuple(int(x) for x in elements)
     denominators[ancestors][elements] += 1
-    for j, child in enumerate(program.children):
+    order = tree_dist.ordering.order(this_idx, len(program.children))
+    for j, child in zip(order, [program.children[i] for i in order]):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
         accumulate_counts(
