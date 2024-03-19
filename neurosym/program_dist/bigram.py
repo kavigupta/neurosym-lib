@@ -275,19 +275,8 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             1,
             dist,
             list(zip(self._symbols, self._arities)),
-<<<<<<< HEAD
-            lambda tree_dist: ConjunctionPreorderMask(
-                tree_dist,
-                [TypePreorderMask(tree_dist, self._dsl)]
-                + [
-                    mask(tree_dist, self._dsl)
-                    for mask in self._additional_preorder_masks
-                ],
-            ),
-            self._node_ordering,
-=======
             self.compute_preorder_mask,
->>>>>>> disable-type-mask
+            self._node_ordering,
         )
 
     def compute_preorder_mask(self, tree_dist):
