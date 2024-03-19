@@ -126,6 +126,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         additional_preorder_masks: Tuple[
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
+        include_type_preorder_mask: bool = True,
         node_ordering=lambda _: DefaultNodeOrdering(),
     ):
         if valid_root_types is not None:
@@ -135,6 +136,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
+        self._include_type_preorder_mask = include_type_preorder_mask
         self._node_ordering = node_ordering
 
     def underlying_dsl(self) -> DSL:
@@ -273,6 +275,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             1,
             dist,
             list(zip(self._symbols, self._arities)),
+<<<<<<< HEAD
             lambda tree_dist: ConjunctionPreorderMask(
                 tree_dist,
                 [TypePreorderMask(tree_dist, self._dsl)]
@@ -282,7 +285,18 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
                 ],
             ),
             self._node_ordering,
+=======
+            self.compute_preorder_mask,
+>>>>>>> disable-type-mask
         )
+
+    def compute_preorder_mask(self, tree_dist):
+        masks = []
+        if self._include_type_preorder_mask:
+            masks.append(TypePreorderMask(tree_dist, self._dsl))
+        for mask in self._additional_preorder_masks:
+            masks.append(mask(tree_dist, self._dsl))
+        return ConjunctionPreorderMask(tree_dist, masks)
 
 
 def bigram_mask(dsl):
