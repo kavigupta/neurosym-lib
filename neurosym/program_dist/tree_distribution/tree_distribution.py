@@ -11,6 +11,7 @@ from neurosym.program_dist.distribution import (
     ProgramDistributionFamily,
 )
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
+from neurosym.program_dist.tree_distribution.ordering import NodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
 )
@@ -36,6 +37,8 @@ class TreeDistribution:
     symbols: List[Tuple[str, int]]
     # Preorder mask constructor
     mask_constructor: Callable[["TreeDistribution"], PreorderMask]
+    # Node ordering
+    node_ordering: Callable[["TreeDistribution"], NodeOrdering]
 
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
@@ -74,6 +77,10 @@ class TreeDistribution:
             k: (syms, np.exp(log_probs))
             for k, (syms, log_probs) in self.likelihood_arrays.items()
         }
+
+    @cached_property
+    def ordering(self) -> NodeOrdering:
+        return self.node_ordering(self)
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):

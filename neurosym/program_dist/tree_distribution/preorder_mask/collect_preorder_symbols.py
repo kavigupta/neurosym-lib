@@ -36,7 +36,8 @@ def collect_preorder_symbols_dfs(
     yield s_exp, alts
     sym_idx = tree_dist.symbol_to_index[s_exp.symbol]
     mask.on_entry(position, sym_idx)
-    for idx, child in enumerate(s_exp.children):
+    order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
+    for idx, child in zip(order, [s_exp.children[i] for i in order]):
         yield from collect_preorder_symbols_dfs(child, tree_dist, mask, idx)
     mask.on_exit(position, sym_idx)
 

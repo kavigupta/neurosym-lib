@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="neurosym",
-    version="0.0.27",
+    version="0.0.29",
     author="Kavi Gupta, Atharva Sehgal, Maddy Bowers",
     author_email="kavig+neurosym@mit.edu",
     description="Neurosymbolic library.",

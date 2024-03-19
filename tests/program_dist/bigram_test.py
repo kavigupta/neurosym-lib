@@ -40,6 +40,13 @@ dsl_for_ordering = get_dsl_for_ordering()
 fam_with_ordering = ns.BigramProgramDistributionFamily(
     dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderMask]
 )
+fam_with_ordering_231 = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering,
+    additional_preorder_masks=[ChildrenInOrderMask],
+    # 2 3 1 means go to index 2 first, then 0 second, then 1 third
+    node_ordering=lambda dist: ns.DictionaryNodeOrdering(dist, {"+": [2, 0, 1]}),
+)
+
 uniform = [
     [
         # root -> each
@@ -187,6 +194,16 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
         ]
         samples = [ns.render_s_expression(x) for x in samples]
         self.assertEqual(set(samples), {"(+ (1) (2) (3))"})
+
+    def test_sample_with_ordering_231(self):
+        dist = fam_with_ordering_231.uniform()
+        n = 10_000
+        samples = [
+            fam_with_ordering_231.sample(dist, np.random.RandomState(i))
+            for i in range(n)
+        ]
+        samples = [ns.render_s_expression(x) for x in samples]
+        self.assertEqual(set(samples), {"(+ (2) (3) (1))"})
 
 
 class BigramCountProgramsTest(unittest.TestCase):
@@ -338,6 +355,31 @@ class BigramCountProgramsTest(unittest.TestCase):
             ],
         )
 
+    def test_counts_single_program_ordered_231(self):
+        counts = self.count_programs(fam_with_ordering_231, [["(+ (2) (3) (1))"]])
+        print(counts)
+        self.assertEqual(
+            counts,
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"2": 1},
+                        (("+", 1),): {"3": 1},
+                        (("+", 2),): {"1": 1},
+                    },
+                    {
+                        # note that there's no multiplicity here
+                        # because the ordering mask doesn't allow it
+                        (("<root>", 0),): {("+",): 1},
+                        (("+", 0),): {("2",): 1},
+                        (("+", 1),): {("3",): 1},
+                        (("+", 2),): {("1",): 1},
+                    },
+                )
+            ],
+        )
+
 
 class BigramParameterDifferenceLossTest(unittest.TestCase):
     def computeLoss(self, logits, programs, family=fam):
@@ -482,6 +524,20 @@ class BigramLikelihoodTest(unittest.TestCase):
             "(+ (2) (3) (1))",
             "log(0)",
             family=fam_with_ordering,
+        )
+
+    def test_ordered_231(self):
+        self.assertLikelihood(
+            fam_with_ordering_231.uniform(),
+            "(+ (2) (3) (1))",
+            "log(1)",
+            family=fam_with_ordering_231,
+        )
+        self.assertLikelihood(
+            fam_with_ordering_231.uniform(),
+            "(+ (1) (2) (3))",
+            "log(0)",
+            family=fam_with_ordering_231,
         )
 
     def test_likelihood_clamped(self):

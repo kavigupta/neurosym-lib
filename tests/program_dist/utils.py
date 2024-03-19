@@ -36,7 +36,6 @@ class ChildrenInOrderMask(ns.PreorderMask):
         self.seen_symbols = []
 
     def compute_mask(self, position, symbols):
-        print(position, symbols, self.proper_context, self.seen_symbols)
         if self.proper_context:
             mask = []
             for symbol in symbols:

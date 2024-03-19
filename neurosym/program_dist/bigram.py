@@ -7,6 +7,7 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.ordering import DefaultNodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     ConjunctionPreorderMask,
     PreorderMask,
@@ -126,6 +127,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
         include_type_preorder_mask: bool = True,
+        node_ordering=lambda _: DefaultNodeOrdering(),
     ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
@@ -135,6 +137,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
         self._include_type_preorder_mask = include_type_preorder_mask
+        self._node_ordering = node_ordering
 
     def underlying_dsl(self) -> DSL:
         return self._dsl
@@ -273,6 +276,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             dist,
             list(zip(self._symbols, self._arities)),
             self.compute_preorder_mask,
+            self._node_ordering,
         )
 
     def compute_preorder_mask(self, tree_dist):
@@ -363,7 +367,8 @@ def accumulate_counts(
     elements = possibilities[mask]
     elements = tuple(int(x) for x in elements)
     denominators[ancestors][elements] += 1
-    for j, child in enumerate(program.children):
+    order = tree_dist.ordering.order(this_idx, len(program.children))
+    for j, child in zip(order, [program.children[i] for i in order]):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
         accumulate_counts(

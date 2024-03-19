@@ -15,7 +15,7 @@ Likelihood is defined as the log probability of the program.
 
 import copy
 import itertools
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 
@@ -101,6 +101,7 @@ def enumerate_tree_dist_dfs(
             node,
             num_children=arity,
             starting_index=0,
+            order=tree_dist.ordering.order(node, arity),
             preorder_mask=preorder_mask_copy,
         ):
             preorder_mask_copy.on_exit(position, node)
@@ -116,6 +117,7 @@ def enumerate_children_and_likelihoods_dfs(
     most_recent_parent: int,
     num_children: int,
     starting_index: int,
+    order: List[int],
     preorder_mask: PreorderMask,
 ):
     """
@@ -125,8 +127,7 @@ def enumerate_children_and_likelihoods_dfs(
     if starting_index == num_children:
         yield {}, 0, preorder_mask
         return
-
-    new_parents = parents + ((most_recent_parent, starting_index),)
+    new_parents = parents + ((most_recent_parent, order[starting_index]),)
     new_parents = new_parents[-tree_dist.limit :]
 
     for first_child, first_likelihood, preorder_mask_2 in enumerate_tree_dist_dfs(
@@ -143,9 +144,10 @@ def enumerate_children_and_likelihoods_dfs(
             most_recent_parent,
             num_children,
             starting_index + 1,
+            order,
             preorder_mask_2,
         ):
             yield {
-                starting_index: first_child,
+                order[starting_index]: first_child,
                 **rest_children,
             }, first_likelihood + rest_likelihood, preorder_mask_3

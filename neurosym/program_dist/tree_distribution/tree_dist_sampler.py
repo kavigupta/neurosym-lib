@@ -32,8 +32,8 @@ def attempt_to_sample_tree_dist(
     if depth_limit < 0:
         raise TooDeepError()
     root_sym, root_arity = dist.symbols[parent]
-    children = []
-    for i in range(root_arity):
+    children = [None] * root_arity
+    for i in dist.ordering.order(parent, root_arity):
         key = ancestors + ((parent, i),)
         key = key[-dist.limit :]
         possibilites, weights = dist.sampling_dict_arrays[key]
@@ -44,15 +44,13 @@ def attempt_to_sample_tree_dist(
         weights /= weights.sum()
         child_idx = rng.choice(possibilites, p=weights)
         preorder_mask.on_entry(i, child_idx)
-        children.append(
-            attempt_to_sample_tree_dist(
-                dist,
-                rng,
-                depth_limit - 1,
-                ancestors=key,
-                parent=child_idx,
-                preorder_mask=preorder_mask,
-            )
+        children[i] = attempt_to_sample_tree_dist(
+            dist,
+            rng,
+            depth_limit - 1,
+            ancestors=key,
+            parent=child_idx,
+            preorder_mask=preorder_mask,
         )
         preorder_mask.on_exit(i, child_idx)
     return SExpression(root_sym, tuple(children))
