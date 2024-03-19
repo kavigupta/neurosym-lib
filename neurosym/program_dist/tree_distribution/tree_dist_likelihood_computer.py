@@ -29,7 +29,6 @@ def compute_likelihood(
     likelihood = symbol_likelihood(
         tree_dist, parents, preorder_mask, start_position, top_symbol
     )
-    print(program, likelihood)
     if tracker is not None:
         tracker(program, likelihood)
     # only end early if the tracker is None,
