@@ -105,7 +105,7 @@ def enumerate_tree_dist_dfs(
         ):
             preorder_mask_copy.on_exit(position, node)
             yield SExpression(
-                symbol, children
+                symbol, [children[i] for i in range(arity)]
             ), child_likelihood + likelihood, preorder_mask_copy
 
 
@@ -123,7 +123,7 @@ def enumerate_children_and_likelihoods_dfs(
     """
 
     if starting_index == num_children:
-        yield [], 0, preorder_mask
+        yield {}, 0, preorder_mask
         return
 
     new_parents = parents + ((most_recent_parent, starting_index),)
@@ -145,6 +145,7 @@ def enumerate_children_and_likelihoods_dfs(
             starting_index + 1,
             preorder_mask_2,
         ):
-            yield [
-                first_child
-            ] + rest_children, first_likelihood + rest_likelihood, preorder_mask_3
+            yield {
+                starting_index: first_child,
+                **rest_children,
+            }, first_likelihood + rest_likelihood, preorder_mask_3
