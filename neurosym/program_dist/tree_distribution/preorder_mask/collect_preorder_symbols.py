@@ -17,7 +17,7 @@ def collect_preorder_symbols(
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
     """
-    mask = mask(tree_dist)
+    mask = tree_dist.mask_constructor(tree_dist)
     mask.on_entry(0, 0)
     yield from collect_preorder_symbols_dfs(s_exp, tree_dist, mask, 0)
 
@@ -35,10 +35,12 @@ def collect_preorder_symbols_dfs(
     bool_mask = mask.compute_mask(position, idxs)
     alts = tuple(int(x) for x in idxs[bool_mask])
     yield s_exp, alts
-    mask.on_entry(position, tree_dist.symbol_to_index[s_exp.symbol])
-    for idx, child in enumerate(s_exp.children):
+    sym_idx = tree_dist.symbol_to_index[s_exp.symbol]
+    mask.on_entry(position, sym_idx)
+    order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
+    for idx, child in zip(order, [s_exp.children[i] for i in order]):
         yield from collect_preorder_symbols_dfs(child, tree_dist, mask, idx)
-    mask.on_exit(position, tree_dist.symbol_to_index[s_exp.symbol])
+    mask.on_exit(position, sym_idx)
 
 
 def annotate_with_alternate_symbols(
