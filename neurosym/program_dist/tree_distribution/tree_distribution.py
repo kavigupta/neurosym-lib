@@ -42,6 +42,15 @@ class TreeDistribution:
         return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
 
     @cached_property
+    def index_within_distribution_list(
+        self,
+    ) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]:
+        return {
+            k: {x: i for i, (x, _) in enumerate(v)}
+            for k, v in self.distribution.items()
+        }
+
+    @cached_property
     def distribution_dict(self) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, float]]:
         return {k: dict(v) for k, v in self.distribution.items()}
 

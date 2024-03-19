@@ -53,10 +53,10 @@ def symbol_likelihood(tree_dist, parents, preorder_mask, start_position, top_sym
         return -float("inf")
     syms, log_probs = tree_dist.likelihood_arrays[parents]
     mask = preorder_mask.compute_mask(start_position, syms)
+    idx = tree_dist.index_within_distribution_list[parents][top_symbol]
+    if not mask[idx]:
+        return -float("inf")
     denominator = np.logaddexp.reduce(log_probs[mask])
-    likelihood = (
-        tree_dist.distribution_dict[parents].get(top_symbol, -float("inf"))
-        - denominator
-    )
+    likelihood = log_probs[idx] - denominator
 
     return likelihood
