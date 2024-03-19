@@ -12,7 +12,6 @@ from neurosym.programs.s_expression import SExpression
 def collect_preorder_symbols(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
-    mask: Callable[[TreeDistribution], PreorderMask],
 ) -> Iterator[Tuple[SExpression, List[str]]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
@@ -46,7 +45,6 @@ def collect_preorder_symbols_dfs(
 def annotate_with_alternate_symbols(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
-    mask: Callable[[TreeDistribution], PreorderMask],
     summary_fn=lambda chosen, alts: f"{chosen}/{','.join(sorted(alts))}",
 ) -> SExpression:
     """
@@ -55,7 +53,7 @@ def annotate_with_alternate_symbols(
     """
     node_id_to_alts = {
         id(node): tuple(tree_dist.symbols[alt][0] for alt in alts)
-        for node, alts in collect_preorder_symbols(s_exp, tree_dist, mask)
+        for node, alts in collect_preorder_symbols(s_exp, tree_dist)
     }
 
     def replace(s):
