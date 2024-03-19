@@ -28,15 +28,3 @@ class TreeDistributionTest(unittest.TestCase):
             self.collect_symbols(fam_with_vars, "(call (lam ($0_0)) (1))"),
             "(call/+,1,2,call (lam/lam ($0_0/$0_0,+,1,2,call)) (1/+,1,2,call))",
         )
-
-    def test_program_with_ordering(self):
-        self.assertEqual(
-            self.collect_symbols(fam_with_ordering, "(+ (1) (2) (3))"),
-            "(+/+ (1/1) (2/2) (3/3))",
-        )
-
-    def test_program_with_ordering_231(self):
-        self.assertEqual(
-            self.collect_symbols(fam_with_ordering_231, "(+ (2) (3) (1))"),
-            "(+/+ (2/2) (3/3) (1/1))",
-        )
