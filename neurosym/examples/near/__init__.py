@@ -1,5 +1,8 @@
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
+from .dsls.simple_constants_dsl import simple_constants_dsl
+from .methods.base_trainer import TrainingError
+from .methods.ecg_example_trainer import ECGTrainer, ECGTrainerConfig
 from .methods.near_example_trainer import NEARTrainer, NEARTrainerConfig
 from .models.mlp import MLP, MLPConfig, mlp_factory
 from .models.rnn import (
@@ -8,6 +11,16 @@ from .models.rnn import (
     Seq2SeqRNN,
     rnn_factory_seq2class,
     rnn_factory_seq2seq,
+)
+from .models.constant import (
+    Constant,
+    ConstantConfig,
+    constant_factory,
+)
+from .models.selector import (
+    Selector,
+    SelectorConfig,
+    selector_factory,
 )
 from .models.torch_program_module import TorchProgramModule
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules

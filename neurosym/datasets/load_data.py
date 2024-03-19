@@ -2,10 +2,9 @@ import io
 import os
 
 import numpy as np
-import pytorch_lightning as pl
+import lightning as L
 import requests
 import torch
-from permacache import permacache
 
 
 def get_raw_url(github_folder, filename):
@@ -31,7 +30,7 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-@permacache("neurosym/data/load_data/load_npy")
+# @permacache("neurosym/data/load_data/load_npy")
 def load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
@@ -63,15 +62,23 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     TODO test/val split
     """
 
-    def __init__(self, input_url, output_url, seed):
+    def __init__(self, input_url, output_url, seed, is_regression=False):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
+        self.is_regression = is_regression
         self.inputs = load_npy(input_url)
         self.outputs = load_npy(output_url)
+        # conver float64 to float32
+        if np.issubdtype(self.inputs.dtype, np.float64):
+            self.inputs = self.inputs.astype(np.float32)
+
+        if np.issubdtype(self.outputs.dtype, np.float64):
+            self.outputs = self.outputs.astype(np.float32)
+
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(
@@ -81,7 +88,15 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             self.ordering = np.arange(len(self.inputs))
 
     def get_io_dims(self):
-        return self.inputs.shape[-1], len(np.unique(self.outputs))
+        if self.is_regression:
+            return self.inputs.shape[-1], self.outputs.shape[-1]
+
+        if np.issubdtype(self.outputs.dtype, np.integer):
+            n_classes = len(np.unique(self.outputs))
+        else:
+            n_classes = self.outputs.shape[-1]
+
+        return self.inputs.shape[-1], n_classes
 
     def __len__(self):
         return len(self.inputs)
@@ -93,26 +108,44 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         )
 
 
-class DatasetWrapper(pl.LightningDataModule):
+class DatasetWrapper(L.LightningDataModule):
     def __init__(
         self,
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
         batch_size: int = 32,
+        n_workers: int = 0,
     ):
         super().__init__()
         self.train = train
         self.test = test
         self.batch_size = batch_size
+        self.n_workers = n_workers
+        self.pin_memory = True
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            pin_memory=self.pin_memory,
+        )
 
 
 def numpy_dataset_from_github(

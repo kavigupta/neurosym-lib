@@ -57,7 +57,6 @@ class TestSearch(unittest.TestCase):
             return 0
 
         node = next(ns.search.astar(g, cost)).program
-        print(node)
         self.assertEqual(
             node,
             ns.SExpression(

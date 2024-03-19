@@ -1,13 +1,20 @@
+# pylint: skip-file
 import queue
 from dataclasses import dataclass, field
 from typing import Callable
 
+from tqdm.auto import tqdm
+
 from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
 
 
 def bounded_astar(
-    g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float], max_depth: int
+    g: SearchGraph,
+    cost_plus_heuristic: Callable[[SExpression], float],
+    max_depth: int,
+    verbose: bool = False,
 ):
     """
     Performs a bounded a-star search on the given search graph, yielding each node in
@@ -27,6 +34,9 @@ def bounded_astar(
         fringe.put(BoundedAStarNode(cost_plus_heuristic(node), node, depth))
 
     add_to_fringe(g.initial_node(), 0)
+    best_node = None
+    if verbose:
+        pbar = tqdm(leave=False)
     while not fringe.empty():
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
@@ -37,6 +47,17 @@ def bounded_astar(
             yield node
         for child in g.expand_node(node):
             add_to_fringe(child, depth + 1)
+
+        if best_node is None or fringe_var.cost < best_node.cost:
+            best_node = fringe_var
+        if verbose:
+            depth = best_node.depth
+            cost = best_node.cost
+            program = render_s_expression(best_node.node.program)
+            pbar.set_description(
+                f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}"
+            )
+            pbar.update(1)
 
 
 @dataclass(order=True)

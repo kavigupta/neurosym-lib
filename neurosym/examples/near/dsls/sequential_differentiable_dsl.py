@@ -1,6 +1,7 @@
 """
 RNN example
 """
+
 import torch
 from torch import nn
 

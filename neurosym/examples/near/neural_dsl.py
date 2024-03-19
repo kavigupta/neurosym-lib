@@ -9,7 +9,7 @@ from ...dsl.dsl import DSL
 from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
-from ...types.type import ArrowType, ListType, TensorType, Type
+from ...types.type import ArrowType, AtomicType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):
@@ -26,6 +26,7 @@ class NeuralDSL(DSL):
     Required to run NEAR.
     """
 
+    neural_fn_tag = "__neural_dsl_internal__"
     # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
 
@@ -55,7 +56,7 @@ class NeuralDSL(DSL):
                 fn_type, ArrowType
             ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
             count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
-            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
+            identifier = f"{cls.neural_fn_tag}_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
             # pylint: disable=unexpected-keyword-arg
             module_c_prod = ParameterizedProduction(
@@ -114,16 +115,19 @@ class NeuralDSL(DSL):
         )
 
 
-def create_module_for_type(module_factory, t):
-    shape = compute_io_shape(t)
+def create_module_for_type(module_factory, t, known_atom_shapes):
+    shape = compute_io_shape(t, known_atom_shapes)
     return lambda: module_factory(*shape)
 
 
-def create_modules(tag, types, module_factory):
-    return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
+def create_modules(tag, types, module_factory, known_atom_shapes=None):
+    return {
+        t: (tag, create_module_for_type(module_factory, t, known_atom_shapes))
+        for t in types
+    }
 
 
-def compute_io_shape(t):
+def compute_io_shape(t, known_atom_shapes):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
@@ -140,8 +144,15 @@ def compute_io_shape(t):
                 return shape
             case ListType(element_type):
                 return get_shape(element_type)
+            case t if isinstance(t, Tuple):
+                return len(t)
+            case AtomicType(k):
+                assert known_atom_shapes is not None, \
+                "known_atom_shapes must be provided for AtomicType"
+                assert k in known_atom_shapes, f"Unknown shape for type {k}"
+                return known_atom_shapes[k]
             case _:
-                raise NotImplementedError(f"Cannot compute shape for type {t}")
+                raise NotImplementedError(f"Cannot compute shape for type {type(t)}")
 
     input_shape = [get_shape(t) for t in input_types]
     output_shape = get_shape(output_type)

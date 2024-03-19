@@ -25,11 +25,12 @@ setuptools.setup(
         "torchvision",
         "torchaudio",
         "numpy",
-        "pytorch-lightning",
+        "lightning",
         "permacache",
         "requests",
         "stitch-core==0.1.25",
         "scikit-learn",
+        "pandas",
         "s-exp-parser==1.3.1",
     ],
 )
