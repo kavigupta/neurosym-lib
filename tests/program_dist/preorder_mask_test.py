@@ -2,16 +2,14 @@ import unittest
 
 import neurosym as ns
 
-from .bigram_test import dsl_with_vars, fam_with_vars
+from .bigram_test import fam_with_vars
 
 
 class TreeDistributionTest(unittest.TestCase):
     def collect_symbols(self, program):
         return ns.render_s_expression(
             ns.annotate_with_alternate_symbols(
-                ns.parse_s_expression(program),
-                fam_with_vars.tree_distribution_skeleton,
-                lambda tree_dist: ns.TypePreorderMask(tree_dist, dsl_with_vars),
+                ns.parse_s_expression(program), fam_with_vars.tree_distribution_skeleton
             )
         )
 
