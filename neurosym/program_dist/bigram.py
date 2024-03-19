@@ -125,6 +125,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         additional_preorder_masks: Tuple[
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
+        include_type_preorder_mask: bool = True,
     ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
@@ -133,6 +134,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
+        self._include_type_preorder_mask = include_type_preorder_mask
 
     def underlying_dsl(self) -> DSL:
         return self._dsl
@@ -270,15 +272,16 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             1,
             dist,
             list(zip(self._symbols, self._arities)),
-            lambda tree_dist: ConjunctionPreorderMask(
-                tree_dist,
-                [TypePreorderMask(tree_dist, self._dsl)]
-                + [
-                    mask(tree_dist, self._dsl)
-                    for mask in self._additional_preorder_masks
-                ],
-            ),
+            self.compute_preorder_mask,
         )
+
+    def compute_preorder_mask(self, tree_dist):
+        masks = []
+        if self._include_type_preorder_mask:
+            masks.append(TypePreorderMask(tree_dist, self._dsl))
+        for mask in self._additional_preorder_masks:
+            masks.append(mask(tree_dist, self._dsl))
+        return ConjunctionPreorderMask(tree_dist, masks)
 
 
 def bigram_mask(dsl):
