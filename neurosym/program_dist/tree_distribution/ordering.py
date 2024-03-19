@@ -31,8 +31,14 @@ class DictionaryNodeOrdering(NodeOrdering):
     Orders the subnodes of a node according to a dictionary.
     """
 
-    def __init__(self, dist, ordering: Dict[str, List[int]]):
-        self.ordering = {dist.symbol_to_index[k]: vs for k, vs in ordering.items()}
+    def __init__(self, dist, ordering: Dict[str, List[int]], tolerate_missing=False):
+        if not tolerate_missing:
+            assert set(ordering.keys()).issubset(dist.symbol_to_index.keys())
+        self.ordering = {
+            dist.symbol_to_index[k]: vs
+            for k, vs in ordering.items()
+            if k in dist.symbol_to_index
+        }
 
     def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
         return self.ordering.get(root_sym_idx, None)
