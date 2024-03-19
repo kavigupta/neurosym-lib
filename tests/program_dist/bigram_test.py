@@ -477,6 +477,12 @@ class BigramLikelihoodTest(unittest.TestCase):
             "log(1)",
             family=fam_with_ordering,
         )
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (2) (3) (1))",
+            "log(0)",
+            family=fam_with_ordering,
+        )
 
     def test_likelihood_clamped(self):
         dist = fam.counts_to_distribution(
