@@ -117,7 +117,6 @@ class BigramProgramCountsBatch:
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
-
     def __init__(
         self,
         dsl: DSL,
