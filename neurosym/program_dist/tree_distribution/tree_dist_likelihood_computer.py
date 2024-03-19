@@ -29,6 +29,7 @@ def compute_likelihood(
     likelihood = symbol_likelihood(
         tree_dist, parents, preorder_mask, start_position, top_symbol
     )
+    print(program, likelihood)
     if tracker is not None:
         tracker(program, likelihood)
     # only end early if the tracker is None,
@@ -36,7 +37,8 @@ def compute_likelihood(
     elif likelihood == -float("inf"):
         return -float("inf")
     preorder_mask.on_entry(start_position, top_symbol)
-    for i, child in enumerate(program.children):
+    order = tree_dist.ordering.order(top_symbol, len(program.children))
+    for i, child in zip(order, [program.children[i] for i in order]):
         likelihood += compute_likelihood(
             tree_dist,
             child,

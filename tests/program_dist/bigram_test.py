@@ -540,7 +540,6 @@ class BigramLikelihoodTest(unittest.TestCase):
             "log(0)",
             family=fam_with_ordering_231,
         )
-        1 / 0
 
     def test_likelihood_clamped(self):
         dist = fam.counts_to_distribution(
