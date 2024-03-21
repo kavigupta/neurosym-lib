@@ -189,9 +189,23 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
         """
-        Let p be a program, g be an ngram, s be a symbol, and d be the `denominator`
-            (i.e., the set of possible children for a given parent and position).
+        Let p be a program, g be a bigram context (i.e. parent + which index of parent we are + ), s be a symbol, and d be the "denominator"
+            (which is the set of *possible* symbols s' that could have appeared in this context g).
+        The ngram `g` is really the context that `s` appears in. So for example `(+ (- 1 2) 3)` if we're
+            thinking about the symbol s=`-` its bigram g=`(+, 0)` indicating it's the first argument of a "+". This
+            is the bigram notion from DreamCoder where it's not just the parent (analogous to "previous token" in NLP)
+            but also includes which child of the parent we are.
+        In this particular example, `d` would be the set of symbols that *could* have appeared in that same position `g`,
+            for example `1` or `+` or `-` or anything else that type checks. This is called the denominator because the
+            probability of choosing `s` among `(s' in d)` is going to be P(s)/sum_{s' in d} P(s'). These probabilities will
+            depend on the parameters `theta` of the bigram model (and of course, specifically the unigram it assigns to the
+            context `g`).
 
+        (See also math below) Our goal is to compute the loglikelihood of the actual program P under the bigram parameters theta.
+            Which, for a bigram is the sum of the logprob over all subtrees of the symbol `s` context `g` and denominator `d` for
+            that subtree. We can factor this overall sum into two parts: a numerator based on the actual symbol `s` and a denominator
+            based on the alternative symbols in `d` for that context `g`.
+        
         sum_p log P(p | theta)
             = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
             = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
@@ -200,6 +214,10 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
                 - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
             = [numer] - [denom]
 
+        For each (g,s) instance in the corpus the numerator is the same, and for each (g,d) instance the denominator is the same,
+            so we can instead come up with counts for each of these (calling them `numcount` and `dencount`) and rewrite our sum as a
+            sum over the unique (g,s) and (g,d) instances:
+            
         numer
             = sum_p sum_{(g, s, d) in p} theta_{g, s}
             = sum_g sum_s numcount_{g, s} theta_{g, s}
