@@ -51,9 +51,11 @@ def annotate_with_alternate_symbols(
     Annotates the S-Expression with the alternate symbols that could have been
     selected in the tree distribution.
     """
+    preorder_symbols = list(collect_preorder_symbols(s_exp, tree_dist))
+    assert len(preorder_symbols) == len({id(node) for node, _ in preorder_symbols})
     node_id_to_alts = {
         id(node): tuple(tree_dist.symbols[alt][0] for alt in alts)
-        for node, alts in collect_preorder_symbols(s_exp, tree_dist)
+        for node, alts in preorder_symbols
     }
 
     def replace(s):
