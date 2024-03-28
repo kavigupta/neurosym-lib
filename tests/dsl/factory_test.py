@@ -8,12 +8,27 @@ from ..utils import assertDSL
 class TestDuplicateProduction(unittest.TestCase):
     def test_basic_duplicate(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("1", "() -> i", lambda x: x)
+        ident = lambda x: x
+        dslf.concrete("1", "() -> i", ident)
+        dslf.concrete("1", "() -> f", ident)
         self.assertRaisesRegex(
             ValueError,
-            "Duplicate declarations for production: 1",
+            "^Duplicate declarations for production: 1$",
             dslf.finalize,
+        )
+
+    def test_exact_duplicate_allowed(self):
+        dslf = ns.DSLFactory()
+        ident = lambda x: x
+        dslf.concrete("1", "() -> i", ident)
+        dslf.concrete("1", "() -> i", ident)
+        dsl = dslf.finalize()
+        assertDSL(
+            self,
+            dsl.render(),
+            """
+            1 :: () -> i
+            """,
         )
 
 

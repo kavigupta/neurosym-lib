@@ -167,7 +167,7 @@ class DSLFactory:
                 for key in duplicate_keys:
                     if for_prod[key] != result[key]:
                         raise ValueError(
-                            f"Duplicate declarations for production: {key}: {result[key]} and {for_prod[key]}"
+                            f"Duplicate declarations for production: {key}"
                         )
             else:
                 result.update(for_prod)
