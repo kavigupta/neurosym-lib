@@ -164,10 +164,13 @@ class DSLFactory:
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
-                raise ValueError(
-                    f"Duplicate declarations for production: {duplicate_keys[0]}"
-                )
-            result.update(for_prod)
+                for key in duplicate_keys:
+                    if for_prod[key] != result[key]:
+                        raise ValueError(
+                            f"Duplicate declarations for production: {key}: {result[key]} and {for_prod[key]}"
+                        )
+            else:
+                result.update(for_prod)
         return result
 
     def finalize(self):
