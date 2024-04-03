@@ -446,8 +446,10 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
 
 class BigramLikelihoodTest(unittest.TestCase):
-    def assertLikelihood(self, dist, program, str_prob, family=fam):
-        likelihood = family.compute_likelihood(dist, ns.parse_s_expression(program))
+    def assertLikelihood(self, dist, program, str_prob, family=fam, **kwargs):
+        likelihood = family.compute_likelihood(
+            dist, ns.parse_s_expression(program), **kwargs
+        )
         self.assertEqual(self.render_likelihood(likelihood), str_prob)
 
     def assertLikelihoods(self, dist, program, nodes_and_probs, family=fam):
@@ -527,6 +529,50 @@ class BigramLikelihoodTest(unittest.TestCase):
             "(+ (2) (3) (1))",
             "log(0)",
             family=fam_with_ordering,
+        )
+
+    def test_ordered_tracker(self):
+        def tracker(node, likelihood):
+            tracked.append(
+                (ns.render_s_expression(node), self.render_likelihood(likelihood))
+            )
+
+        tracked = []
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1)",
+            family=fam_with_ordering,
+            tracker=tracker,
+        )
+        print(tracked)
+        self.assertEqual(
+            tracked,
+            [
+                ("(+ (1) (2) (3))", "log(1)"),
+                ("(1)", "log(1)"),
+                ("(2)", "log(1)"),
+                ("(3)", "log(1)"),
+            ],
+        )
+
+        tracked = []
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (2) (3) (1))",
+            "log(0)",
+            family=fam_with_ordering,
+            tracker=tracker,
+        )
+        print(tracked)
+        self.assertEqual(
+            tracked,
+            [
+                ("(+ (2) (3) (1))", "log(1)"),
+                ("(2)", "log(0)"),
+                ("(3)", "log(0)"),
+                ("(1)", "log(0)"),
+            ],
         )
 
     def test_ordered_asserting(self):
