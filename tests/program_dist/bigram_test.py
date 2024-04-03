@@ -7,7 +7,7 @@ import torch
 import neurosym as ns
 from tests.utils import assertDSL
 
-from .utils import ChildrenInOrderMask, ProbabilityTester
+from .utils import ChildrenInOrderAsserterMask, ChildrenInOrderMask, ProbabilityTester
 
 
 def get_dsl(with_vars=False):
@@ -39,6 +39,9 @@ fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
 dsl_for_ordering = get_dsl_for_ordering()
 fam_with_ordering = ns.BigramProgramDistributionFamily(
     dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderMask]
+)
+fam_with_ordering_asserted = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderAsserterMask]
 )
 fam_with_ordering_231 = ns.BigramProgramDistributionFamily(
     dsl_for_ordering,
@@ -524,6 +527,23 @@ class BigramLikelihoodTest(unittest.TestCase):
             "(+ (2) (3) (1))",
             "log(0)",
             family=fam_with_ordering,
+        )
+
+    def test_ordered_asserting(self):
+        self.assertLikelihood(
+            fam_with_ordering_asserted.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1/27)",
+            family=fam_with_ordering_asserted,
+        )
+        # distribution where 1 is not allowed
+        dist = fam_with_ordering_asserted.uniform()
+        dist.distribution[:, :, 2] = 0
+        self.assertLikelihood(
+            dist,
+            "(+ (1) (2) (3))",
+            "log(0)",
+            family=fam_with_ordering_asserted,
         )
 
     def test_ordered_231(self):

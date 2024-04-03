@@ -53,3 +53,27 @@ class ChildrenInOrderMask(ns.PreorderMask):
 
     def on_exit(self, position, symbol):
         pass
+
+
+class ChildrenInOrderAsserterMask(ns.PreorderMask):
+    def __init__(self, tree_dist, dsl):
+        del dsl
+        super().__init__(tree_dist)
+        self.proper_context = False
+        self.seen_symbols = []
+
+    def compute_mask(self, position, symbols):
+        return [True] * len(symbols)
+
+    def on_entry(self, position, symbol):
+        symbol = self.tree_dist.symbols[symbol][0]
+        if self.proper_context:
+            self.seen_symbols.append(symbol)
+            assert int(symbol) == len(
+                self.seen_symbols
+            ), f"Expected {len(self.seen_symbols)}, got {symbol}"
+        if symbol == "+":
+            self.proper_context = True
+
+    def on_exit(self, position, symbol):
+        pass
