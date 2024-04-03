@@ -1,5 +1,6 @@
 from typing import List
 
+from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
@@ -29,7 +30,7 @@ class TypePreorderMask(PreorderMask):
 
     def on_entry(self, position, symbol):
         symbol, arity = self.tree_dist.symbols[symbol]
-        if symbol == "<root>":
+        if symbol == ROOT_SYMBOL:
             self.type_stack.append(
                 [TypeWithEnvironment(self.root_type, Environment.empty())]
             )
