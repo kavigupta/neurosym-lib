@@ -620,3 +620,38 @@ class BigramLikelihoodTest(unittest.TestCase):
             np.log(1 / 100),
             1,
         )
+
+
+class OrderingTest(unittest.TestCase):
+    def test_traversal(self):
+        ordering = fam_with_ordering.tree_distribution_skeleton.ordering
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (1) (2) (3))")
+                )
+            ],
+            ["(+ (1) (2) (3))", "(1)", "(2)", "(3)"],
+        )
+
+    def test_traversal_231(self):
+        ordering = fam_with_ordering_231.tree_distribution_skeleton.ordering
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (2) (3) (1))")
+                )
+            ],
+            ["(+ (2) (3) (1))", "(1)", "(2)", "(3)"],
+        )
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (1) (2) (3))")
+                )
+            ],
+            ["(+ (1) (2) (3))", "(3)", "(1)", "(2)"],
+        )

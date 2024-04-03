@@ -127,7 +127,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
         include_type_preorder_mask: bool = True,
-        node_ordering=lambda _: DefaultNodeOrdering(),
+        node_ordering=DefaultNodeOrdering,
     ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)

@@ -1,14 +1,19 @@
 from abc import ABC, abstractmethod
 from types import NoneType
-from typing import Dict, List, Union
+from typing import Dict, Iterator, List, Union
 
 import numpy as np
+
+from neurosym.programs.s_expression import SExpression
 
 
 class NodeOrdering(ABC):
     """
     Represents a technique for ordering the subnodes of a node in a tree.
     """
+
+    def __init__(self, dist):
+        self.dist = dist
 
     @abstractmethod
     def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
@@ -30,6 +35,15 @@ class NodeOrdering(ABC):
             return range(n_subnodes)
         return order
 
+    def traverse_preorder(self, node: SExpression) -> Iterator[SExpression]:
+        """
+        Orders the subnodes of the given node.
+        """
+        yield node
+        sym = self.dist.symbol_to_index[node.symbol]
+        for i in self.order(sym, len(node.children)):
+            yield from self.traverse_preorder(node.children[i])
+
 
 class DictionaryNodeOrdering(NodeOrdering):
     """
@@ -37,6 +51,7 @@ class DictionaryNodeOrdering(NodeOrdering):
     """
 
     def __init__(self, dist, ordering: Dict[str, List[int]], tolerate_missing=False):
+        super().__init__(dist)
         if not tolerate_missing:
             assert set(ordering.keys()).issubset(dist.symbol_to_index.keys())
         self.ordering = {
