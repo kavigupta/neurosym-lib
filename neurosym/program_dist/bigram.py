@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 import numpy as np
 import torch
 
-from neurosym.dsl.dsl import DSL
+from neurosym.dsl.dsl import DSL, ROOT_SYMBOL
 from neurosym.program_dist.tree_distribution.ordering import DefaultNodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     ConjunctionPreorderMask,
@@ -320,7 +320,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
 
 def bigram_mask(dsl):
-    symbols = ["<root>"] + sorted([x.symbol() for x in dsl.productions])
+    symbols = dsl.ordered_symbols(include_root=True)
 
     valid_root_types = dsl.valid_root_types
     symbol_to_idx = {sym: i for i, sym in enumerate(symbols)}
@@ -341,7 +341,7 @@ def bigram_mask(dsl):
     valid_mask = np.zeros((len(symbols), max(arities), len(symbols)), dtype=np.bool_)
     root_syms = {sym for t in valid_root_types for sym, _ in rules_for[t]}
     for root_sym in root_syms:
-        valid_mask[symbol_to_idx["<root>"], 0, symbol_to_idx[root_sym]] = 1
+        valid_mask[symbol_to_idx[ROOT_SYMBOL], 0, symbol_to_idx[root_sym]] = 1
     for _, rules in rules_for.items():
         for root_sym, child_types in rules:
             for i, ct in enumerate(child_types):

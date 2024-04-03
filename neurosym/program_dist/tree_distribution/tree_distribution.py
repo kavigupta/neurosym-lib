@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 
+from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.program_dist.distribution import (
     ProgramDistribution,
     ProgramDistributionFamily,
@@ -188,6 +189,6 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
 
         tree_dist = self.tree_distribution(dist)
         element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
-        assert element.symbol == "<root>"
+        assert element.symbol == ROOT_SYMBOL
         [element] = element.children
         return element
