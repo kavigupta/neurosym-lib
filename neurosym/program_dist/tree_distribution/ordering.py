@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from types import NoneType
 from typing import Dict, List, Union
 
+import numpy as np
+
 
 class NodeOrdering(ABC):
     """
@@ -20,6 +22,9 @@ class NodeOrdering(ABC):
         """
         Orders the subnodes of the node with the given symbol index.
         """
+        assert isinstance(
+            root_sym_idx, (int, np.int32, np.int64)
+        ), f"Expected int, got {root_sym_idx} of type {type(root_sym_idx)}"
         order = self.compute_order(root_sym_idx)
         if order is None:
             return range(n_subnodes)
