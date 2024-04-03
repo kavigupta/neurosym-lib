@@ -64,4 +64,6 @@ def symbol_likelihood(tree_dist, parents, preorder_mask, start_position, top_sym
     denominator = np.logaddexp.reduce(log_probs[mask])
     likelihood = log_probs[idx] - denominator
 
+    assert likelihood <= 0, f"Likelihood is {likelihood}, expected <= 0"
+
     return likelihood
