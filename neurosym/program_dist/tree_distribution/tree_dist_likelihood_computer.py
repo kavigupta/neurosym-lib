@@ -46,7 +46,7 @@ def compute_likelihood(
             tracker=tracker,
         )
         if likelihood == -float("inf") and tracker is None:
-            break
+            return -float("inf")
     preorder_mask.on_exit(start_position, top_symbol)
     return likelihood
 

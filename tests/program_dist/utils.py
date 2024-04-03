@@ -76,4 +76,11 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
             self.proper_context = True
 
     def on_exit(self, position, symbol):
-        pass
+        symbol = self.tree_dist.symbols[symbol][0]
+        if symbol == "+":
+            assert self.proper_context, "Expected proper context"
+            assert (
+                len(self.seen_symbols) == 3
+            ), f"Expected 3 children, but received {len(self.seen_symbols)}"
+            self.proper_context = False
+            self.seen_symbols = []
