@@ -30,10 +30,24 @@ class BigramProgramDistribution:
         assert self.distribution.ndim == 3
         assert self.distribution.shape[0] == self.distribution.shape[2]
 
-    def bound_minimum_likelihood(self, min_likelihood: float):
+    def bound_minimum_likelihood(
+        self, min_likelihood: float, symbol_mask: np.ndarray = None
+    ):
         assert 0 <= min_likelihood <= 1
+        if symbol_mask is not None:
+            assert (
+                len(symbol_mask.shape) == 1
+                and symbol_mask.shape[0] == self.distribution.shape[0]
+            )
+            assert symbol_mask.dtype == np.bool_
         distribution = self.distribution
-        distribution = np.maximum(distribution, min_likelihood)
+        if symbol_mask is None:
+            distribution = np.maximum(distribution, min_likelihood)
+        else:
+            distribution = distribution.copy()
+            distribution[symbol_mask, :, symbol_mask] = np.maximum(
+                distribution[symbol_mask, :, symbol_mask], min_likelihood
+            )
         distribution = distribution / distribution.sum(-1)[..., None]
         return BigramProgramDistribution(distribution)
 
