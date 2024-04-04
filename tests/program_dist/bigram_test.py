@@ -10,11 +10,13 @@ from tests.utils import assertDSL
 from .utils import ChildrenInOrderAsserterMask, ChildrenInOrderMask, ProbabilityTester
 
 
-def get_dsl(with_vars=False):
+def get_dsl(with_vars=False, with_3=False):
     dslf = ns.DSLFactory()
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("2", "() -> i", lambda: 2)
+    if with_3:
+        dslf.concrete("3", "() -> i", lambda: 3)
     if with_vars:
         dslf.concrete("call", "(i -> i, i) -> i", lambda f, x: f(x))
         dslf.lambdas()
@@ -34,6 +36,8 @@ def get_dsl_for_ordering():
 
 dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
+dsl_with_3 = get_dsl(with_3=True)
+fam_with_3 = ns.BigramProgramDistributionFamily(dsl_with_3)
 dsl_with_vars = get_dsl(with_vars=True)
 fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
 dsl_for_ordering = get_dsl_for_ordering()
@@ -606,20 +610,83 @@ class BigramLikelihoodTest(unittest.TestCase):
             family=fam_with_ordering_231,
         )
 
-    def test_likelihood_clamped(self):
+    def test_likelihood_clamped(self, kwargs=lambda x: {}):
         dist = fam.counts_to_distribution(
             fam.count_programs([[ns.parse_s_expression("(1)")]]),
         )[0]
         self.assertEqual(
             fam.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
         )
-        dist = dist.bound_minimum_likelihood(0.01)
+        dist = dist.bound_minimum_likelihood(0.01, **kwargs(dist))
         # should be *very* approximately 1/100
         self.assertAlmostEqual(
             fam.compute_likelihood(dist, ns.parse_s_expression("(2)")),
             np.log(1 / 100),
             1,
         )
+        # should be *very* approximately 1/100 * 1/3 * 1/3
+        # even the (+ (1) (1)) should be since the + -> 1 bigram wasn't seen
+        # in the original
+        # the 1/3 comes from the fact that in the original the + -> 1 and + -> 2 bigrams
+        # were undefined, so now they're uniform
+        for code in "(+ (1) (2))", "(+ (1) (1))", "(+ (2) (2))":
+            self.assertAlmostEqual(
+                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                np.log(1 / 100 * 1 / 3 * 1 / 3),
+                1,
+            )
+
+    def test_likelihood_clamped_mask_full(self):
+        self.test_likelihood_clamped(
+            lambda dist: dict(
+                symbol_mask=np.ones((dist.distribution.shape[0]), dtype=np.bool_)
+            )
+        )
+
+    def test_likelihood_clamped_mask_partial(self):
+        dist = fam_with_3.counts_to_distribution(
+            fam_with_3.count_programs([[ns.parse_s_expression("(1)")]]),
+        )[0]
+        self.assertEqual(
+            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
+        )
+        self.assertEqual(
+            [x for x, _ in fam_with_3.tree_distribution_skeleton.symbols],
+            ["<root>", "+", "1", "2", "3"],
+        )
+        print(np.array(np.where(dist.distribution)).T)
+        dist = dist.bound_minimum_likelihood(
+            0.01, symbol_mask=np.array([True, True, True, True, False])
+        )
+        print(np.array(np.where(dist.distribution)).T)
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(2)")),
+            np.log(1 / 100),
+            1,
+        )
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(3)")),
+            -np.inf,
+            1,
+        )
+
+        # see test_likelihood_clamped for the math
+        for code in "(+ (1) (2))", "(+ (1) (1))", "(+ (2) (2))":
+            self.assertAlmostEqual(
+                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                np.log(1 / 100 * 1 / 3 * 1 / 3),
+                1,
+            )
+
+        # remains -inf because 3 is impossible
+        for code in "(+ (1) (3))", "(+ (3) (3))", "(+ (3) (2))":
+            self.assertAlmostEqual(
+                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                -np.inf,
+                1,
+            )
 
 
 class OrderingTest(unittest.TestCase):
