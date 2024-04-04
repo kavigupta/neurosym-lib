@@ -44,9 +44,13 @@ class BigramProgramDistribution:
         if symbol_mask is None:
             distribution = np.maximum(distribution, min_likelihood)
         else:
+            mask_square = symbol_mask[:, None] & symbol_mask[None, :]
+            mask_square = mask_square[:, None, :].repeat(
+                self.distribution.shape[1], axis=1
+            )
             distribution = distribution.copy()
-            distribution[symbol_mask, :, symbol_mask] = np.maximum(
-                distribution[symbol_mask, :, symbol_mask], min_likelihood
+            distribution[mask_square] = np.maximum(
+                distribution[mask_square], min_likelihood
             )
         distribution = distribution / distribution.sum(-1)[..., None]
         return BigramProgramDistribution(distribution)
