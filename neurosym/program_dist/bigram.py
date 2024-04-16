@@ -24,6 +24,7 @@ from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
 @dataclass
 class BigramProgramDistribution:
+    dist_fam: "BigramProgramDistributionFamily"
     distribution: np.ndarray
 
     def __post_init__(self):
@@ -52,12 +53,14 @@ class BigramProgramDistribution:
             distribution[mask_square] = np.maximum(
                 distribution[mask_square], min_likelihood
             )
+        distribution = self.dist_fam.mask_invalid(distribution)
         distribution = distribution / distribution.sum(-1)[..., None]
-        return BigramProgramDistribution(distribution)
+        return BigramProgramDistribution(self.dist_fam, distribution)
 
 
 @dataclass
 class BigramProgramDistributionBatch:
+    dist_fam: "BigramProgramDistributionFamily"
     distribution_batch: np.ndarray
 
     def __post_init__(self):
@@ -68,7 +71,7 @@ class BigramProgramDistributionBatch:
         assert self.distribution_batch.shape[1] == self.distribution_batch.shape[3]
 
     def __getitem__(self, i):
-        return BigramProgramDistribution(self.distribution_batch[i])
+        return BigramProgramDistribution(self.dist_fam, self.distribution_batch[i])
 
     def __len__(self):
         return len(self.distribution_batch)
@@ -97,6 +100,7 @@ class BigramProgramCounts:
 
 @dataclass
 class BigramProgramCountsBatch:
+    dist_fam: "BigramProgramDistributionFamily"
     counts: List[BigramProgramCounts]
 
     def numerators(self, num_symbols, max_arity):
@@ -132,7 +136,9 @@ class BigramProgramCountsBatch:
         # a simple conversion from counts to probabilities, and we do
         # not need to handle the case where the denominator is 0.
 
-        return BigramProgramDistributionBatch(counts_to_probabilities(numerators))
+        return BigramProgramDistributionBatch(
+            self.dist_fam, counts_to_probabilities(numerators)
+        )
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
@@ -186,7 +192,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
         parameters = self.normalize_parameters(parameters, logits=False)
-        return BigramProgramDistributionBatch(parameters.detach().cpu().numpy())
+        return BigramProgramDistributionBatch(self, parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
         tree_dist = self.tree_distribution_skeleton
@@ -196,7 +202,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             all_counts.append(
                 BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
-        return BigramProgramCountsBatch(all_counts)
+        return BigramProgramCountsBatch(self, all_counts)
 
     def counts_to_distribution(
         self, counts: BigramProgramCountsBatch
@@ -299,7 +305,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return -(numer - denom)
 
     def uniform(self):
-        return BigramProgramDistribution(counts_to_probabilities(self._valid_mask))
+        return BigramProgramDistribution(
+            self, counts_to_probabilities(self._valid_mask)
+        )
 
     def compute_tree_distribution(
         self, distribution: Union[BigramProgramDistribution, NoneType]
@@ -335,6 +343,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         for mask in self._additional_preorder_masks:
             masks.append(mask(tree_dist, self._dsl))
         return ConjunctionPreorderMask(tree_dist, masks)
+
+    def mask_invalid(self, distribution):
+        return distribution * self._valid_mask
 
 
 def bigram_mask(dsl):
