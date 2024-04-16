@@ -3,6 +3,7 @@ from fractions import Fraction
 
 import numpy as np
 import torch
+from parameterized import parameterized
 
 import neurosym as ns
 from tests.utils import assertDSL
@@ -38,6 +39,9 @@ dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
 dsl_with_3 = get_dsl(with_3=True)
 fam_with_3 = ns.BigramProgramDistributionFamily(dsl_with_3)
+fam_with_3_no_type_mask = ns.BigramProgramDistributionFamily(
+    dsl_with_3, include_type_preorder_mask=False
+)
 dsl_with_vars = get_dsl(with_vars=True)
 fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
 dsl_for_ordering = get_dsl_for_ordering()
@@ -643,15 +647,17 @@ class BigramLikelihoodTest(unittest.TestCase):
             )
         )
 
-    def test_likelihood_clamped_mask_partial(self):
-        dist = fam_with_3.counts_to_distribution(
-            fam_with_3.count_programs([[ns.parse_s_expression("(1)")]]),
+    @parameterized.expand([(True,), (False,)])
+    def test_likelihood_clamped_mask_partial(self, include_type_mask):
+        family = fam_with_3 if include_type_mask else fam_with_3_no_type_mask
+        dist = family.counts_to_distribution(
+            family.count_programs([[ns.parse_s_expression("(1)")]]),
         )[0]
         self.assertEqual(
-            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
+            family.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
         )
         self.assertEqual(
-            [x for x, _ in fam_with_3.tree_distribution_skeleton.symbols],
+            [x for x, _ in family.tree_distribution_skeleton.symbols],
             ["<root>", "+", "1", "2", "3"],
         )
         print(np.array(np.where(dist.distribution)).T)
@@ -661,13 +667,13 @@ class BigramLikelihoodTest(unittest.TestCase):
         print(np.array(np.where(dist.distribution)).T)
         # should be *very* approximately 1/100
         self.assertAlmostEqual(
-            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(2)")),
+            family.compute_likelihood(dist, ns.parse_s_expression("(2)")),
             np.log(1 / 100),
             1,
         )
         # should be *very* approximately 1/100
         self.assertAlmostEqual(
-            fam_with_3.compute_likelihood(dist, ns.parse_s_expression("(3)")),
+            family.compute_likelihood(dist, ns.parse_s_expression("(3)")),
             -np.inf,
             1,
         )
@@ -675,7 +681,7 @@ class BigramLikelihoodTest(unittest.TestCase):
         # see test_likelihood_clamped for the math
         for code in "(+ (1) (2))", "(+ (1) (1))", "(+ (2) (2))":
             self.assertAlmostEqual(
-                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                family.compute_likelihood(dist, ns.parse_s_expression(code)),
                 np.log(1 / 100 * 1 / 3 * 1 / 3),
                 1,
             )
@@ -683,7 +689,7 @@ class BigramLikelihoodTest(unittest.TestCase):
         # remains -inf because 3 is impossible
         for code in "(+ (1) (3))", "(+ (3) (3))", "(+ (3) (2))":
             self.assertAlmostEqual(
-                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                family.compute_likelihood(dist, ns.parse_s_expression(code)),
                 -np.inf,
                 1,
             )
