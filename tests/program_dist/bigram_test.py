@@ -695,6 +695,83 @@ class BigramLikelihoodTest(unittest.TestCase):
             )
 
 
+class BigramMixTest(unittest.TestCase):
+    def fit_family_to_programs(self, family, programs):
+        return family.counts_to_distribution(
+            family.count_programs([[ns.parse_s_expression(x) for x in programs]]),
+        )[0]
+
+    def merged(self, fam_1, programs_1, fam_2, programs_2, weight):
+        dist_1 = self.fit_family_to_programs(fam_1, programs_1)
+        dist_2 = self.fit_family_to_programs(fam_2, programs_2)
+        return dist_1.mix_with_other(dist_2, weight)
+
+    def assertClose(self, dist_merged, dist_expected):
+        delta = dist_merged.distribution - dist_expected.distribution
+        bad = np.abs(delta) > 1e-6
+        if bad.any():
+            syms = dist_merged.dist_fam.symbols()
+            for parent, which in np.array(np.where(bad.any(-1))).T:
+                actual = dist_merged.distribution[parent, which]
+                expected = dist_expected.distribution[parent, which]
+                select = (actual > 0) | (expected > 0)
+                actual, expected = [
+                    {syms[i]: arr[i] for i in np.where(select)[0]}
+                    for arr in (actual, expected)
+                ]
+                self.assertEqual(
+                    actual, expected, f"At {syms[parent]}'s {which}th child"
+                )
+
+    def assertMix(self, fam_1, programs_1, fam_2, programs_2, weight_1, weight_2):
+        self.assertClose(
+            self.merged(
+                fam_1, programs_1, fam_2, programs_2, weight_2 / (weight_1 + weight_2)
+            ),
+            self.fit_family_to_programs(
+                fam_1 if len(fam_1.symbols()) > len(fam_2.symbols()) else fam_2,
+                programs_1 * weight_1 + programs_2 * weight_2,
+            ),
+        )
+
+    def assertMixBoth(self, fam_1, programs_1, fam_2, programs_2, weight_1, weight_2):
+        # pylint: disable=arguments-out-of-order
+        self.assertMix(fam_1, programs_1, fam_2, programs_2, weight_1, weight_2)
+        self.assertMix(fam_2, programs_2, fam_1, programs_1, weight_2, weight_1)
+
+    progs_1 = "(1)", "(+ (1) (2))"
+    progs_2 = "(+ (2) (2))", "(2)"
+    progs_3 = "(+ (2) (3))", "(3)"
+
+    def test_merge_bigrams_same_dsl_equal_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 1, 1)
+
+    def test_merge_bigrams_same_dsl_more_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 2, 1)
+
+    def test_merge_bigrams_same_dsl_less_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 2, 5)
+
+    def test_merge_bigrams_with_different_fams_equal_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 1, 1)
+
+    def test_merge_bigrams_with_different_fams_more_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 9, 4)
+
+    def test_merge_bigrams_with_different_fams_less_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 2, 4)
+
+    def test_non_subset_fails(self):
+        with self.assertRaises(ValueError) as cm:
+            self.merged(fam_with_3, self.progs_3, fam_with_vars, self.progs_1, 1)
+
+        self.assertEqual(
+            str(cm.exception),
+            "DSL not compatible, extra symbols in this: '3', "
+            "extra symbols in other: '$0_0', '$1_0', '$2_0', '$3_0', 'call', 'lam'",
+        )
+
+
 class OrderingTest(unittest.TestCase):
     def test_traversal(self):
         ordering = fam_with_ordering.tree_distribution_skeleton.ordering

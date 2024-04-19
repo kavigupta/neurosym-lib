@@ -45,16 +45,50 @@ class BigramProgramDistribution:
         if symbol_mask is None:
             distribution = np.maximum(distribution, min_likelihood)
         else:
-            mask_square = symbol_mask[:, None] & symbol_mask[None, :]
-            mask_square = mask_square[:, None, :].repeat(
-                self.distribution.shape[1], axis=1
-            )
+            mask_square = self._square_mask(symbol_mask)
             distribution = distribution.copy()
             distribution[mask_square] = np.maximum(
                 distribution[mask_square], min_likelihood
             )
         distribution = self.dist_fam.mask_invalid(distribution)
         distribution = distribution / distribution.sum(-1)[..., None]
+        return BigramProgramDistribution(self.dist_fam, distribution)
+
+    def _square_mask(self, symbol_mask):
+        mask_square = symbol_mask[:, None] & symbol_mask[None, :]
+        mask_square = mask_square[:, None, :].repeat(self.distribution.shape[1], axis=1)
+
+        return mask_square
+
+    def mix_with_other(self, other: "BigramProgramDistribution", weight_other: float):
+        # pylint: disable=self-cls-assignment
+        assert 0 <= weight_other <= 1
+        symbols_this = self.dist_fam.symbols()
+        symbols_other = other.dist_fam.symbols()
+        if set(symbols_this).issubset(symbols_other):
+            self, other = other, self
+            symbols_this, symbols_other = symbols_other, symbols_this
+            weight_other = 1 - weight_other
+        else:
+            if not set(symbols_this).issuperset(symbols_other):
+                extra_this = set(symbols_this) - set(symbols_other)
+                extra_other = set(symbols_other) - set(symbols_this)
+                extra_this, extra_other = (
+                    ", ".join(repr(x) for x in sorted(extra))
+                    for extra in (extra_this, extra_other)
+                )
+                raise ValueError(
+                    "DSL not compatible, extra symbols in this: "
+                    f"{extra_this}, extra symbols in other: {extra_other}"
+                )
+        mask = np.array([s in symbols_other for s in symbols_this], dtype=np.bool_)
+        distribution = self.distribution.copy()
+        distribution_other = np.zeros_like(distribution)
+        distribution_other[self._square_mask(mask)] = other.distribution.flatten()
+        distribution[mask] = (
+            weight_other * distribution_other[mask]
+            + (1 - weight_other) * distribution[mask]
+        )
         return BigramProgramDistribution(self.dist_fam, distribution)
 
 
@@ -346,6 +380,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
     def mask_invalid(self, distribution):
         return distribution * self._valid_mask
+
+    def symbols(self):
+        return self._symbols
 
 
 def bigram_mask(dsl):
