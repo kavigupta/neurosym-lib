@@ -767,7 +767,8 @@ class BigramMixTest(unittest.TestCase):
 
         self.assertEqual(
             str(cm.exception),
-            "DSL not compatible, extra symbols in this: '3', extra symbols in other: '$0_0', '$1_0', '$2_0', '$3_0', 'call', 'lam'",
+            "DSL not compatible, extra symbols in this: '3', "
+            "extra symbols in other: '$0_0', '$1_0', '$2_0', '$3_0', 'call', 'lam'",
         )
 
 
