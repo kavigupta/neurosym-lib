@@ -6,16 +6,18 @@ import numpy as np
 
 import neurosym as ns
 
-from .bigram_test import fam
+from .bigram_test import fam, fam_with_ordering, fam_with_ordering_231, fam_with_vars
 
 arith_dist = ns.TreeDistribution(
     1,
     {
-        (0, 0): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
-        (1, 0): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
-        (1, 1): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
+        ((0, 0),): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
+        ((1, 0),): [(1, np.log(1 / 4)), (2, np.log(3 / 4))],
+        ((1, 1),): [(1, np.log(1 / 8)), (2, np.log(7 / 8))],
     },
     [("root", 1), ("+", 2), ("1", 0)],
+    ns.NoopPreorderMask,
+    ns.DefaultNodeOrdering,
 )
 
 
@@ -29,8 +31,8 @@ def enumerated(*args, **kwargs):
 
 
 class TreeDistributionTest(unittest.TestCase):
-    def enumerate_dsl(self, family, dist):
-        result = list(family.enumerate(dist, min_likelihood=-6))
+    def enumerate_dsl(self, family, dist, min_likelihood=-6):
+        result = list(family.enumerate(dist, min_likelihood=min_likelihood))
         result = sorted(result, key=lambda x: x[1], reverse=True)
         result = [
             (
@@ -97,7 +99,7 @@ class TreeDistributionTest(unittest.TestCase):
             fam,
             fam.counts_to_distribution(
                 fam.count_programs([[ns.parse_s_expression("(+ (1) (2))")]])
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -111,7 +113,7 @@ class TreeDistributionTest(unittest.TestCase):
                 fam.count_programs(
                     [[ns.parse_s_expression(x) for x in ("(+ (1) (2))", "(+ (2) (1))")]]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -135,7 +137,7 @@ class TreeDistributionTest(unittest.TestCase):
                         ]
                     ]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -168,7 +170,7 @@ class TreeDistributionTest(unittest.TestCase):
                         ]
                     ]
                 )
-            ),
+            )[0],
         )
         self.assertEqual(
             result,
@@ -180,3 +182,38 @@ class TreeDistributionTest(unittest.TestCase):
                 ("(+ (1) (+ (1) (+ (1) (+ (1) (+ (1) (2))))))", Fraction(3, 1024)),
             },
         )
+
+    def test_enumeration_from_dsl_with_variables_uniform(self):
+        result = self.enumerate_dsl(
+            fam_with_vars, fam_with_vars.uniform(), min_likelihood=-6
+        )
+
+        self.assertEqual(
+            result,
+            {
+                ("(1)", Fraction(1, 4)),
+                ("(2)", Fraction(1, 4)),
+                ("(+ (1) (1))", Fraction(1, 64)),
+                ("(+ (2) (1))", Fraction(1, 64)),
+                ("(+ (1) (2))", Fraction(1, 64)),
+                ("(+ (2) (2))", Fraction(1, 64)),
+                ("(call (lam ($0_0)) (1))", Fraction(1, 80)),
+                ("(call (lam (1)) (1))", Fraction(1, 80)),
+                ("(call (lam (2)) (1))", Fraction(1, 80)),
+                ("(call (lam ($0_0)) (2))", Fraction(1, 80)),
+                ("(call (lam (1)) (2))", Fraction(1, 80)),
+                ("(call (lam (2)) (2))", Fraction(1, 80)),
+            },
+        )
+
+    def test_enumeration_from_dsl_with_ordering(self):
+        result = self.enumerate_dsl(
+            fam_with_ordering, fam_with_ordering.uniform(), min_likelihood=-6
+        )
+        self.assertEqual(result, {("(+ (1) (2) (3))", Fraction(1))})
+
+    def test_enumeration_from_dsl_with_ordering_231(self):
+        result = self.enumerate_dsl(
+            fam_with_ordering_231, fam_with_ordering_231.uniform(), min_likelihood=-6
+        )
+        self.assertEqual(result, {("(+ (2) (3) (1))", Fraction(1))})

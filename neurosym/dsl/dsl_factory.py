@@ -37,7 +37,9 @@ class DSLFactory:
     factory.finalize()
     """
 
-    def __init__(self, max_expansion_steps=np.inf, max_overall_depth=6, **env):
+    def __init__(
+        self, max_expansion_steps=np.inf, max_env_depth=4, max_overall_depth=6, **env
+    ):
         self.t = TypeDefiner(**env)
         self._concrete_productions = []
         self._parameterized_productions = []
@@ -47,6 +49,7 @@ class DSLFactory:
         self.lambda_parameters = None
         self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
+        self.max_env_depth = max_env_depth
         self.prune = False
         self.target_types = None
         self.prune_variables = False
@@ -161,10 +164,13 @@ class DSLFactory:
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
-                raise ValueError(
-                    f"Duplicate declarations for production: {duplicate_keys[0]}"
-                )
-            result.update(for_prod)
+                for key in duplicate_keys:
+                    if for_prod[key] != result[key]:
+                        raise ValueError(
+                            f"Duplicate declarations for production: {key}"
+                        )
+            else:
+                result.update(for_prod)
         return result
 
     def finalize(self):
@@ -244,6 +250,7 @@ class DSLFactory:
                 self.target_types,
                 care_about_variables=False,
                 type_depth_limit=self.max_overall_depth,
+                env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
@@ -253,6 +260,7 @@ class DSLFactory:
                     self.target_types,
                     care_about_variables=True,
                     type_depth_limit=self.max_overall_depth,
+                    env_depth_limit=self.max_env_depth,
                     stable_symbols=stable_symbols,
                     tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
                 )
@@ -261,7 +269,10 @@ class DSLFactory:
                 sym_to_productions["<variable>"]
             )
         dsl = make_dsl(
-            sym_to_productions, copy.copy(self.target_types), self.max_overall_depth
+            sym_to_productions,
+            copy.copy(self.target_types),
+            self.max_overall_depth,
+            self.max_env_depth,
         )
         return dsl
 
@@ -276,11 +287,12 @@ def clean_variables(variable_productions):
     return variable_productions
 
 
-def make_dsl(sym_to_productions, valid_root_types, max_type_depth):
+def make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
         valid_root_types,
         max_type_depth,
+        max_env_depth=max_env_depth,
     )
 
 
@@ -290,10 +302,11 @@ def prune(
     *,
     care_about_variables,
     type_depth_limit,
+    env_depth_limit,
     stable_symbols,
     tolerate_pruning_entire_productions,
 ):
-    dsl = make_dsl(sym_to_productions, target_types, type_depth_limit)
+    dsl = make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
     symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
