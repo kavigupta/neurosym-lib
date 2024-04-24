@@ -12,7 +12,7 @@ from neurosym.programs.s_expression import SExpression
 def collect_preorder_symbols(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
-) -> Iterator[Tuple[SExpression, List[str]]]:
+) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
     """
@@ -26,14 +26,14 @@ def collect_preorder_symbols_dfs(
     tree_dist: TreeDistribution,
     mask: PreorderMask,
     position: int,
-) -> Iterator[Tuple[SExpression, List[str]]]:
+) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
     """
     idxs = np.arange(len(tree_dist.symbols))
     bool_mask = mask.compute_mask(position, idxs)
     alts = tuple(int(x) for x in idxs[bool_mask])
-    yield s_exp, alts
+    yield s_exp, alts, mask
     sym_idx = tree_dist.symbol_to_index[s_exp.symbol]
     mask.on_entry(position, sym_idx)
     order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
@@ -51,7 +51,9 @@ def annotate_with_alternate_symbols(
     Annotates the S-Expression with the alternate symbols that could have been
     selected in the tree distribution.
     """
-    preorder_symbols = list(collect_preorder_symbols(s_exp, tree_dist))
+    preorder_symbols = [
+        (node, alts) for node, alts, _ in collect_preorder_symbols(s_exp, tree_dist)
+    ]
     assert len(preorder_symbols) == len({id(node) for node, _ in preorder_symbols})
     node_id_to_alts = {
         id(node): tuple(tree_dist.symbols[alt][0] for alt in alts)
