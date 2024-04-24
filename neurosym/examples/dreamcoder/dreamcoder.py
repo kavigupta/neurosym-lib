@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+import time
 from typing import List, Tuple, Type, TypeVar
+from more_itertools import chunked
 
 import numpy as np
 import torch
@@ -36,6 +38,11 @@ def dreamcoder(
     enumeration_timeout: int,
     beam_size: int,
 ):
+    """
+    Implementation of Algorithm 1 from the DreamCoder paper (page 43)
+
+    https://www.cs.cornell.edu/~ellisk/documents/dreamcoder_with_supplement.pdf
+    """
     theta: ProgramDistribution = (
         program_distribution_family.default_distribution()
     )  # TODO implement
@@ -90,13 +97,22 @@ def compress(
 
 
 def fit(
-    theta: ProgramDistributionFamily,
+    family: ProgramDistributionFamily,
     dsl: DSL,
     beams: List[List[SExpression]],
 ) -> ProgramDistribution:
     # TODO implement
-    pass
-
+    # Should implement page 54 from https://www.cs.cornell.edu/~ellisk/documents/dreamcoder_with_supplement.pdf
+    # Specifically section S4.5.4
+    # Maddy: We left of at
+    # The question is did they ever implement inside_outside for bigrams
+    # ie was bigram NEVER used outside of the recognition model
+    # ie was it never used for enumeration without a neural net
+    # AND never used by the inside_outside bit of compression that is used to score abstractions
+    # And the implication of this would be theyre using a fit unigram model to sample the tasks instead of a bigram
+    # Maddy leans toward that being the case but we should figure it out
+    # Kavi: stupid idea, but we could literally just train a "recoginition model" that's just a constant set of weights
+    # If this is convex, then it should find the optimum.
 
 def train_recogintion_model(
     recoginition_model_class: Type[RecognitionModel],
@@ -108,8 +124,10 @@ def train_recogintion_model(
     beams: List[List[SExpression]],
     rng: np.random.RandomState,
     probability_dreaming: float,
+    time_limit_s: int,
+    batch_size: int,
+    lr: float = 1e-3,
 ) -> RecognitionModel:
-    # TODO figure out if fantasy tasks are sampled every time. If so, put them into an inner loop
 
     beam_counts = [
         [family.count_programs(program) for program in beam] for beam in beams
@@ -129,6 +147,35 @@ def train_recogintion_model(
                 yield task, counts, log_prob
             else:
                 yield t, b, log_prob
+
+    def data_iterator():
+        while True:
+            yield from data_epoch()
+
+    recognition_model = recoginition_model_class(family)
+    optimizer = torch.optim.Adam(recognition_model.parameters(), lr=lr)
+    start_time = time.time()
+    last_print = start_time
+    losses = []
+    for batch in chunked(data_iterator(), batch_size):
+        if time.time() - start_time > time_limit_s:
+            break
+        if time.time() - last_print > 60:
+            print(f"Training recognition model: {losses[-1]}")
+            last_print = time.time()
+        batch_tasks, batch_beam_counts, batch_task_log_probs = zip(*batch)
+        loss = training_loss(
+            recognition_model,
+            family,
+            batch_tasks,
+            batch_beam_counts,
+            batch_task_log_probs,
+        )
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        losses.append(loss.item())
+    return recognition_model, losses
 
 
 def training_loss(
