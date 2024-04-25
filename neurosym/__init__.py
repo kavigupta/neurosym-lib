@@ -4,13 +4,13 @@ from neurosym.program_dist.tree_distribution.ordering import (
     NodeOrdering,
 )
 from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
-    collect_preorder_symbols,
     annotate_with_alternate_symbols,
+    collect_preorder_symbols,
 )
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    ConjunctionPreorderMask,
     NoopPreorderMask,
     PreorderMask,
-    ConjunctionPreorderMask,
 )
 
 from . import compression, datasets, examples, search
