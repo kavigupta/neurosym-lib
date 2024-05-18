@@ -350,17 +350,17 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             assert isinstance(distribution, BigramProgramDistribution), type(
                 distribution
             )
-            dist = defaultdict(list)
-            for parent, position, child in zip(
-                *np.where(distribution.distribution > 0)
-            ):
-                dist[(parent, position),].append(
-                    (child, np.log(distribution.distribution[parent, position, child]))
-                )
-            dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
+            dist_vals = distribution.distribution
         else:
             assert distribution is None
-            dist = None
+            dist_vals = self._valid_mask
+
+        dist = defaultdict(list)
+        for parent, position, child in zip(*np.where(dist_vals > 0)):
+            dist[(parent, position),].append(
+                (child, np.log(dist_vals[parent, position, child]))
+            )
+        dist = {k: sorted(v, key=lambda x: -x[1]) for k, v in dist.items()}
 
         return TreeDistribution(
             1,

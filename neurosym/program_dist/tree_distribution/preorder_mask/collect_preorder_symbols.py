@@ -20,7 +20,7 @@ def collect_preorder_symbols(
     mask = tree_dist.mask_constructor(tree_dist)
     mask.on_entry(0, 0)
     yield from collect_preorder_symbols_dfs(
-        s_exp, tree_dist, mask, 0, replace_node_midstream=replace_node_midstream
+        s_exp, tree_dist, mask, ((0, 0),), replace_node_midstream=replace_node_midstream
     )
 
 
@@ -28,13 +28,14 @@ def collect_preorder_symbols_dfs(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
     mask: PreorderMask,
-    position: int,
+    parents: Tuple[Tuple[int, int], ...],
     replace_node_midstream: Callable[[SExpression, PreorderMask], SExpression] = None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
     """
-    idxs = np.arange(len(tree_dist.symbols))
+    position = parents[-1][1]
+    idxs = np.array([i for i, _ in tree_dist.distribution[parents]])
     bool_mask = mask.compute_mask(position, idxs)
     alts = tuple(int(x) for x in idxs[bool_mask])
     if replace_node_midstream is not None:
@@ -44,8 +45,13 @@ def collect_preorder_symbols_dfs(
     mask.on_entry(position, sym_idx)
     order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
     for idx, child in zip(order, [s_exp.children[i] for i in order]):
+        new_parents = (parents + ((sym_idx, idx),))[-tree_dist.limit :]
         yield from collect_preorder_symbols_dfs(
-            child, tree_dist, mask, idx, replace_node_midstream=replace_node_midstream
+            child,
+            tree_dist,
+            mask,
+            new_parents,
+            replace_node_midstream=replace_node_midstream,
         )
     mask.on_exit(position, sym_idx)
 
