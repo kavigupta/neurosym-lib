@@ -5,7 +5,6 @@ import numpy as np
 import pytorch_lightning as pl
 import requests
 import torch
-from permacache import permacache
 
 
 def get_raw_url(github_folder, filename):
