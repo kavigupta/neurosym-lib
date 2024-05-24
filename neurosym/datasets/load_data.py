@@ -31,7 +31,6 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-@permacache("neurosym/data/load_data/load_npy")
 def load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
