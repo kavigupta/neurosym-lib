@@ -2,7 +2,6 @@ import json
 import subprocess
 import sys
 import tempfile
-import numpy as np
 
 
 def execute_notebook(filename, suffix):
