@@ -78,8 +78,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         else:
             self.ordering = np.arange(len(self.inputs))
 
-    def get_io_dims(self):
-        return self.inputs.shape[-1], len(np.unique(self.outputs))
+    def get_io_dims(self, is_regression=False):
+        out = self.outputs.shape[-1] if is_regression else len(np.unique(self.outputs))
+        return self.inputs.shape[-1], out
 
     def __len__(self):
         return len(self.inputs)
