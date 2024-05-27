@@ -27,7 +27,8 @@ class TestTutorial1(unittest.TestCase):
 
     def test_tutorial_1_regression(self):
         """
-        Counts the number of modules in the solution. Should be more than 1 as a linear layer won't be able to approximate a non-linear function
+        Counts the number of modules in the solution. Should be more than 1 as a linear
+        layer won't be able to approximate a non-linear function
         """
         result = execute_notebook(
             "tutorial/tutorial1_regression.ipynb",
