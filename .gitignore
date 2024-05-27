@@ -6,4 +6,6 @@ env
 .idea
 *.egg-info
 dist
+.vs
 build
+neurosym-env
