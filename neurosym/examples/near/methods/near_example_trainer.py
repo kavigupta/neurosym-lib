@@ -131,7 +131,9 @@ class NEARTrainer(BaseTrainer):
 
 
 def main():
-    import pytorch_lightning as pl
+    from neurosym.utils.imports import import_pytorch_lightning
+
+    pl = import_pytorch_lightning()
 
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
