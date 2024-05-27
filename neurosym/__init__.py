@@ -12,6 +12,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
+from neurosym.utils.imports import import_pytorch_lightning
 
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory

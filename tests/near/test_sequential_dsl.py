@@ -64,7 +64,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         )
 
         def validation_cost(node):
-            import pytorch_lightning as pl
+            pl = ns.import_pytorch_lightning()
 
             trainer = pl.Trainer(
                 max_epochs=10,
