@@ -30,6 +30,8 @@ class NEARTrainer(BaseTrainer):
                 self.loss_fn = nn.BCEWithLogitsLoss()
             case "MSELoss":
                 self.loss_fn = nn.MSELoss()
+            case "MSELossRegression":
+                self.loss_fn = nn.MSELoss()
             case "NLLLoss":
                 self.loss_fn = nn.NLLLoss()
             case _:
@@ -83,6 +85,10 @@ class NEARTrainer(BaseTrainer):
                     targets = torch.nn.functional.one_hot(
                         targets.squeeze(-1), num_classes=self.config.num_labels
                     ).float()
+                    predictions = predictions.view(-1, predictions.shape[-1])
+                    targets = targets.view(-1, targets.shape[-1])
+                case "MSELossRegression":
+                    # pylint: disable=not-callable
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1, targets.shape[-1])
                 case "NLLLoss":
