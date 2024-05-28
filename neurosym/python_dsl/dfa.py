@@ -222,7 +222,7 @@ default_transition_dict = frozendict(
 )
 
 
-def export_dfa_with_no_abstractions(
+def export_dfa(
     transitions=default_transition_dict,
 ) -> Dict[str, Dict[str, List[str]]]:
     """
