@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from frozendict import frozendict
 
-from .ast_fields import fields_for_node
+from .python_ast_tools import fields_for_node
 
 # types we do not care about, so just send them to the same state
 pruned_python_dfa_states = ["TA"]
