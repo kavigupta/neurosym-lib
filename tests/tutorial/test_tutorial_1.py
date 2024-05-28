@@ -32,8 +32,8 @@ class TestTutorial1(unittest.TestCase):
         """
         result = execute_notebook(
             "tutorial/tutorial1_regression.ipynb",
-            suffix="import json; print('*' * 80); " +\
-                "print(json.dumps([len(module.contained_modules)]))",
+            suffix="import json; print('*' * 80); "
+            + "print(json.dumps([len(module.contained_modules)]))",
         )
 
         *_, stars, len_module, _ = result.split("\n")
