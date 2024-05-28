@@ -18,7 +18,6 @@ class TestReplaceSymbol(unittest.TestCase):
 
 
 class TestReplaceNode(unittest.TestCase):
-
     def test_basic(self):
         s_exp = ns.parse_s_expression("(foo (bar) (baz))")
         id_to_node = {
@@ -37,6 +36,4 @@ class TestReplaceNode(unittest.TestCase):
             id(s_exp): ns.parse_s_expression("(abc (def (ghi)))"),
         }
         replaced = s_exp.replace_nodes_by_id(id_to_node)
-        self.assertEqual(
-            ns.render_s_expression(replaced), "(abc (def (ghi)))"
-        )
+        self.assertEqual(ns.render_s_expression(replaced), "(abc (def (ghi)))")
