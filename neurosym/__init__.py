@@ -12,6 +12,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
+from neurosym.python_dsl import python_ast_tools
 from neurosym.python_dsl.dfa import pruned_python_dfa_states, python_dfa
 from neurosym.utils.imports import import_pytorch_lightning
 
