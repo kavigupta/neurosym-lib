@@ -1,6 +1,6 @@
 import ast
 from types import NoneType
-from typing import Union
+from typing import List, Union
 
 from increase_recursionlimit import increase_recursionlimit
 
@@ -18,15 +18,32 @@ from .python_ast import (
 from .symbol import PythonSymbol, create_descoper
 
 
-def python_body_to_parsed_ast(x, descoper):
+def python_body_to_parsed_ast(x: List[ast.AST], descoper: dict) -> SequenceAST:
+    """
+    Convert a python body to a PythonAST object.
+
+    Args:
+        x: The python body.
+        descoper: The descoper to use.
+
+    Returns:
+        The parsed PythonAST.
+    """
     assert isinstance(x, list), str(x)
     x = [python_ast_to_parsed_ast(x, descoper) for x in x]
     return SequenceAST("/seq", x)
 
 
-def python_ast_to_parsed_ast(x, descoper):
+def python_ast_to_parsed_ast(x, descoper: dict) -> PythonAST:
     """
     Convert an ast.AST object to a PythonAST object.
+
+    Args:
+        x: The ast.AST object.
+        descoper: The descoper to use.
+
+    Returns:
+        The parsed PythonAST.
     """
     if isinstance(x, ast.AST):
         result = []
