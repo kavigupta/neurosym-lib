@@ -150,5 +150,5 @@ class ParseUnparseInverseTest(unittest.TestCase):
 
 @lru_cache(None)
 def small_set_examples():
-    with open("data_test/small_set.json") as f:
+    with open("test_data/small_set.json") as f:
         return json.load(f)
