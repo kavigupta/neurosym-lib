@@ -60,7 +60,8 @@ def python_to_python_ast(
     code: Union[str, ast.AST], descoper: Union[NoneType, dict] = None
 ) -> PythonAST:
     """
-    Parse the given python code into a PythonAST. If the code is a string, it is first parsed into an AST.
+    Parse the given python code into a PythonAST. If the code is a string,
+        it is first parsed into an AST.
 
     Args:
         code: The python code to parse.

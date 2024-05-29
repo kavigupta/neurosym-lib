@@ -25,7 +25,8 @@ from .symbol import PythonSymbol
 
 def s_exp_leaf_to_value(x):
     """
-    Returns (True, a python representation of the leaf) if it is a leaf, or (False, None) otherwise.
+    Returns (True, a python representation of the leaf) if it is a leaf,
+        or (False, None) otherwise.
     """
     sym_x = PythonSymbol.parse(x)
     if sym_x is not None:
@@ -55,6 +56,22 @@ def s_exp_leaf_to_value(x):
     return False, None
 
 
+def handle_leaf(
+    x: str,
+    node_hooks: Dict[str, Callable[[str, List[PythonAST]], PythonAST]],
+):
+    for hook_prefix, hook in node_hooks.items():
+        if x.startswith(hook_prefix):
+            return hook(x, [])
+
+    is_leaf, leaf = s_exp_leaf_to_value(x)
+    if is_leaf:
+        return LeafAST(leaf)
+    typ = getattr(ast, x)
+    assert not python_ast_tools.fields_for_node(typ), typ
+    return NodeAST(typ, [])
+
+
 def s_exp_to_parsed_ast(
     x: SExpression,
     node_hooks: Dict[str, Callable[[str, List[PythonAST]], PythonAST]],
@@ -65,16 +82,7 @@ def s_exp_to_parsed_ast(
     if x == "nil":
         return ListAST([])
     if isinstance(x, str):
-        for hook_prefix, hook in node_hooks.items():
-            if x.startswith(hook_prefix):
-                return hook(x, [])
-
-        is_leaf, leaf = s_exp_leaf_to_value(x)
-        if is_leaf:
-            return LeafAST(leaf)
-        typ = getattr(ast, x)
-        assert not python_ast_tools.fields_for_node(typ), typ
-        return NodeAST(typ, [])
+        return handle_leaf(x, node_hooks)
     assert isinstance(x, SExpression), str((type(x), x))
     tag, args = x.symbol, x.children
     # remove any type information
@@ -110,7 +118,8 @@ def s_exp_to_python_ast(
     node_hooks: Dict[str, Callable[[str, List[PythonAST]], PythonAST]] = frozendict(),
 ) -> PythonAST:
     """
-    Converts an s expression to a PythonAST object. If the code is a string, it is first parsed into an s-expression.
+    Converts an s expression to a PythonAST object. If the code is a string,
+        it is first parsed into an s-expression.
     """
     with increase_recursionlimit():
         if isinstance(code, str):

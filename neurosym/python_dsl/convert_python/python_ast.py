@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import List
 
 from frozendict import frozendict
-from imperative_stitch.utils.classify_nodes import add_disambiguating_type_tags
 from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression

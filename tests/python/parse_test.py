@@ -71,7 +71,18 @@ class ParseUnparseInverseTest(unittest.TestCase):
             ns.python_to_s_exp(
                 "x = 2\ny = 3\nz = 4", renderer_kwargs=dict(columns=80000)
             ),
-            "(Module (/seq (Assign (list (Name &x:0 Store)) (Constant i2 None) None) (Assign (list (Name &y:0 Store)) (Constant i3 None) None) (Assign (list (Name &z:0 Store)) (Constant i4 None) None)) nil)",
+            ns.render_s_expression(
+                ns.parse_s_expression(
+                    """
+                    (Module
+                        (/seq
+                            (Assign (list (Name &x:0 Store)) (Constant i2 None) None)
+                            (Assign (list (Name &y:0 Store)) (Constant i3 None) None)
+                            (Assign (list (Name &z:0 Store)) (Constant i4 None) None))
+                        nil)
+                    """
+                )
+            ),
         )
 
     def test_globals(self):
