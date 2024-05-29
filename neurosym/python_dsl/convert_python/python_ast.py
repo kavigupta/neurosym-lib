@@ -8,6 +8,7 @@ from frozendict import frozendict
 from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression
+from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 
 from .splice import Splice
 from .symbol import PythonSymbol
