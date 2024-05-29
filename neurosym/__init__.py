@@ -13,6 +13,20 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     PreorderMask,
 )
 from neurosym.python_dsl import python_ast_tools
+from neurosym.python_dsl.convert_python.convert import python_to_s_exp, s_exp_to_python
+from neurosym.python_dsl.convert_python.parse_python import python_to_python_ast
+from neurosym.python_dsl.convert_python.parse_s_exp import s_exp_to_python_ast
+from neurosym.python_dsl.convert_python.python_ast import (
+    LeafAST,
+    ListAST,
+    NodeAST,
+    PythonAST,
+    SequenceAST,
+    SliceElementAST,
+    SpliceAST,
+    StarrableElementAST,
+)
+from neurosym.python_dsl.convert_python.symbol import PythonSymbol
 from neurosym.python_dsl.dfa import pruned_python_dfa_states, python_dfa
 from neurosym.utils.imports import import_pytorch_lightning
 
