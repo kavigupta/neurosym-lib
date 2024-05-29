@@ -1,7 +1,7 @@
 import ast
-from functools import lru_cache
 import json
 import unittest
+from functools import lru_cache
 
 from increase_recursionlimit import increase_recursionlimit
 from parameterized import parameterized
