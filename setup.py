@@ -32,5 +32,6 @@ setuptools.setup(
         "scikit-learn",
         "s-exp-parser==1.3.1",
         "increase_recursionlimit==1.0.0",
+        "ast-scope==0.4.3"
     ],
 )

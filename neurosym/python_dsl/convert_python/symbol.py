@@ -42,6 +42,12 @@ class PythonSymbol:
 def create_descoper(code):
     """
     Creates a mapping from nodes to numerical ids for scopes.
+
+    Args:
+        code: The code.
+
+    Returns:
+        The descoper.
     """
     globs = true_globals(code)
     annot = ast_scope.annotate(code)
@@ -59,6 +65,9 @@ def create_descoper(code):
 
 
 def true_globals(node):
+    """
+    Get the true globals of a program.
+    """
     name = "_" + uuid.uuid4().hex
     wpd = wrap_ast(node, name)
     scope_info = ast_scope.annotate(wpd)
