@@ -4,6 +4,9 @@ from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 from neurosym.types.type import AtomicType, ListType
 from neurosym.types.type_string_repr import parse_type
 
+# types we do not care about, so just send them to the same state
+pruned_python_dfa_states = ["TA"]
+
 
 def fields_for_node(node):
     """
@@ -112,7 +115,6 @@ def is_sequence(type_name, head_symbol, non_sequence_prefixes):
         head_symbol: The head symbol.
         non_sequence_prefixes: A list of prefixes that are guaranteed to not be sequence types.
     """
-    from .dfa import pruned_python_dfa_states
 
     if any(type_name.startswith(prefix) for prefix in non_sequence_prefixes):
         return False
