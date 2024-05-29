@@ -4,10 +4,6 @@ import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
-from neurosym.examples.near.models.rnn import Seq2SeqRNN
-from neurosym.examples.near.models.mlp import MLP
-from neurosym.programs.s_expression_render import render_s_expression
-
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
