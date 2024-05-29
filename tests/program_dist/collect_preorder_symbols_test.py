@@ -6,7 +6,6 @@ from .bigram_test import fam_with_vars
 
 
 class CollectPreorderSymbolsTest(unittest.TestCase):
-
     def assertCollectPreorder(self, expected, code, tree_dist, **kwargs):
         result = ns.collect_preorder_symbols(
             ns.parse_s_expression(code), tree_dist, **kwargs
