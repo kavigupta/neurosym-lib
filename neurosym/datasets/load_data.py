@@ -2,9 +2,12 @@ import io
 import os
 
 import numpy as np
-import pytorch_lightning as pl
 import requests
 import torch
+
+from neurosym.utils.imports import import_pytorch_lightning
+
+pl = import_pytorch_lightning()
 
 
 def get_raw_url(github_folder, filename):
