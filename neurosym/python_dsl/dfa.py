@@ -5,10 +5,6 @@ from frozendict import frozendict
 
 from .python_ast_tools import fields_for_node
 
-# types we do not care about, so just send them to the same state
-pruned_python_dfa_states = ["TA"]
-
-
 # exclude these tags from the dfa. these are all python 3.10+ features,
 # and for consistency across python versions, we exclude them. We can
 # add them back in later if we want to support them.

@@ -13,7 +13,8 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     PreorderMask,
 )
 from neurosym.python_dsl import python_ast_tools
-from neurosym.python_dsl.dfa import pruned_python_dfa_states, python_dfa
+from neurosym.python_dsl.dfa import python_dfa
+from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on_program
 from neurosym.utils.imports import import_pytorch_lightning
 
 from . import compression, datasets, examples, search
