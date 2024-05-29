@@ -116,7 +116,7 @@ def is_sequence(type_name, head_symbol, non_sequence_prefixes):
         non_sequence_prefixes: A list of prefixes that are guaranteed to not be sequence types.
     """
 
-    if any(type_name.startswith(prefix) for prefix in non_sequence_prefixes):
+    if any(head_symbol.startswith(prefix) for prefix in non_sequence_prefixes):
         return False
     seq_type = is_sequence_type(type_name)
     seq_symbol = is_sequence_symbol(head_symbol)
