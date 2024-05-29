@@ -32,6 +32,8 @@ class NEARTrainer(BaseTrainer):
                 self.loss_fn = nn.MSELoss()
             case "MSELossRegression":
                 self.loss_fn = nn.MSELoss()
+            case "SmoothL1LossRegression":
+                self.loss_fn = nn.SmoothL1Loss()
             case "NLLLoss":
                 self.loss_fn = nn.NLLLoss()
             case _:
@@ -91,6 +93,10 @@ class NEARTrainer(BaseTrainer):
                     # pylint: disable=not-callable
                     predictions = predictions.view(-1, predictions.shape[-1])
                     targets = targets.view(-1, targets.shape[-1])
+                case "SmoothL1LossRegression":
+                    # pylint: disable=not-callable
+                    predictions = predictions.view(-1, predictions.shape[-1])
+                    targets = targets.view(-1, targets.shape[-1])
                 case "NLLLoss":
                     predictions = (
                         predictions.view(-1, predictions.shape[-1])
@@ -134,7 +140,6 @@ def main():
     from neurosym.utils.imports import import_pytorch_lightning
 
     pl = import_pytorch_lightning()
-
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
     dataset_factory = lambda train_seed: DatasetWrapper(
