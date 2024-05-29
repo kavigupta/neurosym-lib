@@ -67,6 +67,12 @@ def create_descoper(code):
 def true_globals(node):
     """
     Get the true globals of a program.
+
+    Args:
+        node: The node.
+
+    Returns:
+        The true globals.
     """
     name = "_" + uuid.uuid4().hex
     wpd = wrap_ast(node, name)
