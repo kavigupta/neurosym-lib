@@ -1,5 +1,6 @@
 import ast
-import copy
+from functools import lru_cache
+import json
 import unittest
 
 from increase_recursionlimit import increase_recursionlimit
@@ -121,16 +122,22 @@ class ParseUnparseInverseTest(unittest.TestCase):
             "x = 2",
         )
 
-    # @expand_with_slow_tests(len(small_set_examples()), 100)
-    # def test_realistic(self, i):
-    #     try:
-    #         print(small_set_examples()[i])
-    #         self.check(small_set_examples()[i])
-    #     except Exception as e:
-    #         self.assertFalse(f"Error: {e}")
-    #         raise e
+    @parameterized.expand([(i,) for i in range(100)])
+    def test_realistic(self, i):
+        try:
+            print(small_set_examples()[i])
+            self.check(small_set_examples()[i])
+        except Exception as e:
+            self.assertFalse(f"Error: {e}")
+            raise e
 
     def test_subscript_s_exp(self):
         self.check_s_exp(
             "(_slice_tuple (Tuple (list (_slice_content (Constant i3 None))) Load))"
         )
+
+
+@lru_cache(None)
+def small_set_examples():
+    with open("data_test/small_set.json") as f:
+        return json.load(f)
