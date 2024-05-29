@@ -8,6 +8,7 @@ from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.python_dsl.convert_python.parse_python import python_to_python_ast
 from neurosym.python_dsl.convert_python.parse_s_exp import s_exp_to_python_ast
 from neurosym.python_dsl.convert_python.python_ast import PythonAST
+from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 
 
 def python_to_s_exp(code: Union[str, ast.AST], **kwargs) -> str:
@@ -25,3 +26,14 @@ def s_exp_to_python(
     Converts an s expression to python code.
     """
     return s_exp_to_python_ast(code, node_hooks).to_python()
+
+
+def to_type_annotated_ns_s_exp(
+    code: PythonAST, dfa: dict, start_state: str, non_sequence_prefixes: List[str]
+) -> SExpression:
+    """
+    Like to_ns_s_exp, but adds type annotations.
+    """
+    return add_disambiguating_type_tags(
+        dfa, code.to_ns_s_exp(dict(no_leaves=True)), start_state, non_sequence_prefixes
+    )

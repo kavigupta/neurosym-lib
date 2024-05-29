@@ -8,7 +8,6 @@ from frozendict import frozendict
 from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 
 from .splice import Splice
 from .symbol import PythonSymbol
@@ -24,14 +23,6 @@ class PythonAST(ABC):
         """
         Convert this PythonAST into a pair s-expression.
         """
-
-    def to_type_annotated_ns_s_exp(self, dfa, start_state) -> SExpression:
-        """
-        Like to_ns_s_exp, but adds type annotations.
-        """
-        return add_disambiguating_type_tags(
-            dfa, self.to_ns_s_exp(dict(no_leaves=True)), start_state
-        )
 
     def to_python(self) -> str:
         """
