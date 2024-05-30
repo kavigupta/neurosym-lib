@@ -35,7 +35,7 @@ def run_dfa_on_program(dfa, node, state):
         yield from run_dfa_on_program(dfa, child, dfa_states[i % len(dfa_states)])
 
 
-def add_disambiguating_type_tags(dfa, prog, start_state, non_sequence_prefixes):
+def add_disambiguating_type_tags(dfa, prog, start_state):
     """
     Add disambiguating type tags to a program, which appended to each symbol in the program,
         after the separator. Also adds a sequence length tag if the symbol is a sequence type.
@@ -44,7 +44,6 @@ def add_disambiguating_type_tags(dfa, prog, start_state, non_sequence_prefixes):
         dfa: The dfa.
         prog: The program.
         start_state: The state for the root node.
-        non_sequence_prefixes: A list of prefixes that are guaranteed to not be sequence types.
 
     Returns:
         The program with disambiguating type tags.
@@ -54,7 +53,7 @@ def add_disambiguating_type_tags(dfa, prog, start_state, non_sequence_prefixes):
     for node, tag in run_dfa_on_program(dfa, prog, start_state):
         assert isinstance(node, SExpression), node
         new_symbol = node.symbol + PYTHON_DSL_SEPARATOR + clean_type(tag)
-        if is_sequence(tag, node.symbol, non_sequence_prefixes):
+        if is_sequence(tag, node.symbol):
             new_symbol += PYTHON_DSL_SEPARATOR + str(len(node.children))
         node_id_to_new_symbol[id(node)] = new_symbol
     return prog.replace_symbols_by_id(node_id_to_new_symbol)

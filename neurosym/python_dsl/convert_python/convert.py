@@ -33,13 +33,13 @@ def s_exp_to_python(
 
 
 def to_type_annotated_ns_s_exp(
-    code: PythonAST, dfa: dict, start_state: str, non_sequence_prefixes: List[str]
+    code: PythonAST, dfa: dict, start_state: str
 ) -> SExpression:
     """
     Like to_ns_s_exp, but adds type annotations.
     """
     return add_disambiguating_type_tags(
-        dfa, code.to_ns_s_exp(dict(no_leaves=True)), start_state, non_sequence_prefixes
+        dfa, code.to_ns_s_exp(dict(no_leaves=True)), start_state
     )
 
 
