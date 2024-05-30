@@ -97,8 +97,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         Returns a tree distribution representing the given program distribution.
 
         If `distribution` is `None`, returns a tree distribution with all fields
-            initialized except `distribution`. This is useful for tasks where you want
-            the skeleton of the tree distribution, but don't need the actual distribution.
+            initialized, but the probabilities are not guaranteed to have any properties.
+            This is useful for tasks where you want the skeleton of the tree distribution,
+            but don't need the actual distribution.
         """
 
     def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:

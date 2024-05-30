@@ -2,9 +2,12 @@ import sys
 from dataclasses import dataclass
 from typing import Tuple
 
-import pytorch_lightning as pl
 import torch
 from torch import nn
+
+from neurosym.utils.imports import import_pytorch_lightning
+
+pl = import_pytorch_lightning()
 
 
 @dataclass

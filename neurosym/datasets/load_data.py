@@ -2,10 +2,12 @@ import io
 import os
 
 import numpy as np
-import pytorch_lightning as pl
 import requests
 import torch
-from permacache import permacache
+
+from neurosym.utils.imports import import_pytorch_lightning
+
+pl = import_pytorch_lightning()
 
 
 def get_raw_url(github_folder, filename):
@@ -31,7 +33,6 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-@permacache("neurosym/data/load_data/load_npy")
 def load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
@@ -80,8 +81,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         else:
             self.ordering = np.arange(len(self.inputs))
 
-    def get_io_dims(self):
-        return self.inputs.shape[-1], len(np.unique(self.outputs))
+    def get_io_dims(self, is_regression=False):
+        out = self.outputs.shape[-1] if is_regression else len(np.unique(self.outputs))
+        return self.inputs.shape[-1], out
 
     def __len__(self):
         return len(self.inputs)

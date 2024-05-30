@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from types import NoneType
 from typing import Dict, Iterator, List, Union
 
-import numpy as np
-
 from neurosym.programs.s_expression import SExpression
 
 
@@ -27,8 +25,8 @@ class NodeOrdering(ABC):
         """
         Orders the subnodes of the node with the given symbol index.
         """
-        assert isinstance(
-            root_sym_idx, (int, np.int32, np.int64)
+        assert not isinstance(
+            root_sym_idx, str
         ), f"Expected int, got {root_sym_idx} of type {type(root_sym_idx)}"
         order = self.compute_order(root_sym_idx)
         if order is None:
