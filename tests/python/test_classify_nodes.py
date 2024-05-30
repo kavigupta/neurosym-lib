@@ -12,7 +12,7 @@ class TestBasicAnnotation(unittest.TestCase):
 
     def assertDisambiguatingTypeTags(self, dfa, prog, start_state, expected):
         result = ns.add_disambiguating_type_tags(
-            dfa, ns.parse_s_expression(prog), start_state, ()
+            dfa, ns.parse_s_expression(prog), start_state
         )
         self.assertEqual(ns.render_s_expression(result), expected)
 
