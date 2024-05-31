@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from types import NoneType
 from typing import Callable, Dict, List, Tuple, Union
 
+import numpy as np
+
 from neurosym.types.type_with_environment import (
     Environment,
     PermissiveEnvironmment,
@@ -235,3 +237,12 @@ class DSL:
             self.max_type_depth,
             self.max_env_depth,
         )
+
+    def create_smoothing_mask(self, dsl_subset):
+        """
+        Create a mask that can be used to smooth the output of a model that uses the full DSL
+            to the subset DSL.
+        """
+        symbols_full = self.ordered_symbols(include_root=True)
+        symbols_subset = set(dsl_subset.ordered_symbols(include_root=True))
+        return np.array([s in symbols_subset for s in symbols_full])
