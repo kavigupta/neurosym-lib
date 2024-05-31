@@ -161,7 +161,7 @@ class StitchLambdaRewriter:
         )
 
 
-def single_step_compression(dsl, programs):
+def single_step_compression(dsl, programs, tasks=None):
     """
     Run a single step of compression on a list of programs.
     """
@@ -174,6 +174,7 @@ def single_step_compression(dsl, programs):
         no_curried_bodies=True,
         no_curried_metavars=True,
         abstraction_prefix=next_symbol(dsl),
+        tasks=tasks,
     )
     abstr = res.abstractions[-1]
     rewritten = [

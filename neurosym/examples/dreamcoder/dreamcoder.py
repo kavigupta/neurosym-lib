@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import time
 from typing import List, Tuple, Type, TypeVar
@@ -9,9 +10,15 @@ from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.distribution import (
     ProgramDistribution,
     ProgramDistributionFamily,
-    ProgramsCountTensor,
+    ProgramDistributionBatch,
+    ProgramCountsTensorBatched,
 )
 from neurosym.programs.s_expression import SExpression
+from neurosym.compression.process_abstraction import single_step_compression
+
+from neurosym.program_dist.tree_distribution.tree_dist_enumerator import (
+    enumerate_tree_dist,
+)
 
 Input, Output = TypeVar("Input"), TypeVar("Output")
 
@@ -25,6 +32,26 @@ class IOExample:
 @dataclass
 class Task:
     io_examples: List[IOExample]
+
+
+class RecognitionModel(torch.nn.Module, ABC):
+    def __init__(self, family: ProgramDistributionFamily):
+        super().__init__()
+        self.family = family
+
+    @abstractmethod
+    def run(self, tasks: List[Task]) -> ProgramDistributionBatch:
+        pass
+
+
+class Domain(ABC):
+    @abstractmethod
+    def task_log_prob(self, program: SExpression, task: Task) -> float:
+        pass
+
+    @abstractmethod
+    def sample_task(self, program: SExpression, rng: np.random.RandomState) -> Task:
+        pass
 
 
 def dreamcoder(
@@ -52,25 +79,40 @@ def dreamcoder(
         rng.shuffle(task_shuf)
         for batch in chunked(task_shuf, batch_size):
             for t in batch:
-                beams[t] += program_distribution_family.enumerate_programs(
-                    dsl, theta, t.io_examples, rng, timeout=enumeration_timeout
-                )
-            recognition_model = train_recogintion_model(
-                recoginition_model_class, dsl, domain, theta, tasks, beams, rng
-            )
-            for t in batch:
-                beams[t] += program_distribution_family.enumerate_programs(
+                beams[t] += enumerate_programs(
+                    program_distribution_family,
                     dsl,
-                    recognition_model(tasks[t]),
+                    theta,
                     t.io_examples,
-                    rng,
+                    timeout=enumeration_timeout,
+                )
+            recognition_model, _ = train_recogintion_model(
+                recoginition_model_class=recoginition_model_class,
+                dsl=dsl,
+                domain=domain,
+                family=program_distribution_family,
+                theta=theta,
+                tasks=tasks,
+                beams=beams,
+                rng=rng,
+                probability_dreaming=0.5,
+                time_limit_s=60,
+                batch_size=batch_size,
+            )
+            dists = recognition_model.run(tasks)
+            for t in batch:
+                beams[t] += enumerate_programs(
+                    program_distribution_family,
+                    dsl,
+                    dists[t],
+                    t.io_examples,
                     timeout=enumeration_timeout,
                 )
             for t in batch:
                 beams[t] = prune(dsl, domain, theta, tasks[t], beams[t], beam_size)
             dsl, beams = compress(dsl, beams)
             # TODO look into how dreamcoder fits this
-            theta = fit(program_distribution_family, dsl, beams)
+            theta = fit(program_distribution_family, beams)
             yield (dsl, theta), recognition_model, beams
 
 
@@ -92,16 +134,24 @@ def prune(
 def compress(
     dsl: DSL, beams: List[List[SExpression]]
 ) -> Tuple[DSL, List[List[SExpression]]]:
-    # TODO implement. keep tasks separate
-    pass
+    programs_flat, tasks_flat = [], []
+    for t, beam in enumerate(beams):
+        programs_flat += beam
+        tasks_flat += [str(t)] * len(beam)
+    dsl, rewritten_flat = single_step_compression(dsl, programs_flat, tasks=tasks_flat)
+    rewritten = []
+    i = 0
+    for beam in beams:
+        rewritten.append(rewritten_flat[i : i + len(beam)])
+        i += len(beam)
+    return dsl, rewritten
 
 
 def fit(
     family: ProgramDistributionFamily,
-    dsl: DSL,
     beams: List[List[SExpression]],
 ) -> ProgramDistribution:
-    # TODO implement
+    # TODO fix this to make it more similar to the algorithm in the paper
     # Should implement page 54 from https://www.cs.cornell.edu/~ellisk/documents/dreamcoder_with_supplement.pdf
     # Specifically section S4.5.4
     # Maddy: We left of at
@@ -113,6 +163,16 @@ def fit(
     # Maddy leans toward that being the case but we should figure it out
     # Kavi: stupid idea, but we could literally just train a "recoginition model" that's just a constant set of weights
     # If this is convex, then it should find the optimum.
+
+    # For now, just doing something simple.
+
+    weights = [1 / len(beam) for beam in beams for _ in beam]
+
+    counts = family.count_programs(
+        [program for beam in beams for program in beam], weights=weights
+    )
+    return family.counts_to_distribution(counts)
+
 
 def train_recogintion_model(
     recoginition_model_class: Type[RecognitionModel],
@@ -182,7 +242,7 @@ def training_loss(
     model: RecognitionModel,
     family: ProgramDistributionFamily,
     tasks: List[Task],
-    beam_counts: List[List[ProgramsCountTensor]],
+    beam_counts: List[ProgramCountsTensorBatched],
     task_log_probs: List[float],
 ) -> float:
     tensors = model(tasks)
@@ -195,3 +255,24 @@ def training_loss(
         ]
     )
     return -log_likelihood
+
+
+def enumerate_programs(
+    family: ProgramDistributionFamily,
+    dsl: DSL,
+    theta: ProgramDistribution,
+    io_examples: List[IOExample],
+    timeout: int,
+) -> List[SExpression]:
+    """
+    Enumerate programs that are likely to be good on the given examples.
+    """
+    start_time = time.time()
+    for program, _ in enumerate_tree_dist(family.tree_distribution(theta)):
+        if time.time() - start_time > timeout:
+            break
+        if all(
+            program.evaluate(dsl, example.inputs) == example.output
+            for example in io_examples
+        ):
+            yield program
