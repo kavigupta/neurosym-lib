@@ -1,8 +1,9 @@
 import unittest
 from fractions import Fraction
 
-import neurosym as ns
 import numpy as np
+
+import neurosym as ns
 
 from .utils import fit_to
 
