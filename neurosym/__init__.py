@@ -12,7 +12,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
-from neurosym.python_dsl import python_ast_tools
+from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
 from neurosym.python_dsl.convert_python.convert import (
     python_statement_to_python_ast,
