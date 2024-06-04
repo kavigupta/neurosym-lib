@@ -1,9 +1,6 @@
 import torch
 import torch.nn as nn
 
-import sys
-sys.path.append("C:\\Users\\asola\\OneDrive\\Documents\\GitHub\\neurosym-lib")
-
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import fold_torch, map_torch
