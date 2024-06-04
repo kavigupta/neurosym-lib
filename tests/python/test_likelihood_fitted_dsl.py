@@ -63,7 +63,11 @@ class TestLikelihoodFittedDSL(unittest.TestCase):
             results,
             [
                 (
-                    "(BinOp~E (Constant~E (const-i2~Const) (const-None~ConstKind)) (Add~O) (Name~E (const-g_x~Name) (Load~Ctx)))",
+                    """
+                    (BinOp~E
+                        (Constant~E (const-i2~Const) (const-None~ConstKind))
+                        (Add~O) (Name~E (const-g_x~Name) (Load~Ctx)))
+                    """,
                     Fraction(2, 3),
                 ),
                 (

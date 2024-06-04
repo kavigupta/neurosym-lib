@@ -155,7 +155,8 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
                 from collections import defaultdict as z?y
                 x?defaultdict$os$y$z = os?defaultdict$y$z
                 x?defaultdict$os$y$z = os?defaultdict$x$y$z
-                (defaultdict?os$x$y$z, os?defaultdict$x$y$z, y?defaultdict$os$x$z, z?defaultdict$os$x$y)
+                (defaultdict?os$x$y$z, os?defaultdict$x$y$z,
+                    y?defaultdict$os$x$z, z?defaultdict$os$x$y)
                 """
             ).strip(),
         )
