@@ -12,7 +12,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
-from neurosym.python_dsl import python_ast_tools
+from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
 from neurosym.python_dsl.convert_python.convert import (
     python_statement_to_python_ast,
@@ -35,6 +35,7 @@ from neurosym.python_dsl.convert_python.python_ast import (
 )
 from neurosym.python_dsl.convert_python.symbol import PythonSymbol
 from neurosym.python_dsl.dfa import python_dfa
+from neurosym.python_dsl.python_dsl_subset import PythonDSLSubset, create_python_dsl
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on_program
 from neurosym.utils.imports import import_pytorch_lightning
 

@@ -104,7 +104,7 @@ def is_sequence_symbol(x):
     return x in ["/seq", "/subseq", "list", "/choiceseq"]
 
 
-def is_sequence(type_name, head_symbol, non_sequence_prefixes):
+def is_sequence(type_name, head_symbol):
     """
     Returns whether a given type and head symbol correspond to a sequence.
         If there is a mismatch between the type and the head symbol, this function
@@ -113,20 +113,13 @@ def is_sequence(type_name, head_symbol, non_sequence_prefixes):
     Args:
         type_name: The type name.
         head_symbol: The head symbol.
-        non_sequence_prefixes: A list of prefixes that are guaranteed to not be sequence types.
     """
 
-    if any(head_symbol.startswith(prefix) for prefix in non_sequence_prefixes):
-        return False
     seq_type = is_sequence_type(type_name)
     seq_symbol = is_sequence_symbol(head_symbol)
-    assert seq_type == seq_symbol or type_name in pruned_python_dfa_states, (
-        seq_type,
-        seq_symbol,
-        type_name,
-        head_symbol,
-    )
-    return seq_type or seq_symbol
+    if type_name in pruned_python_dfa_states:
+        return seq_symbol
+    return seq_type and seq_symbol
 
 
 def clean_type(x):
