@@ -3,19 +3,19 @@ from typing import Callable, Tuple, Union
 
 import numpy as np
 
-import neurosym as ns
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
 )
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
+from neurosym.programs.s_expression import SExpression
 
 
 def compute_likelihood(
     tree_dist: TreeDistribution,
-    program: ns.SExpression,
+    program: SExpression,
     parents: Tuple[Tuple[int, int], ...],
     preorder_mask: PreorderMask,
-    tracker: Union[NoneType, Callable[[ns.SExpression, float], NoneType]],
+    tracker: Union[NoneType, Callable[[SExpression, float], NoneType]],
 ):
     """
     Compute the likelihood of a program under a distribution.
