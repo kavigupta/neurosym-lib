@@ -53,10 +53,10 @@ class NoopPreorderMask(PreorderMask):
         return [True] * len(symbols)
 
     def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
-        return chain_undos([])
+        return lambda: None
 
     def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
-        return chain_undos([])
+        return lambda: None
 
 
 class ConjunctionPreorderMask(PreorderMask):
