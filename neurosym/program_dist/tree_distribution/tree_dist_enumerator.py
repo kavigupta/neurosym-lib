@@ -84,15 +84,14 @@ def enumerate_tree_dist_dfs(
     mask = preorder_mask.compute_mask(position, syms)
     denominator = np.logaddexp.reduce(log_probs[mask])
     for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
-        preorder_mask_copy = preorder_mask
         new_parents = parents + (node,)
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
-        undo_entry = preorder_mask_copy.on_entry(position, node)
+        undo_entry = preorder_mask.on_entry(position, node)
         for (
             children,
             child_likelihood,
-            preorder_mask_copy,
+            preorder_mask,
         ) in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
@@ -101,12 +100,12 @@ def enumerate_tree_dist_dfs(
             num_children=arity,
             starting_index=0,
             order=tree_dist.ordering.order(node, arity),
-            preorder_mask=preorder_mask_copy,
+            preorder_mask=preorder_mask,
         ):
-            undo_exit = preorder_mask_copy.on_exit(position, node)
+            undo_exit = preorder_mask.on_exit(position, node)
             yield SExpression(
                 symbol, [children[i] for i in range(arity)]
-            ), child_likelihood + likelihood, preorder_mask_copy
+            ), child_likelihood + likelihood, preorder_mask
             undo_exit()
         undo_entry()
 
