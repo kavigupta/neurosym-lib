@@ -1,3 +1,5 @@
+from typing import Callable, Tuple
+
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 
 from .handler import ConstructHandler, Handler
@@ -60,9 +62,18 @@ class TargetHandler(Handler):
         super().__init__(mask, defined_production_idxs, config)
         self.defined_symbols = []
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
         if hasattr(child, "defined_symbols"):
+            original_defined_symbol_count = len(self.defined_symbols)
             self.defined_symbols += child.defined_symbols
+            return lambda: setattr(
+                self,
+                "defined_symbols",
+                self.defined_symbols[:original_defined_symbol_count],
+            )
+        return lambda: None
 
 
 class TargetConstructHandler(TargetHandler, ConstructHandler):
@@ -79,7 +90,9 @@ class PassthroughLHSHandler(TargetHandler):
     If indices is None, it will target all children.
     """
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if self.is_defining(position):
             return self.target_child(position, symbol)
         return super().on_child_enter(position, symbol)
@@ -128,10 +141,14 @@ class SymbolTargetHandler(TargetHandler):
         if self.mask.id_to_name(symbol) != "const-None~NullableNameStr":
             self.defined_symbols = [symbol]
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         raise NotImplementedError("symbols should not have children.")
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
         raise NotImplementedError("symbols should not have children.")
 
     def is_defining(self, position: int) -> bool:
@@ -184,14 +201,21 @@ class NameTargetHandler(TargetConstructHandler):
     # will select the last of these that is defined
     name_nodes = {"id"}
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if self.is_defining(position):
             return self.target_child(position, symbol)
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
         if hasattr(child, "defined_symbols") and child.defined_symbols:
+            previous = self.defined_symbols
             self.defined_symbols = child.defined_symbols
+            return lambda: setattr(self, "defined_symbols", previous)
+        return lambda: None
 
     def is_defining(self, position: int) -> bool:
         return any(position == self.child_fields[x] for x in self.name_nodes)

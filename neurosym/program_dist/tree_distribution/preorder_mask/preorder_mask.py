@@ -102,3 +102,15 @@ def chain_undos(undos):
             undo()
 
     return undo
+
+
+def remove_last_n_elements(lst, n):
+    """
+    Remove the last n elements from a list.
+    """
+
+    def run():
+        if n > 0:
+            del lst[-n:]
+
+    return run

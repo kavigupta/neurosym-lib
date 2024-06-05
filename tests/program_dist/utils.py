@@ -1,5 +1,5 @@
-from typing import Callable
 import unittest
+from typing import Callable
 
 import numpy as np
 import scipy.stats

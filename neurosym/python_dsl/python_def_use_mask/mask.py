@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Tuple
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
+    chain_undos,
 )
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
@@ -103,25 +104,31 @@ class DefUseChainPreorderMask(PreorderMask):
             position, symbols, self.idx_to_name, self.special_case_predicates
         )
 
-    def on_entry(self, position: int, symbol: int):
+    def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Updates the stack of handlers when entering a node.
         """
         if not self.handlers:
             assert position == symbol == 0
             self.handlers.append(DefaultHandler(self, [], self.config))
-        else:
-            self.handlers.append(self.handlers[-1].on_child_enter(position, symbol))
+            return self.handlers.pop
+        new_handler, undo = self.handlers[-1].on_child_enter(position, symbol)
+        self.handlers.append(new_handler)
 
-    def on_exit(self, position: int, symbol: int):
+        return chain_undos([undo, self.handlers.pop])
+
+    def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Updates the stack of handlers when exiting a node.
         """
         popped = self.handlers.pop()
+        undo_pop = lambda: self.handlers.append(popped)
         if not self.handlers:
             assert position == symbol == 0
-            return
-        self.handlers[-1].on_child_exit(position, symbol, popped)
+            return undo_pop
+        undo = self.handlers[-1].on_child_exit(position, symbol, popped)
+
+        return chain_undos([undo_pop, undo])
 
     def with_handler(self, handler_fn):
         """

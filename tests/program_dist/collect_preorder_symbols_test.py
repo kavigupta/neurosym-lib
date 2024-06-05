@@ -45,7 +45,7 @@ class CollectPreorderSymbolsTest(unittest.TestCase):
             ],
             "(call (lam (+ (1) (1))) (1))",
             fam_with_vars.tree_distribution_skeleton,
-            replace_node_midstream=lambda sexp, _: (
+            replace_node_midstream=lambda sexp, _, _, _: (
                 ns.parse_s_expression("(+ ($0_0) ($0_0))")
                 if sexp.symbol == "+"
                 else sexp

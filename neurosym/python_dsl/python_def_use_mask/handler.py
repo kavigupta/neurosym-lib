@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 from neurosym.python_dsl.python_ast_tools import fields_for_node
 
@@ -20,7 +20,9 @@ class Handler(ABC):
         self.config = config
 
     @abstractmethod
-    def on_child_enter(self, position: int, symbol: int) -> "Handler":
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple["Handler", Callable[[], None]]:
         """
         When a child is entered, this method is called to determine the handler.
 
@@ -33,17 +35,31 @@ class Handler(ABC):
 
         Returns:
             The handler for the child.
+            A function that can be called to undo the changes made by this function.
         """
-        return default_handler(
-            position, symbol, self.mask, self.currently_defined_indices(), self.config
+        return (
+            default_handler(
+                position,
+                symbol,
+                self.mask,
+                self.currently_defined_indices(),
+                self.config,
+            ),
+            lambda: None,
         )
 
     @abstractmethod
-    def on_child_exit(self, position: int, symbol: int, child: "Handler"):
+    def on_child_exit(
+        self, position: int, symbol: int, child: "Handler"
+    ) -> Callable[[], None]:
         """
         When a child is exited, this method is called to perform tasks related
             to the child.
+
+        Returns:
+            A function that can be called to undo the changes made by this function.
         """
+        return lambda: None
 
     def currently_defined_indices(self) -> list[int]:
         """
@@ -78,15 +94,24 @@ class Handler(ABC):
             names.add(mat.group("name"))
         return names
 
-    def target_child(self, position: int, symbol: int) -> "Handler":
+    def target_child(
+        self, position: int, symbol: int
+    ) -> Tuple["Handler", Callable[[], None]]:
         """
         Return a handler collecting targets for the given child.
         """
         # pylint: disable=cyclic-import
         from .target_handler import create_target_handler
 
-        return create_target_handler(
-            position, symbol, self.mask, self.currently_defined_indices(), self.config
+        return (
+            create_target_handler(
+                position,
+                symbol,
+                self.mask,
+                self.currently_defined_indices(),
+                self.config,
+            ),
+            lambda: None,
         )
 
     def _matches(self, names, symbol_id, idx_to_name, special_case_predicates):
@@ -142,11 +167,15 @@ class ConstructHandler(Handler):
 
 
 class DefaultHandler(Handler):
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
-        pass
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
+        return super().on_child_exit(position, symbol, child)
 
     def is_defining(self, position: int) -> bool:
         return False

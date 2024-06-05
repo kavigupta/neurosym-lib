@@ -1,3 +1,5 @@
+from typing import Callable, Tuple
+
 from ..handler import ConstructHandler, Handler
 from .defining_statement_handler import DefiningStatementHandler
 
@@ -16,15 +18,20 @@ class ComprehensionExpressionHandler(ConstructHandler):
         super().__init__(mask, defined_production_idxs[:], config)
         self.defined_symbols = []
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if position == self.child_fields["generators"]:
-            return GeneratorsHandler(
-                self.mask, self.defined_production_idxs, self.config
+            return (
+                GeneratorsHandler(self.mask, self.defined_production_idxs, self.config),
+                lambda: None,
             )
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
-        pass
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
+        return super().on_child_exit(position, symbol, child)
 
     def is_defining(self, position: int) -> bool:
         return False
@@ -51,13 +58,18 @@ class GeneratorsHandler(Handler):
     Handles a list of generators, each treated as a defining statement.
     """
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
-        return ComprehensionHandler(
-            self.mask, self.defined_production_idxs, self.config
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
+        return (
+            ComprehensionHandler(self.mask, self.defined_production_idxs, self.config),
+            lambda: None,
         )
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
-        pass
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
+        return super().on_child_exit(position, symbol, child)
 
     def is_defining(self, position: int) -> bool:
         return False
