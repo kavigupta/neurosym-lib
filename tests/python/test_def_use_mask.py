@@ -51,6 +51,7 @@ class DefUseMaskTestGeneric(unittest.TestCase):
 
 
 class DefUseMaskTest(DefUseMaskTestGeneric):
+
     def test_annotate_alternate_symbols(self):
         code = self.annotate_program("x = 2; y = x; z = y")
         print(code)
@@ -61,6 +62,18 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
                 x?y$z = 2
                 y?x$z = x
                 z?x$y = y?x
+                """
+            ).strip(),
+        )
+
+    def test_duplicate_lhs(self):
+        code = self.annotate_program("x, x = 2, 2")
+        print(code)
+        self.assertEqual(
+            code.strip(),
+            cwq(
+                """
+                x, x = 2, 2
                 """
             ).strip(),
         )
