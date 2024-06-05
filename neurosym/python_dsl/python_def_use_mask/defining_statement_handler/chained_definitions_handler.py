@@ -28,11 +28,6 @@ class ComprehensionExpressionHandler(ConstructHandler):
             )
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(
-        self, position: int, symbol: int, child: Handler
-    ) -> Callable[[], None]:
-        return super().on_child_exit(position, symbol, child)
-
     def is_defining(self, position: int) -> bool:
         return False
 
@@ -65,11 +60,6 @@ class GeneratorsHandler(Handler):
             ComprehensionHandler(self.mask, self.defined_production_idxs, self.config),
             lambda: None,
         )
-
-    def on_child_exit(
-        self, position: int, symbol: int, child: Handler
-    ) -> Callable[[], None]:
-        return super().on_child_exit(position, symbol, child)
 
     def is_defining(self, position: int) -> bool:
         return False

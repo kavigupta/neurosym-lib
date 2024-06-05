@@ -19,7 +19,6 @@ class Handler(ABC):
         self.defined_production_idxs = defined_production_idxs
         self.config = config
 
-    @abstractmethod
     def on_child_enter(
         self, position: int, symbol: int
     ) -> Tuple["Handler", Callable[[], None]]:
@@ -48,7 +47,6 @@ class Handler(ABC):
             lambda: None,
         )
 
-    @abstractmethod
     def on_child_exit(
         self, position: int, symbol: int, child: "Handler"
     ) -> Callable[[], None]:
@@ -59,6 +57,7 @@ class Handler(ABC):
         Returns:
             A function that can be called to undo the changes made by this function.
         """
+        del position, symbol, child
         return lambda: None
 
     def currently_defined_indices(self) -> list[int]:
@@ -167,16 +166,6 @@ class ConstructHandler(Handler):
 
 
 class DefaultHandler(Handler):
-    def on_child_enter(
-        self, position: int, symbol: int
-    ) -> Tuple[Handler, Callable[[], None]]:
-        return super().on_child_enter(position, symbol)
-
-    def on_child_exit(
-        self, position: int, symbol: int, child: Handler
-    ) -> Callable[[], None]:
-        return super().on_child_exit(position, symbol, child)
-
     def is_defining(self, position: int) -> bool:
         return False
 

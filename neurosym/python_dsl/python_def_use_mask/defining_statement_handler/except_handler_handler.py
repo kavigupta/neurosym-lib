@@ -23,10 +23,5 @@ class ExceptHandlerHandler(ConstructHandler):
         undos.append(super().on_child_enter(position, symbol))
         return chain_undos(undos)
 
-    def on_child_exit(
-        self, position: int, symbol: int, child: Handler
-    ) -> Callable[[], None]:
-        return super().on_child_exit(position, symbol, child)
-
     def is_defining(self, position: int) -> bool:
         return position == self.child_fields["name"]
