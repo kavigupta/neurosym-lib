@@ -16,7 +16,7 @@ class DefUseMaskTestGeneric(unittest.TestCase):
         }
 
     def get_handlers_except_mask(self, mask):
-        handlers = mask.masks[-1].handlers
+        handlers = mask.handlers
         return [self.get_handler_except_mask(handler) for handler in handlers]
 
     def annotate_program(self, program, with_undo, with_undo_exit):
@@ -29,7 +29,7 @@ class DefUseMaskTestGeneric(unittest.TestCase):
                 for alt in alts:
                     undo_entry = mask.on_entry(position, alt)
                     print("*" * 80)
-                    print("handlers", mask.masks[-1].handlers)
+                    print("handlers", mask.handlers)
                     last_handler = copy.deepcopy(self.get_handlers_except_mask(mask))
                     print("copy", last_handler)
                     undo_exit = mask.on_exit(position, alt)
