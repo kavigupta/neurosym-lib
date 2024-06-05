@@ -121,12 +121,14 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
         raise NotImplementedError
 
 
-def enumerate_dsl(family, dist, min_likelihood=-6):
+def enumerate_dsl(family, dist, min_likelihood=-6, max_denominator=10**6):
     result = list(family.enumerate(dist, min_likelihood=min_likelihood))
     result = [
         (
             ns.render_s_expression(prog),
-            Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(),
+            Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(
+                max_denominator=max_denominator
+            ),
         )
         for prog, likelihood in result
     ]
