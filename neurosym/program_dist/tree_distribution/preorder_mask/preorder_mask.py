@@ -75,6 +75,14 @@ class ConjunctionPreorderMask(PreorderMask):
     A mask that is the conjunction of multiple masks.
     """
 
+    @classmethod
+    def of(cls, tree_dist, masks):
+        if len(masks) == 0:
+            return NoopPreorderMask(tree_dist)
+        if len(masks) == 1:
+            return masks[0]
+        return cls(tree_dist, masks)
+
     def __init__(self, tree_dist, masks):
         super().__init__(tree_dist)
         self.masks = masks

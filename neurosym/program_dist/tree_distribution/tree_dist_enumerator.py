@@ -44,12 +44,13 @@ def enumerate_tree_dist(
             over again. If this is too large, we will spend a lot of time
             doing work that we don't need to do.
     """
+    cache = {}
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         preorder_mask.on_entry(0, 0)
         for program, likelihood in enumerate_tree_dist_dfs(
-            tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache={}
+            tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
         ):
             if (
                 max(likelihood_bound, min_likelihood)
@@ -69,19 +70,18 @@ def enumerate_tree_dist_dfs(
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
 ):
     key = preorder_mask.cache_key(parents), parents
-    generator = enumerate_tree_dist_dfs_uncached(
-        tree_dist, min_likelihood, parents, preorder_mask, cache
-    )
     if cache is not None:
         if key in cache:
             old_results, old_min_likelihood = cache[key]
             if old_min_likelihood <= min_likelihood:
                 return old_results
+    generator = enumerate_tree_dist_dfs_uncached(
+        tree_dist, min_likelihood, parents, preorder_mask, cache
+    )
+    if cache is not None:
         generator = list(generator)
         cache[key] = generator, min_likelihood
-        return generator
-    else:
-        return generator
+    return generator
 
 
 def enumerate_tree_dist_dfs_uncached(
@@ -106,9 +106,9 @@ def enumerate_tree_dist_dfs_uncached(
 
     # Performed recursively for now.
     syms, log_probs = tree_dist.likelihood_arrays[parents]
-    sym = parents[-1][0]
+    # sym = parents[-1][0]
     position = parents[-1][1]
-    last_typ = preorder_mask.masks[0].type_stack[-1][position]
+    # last_typ = preorder_mask.masks[0].type_stack[-1][position]
     # print(
     #     "  " * len(preorder_mask.masks[0].type_stack[-1]),
     #     tree_dist.symbols[sym][0],
