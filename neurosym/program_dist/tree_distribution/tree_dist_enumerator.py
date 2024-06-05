@@ -25,7 +25,6 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
 )
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
-from neurosym.types.type_string_repr import render_type
 
 
 def enumerate_tree_dist(
@@ -33,6 +32,7 @@ def enumerate_tree_dist(
     *,
     chunk_size: float = DEFAULT_CHUNK_SIZE,
     min_likelihood: float = float("-inf"),
+    use_cache=True,
 ):
     """
     Enumerate all programs using iterative deepening.
@@ -44,10 +44,10 @@ def enumerate_tree_dist(
             over again. If this is too large, we will spend a lot of time
             doing work that we don't need to do.
     """
-    cache = {}
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size
         preorder_mask = tree_dist.mask_constructor(tree_dist)
+        cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
         for program, likelihood in enumerate_tree_dist_dfs(
             tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
@@ -69,8 +69,8 @@ def enumerate_tree_dist_dfs(
     preorder_mask: PreorderMask,
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
 ):
-    key = preorder_mask.cache_key(parents), parents
     if cache is not None:
+        key = preorder_mask.cache_key(parents), parents
         if key in cache:
             old_results, old_min_likelihood = cache[key]
             if old_min_likelihood <= min_likelihood:
