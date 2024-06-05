@@ -126,7 +126,8 @@ def enumerate_tree_dist_dfs_uncached(
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
         undo_entry = preorder_mask.on_entry(position, node)
-        for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
+        children = {}
+        for remaining_likelihood in enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
             parents,
@@ -136,17 +137,20 @@ def enumerate_tree_dist_dfs_uncached(
             order=tree_dist.ordering.order(node, arity),
             preorder_mask=preorder_mask,
             cache=cache,
+            children=children,
         ):
-            if child_likelihood + likelihood < min_likelihood:
-                continue
             undo_exit = preorder_mask.on_exit(position, node)
             yield SExpression(
                 symbol, [children[i] for i in range(arity)]
-            ), child_likelihood + likelihood
+            ), min_likelihood - remaining_likelihood
             undo_exit()
         undo_entry()
 
 
+from line_profiler import profile
+
+
+@profile
 def enumerate_children_and_likelihoods_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
@@ -157,6 +161,7 @@ def enumerate_children_and_likelihoods_dfs(
     order: List[int],
     preorder_mask: PreorderMask,
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+    children: Dict[int, SExpression],
 ):
     """
     Enumerate all children and their likelihoods.
@@ -167,7 +172,7 @@ def enumerate_children_and_likelihoods_dfs(
         return
 
     if starting_index == num_children:
-        yield {}, 0
+        yield min_likelihood
         return
     new_parents = parents + ((most_recent_parent, order[starting_index]),)
     new_parents = new_parents[-tree_dist.limit :]
@@ -175,10 +180,9 @@ def enumerate_children_and_likelihoods_dfs(
     for first_child, first_likelihood in enumerate_tree_dist_dfs(
         tree_dist, min_likelihood, new_parents, preorder_mask, cache
     ):
-        for (
-            rest_children,
-            rest_likelihood,
-        ) in enumerate_children_and_likelihoods_dfs(
+        assert min_likelihood - first_likelihood <= 0
+        children[order[starting_index]] = first_child
+        yield from enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - first_likelihood,
             parents,
@@ -188,6 +192,5 @@ def enumerate_children_and_likelihoods_dfs(
             order,
             preorder_mask,
             cache=cache,
-        ):
-            rest_children[order[starting_index]] = first_child
-            yield rest_children, first_likelihood + rest_likelihood
+            children=children,
+        )
