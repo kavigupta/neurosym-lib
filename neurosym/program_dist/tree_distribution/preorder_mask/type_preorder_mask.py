@@ -55,5 +55,7 @@ class TypePreorderMask(PreorderMask):
     def cache_key(self, parents):
         # only include last len(parents) elements of type_stack
         last_types = self.type_stack[-len(parents) :]
-        print("last_types", last_types)
-        1/0
+        last_types_hashes = tuple(
+            tuple(typ.unique_hash for typ in types) for types in last_types
+        )
+        return last_types_hashes
