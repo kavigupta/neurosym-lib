@@ -13,6 +13,7 @@ Our algorithm here is based on iterative deepening. We have a method that
 Likelihood is defined as the log probability of the program.
 """
 
+import bisect
 import itertools
 from typing import Any, Dict, List, Tuple, Union
 
@@ -62,6 +63,17 @@ def enumerate_tree_dist(
             return
 
 
+def remove_below_threshold(
+    results: List[Tuple[SExpression, float]], min_likelihood: float
+):
+    """
+    Remove all results below the threshold.
+    """
+    # binary search
+    index = bisect.bisect_left(results, min_likelihood, key=lambda x: x[1])
+    return results[index:]
+
+
 def enumerate_tree_dist_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
@@ -74,12 +86,12 @@ def enumerate_tree_dist_dfs(
         if key in cache:
             old_results, old_min_likelihood = cache[key]
             if old_min_likelihood <= min_likelihood:
-                return old_results
+                return remove_below_threshold(old_results, min_likelihood)
     generator = enumerate_tree_dist_dfs_uncached(
         tree_dist, min_likelihood, parents, preorder_mask, cache
     )
     if cache is not None:
-        generator = list(generator)
+        generator = sorted(generator, key=lambda x: x[1])
         cache[key] = generator, min_likelihood
     return generator
 
