@@ -1,6 +1,6 @@
 import unittest
 from fractions import Fraction
-from typing import Callable
+from typing import Any, Callable, Tuple
 
 import numpy as np
 import scipy.stats
@@ -61,6 +61,13 @@ class ChildrenInOrderMask(ns.PreorderMask):
     def on_exit(self, position, symbol) -> Callable[[], None]:
         return lambda: None
 
+    @property
+    def can_cache(self) -> bool:
+        return False
+
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        raise NotImplementedError
+
 
 class ChildrenInOrderAsserterMask(ns.PreorderMask):
     def __init__(self, tree_dist, dsl):
@@ -106,13 +113,22 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
             return undo
         return lambda: None
 
+    @property
+    def can_cache(self) -> bool:
+        return False
 
-def enumerate_dsl(family, dist, min_likelihood=-6):
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        raise NotImplementedError
+
+
+def enumerate_dsl(family, dist, min_likelihood=-6, max_denominator=10**6):
     result = list(family.enumerate(dist, min_likelihood=min_likelihood))
     result = [
         (
             ns.render_s_expression(prog),
-            Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(),
+            Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(
+                max_denominator=max_denominator
+            ),
         )
         for prog, likelihood in result
     ]

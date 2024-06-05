@@ -1,6 +1,6 @@
 import copy
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
@@ -170,3 +170,10 @@ class DefUseChainPreorderMask(PreorderMask):
             if evar is not None:
                 return evar
         return self.tree_dist.symbol_to_index[name]
+
+    @property
+    def can_cache(self) -> bool:
+        return False
+
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        raise NotImplementedError
