@@ -32,7 +32,6 @@ def enumerated(*args, **kwargs):
 
 
 class TreeDistributionTest(unittest.TestCase):
-
     def test_uniqueness(self):
         programs = enumerated(arith_dist)
         assert len(programs) == len(set(programs))
