@@ -1,3 +1,10 @@
+from typing import Callable, Tuple
+
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
+    chain_undos,
+    remove_last_n_elements,
+)
+
 from ..handler import ConstructHandler, Handler
 
 
@@ -19,22 +26,35 @@ class DefiningStatementHandler(ConstructHandler):
         self._targeted_positions = [self.child_fields[child] for child in self.targeted]
         self.defined_symbols = []
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if position in self._targeted_positions:
             return self.target_child(position, symbol)
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
+        undos = []
         if position in self._targeted_positions:
             if len(set(child.defined_symbols)) != len(child.defined_symbols):
                 raise ValueError(f"Duplicate symbols defined in child {child}")
             self.defined_symbols += child.defined_symbols
+            undos.append(
+                remove_last_n_elements(self.defined_symbols, len(child.defined_symbols))
+            )
         if position == self.child_fields[self.define_symbols_on_exit]:
             current = set(self.defined_production_idxs)
-            self.defined_production_idxs += [
-                x for x in self.defined_symbols if x not in current
-            ]
-        super().on_child_exit(position, symbol, child)
+            additional_symbols = [x for x in self.defined_symbols if x not in current]
+            self.defined_production_idxs += additional_symbols
+            undos.append(
+                remove_last_n_elements(
+                    self.defined_production_idxs, len(additional_symbols)
+                )
+            )
+        undos.append(super().on_child_exit(position, symbol, child))
+        return chain_undos(undos)
 
     def is_defining(self, position: int) -> bool:
         return position in self._targeted_positions

@@ -1,3 +1,10 @@
+from typing import Callable, Tuple
+
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
+    chain_undos,
+    remove_last_n_elements,
+)
+
 from ..handler import Handler
 from .defining_statement_handler import ChildFrameCreatorHandler
 
@@ -17,20 +24,30 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
         super().__init__(mask, defined_production_idxs, config)
         assert isinstance(self.construct_name_field, str)
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if self.is_construct_name_field(position):
             return self.target_child(position, symbol)
         return super().on_child_enter(position, symbol)
 
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
+    def on_child_exit(
+        self, position: int, symbol: int, child: Handler
+    ) -> Callable[[], None]:
+        undos = []
         if self.is_construct_name_field(position):
             print(self, [self.mask.id_to_name(x) for x in child.defined_symbols])
             for idx_list in (
                 self.original_defined_production_idxs,
                 self.defined_production_idxs,
             ):
-                idx_list += [x for x in child.defined_symbols if x not in idx_list]
-        super().on_child_exit(position, symbol, child)
+                additional_elements = [
+                    x for x in child.defined_symbols if x not in idx_list
+                ]
+                idx_list += additional_elements
+                undos.append(remove_last_n_elements(idx_list, len(additional_elements)))
+        undos.append(super().on_child_exit(position, symbol, child))
+        return chain_undos(undos)
 
     def is_construct_name_field(self, position):
         return (

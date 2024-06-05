@@ -1,3 +1,5 @@
+from typing import Callable, Tuple
+
 from ..handler import ConstructHandler, Handler
 from .defining_statement_handler import DefiningStatementHandler
 
@@ -16,10 +18,13 @@ class ComprehensionExpressionHandler(ConstructHandler):
         super().__init__(mask, defined_production_idxs[:], config)
         self.defined_symbols = []
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
         if position == self.child_fields["generators"]:
-            return GeneratorsHandler(
-                self.mask, self.defined_production_idxs, self.config
+            return (
+                GeneratorsHandler(self.mask, self.defined_production_idxs, self.config),
+                lambda: None,
             )
         return super().on_child_enter(position, symbol)
 
@@ -48,9 +53,12 @@ class GeneratorsHandler(Handler):
     Handles a list of generators, each treated as a defining statement.
     """
 
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
-        return ComprehensionHandler(
-            self.mask, self.defined_production_idxs, self.config
+    def on_child_enter(
+        self, position: int, symbol: int
+    ) -> Tuple[Handler, Callable[[], None]]:
+        return (
+            ComprehensionHandler(self.mask, self.defined_production_idxs, self.config),
+            lambda: None,
         )
 
     def is_defining(self, position: int) -> bool:
