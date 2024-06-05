@@ -177,7 +177,5 @@ def enumerate_children_and_likelihoods_dfs(
             preorder_mask,
             cache=cache,
         ):
-            yield {
-                order[starting_index]: first_child,
-                **rest_children,
-            }, first_likelihood + rest_likelihood
+            rest_children[order[starting_index]] = first_child
+            yield rest_children, first_likelihood + rest_likelihood
