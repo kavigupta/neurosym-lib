@@ -1,7 +1,7 @@
 from typing import Callable, Tuple
 
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
+    chain_undos,
     remove_last_n_elements,
 )
 

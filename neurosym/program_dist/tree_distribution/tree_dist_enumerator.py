@@ -13,7 +13,6 @@ Our algorithm here is based on iterative deepening. We have a method that
 Likelihood is defined as the log probability of the program.
 """
 
-import copy
 import itertools
 from typing import List, Tuple
 

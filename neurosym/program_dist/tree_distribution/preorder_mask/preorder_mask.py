@@ -91,5 +91,3 @@ class ConjunctionPreorderMask(PreorderMask):
         for mask in self.masks:
             undos.append(mask.on_exit(position, symbol))
         return chain_undos(undos)
-
-

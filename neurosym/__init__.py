@@ -3,7 +3,6 @@ from neurosym.program_dist.tree_distribution.ordering import (
     DictionaryNodeOrdering,
     NodeOrdering,
 )
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
 from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
     annotate_with_alternate_symbols,
     collect_preorder_symbols,
@@ -13,6 +12,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
 from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
 from neurosym.python_dsl.convert_python.convert import (
