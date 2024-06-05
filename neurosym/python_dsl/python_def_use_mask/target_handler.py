@@ -1,5 +1,8 @@
 from typing import Callable, Tuple
 
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
+    remove_last_n_elements,
+)
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 
 from .handler import ConstructHandler, Handler
@@ -66,12 +69,9 @@ class TargetHandler(Handler):
         self, position: int, symbol: int, child: Handler
     ) -> Callable[[], None]:
         if hasattr(child, "defined_symbols"):
-            original_defined_symbol_count = len(self.defined_symbols)
             self.defined_symbols += child.defined_symbols
-            return lambda: setattr(
-                self,
-                "defined_symbols",
-                self.defined_symbols[:original_defined_symbol_count],
+            return remove_last_n_elements(
+                self.defined_symbols, len(child.defined_symbols)
             )
         return lambda: None
 
