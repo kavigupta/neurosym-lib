@@ -65,6 +65,18 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
             ).strip(),
         )
 
+    def test_duplicate_lhs(self):
+        code = self.annotate_program("x, x = 2, 2")
+        print(code)
+        self.assertEqual(
+            code.strip(),
+            cwq(
+                """
+                x, x = 2, 2
+                """
+            ).strip(),
+        )
+
     def test_subscript_on_lhs(self):
         code = self.annotate_program("x = [2, 3, 4]; x[2] = x[0]; y = 2")
         print(code)
