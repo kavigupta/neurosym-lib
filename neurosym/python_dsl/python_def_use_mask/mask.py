@@ -115,7 +115,13 @@ class DefUseChainPreorderMask(PreorderMask):
         new_handler, undo = self.handlers[-1].on_child_enter(position, symbol)
         self.handlers.append(new_handler)
 
-        return chain_undos([undo, self.handlers.pop])
+        return chain_undos(
+            [
+                getattr(new_handler, "__undo__init__", lambda: None),
+                undo,
+                self.handlers.pop,
+            ]
+        )
 
     def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
         """
