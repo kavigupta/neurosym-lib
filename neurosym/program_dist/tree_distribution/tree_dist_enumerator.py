@@ -98,6 +98,8 @@ def enumerate_tree_dist_dfs(
             order=tree_dist.ordering.order(node, arity),
             preorder_mask=preorder_mask,
         ):
+            if child_likelihood + likelihood < min_likelihood:
+                continue
             undo_exit = preorder_mask.on_exit(position, node)
             yield SExpression(
                 symbol, [children[i] for i in range(arity)]
@@ -119,6 +121,10 @@ def enumerate_children_and_likelihoods_dfs(
     """
     Enumerate all children and their likelihoods.
     """
+
+    if min_likelihood > 0:
+        # We can stop searching deeper.
+        return
 
     if starting_index == num_children:
         yield {}, 0
