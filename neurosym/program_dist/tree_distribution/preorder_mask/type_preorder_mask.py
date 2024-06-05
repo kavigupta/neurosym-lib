@@ -51,3 +51,9 @@ class TypePreorderMask(PreorderMask):
         del symbol
         last = self.type_stack.pop()
         return lambda: self.type_stack.append(last)
+
+    def cache_key(self, parents):
+        # only include last len(parents) elements of type_stack
+        last_types = self.type_stack[-len(parents) :]
+        print("last_types", last_types)
+        1/0

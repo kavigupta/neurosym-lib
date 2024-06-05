@@ -24,6 +24,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
 )
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
+from neurosym.types.type_string_repr import render_type
 
 
 def enumerate_tree_dist(
@@ -65,6 +66,18 @@ def enumerate_tree_dist_dfs(
     parents: Tuple[Tuple[int, int], ...],
     preorder_mask: PreorderMask,
 ):
+    key = preorder_mask.cache_key(parents)
+    yield from enumerate_tree_dist_dfs_uncached(
+        tree_dist, min_likelihood, parents, preorder_mask
+    )
+
+
+def enumerate_tree_dist_dfs_uncached(
+    tree_dist: TreeDistribution,
+    min_likelihood: float,
+    parents: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
+):
     """
     Enumerate all programs that are within the likelihood range, with the given parents.
     """
@@ -80,7 +93,16 @@ def enumerate_tree_dist_dfs(
 
     # Performed recursively for now.
     syms, log_probs = tree_dist.likelihood_arrays[parents]
+    # sym = parents[-1][0]
     position = parents[-1][1]
+    # last_typ = preorder_mask.masks[0].type_stack[-1][position]
+    # print(
+    #     "  " * len(preorder_mask.masks[0].type_stack[-1]),
+    #     tree_dist.symbols[sym][0],
+    #     position,
+    #     min_likelihood,
+    #     render_type(last_typ.typ),
+    # )
     mask = preorder_mask.compute_mask(position, syms)
     denominator = np.logaddexp.reduce(log_probs[mask])
     for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
