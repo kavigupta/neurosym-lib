@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
@@ -24,19 +24,23 @@ class PreorderMask(ABC):
         """
 
     @abstractmethod
-    def on_entry(self, position: int, symbol: int):
+    def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Called when entering a node in the preorder traversal.
 
         This can be used to update the mask.
+
+        Returns a function that can be called to undo the changes made by this function.
         """
 
     @abstractmethod
-    def on_exit(self, position: int, symbol: int):
+    def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Called when exiting a node in the preorder traversal.
 
         This can be used to update the mask.
+
+        Returns a function that can be called to undo the changes made by this function.
         """
 
 
@@ -48,11 +52,11 @@ class NoopPreorderMask(PreorderMask):
     def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
         return [True] * len(symbols)
 
-    def on_entry(self, position: int, symbol: int):
-        pass
+    def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
+        return chain_undos([])
 
-    def on_exit(self, position: int, symbol: int):
-        pass
+    def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
+        return chain_undos([])
 
 
 class ConjunctionPreorderMask(PreorderMask):
@@ -74,10 +78,27 @@ class ConjunctionPreorderMask(PreorderMask):
             )
         return mask.tolist()
 
-    def on_entry(self, position: int, symbol: int):
+    def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
+        undos = []
         for mask in self.masks:
-            mask.on_entry(position, symbol)
+            undos.append(mask.on_entry(position, symbol))
+        return chain_undos(undos)
 
-    def on_exit(self, position: int, symbol: int):
+    def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
+        undos = []
         for mask in self.masks:
-            mask.on_exit(position, symbol)
+            undos.append(mask.on_exit(position, symbol))
+        return chain_undos(undos)
+
+
+def chain_undos(undos):
+    """
+    Run a series of undo functions. The undos are run in reverse order,
+        so the last undo function is run first.
+    """
+
+    def undo():
+        for undo in undos[::-1]:
+            undo()
+
+    return undo

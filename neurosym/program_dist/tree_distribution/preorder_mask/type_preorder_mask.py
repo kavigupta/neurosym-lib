@@ -1,4 +1,4 @@
-from typing import List
+from typing import Callable, List
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
@@ -28,13 +28,13 @@ class TypePreorderMask(PreorderMask):
         }
         return [i in valid_productions for i in symbols]
 
-    def on_entry(self, position, symbol):
+    def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol, arity = self.tree_dist.symbols[symbol]
         if symbol == ROOT_SYMBOL:
             self.type_stack.append(
                 [TypeWithEnvironment(self.root_type, Environment.empty())]
             )
-            return
+            return self.type_stack.pop
         parent_type = self.type_stack[-1][position]
         production = self.dsl.get_production(symbol)
         children_types = production.type_signature().unify_return(parent_type)
@@ -44,8 +44,10 @@ class TypePreorderMask(PreorderMask):
             )
         assert len(children_types) == arity
         self.type_stack.append(children_types)
+        return self.type_stack.pop
 
-    def on_exit(self, position, symbol):
+    def on_exit(self, position, symbol) -> Callable[[], None]:
         del position
         del symbol
-        self.type_stack.pop()
+        last = self.type_stack.pop()
+        return lambda: self.type_stack.append(last)

@@ -1,3 +1,4 @@
+from typing import Callable
 import unittest
 
 import numpy as np
@@ -44,15 +45,20 @@ class ChildrenInOrderMask(ns.PreorderMask):
             return mask
         return [True] * len(symbols)
 
-    def on_entry(self, position, symbol):
+    def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol = self.tree_dist.symbols[symbol][0]
+        undos = []
         if self.proper_context:
             self.seen_symbols.append(symbol)
+            undos.append(self.seen_symbols.pop)
         if symbol == "+":
+            previous_context = self.proper_context
             self.proper_context = True
+            undos.append(lambda: setattr(self, "proper_context", previous_context))
+        return ns.chain_undos(undos)
 
-    def on_exit(self, position, symbol):
-        pass
+    def on_exit(self, position, symbol) -> Callable[[], None]:
+        return lambda: None
 
 
 class ChildrenInOrderAsserterMask(ns.PreorderMask):
@@ -65,15 +71,20 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
     def compute_mask(self, position, symbols):
         return [True] * len(symbols)
 
-    def on_entry(self, position, symbol):
+    def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol = self.tree_dist.symbols[symbol][0]
+        undos = []
         if self.proper_context:
             self.seen_symbols.append(symbol)
+            undos.append(self.seen_symbols.pop)
             assert int(symbol) == len(
                 self.seen_symbols
             ), f"Expected {len(self.seen_symbols)}, got {symbol}"
         if symbol == "+":
+            previous_context = self.proper_context
             self.proper_context = True
+            undos.append(lambda: setattr(self, "proper_context", previous_context))
+        return ns.chain_undos(undos)
 
     def on_exit(self, position, symbol):
         symbol = self.tree_dist.symbols[symbol][0]
@@ -82,5 +93,14 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
             assert (
                 len(self.seen_symbols) == 3
             ), f"Expected 3 children, but received {len(self.seen_symbols)}"
+            previous_context = self.proper_context
+            previous_symbols = self.seen_symbols
             self.proper_context = False
             self.seen_symbols = []
+
+            def undo():
+                self.proper_context = previous_context
+                self.seen_symbols = previous_symbols
+
+            return undo
+        return lambda: None
