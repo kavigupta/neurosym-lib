@@ -20,8 +20,9 @@ class ExceptHandlerHandler(ConstructHandler):
             if self.mask.id_to_name(symbol) != "const-None~NullableName":
                 self.defined_production_idxs.append(symbol)
                 undos.append(self.defined_production_idxs.pop)
-        undos.append(super().on_child_enter(position, symbol))
-        return chain_undos(undos)
+        handler, undo = super().on_child_enter(position, symbol)
+        undos.append(undo)
+        return handler, chain_undos(undos)
 
     def is_defining(self, position: int) -> bool:
         return position == self.child_fields["name"]
