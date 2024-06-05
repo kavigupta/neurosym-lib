@@ -8,7 +8,12 @@ from parameterized import parameterized
 import neurosym as ns
 from tests.utils import assertDSL
 
-from .utils import ChildrenInOrderAsserterMask, ChildrenInOrderMask, ProbabilityTester
+from .utils import (
+    ChildrenInOrderAsserterMask,
+    ChildrenInOrderMask,
+    ProbabilityTester,
+    enumerate_dsl,
+)
 
 
 def get_dsl(with_vars=False, with_3=False):
@@ -35,6 +40,20 @@ def get_dsl_for_ordering():
     return dslf.finalize()
 
 
+def get_more_complex_dsl():
+    dslf = ns.DSLFactory()
+    dslf.concrete("0", "() -> i", lambda: 0)
+    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.concrete("*", "(f, f) -> f", lambda x, y: x + y)
+    dslf.concrete("sqrt", "i -> f", np.sqrt)
+    dslf.concrete(">", "(f, f) -> b", np.sqrt)
+    dslf.concrete("<", "(i, i) -> b", np.sqrt)
+    dslf.concrete("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
+    dslf.lambdas()
+    dslf.prune_to("f -> f")
+    return dslf.finalize()
+
+
 dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
 dsl_with_3 = get_dsl(with_3=True)
@@ -57,6 +76,9 @@ fam_with_ordering_231 = ns.BigramProgramDistributionFamily(
     # 2 3 1 means go to index 2 first, then 0 second, then 1 third
     node_ordering=lambda dist: ns.DictionaryNodeOrdering(dist, {"+": [2, 0, 1]}),
 )
+
+dsl_more_complex = get_more_complex_dsl()
+fam_more_complex = ns.BigramProgramDistributionFamily(dsl_more_complex)
 
 uniform = [
     [
@@ -693,6 +715,303 @@ class BigramLikelihoodTest(unittest.TestCase):
                 -np.inf,
                 1,
             )
+
+
+class BigramEnumerationTest(unittest.TestCase):
+    def test_enumeration_basic(self):
+        dist = fam.uniform()
+
+        self.assertEqual(
+            enumerate_dsl(fam, dist, -5),
+            {
+                ("(1)", Fraction(1, 3)),
+                ("(2)", Fraction(1, 3)),
+                ("(+ (1) (1))", Fraction(1, 27)),
+                ("(+ (1) (2))", Fraction(1, 27)),
+                ("(+ (2) (1))", Fraction(1, 27)),
+                ("(+ (2) (2))", Fraction(1, 27)),
+            },
+        )
+
+    def test_enumeration_with_vars(self):
+        dist = fam_with_vars.uniform()
+        self.assertEqual(
+            enumerate_dsl(fam_with_vars, dist, -5),
+            {
+                ("(1)", Fraction(1, 4)),
+                ("(2)", Fraction(1, 4)),
+                ("(+ (1) (1))", Fraction(1, 64)),
+                ("(+ (1) (2))", Fraction(1, 64)),
+                ("(+ (2) (1))", Fraction(1, 64)),
+                ("(+ (2) (2))", Fraction(1, 64)),
+                ("(call (lam ($0_0)) (1))", Fraction(1, 80)),
+                ("(call (lam ($0_0)) (2))", Fraction(1, 80)),
+                ("(call (lam (1)) (1))", Fraction(1, 80)),
+                ("(call (lam (1)) (2))", Fraction(1, 80)),
+                ("(call (lam (2)) (1))", Fraction(1, 80)),
+                ("(call (lam (2)) (2))", Fraction(1, 80)),
+            },
+        )
+
+    def test_enumeration_more_complex(self):
+        dist = fam_more_complex.uniform()
+        self.assertEqual(
+            enumerate_dsl(fam_more_complex, dist, -9),
+            {
+                ("(lam ($0_0))", Fraction(1, 4)),
+                ("(lam (sqrt (0)))", Fraction(1, 8)),
+                ("(lam (sqrt (+ (0) (0))))", Fraction(1, 32)),
+                ("(lam (* ($0_0) ($0_0)))", Fraction(1, 64)),
+                ("(lam (* ($0_0) (sqrt (0))))", Fraction(1, 128)),
+                ("(lam (* (sqrt (0)) ($0_0)))", Fraction(1, 128)),
+                ("(lam (sqrt (+ (+ (0) (0)) (0))))", Fraction(1, 128)),
+                ("(lam (sqrt (+ (0) (+ (0) (0)))))", Fraction(1, 128)),
+                ("(lam (* (sqrt (0)) (sqrt (0))))", Fraction(1, 256)),
+                ("(lam (* ($0_0) (sqrt (+ (0) (0)))))", Fraction(1, 512)),
+                ("(lam (* (sqrt (+ (0) (0))) ($0_0)))", Fraction(1, 512)),
+                ("(lam (ite (< (0) (0)) ($0_0) ($0_0)))", Fraction(1, 512)),
+                ("(lam (sqrt (+ (+ (+ (0) (0)) (0)) (0))))", Fraction(1, 512)),
+                ("(lam (sqrt (+ (+ (0) (+ (0) (0))) (0))))", Fraction(1, 512)),
+                ("(lam (sqrt (+ (+ (0) (0)) (+ (0) (0)))))", Fraction(1, 512)),
+                ("(lam (sqrt (+ (0) (+ (+ (0) (0)) (0)))))", Fraction(1, 512)),
+                ("(lam (sqrt (+ (0) (+ (0) (+ (0) (0))))))", Fraction(1, 512)),
+                ("(lam (* ($0_0) (* ($0_0) ($0_0))))", Fraction(1, 1024)),
+                ("(lam (* (* ($0_0) ($0_0)) ($0_0)))", Fraction(1, 1024)),
+                ("(lam (* (sqrt (+ (0) (0))) (sqrt (0))))", Fraction(1, 1024)),
+                ("(lam (* (sqrt (0)) (sqrt (+ (0) (0)))))", Fraction(1, 1024)),
+                ("(lam (ite (< (0) (0)) ($0_0) (sqrt (0))))", Fraction(1, 1024)),
+                ("(lam (ite (< (0) (0)) (sqrt (0)) ($0_0)))", Fraction(1, 1024)),
+                ("(lam (* ($0_0) (* ($0_0) (sqrt (0)))))", Fraction(1, 2048)),
+                ("(lam (* ($0_0) (* (sqrt (0)) ($0_0))))", Fraction(1, 2048)),
+                ("(lam (* ($0_0) (sqrt (+ (+ (0) (0)) (0)))))", Fraction(1, 2048)),
+                ("(lam (* ($0_0) (sqrt (+ (0) (+ (0) (0))))))", Fraction(1, 2048)),
+                ("(lam (* (* ($0_0) ($0_0)) (sqrt (0))))", Fraction(1, 2048)),
+                ("(lam (* (* ($0_0) (sqrt (0))) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (* (* (sqrt (0)) ($0_0)) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (+ (+ (0) (0)) (0))) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (+ (0) (+ (0) (0)))) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (0)) (* ($0_0) ($0_0))))", Fraction(1, 2048)),
+                ("(lam (ite (< (+ (0) (0)) (0)) ($0_0) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (ite (< (0) (+ (0) (0))) ($0_0) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (ite (< (0) (0)) (sqrt (0)) (sqrt (0))))", Fraction(1, 2048)),
+                ("(lam (ite (> ($0_0) ($0_0)) ($0_0) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (+ (+ (0) (0)) (0)) (0)) (0))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (+ (0) (+ (0) (0))) (0)) (0))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (+ (0) (0)) (+ (0) (0))) (0))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (+ (0) (0)) (0)) (+ (0) (0)))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (0) (+ (+ (0) (0)) (0))) (0))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (0) (+ (0) (0))) (+ (0) (0)))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (0) (0)) (+ (+ (0) (0)) (0)))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (+ (0) (0)) (+ (0) (+ (0) (0))))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (0) (+ (+ (+ (0) (0)) (0)) (0)))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (0) (+ (+ (0) (+ (0) (0))) (0)))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (0) (+ (+ (0) (0)) (+ (0) (0))))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (0) (+ (0) (+ (+ (0) (0)) (0))))))", Fraction(1, 2048)),
+                ("(lam (sqrt (+ (0) (+ (0) (+ (0) (+ (0) (0)))))))", Fraction(1, 2048)),
+                ("(lam (* ($0_0) (* (sqrt (0)) (sqrt (0)))))", Fraction(1, 4096)),
+                ("(lam (* (* ($0_0) (sqrt (0))) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (* (sqrt (0)) ($0_0)) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (* (sqrt (0)) (sqrt (0))) ($0_0)))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (+ (+ (0) (0)) (0))) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (+ (0) (+ (0) (0)))) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (+ (0) (0))) (sqrt (+ (0) (0)))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (* ($0_0) (sqrt (0)))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (* (sqrt (0)) ($0_0))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (sqrt (+ (+ (0) (0)) (0)))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (sqrt (+ (0) (+ (0) (0))))))", Fraction(1, 4096)),
+                (
+                    "(lam (ite (< (+ (0) (0)) (0)) ($0_0) (sqrt (0))))",
+                    Fraction(1, 4096),
+                ),
+                (
+                    "(lam (ite (< (+ (0) (0)) (0)) (sqrt (0)) ($0_0)))",
+                    Fraction(1, 4096),
+                ),
+                (
+                    "(lam (ite (< (0) (+ (0) (0))) ($0_0) (sqrt (0))))",
+                    Fraction(1, 4096),
+                ),
+                (
+                    "(lam (ite (< (0) (+ (0) (0))) (sqrt (0)) ($0_0)))",
+                    Fraction(1, 4096),
+                ),
+                (
+                    "(lam (ite (< (0) (0)) ($0_0) (sqrt (+ (0) (0)))))",
+                    Fraction(1, 4096),
+                ),
+                (
+                    "(lam (ite (< (0) (0)) (sqrt (+ (0) (0))) ($0_0)))",
+                    Fraction(1, 4096),
+                ),
+                ("(lam (ite (> ($0_0) ($0_0)) ($0_0) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (ite (> ($0_0) ($0_0)) (sqrt (0)) ($0_0)))", Fraction(1, 4096)),
+                ("(lam (ite (> ($0_0) (sqrt (0))) ($0_0) ($0_0)))", Fraction(1, 4096)),
+                ("(lam (ite (> (sqrt (0)) ($0_0)) ($0_0) ($0_0)))", Fraction(1, 4096)),
+            },
+        )
+
+    def test_enumeration_more_complex_get_many(self):
+        dist = fam_more_complex.uniform()
+        large_set = sorted(
+            enumerate_dsl(fam_more_complex, dist, -12), key=lambda x: (-x[1], x[0])
+        )
+        self.assertEqual(len(large_set), 1609)
+        print(large_set[::100])
+        self.assertEqual(
+            large_set[::100],
+            [
+                ("(lam ($0_0))", Fraction(1, 4)),
+                ("(lam (ite (< (0) (0)) (* ($0_0) ($0_0)) ($0_0)))", Fraction(1, 8192)),
+                (
+                    "(lam (ite (< (0) (+ (0) (0))) ($0_0) (sqrt (+ (0) (0)))))",
+                    Fraction(1, 16384),
+                ),
+                (
+                    "(lam (ite (< (+ (+ (0) (0)) (+ (0) (0))) (0)) ($0_0) ($0_0)))",
+                    Fraction(1, 32768),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (0) (0)) (0)) (+ (0) (+ (0) (+ (0) (0)))))))",
+                    Fraction(1, 32768),
+                ),
+                (
+                    "(lam (* ($0_0) (ite (< (0) (0)) ($0_0) (sqrt (+ (0) (0))))))",
+                    Fraction(1, 65536),
+                ),
+                (
+                    "(lam (* (sqrt (0)) (ite (< (0) (+ (0) (0))) ($0_0) ($0_0))))",
+                    Fraction(1, 65536),
+                ),
+                (
+                    "(lam (ite (> ($0_0) ($0_0)) (* ($0_0) (sqrt (0))) ($0_0)))",
+                    Fraction(1, 65536),
+                ),
+                (
+                    "(lam (* ($0_0) (sqrt (+ (0) (+ (+ (+ (+ (0) (0)) (0)) (0)) (0))))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (* (sqrt (+ (+ (+ (0) (+ (+ (0) (0)) (0))) (0)) (0))) ($0_0)))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0_0) ($0_0)))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (ite (< (0) (0)) (sqrt (0)) (ite (< (0) (0)) ($0_0) ($0_0))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (+ (+ (0) (0)) (0)) (+ (0) (0))) (+ (0) (0))) (0))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (0) (+ (0) (0))) (0)) (+ (+ (0) (0)) (+ (0) (0))))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (0) (+ (0) (+ (+ (0) (+ (0) (0))) (+ (0) (0))))) (0))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (sqrt (+ (0) (+ (+ (+ (0) (+ (+ (0) (0)) (0))) (+ (0) (0))) (0)))))",
+                    Fraction(1, 131072),
+                ),
+                (
+                    "(lam (sqrt (+ (0) (+ (0) (+ (0) (+ (+ (0) (+ (0) (+ (0) (0)))) (0)))))))",
+                    Fraction(1, 131072),
+                ),
+            ],
+        )
+
+    def test_enumeration_more_complex_get_even_more(self):
+        dist = fam_more_complex.uniform()
+        large_set = sorted(
+            enumerate_dsl(fam_more_complex, dist, -15, max_denominator=10**8),
+            key=lambda x: (-x[1], x[0]),
+        )
+        self.assertEqual(len(large_set), 18804)
+        print(large_set[::1000])
+        self.assertEqual(
+            large_set[::1000],
+            [
+                ("(lam ($0_0))", Fraction(1, 4)),
+                (
+                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0_0) ($0_0)))",
+                    Fraction(707, 92667907),
+                ),
+                (
+                    "(lam (* (sqrt (0)) (sqrt (+ (+ (+ (+ (0) (0)) (0)) (0)) (+ (0) (0))))))",
+                    Fraction(334, 87556099),
+                ),
+                (
+                    "(lam (* (ite (> ($0_0) (sqrt (0))) (sqrt (+ (0) (0))) ($0_0)) ($0_0)))",
+                    Fraction(158, 82837507),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (+ (+ (+ (0) (+ (0) (+ (0) (0)))) (0)) (0)) (0)) (0)) (0))))",
+                    Fraction(158, 82837507),
+                ),
+                (
+                    "(lam (sqrt (+ (0) (+ (+ (+ (+ (+ (0) (+ (0) (+ (0) (0)))) (0)) (0)) (0)) (0)))))",
+                    Fraction(158, 82837507),
+                ),
+                (
+                    "(lam (* (* (sqrt (0)) ($0_0)) (sqrt (+ (0) (+ (+ (+ (0) (0)) (0)) (0))))))",
+                    Fraction(25, 26214401),
+                ),
+                (
+                    "(lam (ite (< (+ (+ (+ (0) (0)) (0)) (0)) (+ (0) (0))) (sqrt (+ (0) (0))) ($0_0)))",
+                    Fraction(25, 26214401),
+                ),
+                (
+                    "(lam (ite (> ($0_0) ($0_0)) (sqrt (+ (0) (+ (0) (+ (0) (+ (0) (0)))))) ($0_0)))",
+                    Fraction(25, 26214401),
+                ),
+                (
+                    "(lam (* ($0_0) (sqrt (+ (+ (+ (0) (0)) (0)) (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0_0) (sqrt (+ (0) (0)))) (sqrt (0))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (* (sqrt (+ (0) (0))) (ite (< (0) (0)) (* ($0_0) (sqrt (0))) ($0_0))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (ite (< (+ (0) (0)) (0)) (* ($0_0) (sqrt (0))) (* ($0_0) (sqrt (0)))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (ite (< (0) (0)) (sqrt (0)) (sqrt (+ (+ (0) (+ (0) (+ (+ (0) (0)) (0)))) (0)))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (+ (+ (+ (0) (+ (0) (+ (0) (0)))) (0)) (0)) (0)) (0)) (+ (0) (0)))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (0) (+ (+ (+ (0) (+ (0) (0))) (0)) (0))) (+ (+ (0) (0)) (0))) (0))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (0) (+ (+ (+ (+ (0) (+ (0) (0))) (0)) (+ (0) (0))) (0))) (+ (0) (0)))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (0) (0)) (+ (+ (+ (+ (0) (0)) (+ (0) (+ (0) (0)))) (0)) (+ (0) (0))))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (sqrt (+ (0) (+ (+ (0) (+ (+ (+ (0) (0)) (+ (0) (+ (0) (0)))) (+ (0) (0)))) (0)))))",
+                    Fraction(12, 25165825),
+                ),
+            ],
+        )
 
 
 class BigramMixTest(unittest.TestCase):

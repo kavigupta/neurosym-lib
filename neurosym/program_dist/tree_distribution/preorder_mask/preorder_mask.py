@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List
+from functools import cached_property
+from typing import Any, Callable, List, Tuple
 
 import numpy as np
 
@@ -45,6 +46,20 @@ class PreorderMask(ABC):
         Returns a function that can be called to undo the changes made by this function.
         """
 
+    @property
+    def can_cache(self) -> bool:
+        """
+        Return whether it is feasible to cache the results of the enumeration
+            involving this mask.
+        """
+        return True
+
+    @abstractmethod
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        """
+        Returns a key that can be used to cache the results of the enumeration.
+        """
+
 
 class NoopPreorderMask(PreorderMask):
     """
@@ -60,11 +75,22 @@ class NoopPreorderMask(PreorderMask):
     def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
         return lambda: None
 
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        return None
+
 
 class ConjunctionPreorderMask(PreorderMask):
     """
     A mask that is the conjunction of multiple masks.
     """
+
+    @classmethod
+    def of(cls, tree_dist, masks):
+        if len(masks) == 0:
+            return NoopPreorderMask(tree_dist)
+        if len(masks) == 1:
+            return masks[0]
+        return cls(tree_dist, masks)
 
     def __init__(self, tree_dist, masks):
         super().__init__(tree_dist)
@@ -91,3 +117,10 @@ class ConjunctionPreorderMask(PreorderMask):
         for mask in self.masks:
             undos.append(mask.on_exit(position, symbol))
         return chain_undos(undos)
+
+    @cached_property
+    def can_cache(self) -> bool:
+        return all(m.can_cache for m in self.masks)
+
+    def cache_key(self, parents: Tuple[Tuple[int, int], ...]) -> Any:
+        return tuple(m.cache_key(parents) for m in self.masks)

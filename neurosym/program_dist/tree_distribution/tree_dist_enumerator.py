@@ -13,10 +13,12 @@ Our algorithm here is based on iterative deepening. We have a method that
 Likelihood is defined as the log probability of the program.
 """
 
+import bisect
 import itertools
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
+from torch import NoneType
 
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
@@ -31,6 +33,7 @@ def enumerate_tree_dist(
     *,
     chunk_size: float = DEFAULT_CHUNK_SIZE,
     min_likelihood: float = float("-inf"),
+    use_cache=True,
 ):
     """
     Enumerate all programs using iterative deepening.
@@ -45,9 +48,10 @@ def enumerate_tree_dist(
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size
         preorder_mask = tree_dist.mask_constructor(tree_dist)
+        cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
         for program, likelihood in enumerate_tree_dist_dfs(
-            tree_dist, likelihood_bound, ((0, 0),), preorder_mask
+            tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
         ):
             if (
                 max(likelihood_bound, min_likelihood)
@@ -59,11 +63,45 @@ def enumerate_tree_dist(
             return
 
 
+def remove_below_threshold(
+    results: List[Tuple[SExpression, float]], min_likelihood: float
+):
+    """
+    Remove all results below the threshold.
+    """
+    # binary search
+    index = bisect.bisect_left(results, min_likelihood, key=lambda x: x[1])
+    return results[index:]
+
+
 def enumerate_tree_dist_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
     parents: Tuple[Tuple[int, int], ...],
     preorder_mask: PreorderMask,
+    cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+):
+    if cache is not None:
+        key = preorder_mask.cache_key(parents), parents
+        if key in cache:
+            old_results, old_min_likelihood = cache[key]
+            if old_min_likelihood <= min_likelihood:
+                return remove_below_threshold(old_results, min_likelihood)
+    generator = enumerate_tree_dist_dfs_uncached(
+        tree_dist, min_likelihood, parents, preorder_mask, cache
+    )
+    if cache is not None:
+        generator = sorted(generator, key=lambda x: x[1])
+        cache[key] = generator, min_likelihood
+    return generator
+
+
+def enumerate_tree_dist_dfs_uncached(
+    tree_dist: TreeDistribution,
+    min_likelihood: float,
+    parents: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
+    cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
 ):
     """
     Enumerate all programs that are within the likelihood range, with the given parents.
@@ -97,7 +135,10 @@ def enumerate_tree_dist_dfs(
             starting_index=0,
             order=tree_dist.ordering.order(node, arity),
             preorder_mask=preorder_mask,
+            cache=cache,
         ):
+            if child_likelihood + likelihood < min_likelihood:
+                continue
             undo_exit = preorder_mask.on_exit(position, node)
             yield SExpression(
                 symbol, [children[i] for i in range(arity)]
@@ -115,10 +156,15 @@ def enumerate_children_and_likelihoods_dfs(
     starting_index: int,
     order: List[int],
     preorder_mask: PreorderMask,
+    cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
 ):
     """
     Enumerate all children and their likelihoods.
     """
+
+    if min_likelihood > 0:
+        # We can stop searching deeper.
+        return
 
     if starting_index == num_children:
         yield {}, 0
@@ -127,7 +173,7 @@ def enumerate_children_and_likelihoods_dfs(
     new_parents = new_parents[-tree_dist.limit :]
 
     for first_child, first_likelihood in enumerate_tree_dist_dfs(
-        tree_dist, min_likelihood, new_parents, preorder_mask
+        tree_dist, min_likelihood, new_parents, preorder_mask, cache
     ):
         for (
             rest_children,
@@ -141,8 +187,7 @@ def enumerate_children_and_likelihoods_dfs(
             starting_index + 1,
             order,
             preorder_mask,
+            cache=cache,
         ):
-            yield {
-                order[starting_index]: first_child,
-                **rest_children,
-            }, first_likelihood + rest_likelihood
+            rest_children[order[starting_index]] = first_child
+            yield rest_children, first_likelihood + rest_likelihood

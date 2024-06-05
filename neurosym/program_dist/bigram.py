@@ -376,7 +376,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             masks.append(TypePreorderMask(tree_dist, self._dsl))
         for mask in self._additional_preorder_masks:
             masks.append(mask(tree_dist, self._dsl))
-        return ConjunctionPreorderMask(tree_dist, masks)
+        return ConjunctionPreorderMask.of(tree_dist, masks)
 
     def mask_invalid(self, distribution):
         return distribution * self._valid_mask
