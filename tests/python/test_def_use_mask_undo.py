@@ -6,13 +6,13 @@ from parameterized import parameterized
 
 import neurosym as ns
 
-from .utils import cwq, fit_to, small_set_runnable_code_examples
+from .utils import fit_to, small_set_runnable_code_examples
 
 
 class DefUseMaskTestGeneric(unittest.TestCase):
     def get_handler_except_mask(self, handler):
         return {
-            k: v for k, v in handler.__dict__.items() if k != "mask" and k != "config"
+            k: v for k, v in handler.__dict__.items() if k not in {"mask", "config"}
         }
 
     def get_handlers_except_mask(self, mask):
