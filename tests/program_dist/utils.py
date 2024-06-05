@@ -5,7 +5,6 @@ import numpy as np
 import scipy.stats
 
 import neurosym as ns
-import neurosym.program_dist.tree_distribution.preorder_mask.undos
 
 
 class ProbabilityTester(unittest.TestCase):
