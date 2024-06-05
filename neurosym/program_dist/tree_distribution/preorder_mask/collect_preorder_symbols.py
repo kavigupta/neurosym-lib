@@ -12,7 +12,9 @@ from neurosym.programs.s_expression import SExpression
 def collect_preorder_symbols(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
-    replace_node_midstream: Callable[[SExpression, PreorderMask], SExpression] = None,
+    replace_node_midstream: Callable[
+        [SExpression, PreorderMask, int, List[int]], SExpression
+    ] = None,
     symbol_to_index_fn=None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
@@ -35,7 +37,9 @@ def collect_preorder_symbols_dfs(
     tree_dist: TreeDistribution,
     mask: PreorderMask,
     parents: Tuple[Tuple[int, int], ...],
-    replace_node_midstream: Callable[[SExpression, PreorderMask], SExpression] = None,
+    replace_node_midstream: Callable[
+        [SExpression, PreorderMask, int, List[int]], SExpression
+    ] = None,
     symbol_to_index_fn=None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
@@ -46,7 +50,7 @@ def collect_preorder_symbols_dfs(
     bool_mask = mask.compute_mask(position, idxs)
     alts = tuple(int(x) for x in idxs[bool_mask])
     if replace_node_midstream is not None:
-        s_exp = replace_node_midstream(s_exp, mask)
+        s_exp = replace_node_midstream(s_exp, mask, position, alts)
     yield s_exp, alts, mask
     sym_idx = (
         tree_dist.symbol_to_index[s_exp.symbol]
