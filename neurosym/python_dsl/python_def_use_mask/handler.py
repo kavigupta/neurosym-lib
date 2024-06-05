@@ -19,7 +19,6 @@ class Handler(ABC):
         self.defined_production_idxs = defined_production_idxs
         self.config = config
 
-    @abstractmethod
     def on_child_enter(self, position: int, symbol: int) -> "Handler":
         """
         When a child is entered, this method is called to determine the handler.
@@ -38,12 +37,12 @@ class Handler(ABC):
             position, symbol, self.mask, self.currently_defined_indices(), self.config
         )
 
-    @abstractmethod
     def on_child_exit(self, position: int, symbol: int, child: "Handler"):
         """
         When a child is exited, this method is called to perform tasks related
             to the child.
         """
+        del position, symbol, child
 
     def currently_defined_indices(self) -> list[int]:
         """
@@ -142,12 +141,6 @@ class ConstructHandler(Handler):
 
 
 class DefaultHandler(Handler):
-    def on_child_enter(self, position: int, symbol: int) -> Handler:
-        return super().on_child_enter(position, symbol)
-
-    def on_child_exit(self, position: int, symbol: int, child: Handler):
-        pass
-
     def is_defining(self, position: int) -> bool:
         return False
 
