@@ -1,4 +1,5 @@
 import unittest
+from fractions import Fraction
 from typing import Callable
 
 import numpy as np
@@ -104,3 +105,18 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
 
             return undo
         return lambda: None
+
+
+def enumerate_dsl(family, dist, min_likelihood=-6):
+    result = list(family.enumerate(dist, min_likelihood=min_likelihood))
+    result = [
+        (
+            ns.render_s_expression(prog),
+            Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(),
+        )
+        for prog, likelihood in result
+    ]
+    result = sorted(result, key=lambda x: (-x[1], ns.render_s_expression(x[0])))
+    result_display = str(result)
+    print("{" + result_display[1:-1] + "}")
+    return set(result)
