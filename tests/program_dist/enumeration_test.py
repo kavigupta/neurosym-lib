@@ -7,6 +7,7 @@ import numpy as np
 import neurosym as ns
 
 from .bigram_test import fam, fam_with_ordering, fam_with_ordering_231, fam_with_vars
+from .utils import enumerate_dsl
 
 arith_dist = ns.TreeDistribution(
     1,
@@ -31,18 +32,6 @@ def enumerated(*args, **kwargs):
 
 
 class TreeDistributionTest(unittest.TestCase):
-    def enumerate_dsl(self, family, dist, min_likelihood=-6):
-        result = list(family.enumerate(dist, min_likelihood=min_likelihood))
-        result = sorted(result, key=lambda x: x[1], reverse=True)
-        result = [
-            (
-                ns.render_s_expression(prog),
-                Fraction(*np.exp(likelihood).as_integer_ratio()).limit_denominator(),
-            )
-            for prog, likelihood in result
-        ]
-        print(result)
-        return set(result)
 
     def test_uniqueness(self):
         programs = enumerated(arith_dist)
@@ -64,7 +53,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_uniform(self):
-        result = self.enumerate_dsl(fam, fam.uniform())
+        result = enumerate_dsl(fam, fam.uniform())
 
         self.assertEqual(
             result,
@@ -95,7 +84,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_fitted_to_single(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam,
             fam.counts_to_distribution(
                 fam.count_programs([[ns.parse_s_expression("(+ (1) (2))")]])
@@ -107,7 +96,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_fitted_to_two(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam,
             fam.counts_to_distribution(
                 fam.count_programs(
@@ -126,7 +115,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_fitted_to_nested(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam,
             fam.counts_to_distribution(
                 fam.count_programs(
@@ -155,7 +144,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_fitted_unbalanced(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam,
             fam.counts_to_distribution(
                 fam.count_programs(
@@ -184,7 +173,7 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_with_variables_uniform(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam_with_vars, fam_with_vars.uniform(), min_likelihood=-6
         )
 
@@ -207,13 +196,13 @@ class TreeDistributionTest(unittest.TestCase):
         )
 
     def test_enumeration_from_dsl_with_ordering(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam_with_ordering, fam_with_ordering.uniform(), min_likelihood=-6
         )
         self.assertEqual(result, {("(+ (1) (2) (3))", Fraction(1))})
 
     def test_enumeration_from_dsl_with_ordering_231(self):
-        result = self.enumerate_dsl(
+        result = enumerate_dsl(
             fam_with_ordering_231, fam_with_ordering_231.uniform(), min_likelihood=-6
         )
         self.assertEqual(result, {("(+ (2) (3) (1))", Fraction(1))})
