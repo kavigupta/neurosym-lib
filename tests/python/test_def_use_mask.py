@@ -51,7 +51,6 @@ class DefUseMaskTestGeneric(unittest.TestCase):
 
 
 class DefUseMaskTest(DefUseMaskTestGeneric):
-
     def test_annotate_alternate_symbols(self):
         code = self.annotate_program("x = 2; y = x; z = y")
         print(code)

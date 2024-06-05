@@ -69,10 +69,11 @@ class TargetHandler(Handler):
         self, position: int, symbol: int, child: Handler
     ) -> Callable[[], None]:
         if hasattr(child, "defined_symbols"):
-            self.defined_symbols += child.defined_symbols
-            return remove_last_n_elements(
-                self.defined_symbols, len(child.defined_symbols)
-            )
+            symbols = [
+                x for x in child.defined_symbols if x not in self.defined_symbols
+            ]
+            self.defined_symbols += symbols
+            return remove_last_n_elements(self.defined_symbols, len(symbols))
         return lambda: None
 
 

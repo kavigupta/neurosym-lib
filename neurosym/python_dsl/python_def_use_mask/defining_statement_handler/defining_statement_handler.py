@@ -39,7 +39,9 @@ class DefiningStatementHandler(ConstructHandler):
         undos = []
         if position in self._targeted_positions:
             if len(set(child.defined_symbols)) != len(child.defined_symbols):
-                raise ValueError(f"Duplicate symbols defined in child {child}")
+                raise ValueError(
+                    f"Duplicate symbols defined in child {child}: {child.defined_symbols}"
+                )
             self.defined_symbols += child.defined_symbols
             undos.append(
                 remove_last_n_elements(self.defined_symbols, len(child.defined_symbols))
