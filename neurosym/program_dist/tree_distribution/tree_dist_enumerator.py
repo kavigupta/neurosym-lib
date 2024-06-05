@@ -147,10 +147,6 @@ def enumerate_tree_dist_dfs_uncached(
         undo_entry()
 
 
-from line_profiler import profile
-
-
-@profile
 def enumerate_children_and_likelihoods_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
