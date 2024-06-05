@@ -5,6 +5,7 @@ import numpy as np
 import scipy.stats
 
 import neurosym as ns
+import neurosym.program_dist.tree_distribution.preorder_mask.undos
 
 
 class ProbabilityTester(unittest.TestCase):
@@ -55,7 +56,7 @@ class ChildrenInOrderMask(ns.PreorderMask):
             previous_context = self.proper_context
             self.proper_context = True
             undos.append(lambda: setattr(self, "proper_context", previous_context))
-        return ns.chain_undos(undos)
+        return neurosym.program_dist.tree_distribution.preorder_mask.undos.chain_undos(undos)
 
     def on_exit(self, position, symbol) -> Callable[[], None]:
         return lambda: None
@@ -84,7 +85,7 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
             previous_context = self.proper_context
             self.proper_context = True
             undos.append(lambda: setattr(self, "proper_context", previous_context))
-        return ns.chain_undos(undos)
+        return neurosym.program_dist.tree_distribution.preorder_mask.undos.chain_undos(undos)
 
     def on_exit(self, position, symbol):
         symbol = self.tree_dist.symbols[symbol][0]

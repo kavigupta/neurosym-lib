@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
     chain_undos,
 )
 

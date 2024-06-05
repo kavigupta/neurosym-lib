@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Tuple
 
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
-    chain_undos,
 )
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
