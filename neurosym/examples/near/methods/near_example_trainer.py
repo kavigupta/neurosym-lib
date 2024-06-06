@@ -21,9 +21,9 @@ def classification_mse_loss(predictions, targets):
 @dataclass
 class NEARTrainerConfig(BaseTrainerConfig):
     max_seq_len: int = 100
-    loss_callback: Callable[
-        [torch.Tensor, torch.Tensor], torch.Tensor
-    ] = classification_mse_loss
+    loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = (
+        classification_mse_loss
+    )
     num_labels: int = -1  # Set Programmatically
 
 
