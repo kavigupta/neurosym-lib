@@ -1,4 +1,5 @@
 import ast
+from functools import lru_cache
 from typing import Dict, List
 
 from frozendict import frozendict
@@ -26,7 +27,7 @@ excluded_python_tags = [
 ]
 
 
-default_transition_dict = frozendict(
+python_transitions = frozendict(
     {
         "M": {ast.Module: {"body": "seqS", "type_ignores": "[TI]"}},
         "S": {
@@ -218,9 +219,8 @@ default_transition_dict = frozendict(
 )
 
 
-def python_dfa(
-    transitions=default_transition_dict,
-) -> Dict[str, Dict[str, List[str]]]:
+@lru_cache(None)
+def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     """
     Export a Discrete Tree Finite Automaton for the Python AST,
         in the form of a dictionary of the form dict[state, dict[tag, list[state]]].
@@ -242,28 +242,28 @@ def python_dfa(
     ]
 
     result = {}
-    for state in transitions:
+    for state in python_transitions:
         result[state] = {}
         for tag in all_tags:
             t = getattr(ast, tag)
-            out = compute_transition(transitions, state, t, fields_for_node(t))
+            out = compute_transition(python_transitions, state, t, fields_for_node(t))
             if out is not None:
                 result[state][tag] = out
         for tag in extras:
-            out = compute_transition(transitions, state, tag, [None])
+            out = compute_transition(python_transitions, state, tag, [None])
             if out is not None:
                 result[state][tag] = out
 
         missing = (
-            set(all_types_as_string(list(transitions[state])))
+            set(all_types_as_string(list(python_transitions[state])))
             - set(result[state])
             - {"list", "/seq", "/splice"}
         )
         if missing:
             raise RuntimeError(f"in state {state}: missing {missing}")
 
-        if "list" in transitions[state]:
-            result[state]["list"] = [transitions[state]["list"]]
+        if "list" in python_transitions[state]:
+            result[state]["list"] = [python_transitions[state]["list"]]
     result["seqS"]["/seq"] = ["S"]
     result["seqS"]["/subseq"] = ["S"]
     result["seqS"]["/choiceseq"] = ["S"]

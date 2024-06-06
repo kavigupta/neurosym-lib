@@ -19,6 +19,7 @@ from neurosym.python_dsl.convert_python.convert import (
     python_statement_to_python_ast,
     python_statements_to_python_ast,
     python_to_s_exp,
+    python_to_type_annotated_ns_s_exp,
     s_exp_to_python,
     to_type_annotated_ns_s_exp,
 )
