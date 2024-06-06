@@ -23,7 +23,7 @@ class BaseTrainerConfig:
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
     scheduler: str = "cosine"
-    optimizer: str = "Adam"
+    optimizer: str = torch.optim.Adam
 
 
 class BaseTrainer(pl.LightningModule):
@@ -47,6 +47,7 @@ class BaseTrainer(pl.LightningModule):
         self.save_hyperparameters()
 
     def loss(self) -> dict:
+        # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
 
     def _step(self) -> dict:
@@ -132,8 +133,7 @@ class BaseTrainer(pl.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-        assert self.config.optimizer in torch.optim.__dict__, f"Optimizer {self.config.optimizer} not found"
-        optimizer_fn = getattr(torch.optim, self.config.optimizer)
+        optimizer_fn = self.config.optimizer
         optimizer = optimizer_fn(
             params, lr=self.config.lr, weight_decay=self.config.weight_decay
         )

@@ -8,6 +8,7 @@ from torch import nn
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 def classification_mse_loss(predictions, targets):
+    # pylint: disable=not-callable
     targets = torch.nn.functional.one_hot(
         targets.squeeze(-1), num_classes=predictions.shape[-1]
     ).float()
@@ -62,6 +63,7 @@ class NEARTrainer(BaseTrainer):
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
+        # pylint: disable=arguments-differ
         loss = self.loss_fn(predictions, targets)
         return loss
 
