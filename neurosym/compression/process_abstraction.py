@@ -34,9 +34,11 @@ def compute_abstraction_production(
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
-        lambda x: type_arguments[x.index]
-        if isinstance(x, AbstractionIndexParameter)
-        else None,
+        lambda x: (
+            type_arguments[x.index]
+            if isinstance(x, AbstractionIndexParameter)
+            else None
+        ),
     ).typ
     type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
 
@@ -75,16 +77,18 @@ def multi_lambda_to_single_lambda(dsl):
     lams = [x for x in dsl.productions if x.base_symbol() == "lam"]
     if not lams:
         return 0, {}
-    max_index = max(x.get_index() for x in lams) + 1
+    max_index = max(x.get_numerical_index() for x in lams) + 1
     multi_to_single = {}
     zero_arg_lambda = None
     for lam in lams:
         if lam.arity == 0:
             assert zero_arg_lambda is None
-            zero_arg_lambda = lam.get_index()
+            zero_arg_lambda = lam.get_numerical_index()
         if lam.arity == 1:
             continue
-        multi_to_single[lam.get_index()] = [max_index + i for i in range(lam.arity)]
+        multi_to_single[lam.get_numerical_index()] = [
+            max_index + i for i in range(lam.arity)
+        ]
         max_index += lam.arity
     return zero_arg_lambda, multi_to_single
 
@@ -134,7 +138,7 @@ class StitchLambdaRewriter:
         [result] = children
         for i in reversed(range(prod.arity)):
             result = SExpression(
-                f"lam_{self.multi_to_single[prod.get_index()][i]}",
+                f"lam_{self.multi_to_single[prod.get_numerical_index()][i]}",
                 (result,),
             )
         return result

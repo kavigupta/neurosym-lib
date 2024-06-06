@@ -51,7 +51,7 @@ class BigramProgramDistribution:
                 distribution[mask_square], min_likelihood
             )
         distribution = self.dist_fam.mask_invalid(distribution)
-        distribution = distribution / distribution.sum(-1)[..., None]
+        distribution = distribution / (distribution.sum(-1)[..., None] + 1e-10)
         return BigramProgramDistribution(self.dist_fam, distribution)
 
     def _square_mask(self, symbol_mask):

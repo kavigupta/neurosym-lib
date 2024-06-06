@@ -12,6 +12,7 @@ from neurosym.python_dsl.convert_python.python_ast import (
     PythonAST,
     SequenceAST,
 )
+from neurosym.python_dsl.dfa import python_dfa
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 
 
@@ -65,3 +66,14 @@ def python_statements_to_python_ast(code: Union[str, ast.AST]) -> SequenceAST:
     code = code.children[0]
     assert isinstance(code, SequenceAST), code
     return code
+
+
+def python_to_type_annotated_ns_s_exp(
+    code: str, dfa: dict = None, start_state: str = "M"
+) -> SExpression:
+    """
+    Converts python code to an s-expression with type annotations.
+    """
+    if dfa is None:
+        dfa = python_dfa()
+    return to_type_annotated_ns_s_exp(python_to_python_ast(code), dfa, start_state)

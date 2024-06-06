@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar
+from typing import List, TypeVar, Union
 
 import numpy as np
 import torch
@@ -51,6 +51,21 @@ class ProgramDistributionFamily(ABC):
         """
         Converts the counts to a distribution.
         """
+
+    def fit_distribution(
+        self, data: Union[List[List[SExpression]], List[SExpression]]
+    ) -> Union[ProgramDistributionBatch, ProgramDistribution]:
+        """
+        Fits a distribution to the data.
+        """
+        single_batch = isinstance(data[0], SExpression)
+        if single_batch:
+            data = [data]
+        counts = self.count_programs(data)
+        distribution = self.counts_to_distribution(counts)
+        if single_batch:
+            return distribution[0]
+        return distribution
 
     @abstractmethod
     def parameter_difference_loss(
