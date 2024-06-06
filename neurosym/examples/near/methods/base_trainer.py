@@ -2,9 +2,12 @@ import sys
 from dataclasses import dataclass
 from typing import Tuple
 
-import pytorch_lightning as pl
 import torch
 from torch import nn
+
+from neurosym.utils.imports import import_pytorch_lightning
+
+pl = import_pytorch_lightning()
 
 
 @dataclass
@@ -20,7 +23,7 @@ class BaseTrainerConfig:
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
     scheduler: str = "cosine"
-    optimizer: str = "adam"
+    optimizer: str = torch.optim.Adam
 
 
 class BaseTrainer(pl.LightningModule):
@@ -44,6 +47,7 @@ class BaseTrainer(pl.LightningModule):
         self.save_hyperparameters()
 
     def loss(self) -> dict:
+        # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
 
     def _step(self) -> dict:
@@ -129,24 +133,10 @@ class BaseTrainer(pl.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-
-        match self.config.optimizer:
-            case "adam":
-                optimizer = torch.optim.Adam(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "sgd":
-                optimizer = torch.optim.SGD(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "adamw":
-                optimizer = torch.optim.AdamW(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case _:
-                raise NotImplementedError(
-                    f"Optimizer {self.config.optimizer} not implemented"
-                )  # noqa: E501
+        optimizer_fn = self.config.optimizer
+        optimizer = optimizer_fn(
+            params, lr=self.config.lr, weight_decay=self.config.weight_decay
+        )
 
         assert self.config.train_steps != -1, "Train steps not set"
         total_steps = int(self.config.n_epochs * (self.config.train_steps))

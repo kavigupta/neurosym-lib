@@ -64,7 +64,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         )
 
         def validation_cost(node):
-            import pytorch_lightning as pl
+            pl = ns.import_pytorch_lightning()
 
             trainer = pl.Trainer(
                 max_epochs=10,
@@ -104,7 +104,8 @@ class TestNEARSequentialDSL(unittest.TestCase):
         g = near.near_graph(
             neural_dsl,
             ns.parse_type(
-                s="([{f, $L}]) -> [{f, $O}]", env=dict(L=input_dim, O=output_dim)
+                s="([{f, $L}]) -> [{f, $O}]",
+                env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=checker,
         )

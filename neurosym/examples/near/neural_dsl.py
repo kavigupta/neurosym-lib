@@ -74,6 +74,7 @@ class NeuralDSL(DSL):
             productions=productions,
             valid_root_types=dsl.valid_root_types,
             max_type_depth=dsl.max_type_depth,
+            max_env_depth=dsl.max_env_depth,
             type_to_symbol=type_to_symbol,
         )
 

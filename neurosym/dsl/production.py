@@ -24,6 +24,13 @@ class Production(ABC):
     def get_index(self):
         pass
 
+    def get_numerical_index(self):
+        """
+        Like get_index, but returns 0 if the index is None.
+        """
+        idx = self.get_index()
+        return 0 if idx is None else idx
+
     @abstractmethod
     def with_index(self, index):
         pass

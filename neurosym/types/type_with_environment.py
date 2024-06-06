@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Dict, List, Tuple
 
 from frozendict import frozendict
@@ -69,16 +70,27 @@ class Environment:
         return index in self._elements and self._elements[index] == typ
 
     def __len__(self):
-        return max(self._elements) + 1
+        return 0 if not self._elements else max(self._elements) + 1
 
     def short_repr(self):
         return ",".join(
             f"{i}={self._elements[i].short_repr()}" for i in sorted(self._elements)
         )
 
+    @cached_property
+    def unique_hash(self):
+        # pylint: disable=cyclic-import
+        from neurosym.types.type_string_repr import render_type
+
+        return "E", tuple(
+            sorted((i, render_type(typ)) for i, typ in self._elements.items())
+        )
+
 
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:
+    unique_hash = "P"
+
     def child(self, *new_types: Tuple[Type]):
         del new_types
         return self
@@ -92,7 +104,7 @@ class PermissiveEnvironmment:
         return True
 
     def __len__(self):
-        raise NotImplementedError
+        return 0
 
 
 @dataclass(frozen=True, eq=True)
@@ -103,3 +115,10 @@ class TypeWithEnvironment:
 
     typ: Type
     env: Environment
+
+    @cached_property
+    def unique_hash(self):
+        # pylint: disable=cyclic-import
+        from neurosym.types.type_string_repr import render_type
+
+        return render_type(self.typ), self.env.unique_hash

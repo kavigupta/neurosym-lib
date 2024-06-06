@@ -51,3 +51,32 @@ class TestEnumeratability(unittest.TestCase):
                 "(compose_4 ??::<i -> i> ??::<i -> i>)",
             },
         )
+
+    def test_filtered_variable(self):
+        dslf_2 = ns.DSLFactory()
+        dslf_2.concrete("1", "() -> i", lambda: 1)
+        dslf_2.concrete("1f", "() -> f", lambda: 1)
+        dslf_2.filtered_type_variable(
+            "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
+        )
+        dslf_2.concrete("+", "(%num, %num) -> %num", lambda x, y: x + y)
+        dslf_2.concrete("*", "(#a, #a) -> #a", lambda x, y: x + y)
+        dsl_2 = dslf_2.finalize()
+        expans = {
+            ns.render_s_expression(prog)
+            for prog in dsl_2.expansions_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("i"), ns.Environment.empty())
+            )
+        }
+        print(expans)
+        self.assertSetEqual(
+            expans, {"(* ??::<i> ??::<i>)", "(+ ??::<i> ??::<i>)", "(1)"}
+        )
+        expans = {
+            ns.render_s_expression(prog)
+            for prog in dsl_2.expansions_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("() -> i"), ns.Environment.empty())
+            )
+        }
+        print(expans)
+        self.assertSetEqual(expans, {"(* ??::<() -> i> ??::<() -> i>)"})
