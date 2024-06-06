@@ -26,3 +26,4 @@ jobs:
       - name: Lint with pylint
         run: |
           pylint neurosym setup.py tests
+          isort neurosym tests; black neurosym tests; bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
