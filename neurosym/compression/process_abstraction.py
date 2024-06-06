@@ -34,11 +34,9 @@ def compute_abstraction_production(
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
-        lambda x: (
-            type_arguments[x.index]
-            if isinstance(x, AbstractionIndexParameter)
-            else None
-        ),
+        lambda x: type_arguments[x.index]
+        if isinstance(x, AbstractionIndexParameter)
+        else None,
     ).typ
     type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
 
