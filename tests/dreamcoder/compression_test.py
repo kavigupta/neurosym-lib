@@ -5,14 +5,14 @@ import numpy as np
 
 import neurosym as ns
 
-dsl = ns.examples.mutable_arith_combinators_dsl
+arith_dsl = ns.examples.mutable_arith_combinators_dsl
 
 out_t = ns.parse_type("(i) -> i")
 
 
 @lru_cache(maxsize=None)
 def corpus():
-    fam = ns.BigramProgramDistributionFamily(dsl, valid_root_types=[out_t])
+    fam = ns.BigramProgramDistributionFamily(arith_dsl, valid_root_types=[out_t])
     dist = fam.uniform()
     return sorted(
         {
@@ -37,7 +37,7 @@ class BasicDSLTest(unittest.TestCase):
 
     def test_basic_expand(self):
         self.assertDSL(
-            dsl.render(),
+            arith_dsl.render(),
             """
             * :: (i -> i, i -> i) -> i -> i
             + :: (i -> i, i -> i) -> i -> i
@@ -51,8 +51,8 @@ class BasicDSLTest(unittest.TestCase):
 
     def test_independent_mutability(self):
         prog = ns.parse_s_expression("(ite (even? (x)) (count) (count))")
-        fn_1 = dsl.compute(dsl.initialize(prog))
-        fn_2 = dsl.compute(dsl.initialize(prog))
+        fn_1 = arith_dsl.compute(arith_dsl.initialize(prog))
+        fn_2 = arith_dsl.compute(arith_dsl.initialize(prog))
         self.assertEqual([fn_1(2), fn_1(4), fn_1(8)], [1, 2, 3])
         self.assertEqual([fn_1(2), fn_1(4), fn_1(8)], [4, 5, 6])
         # fn_2 is independent of fn_1
@@ -69,20 +69,20 @@ class CompressionTest(unittest.TestCase):
         self.assertEqual(outputs_1, outputs_2)
 
     def test_single_step(self):
-        dsl2, rewritten = ns.compression.single_step_compression(dsl, corpus())
+        dsl2, rewritten = ns.compression.single_step_compression(arith_dsl, corpus())
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
-                dsl.compute(dsl.initialize(orig)),
+                arith_dsl.compute(arith_dsl.initialize(orig)),
                 dsl2.compute(dsl2.initialize(rewr)),
             )
 
     def test_multi_step(self):
-        dsl2, rewritten = ns.compression.multi_step_compression(dsl, corpus(), 5)
+        dsl2, rewritten = ns.compression.multi_step_compression(arith_dsl, corpus(), 5)
         self.assertEqual(len(rewritten), len(corpus()))
         for orig, rewr in zip(corpus(), rewritten):
             self.fuzzy_check_fn_same(
-                dsl.compute(dsl.initialize(orig)),
+                arith_dsl.compute(arith_dsl.initialize(orig)),
                 dsl2.compute(dsl2.initialize(rewr)),
             )
 
