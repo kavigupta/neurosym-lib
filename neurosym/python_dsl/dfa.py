@@ -1,4 +1,5 @@
 import ast
+from functools import lru_cache
 from typing import Dict, List
 
 from frozendict import frozendict
@@ -26,7 +27,7 @@ excluded_python_tags = [
 ]
 
 
-default_transition_dict = frozendict(
+transitions = frozendict(
     {
         "M": {ast.Module: {"body": "seqS", "type_ignores": "[TI]"}},
         "S": {
@@ -218,9 +219,8 @@ default_transition_dict = frozendict(
 )
 
 
-def python_dfa(
-    transitions=default_transition_dict,
-) -> Dict[str, Dict[str, List[str]]]:
+@lru_cache(None)
+def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     """
     Export a Discrete Tree Finite Automaton for the Python AST,
         in the form of a dictionary of the form dict[state, dict[tag, list[state]]].
