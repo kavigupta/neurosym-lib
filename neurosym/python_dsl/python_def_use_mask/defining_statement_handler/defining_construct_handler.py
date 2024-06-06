@@ -36,7 +36,6 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
     ) -> Callable[[], None]:
         undos = []
         if self.is_construct_name_field(position):
-            print(self, [self.mask.id_to_name(x) for x in child.defined_symbols])
             for idx_list in (
                 self.original_defined_production_idxs,
                 self.defined_production_idxs,
