@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable
 
 import torch
 from sklearn.metrics import f1_score, hamming_loss
@@ -6,13 +7,19 @@ from torch import nn
 
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
+def classification_mse_loss(predictions, targets):
+    targets = torch.nn.functional.one_hot(
+        targets.squeeze(-1), num_classes=predictions.shape[-1]
+    ).float()
+    predictions = predictions.view(-1, predictions.shape[-1])
+    targets = targets.view(-1, targets.shape[-1])
+    return nn.functional.mse_loss(predictions, targets)
 
 @dataclass
 class NEARTrainerConfig(BaseTrainerConfig):
     max_seq_len: int = 100
-    loss_fn: str = "CrossEntropyLoss"
+    loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = classification_mse_loss
     num_labels: int = -1  # Set Programmatically
-
 
 class NEARTrainer(BaseTrainer):
     """
@@ -23,23 +30,7 @@ class NEARTrainer(BaseTrainer):
     def __init__(self, model: nn.Module, config: NEARTrainerConfig):
         super().__init__(model=model, config=config)
         assert config.num_labels > 0, "Number of labels must be set programmatically"
-        match self.config.loss_fn:
-            case "CrossEntropyLoss":
-                self.loss_fn = nn.CrossEntropyLoss()
-            case "BCEWithLogitsLoss":
-                self.loss_fn = nn.BCEWithLogitsLoss()
-            case "MSELoss":
-                self.loss_fn = nn.MSELoss()
-            case "MSELossRegression":
-                self.loss_fn = nn.MSELoss()
-            case "SmoothL1LossRegression":
-                self.loss_fn = nn.SmoothL1Loss()
-            case "NLLLoss":
-                self.loss_fn = nn.NLLLoss()
-            case _:
-                raise NotImplementedError(
-                    f"Loss function {self.config.loss_fn} not implemented"
-                )  # noqa: E501
+        self.loss_fn = config.loss_callback
 
     @staticmethod
     def compute_average_f1_score(
@@ -71,44 +62,6 @@ class NEARTrainer(BaseTrainer):
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
-        # pylint: disable=arguments-differ
-        if len(predictions.shape) == 3:
-            # Handling seq2seq classification loss.
-            match self.config.loss_fn:
-                case "CrossEntropyLoss":
-                    targets = targets.squeeze(-1)
-                    assert (
-                        len(targets.shape) == 2
-                    ), "Targets must be 2D for classification"
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1)
-                case "MSELoss":
-                    # pylint: disable=not-callable
-                    targets = torch.nn.functional.one_hot(
-                        targets.squeeze(-1), num_classes=self.config.num_labels
-                    ).float()
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
-                case "MSELossRegression":
-                    # pylint: disable=not-callable
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
-                case "SmoothL1LossRegression":
-                    # pylint: disable=not-callable
-                    predictions = predictions.view(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
-                case "NLLLoss":
-                    predictions = (
-                        predictions.view(-1, predictions.shape[-1])
-                        .clamp(min=1e-10)
-                        .log()
-                        .log_softmax(dim=-1)
-                    )
-                    targets = targets.view(-1)
-                case _:
-                    raise NotImplementedError(
-                        f"Loss function {self.config.loss_fn} not implemented for seq2seq models"
-                    )
         loss = self.loss_fn(predictions, targets)
         return loss
 
@@ -142,19 +95,21 @@ def main():
     pl = import_pytorch_lightning()
     from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
-    dataset_factory = lambda train_seed: DatasetWrapper(
-        DatasetFromNpy(
-            "../data/classification_example/train_ex_data.npy",
-            "../data/classification_example/train_ex_labels.npy",
-            train_seed,
-        ),
-        DatasetFromNpy(
-            "../data/classification_example/test_ex_data.npy",
-            "../data/classification_example/test_ex_labels.npy",
-            None,
-        ),
-        batch_size=200,
-    )
+    def dataset_factory(train_seed):
+        return DatasetWrapper(
+            DatasetFromNpy(
+                "../data/classification_example/train_ex_data.npy",
+                "../data/classification_example/train_ex_labels.npy",
+                train_seed,
+            ),
+            DatasetFromNpy(
+                "../data/classification_example/test_ex_data.npy",
+                "../data/classification_example/test_ex_labels.npy",
+                None,
+            ),
+            batch_size=200,
+        )
+
     datamodule = dataset_factory(42)
     # model = nn.Sequential(
     #     nn.Linear(2, 100),
@@ -164,13 +119,24 @@ def main():
     model = nn.Linear(2, 2)
     # model.weight.data = torch.tensor([[0., 1.], [0., 0.]])
     # model.bias.data = torch.tensor([0., 0.])
+
+    def nll_loss(predictions, targets):
+        predictions = (
+            predictions.view(-1, predictions.shape[-1])
+            .clamp(min=1e-10)
+            .log()
+            .log_softmax(dim=-1)
+        )
+        targets = targets.view(-1)
+        return nn.functional.nll_loss(predictions, targets)
+
     trainer_cfg = NEARTrainerConfig(
         lr=1e-4,
         max_seq_len=100,
         n_epochs=10000,
         num_labels=2,
         train_steps=len(datamodule.train),
-        loss_fn="NLLLoss",
+        loss_callback=nll_loss,
     )
     pl_model = NEARTrainer(model, config=trainer_cfg)
     trainer = pl.Trainer(

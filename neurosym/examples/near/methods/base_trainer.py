@@ -23,7 +23,7 @@ class BaseTrainerConfig:
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
     scheduler: str = "cosine"
-    optimizer: str = "adam"
+    optimizer: str = "Adam"
 
 
 class BaseTrainer(pl.LightningModule):
@@ -132,24 +132,11 @@ class BaseTrainer(pl.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-
-        match self.config.optimizer:
-            case "adam":
-                optimizer = torch.optim.Adam(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "sgd":
-                optimizer = torch.optim.SGD(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "adamw":
-                optimizer = torch.optim.AdamW(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case _:
-                raise NotImplementedError(
-                    f"Optimizer {self.config.optimizer} not implemented"
-                )  # noqa: E501
+        assert self.config.optimizer in torch.optim.__dict__, f"Optimizer {self.config.optimizer} not found"
+        optimizer_fn = getattr(torch.optim, self.config.optimizer)
+        optimizer = optimizer_fn(
+            params, lr=self.config.lr, weight_decay=self.config.weight_decay
+        )
 
         assert self.config.train_steps != -1, "Train steps not set"
         total_steps = int(self.config.n_epochs * (self.config.train_steps))
