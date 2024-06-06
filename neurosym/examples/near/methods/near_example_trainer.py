@@ -7,6 +7,7 @@ from torch import nn
 
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
+
 def classification_mse_loss(predictions, targets):
     # pylint: disable=not-callable
     targets = torch.nn.functional.one_hot(
@@ -16,11 +17,15 @@ def classification_mse_loss(predictions, targets):
     targets = targets.view(-1, targets.shape[-1])
     return nn.functional.mse_loss(predictions, targets)
 
+
 @dataclass
 class NEARTrainerConfig(BaseTrainerConfig):
     max_seq_len: int = 100
-    loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = classification_mse_loss
+    loss_callback: Callable[
+        [torch.Tensor, torch.Tensor], torch.Tensor
+    ] = classification_mse_loss
     num_labels: int = -1  # Set Programmatically
+
 
 class NEARTrainer(BaseTrainer):
     """
