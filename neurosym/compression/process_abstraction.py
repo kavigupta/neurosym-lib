@@ -34,9 +34,11 @@ def compute_abstraction_production(
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
-        lambda x: type_arguments[x.index]
-        if isinstance(x, AbstractionIndexParameter)
-        else None,
+        lambda x: (
+            type_arguments[x.index]
+            if isinstance(x, AbstractionIndexParameter)
+            else None
+        ),
     ).typ
     type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
 
@@ -106,7 +108,6 @@ class StitchLambdaRewriter:
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
         ) = multi_lambda_to_single_lambda(dsl)
-
         self.zero_arg_lambda_symbol = next_symbol(dsl)
 
         self.first_single_to_multi = {
@@ -118,7 +119,6 @@ class StitchLambdaRewriter:
                 {str(tag) for tags in self.multi_to_single.values() for tag in tags[1:]}
             )
         )
-
 
     def to_stitch(self, s_exp):
         if isinstance(s_exp, str):
@@ -185,8 +185,6 @@ def single_step_compression(dsl, programs):
         1,
         no_curried_bodies=True,
         no_curried_metavars=True,
-        # eta_long=True,
-        # no_mismatch_check=True,
         fused_lambda_tags=rewriter.fused_lambda_tags,
         abstraction_prefix=next_symbol(dsl),
     )
@@ -194,10 +192,11 @@ def single_step_compression(dsl, programs):
         return dsl, programs_orig
     abstr = res.abstractions[-1]
     rewritten = [
-        parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
+        rewriter.from_stitch(
+            parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
+        )
         for x in res.rewritten
     ]
-    rewritten = [rewriter.from_stitch(x) for x in rewritten]
     user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
     abstr_body = rewriter.from_stitch(
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
