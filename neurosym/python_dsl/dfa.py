@@ -27,7 +27,7 @@ excluded_python_tags = [
 ]
 
 
-transitions = frozendict(
+python_transitions = frozendict(
     {
         "M": {ast.Module: {"body": "seqS", "type_ignores": "[TI]"}},
         "S": {
@@ -242,28 +242,28 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     ]
 
     result = {}
-    for state in transitions:
+    for state in python_transitions:
         result[state] = {}
         for tag in all_tags:
             t = getattr(ast, tag)
-            out = compute_transition(transitions, state, t, fields_for_node(t))
+            out = compute_transition(python_transitions, state, t, fields_for_node(t))
             if out is not None:
                 result[state][tag] = out
         for tag in extras:
-            out = compute_transition(transitions, state, tag, [None])
+            out = compute_transition(python_transitions, state, tag, [None])
             if out is not None:
                 result[state][tag] = out
 
         missing = (
-            set(all_types_as_string(list(transitions[state])))
+            set(all_types_as_string(list(python_transitions[state])))
             - set(result[state])
             - {"list", "/seq", "/splice"}
         )
         if missing:
             raise RuntimeError(f"in state {state}: missing {missing}")
 
-        if "list" in transitions[state]:
-            result[state]["list"] = [transitions[state]["list"]]
+        if "list" in python_transitions[state]:
+            result[state]["list"] = [python_transitions[state]["list"]]
     result["seqS"]["/seq"] = ["S"]
     result["seqS"]["/subseq"] = ["S"]
     result["seqS"]["/choiceseq"] = ["S"]
