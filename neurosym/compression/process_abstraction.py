@@ -107,8 +107,6 @@ class StitchLambdaRewriter:
             self.multi_to_single,
         ) = multi_lambda_to_single_lambda(dsl)
 
-        print(self.zero_arg_lambda_index_original)
-        print(self.multi_to_single)
         self.zero_arg_lambda_symbol = next_symbol(dsl)
 
         self.first_single_to_multi = {
@@ -121,7 +119,6 @@ class StitchLambdaRewriter:
             )
         )
 
-        print(self.fused_lambda_tags)
 
     def to_stitch(self, s_exp):
         if isinstance(s_exp, str):
@@ -166,7 +163,6 @@ class StitchLambdaRewriter:
         index = int(s_exp.symbol[4:])
         original = self.first_single_to_multi[index]
         for i in range(len(self.multi_to_single[original])):
-            print(s_exp, i)
             expected = f"lam_{self.multi_to_single[original][i]}"
             assert s_exp.symbol == expected, f"{s_exp.symbol} != {expected}"
             [s_exp] = s_exp.children
@@ -182,11 +178,8 @@ def single_step_compression(dsl, programs):
     """
     programs_orig = programs
     rewriter = StitchLambdaRewriter(dsl)
-    print([render_s_expression(prog) for prog in programs])
     programs = [rewriter.to_stitch(prog) for prog in programs]
-    print([render_s_expression(prog) for prog in programs])
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
-    print(rendered)
     res = stitch_core.compress(
         rendered,
         1,
@@ -200,12 +193,10 @@ def single_step_compression(dsl, programs):
     if not res.abstractions:
         return dsl, programs_orig
     abstr = res.abstractions[-1]
-    print(res.rewritten)
     rewritten = [
         parse_s_expression(x, should_not_be_leaf={abstr.name}, for_stitch=True)
         for x in res.rewritten
     ]
-    print(rewritten)
     rewritten = [rewriter.from_stitch(x) for x in rewritten]
     user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
     abstr_body = rewriter.from_stitch(
