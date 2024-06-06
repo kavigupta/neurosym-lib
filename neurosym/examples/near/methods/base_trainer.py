@@ -1,4 +1,5 @@
 import sys
+import warnings
 from dataclasses import dataclass
 from typing import Tuple
 
@@ -91,9 +92,7 @@ class BaseTrainer(pl.LightningModule):
             if param.requires_grad and valid_name:
                 params.append(param)
             else:
-                print(
-                    f"WARNING: Parameter {name} removed from optimizer", file=sys.stderr
-                )
+                warnings.warn(f"WARNING: Parameter {name} removed from optimizer")
         return params
 
     @staticmethod
