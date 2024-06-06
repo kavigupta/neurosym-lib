@@ -5,8 +5,8 @@ import unittest
 import parameterized
 
 
-def files_to_examine():
-    for root, _, files in os.walk("tests"):
+def files_to_examine(path):
+    for root, _, files in os.walk(path):
         for file in files:
             if file.endswith(".py"):
                 yield os.path.join(root, file)
@@ -24,7 +24,7 @@ class GatherImports(ast.NodeVisitor):
 
 
 class OnlyDirectImportsTest(unittest.TestCase):
-    @parameterized.parameterized.expand([(path,) for path in files_to_examine()])
+    @parameterized.parameterized.expand([(path,) for path in files_to_examine("tests")])
     def test_only_direct_import(self, path):
         with open(path) as f:
             code = f.read()
@@ -37,3 +37,20 @@ class OnlyDirectImportsTest(unittest.TestCase):
         expected = {"from neurosym.examples import near", "import neurosym as ns"}
 
         self.assertEqual(imports | expected, expected)
+
+
+class NoPrintsTest(unittest.TestCase):
+    @parameterized.parameterized.expand(
+        [(path,) for path in files_to_examine("neurosym")]
+    )
+    def test_only_direct_import(self, path):
+        if path in {"neurosym/examples/near/methods/near_example_trainer.py"}:
+            # skip this file, it is an example
+            return
+        with open(path) as f:
+            code = f.read()
+        code = ast.parse(code)
+        nodes = ast.walk(code)
+        nodes = [node for node in nodes if isinstance(node, ast.Name)]
+        nodes = [node for node in nodes if node.id == "print"]
+        self.assertEqual(len(nodes), 0)
