@@ -3,7 +3,11 @@ import os
 import torch
 import torch.nn as nn
 
-from neurosym.dsl.dsl_factory import DSLFactory
+import pytorch_lightning as pl
+import logging
+
+import neurosym as ns
+from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import map_torch
 
@@ -13,22 +17,9 @@ import numpy as np
 def bounce_dsl():
     L = 4
     O = 4
-    dslf = DSLFactory(L=L, O=O, max_overall_depth=5)
+    dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
     ## DSL for the bounce example.
     dslf.typedef("fL", "{f, $L}")
-
-    def foo():
-        layer = nn.Linear(4, 4)
-        layer.weight = nn.Parameter(
-            torch.tensor(
-                [[1, 0, 0.1, 0], [0, 1, 0, 0.1], [0, 0, 1, 0], [0, 0, 0, 1]],
-                dtype=torch.float32,
-            ),
-            requires_grad=False,
-        )
-        layer.bias = nn.Parameter(torch.tensor([0, 0, 0, -0.98]), requires_grad=False)
-
-        return layer
 
     dslf.parameterized(
         "linear_bool",
@@ -40,13 +31,7 @@ def bounce_dsl():
         "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
     )
 
-    #   dslf.parameterized("cheat", "() -> $fL -> $fL", lambda lin, dummy: lambda x: lin(x) + 0 * dummy(x) , dict(lin=foo, dummy=lambda: nn.Linear(L, L)) )
-
-    dslf.concrete(
-        "ite",
-        "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
-    )
+    dslf.concrete("ite", "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a", ite_torch)
     dslf.concrete(
         "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     )
@@ -83,9 +68,6 @@ print("Now, you have to add the code to actually search for a program using NEAR
 print(input_dim, output_dim)
 
 
-import neurosym as ns
-from neurosym.examples import near
-
 t = ns.TypeDefiner(L=4, O=4)
 t.typedef("fL", "{f, $L}")
 neural_dsl = near.NeuralDSL.from_dsl(
@@ -106,24 +88,8 @@ neural_dsl = near.NeuralDSL.from_dsl(
 
 print("Defined NEAR")
 
-import pytorch_lightning as pl
-import logging
-
 logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.WARNING)
 logging.getLogger("pytorch_lightning.accelerators.cuda").setLevel(logging.WARNING)
-
-
-def regression_smooth_l1_loss(
-    predictions: torch.Tensor, targets: torch.Tensor
-) -> torch.Tensor:
-    """
-    MSE loss is sensitive to outliers. Smooth L1 loss deals with outliers by
-    using MSE loss when L1 distance is less than beta and a diminished
-    L1 loss otherwise.
-    """
-    predictions = predictions.view(-1, predictions.shape[-1])
-    targets = targets.view(-1, targets.shape[-1])
-    return torch.nn.functional.smooth_l1_loss(predictions, targets, beta=1.0)
 
 
 trainer_cfg = near.NEARTrainerConfig(
@@ -247,24 +213,26 @@ trajectoryb = testProgram(best_program_nodes[1])
 import matplotlib.pyplot as plt
 
 
-title = "Trajectories and their quadrants"
+title = "Bouncing ball (ground truth in black)"
+
+plt.figure(figsize=(8, 8))
 
 print(trajectory[:])
-plt.scatter(trajectory[:, 0], trajectory[:, 1], marker="o")
+plt.scatter(trajectory[:, 0], trajectory[:, 1], marker="o", color="C0")
 
-plt.plot(trajectory[:, 0], trajectory[:, 1], alpha=0.2, color="gray")
+plt.plot(trajectory[:, 0], trajectory[:, 1], alpha=0.2, color="C0")
 
-plt.scatter(trajectoryb[:, 0], trajectoryb[:, 1], marker="o")
+plt.scatter(trajectoryb[:, 0], trajectoryb[:, 1], marker="o", color="C1")
 
-plt.plot(trajectoryb[:, 0], trajectoryb[:, 1], alpha=0.2, color="gray")
+plt.plot(trajectoryb[:, 0], trajectoryb[:, 1], alpha=0.2, color="C1")
 
 truth = datamodule.train.inputs[0, :, :]
 
 print(truth[0, :])
 
-plt.scatter(truth[:, 0], truth[:, 1], marker="o")
+plt.scatter(truth[:, 0], truth[:, 1], marker="o", color="black")
 
-plt.plot(truth[:, 0], truth[:, 1], alpha=0.2, color="orange")
+plt.plot(truth[:, 0], truth[:, 1], alpha=0.2, color="black")
 
 
 plt.title(title)
