@@ -1,18 +1,24 @@
+import logging
 import os
 
 import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
-from neurosym.dsl.dsl_factory import DSLFactory
+import neurosym as ns
+from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
-from neurosym.examples.near.operations.lists import fold_torch, map_torch
+from neurosym.examples.near.operations.lists import map_torch
 
 
 def bounce_dsl():
-    # First, you need to define a DSL for the bouncing ball problem. Start with the DSL from the regression problem.
-    # is there anything you need to remove?
-    pass
+    L = 4
+    O = 4
+    dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
+    "YOUR CODE HERE"
+    dslf.prune_to("[$fL] -> [$fL]")
+    return dslf.finalize()
 
 
 dsl = bounce_dsl()
