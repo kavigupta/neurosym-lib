@@ -1,17 +1,15 @@
+import logging
 import os
 
+import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-
-import pytorch_lightning as pl
-import logging
 
 import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import map_torch
-
-import numpy as np
 
 
 def bounce_dsl():
@@ -211,7 +209,6 @@ trajectoryb = testProgram(best_program_nodes[1])
 
 # And then the code below plots it to show how it compares to a trajectory in the training set.
 import matplotlib.pyplot as plt
-
 
 title = "Bouncing ball (ground truth in black)"
 
