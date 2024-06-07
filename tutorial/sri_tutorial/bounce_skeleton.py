@@ -47,6 +47,28 @@ print("Data has been loaded.")
 
 print("Now, you have to add the code to actually search for a program using NEAR")
 
+t = ns.TypeDefiner(L=4, O=4)
+t.typedef("fL", "{f, $L}")
+neural_dsl = near.NeuralDSL.from_dsl(
+    dsl=dsl,
+    modules={
+        **near.create_modules(
+            "mlp",
+            [t("($fL) -> $fL")],
+            near.mlp_factory(hidden_size=10),
+        ),
+        **near.create_modules(
+            "rnn_seq2seq",
+            [t("([$fL]) -> [$fL]")],
+            near.rnn_factory_seq2seq(hidden_size=10),
+        ),
+    },
+)
+
+print("Defined NEAR")
+
+logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.WARNING)
+logging.getLogger("pytorch_lightning.accelerators.cuda").setLevel(logging.WARNING)
 # The code below assumes you found some top 3 programs and stored them in the best_program_nodes variable.
 best_program_nodes = sorted(best_program_nodes, key=lambda x: x[1])
 for i, (node, cost) in enumerate(best_program_nodes):
@@ -63,9 +85,6 @@ def testProgram(best_program_node):
         dsl=neural_dsl, program=best_program_node[0].program
     )
     pl_model = near.NEARTrainer(module, config=trainer_cfg)
-    early_stop_callback = pl.callbacks.EarlyStopping(
-        monitor="val_loss", min_delta=1e-6, patience=5, verbose=False, mode="min"
-    )
     trainer = pl.Trainer(
         max_epochs=4000,
         devices="auto",
@@ -74,7 +93,9 @@ def testProgram(best_program_node):
         # enable_model_summary=False,
         # enable_progress_bar=False,
         logger=False,
-        callbacks=[],
+        callbacks=[
+            pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
+        ],
     )
 
     trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
