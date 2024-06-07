@@ -16,6 +16,7 @@ def bounce_dsl():
     L = 4
     O = 4
     dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
+    # BEGIN SOLUTION "YOUR CODE HERE"
     ## DSL for the bounce example.
     dslf.typedef("fL", "{f, $L}")
 
@@ -33,7 +34,7 @@ def bounce_dsl():
     dslf.concrete(
         "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     )
-
+    # END SOLUTION
     dslf.prune_to("[$fL] -> [$fL]")
     return dslf.finalize()
 
