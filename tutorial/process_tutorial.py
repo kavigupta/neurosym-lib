@@ -1,4 +1,15 @@
 import json
+import os
+
+
+def update_links(notebook_json, path):
+    for cell in notebook_json["cells"]:
+        if cell["cell_type"] == "markdown":
+            cell["source"] = [
+                x.replace(path, path.replace("_solutions.ipynb", "_skeleton.ipynb"))
+                for x in cell["source"]
+            ]
+    return notebook_json
 
 
 def remove_outputs(notebook_json):
@@ -38,9 +49,10 @@ def remove_solution_comments(cell_source):
     return new_source
 
 
-def create_skeleton(notebook_json):
+def create_skeleton(notebook_json, notebook_path):
     notebook_json = remove_outputs(notebook_json)
     notebook_json = handle_solutions(notebook_json)
+    notebook_json = update_links(notebook_json, os.path.basename(notebook_path))
     return notebook_json
 
 
@@ -48,9 +60,9 @@ def run_notebook(notebook_path):
     assert notebook_path.endswith("_solutions.ipynb")
     with open(notebook_path) as f:
         notebook_json = json.load(f)
-    notebook_json = create_skeleton(notebook_json)
-    with open(notebook_path.replace("_solutions.ipynb", ".ipynb"), "w") as f:
-        json.dump(notebook_json, f)
+    notebook_json = create_skeleton(notebook_json, notebook_path)
+    with open(notebook_path.replace("_solutions.ipynb", "_skeleton.ipynb"), "w") as f:
+        f.write(json.dumps(notebook_json, indent=1) + "\n")
 
 
 def run_python(python_path):
