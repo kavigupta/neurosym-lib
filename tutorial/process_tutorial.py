@@ -49,7 +49,7 @@ def run_notebook(notebook_path):
     with open(notebook_path) as f:
         notebook_json = json.load(f)
     notebook_json = create_skeleton(notebook_json)
-    with open(notebook_path.replace("_solutions.ipynb", ".ipynb"), "w") as f:
+    with open(notebook_path.replace("_solutions.ipynb", "_skeletons.ipynb"), "w") as f:
         json.dump(notebook_json, f)
 
 
