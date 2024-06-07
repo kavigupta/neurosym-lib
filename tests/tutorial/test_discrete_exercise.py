@@ -12,7 +12,10 @@ class TestDiscreteExercise(unittest.TestCase):
         with open("tutorial/discrete_exercise_skeleton.ipynb") as f:
             notebook = json.load(f)
 
-        self.assertEqual(create_skeleton(solutions), notebook)
+        self.assertEqual(
+            create_skeleton(solutions, "tutorial/discrete_exercise_solutions.ipynb"),
+            notebook,
+        )
 
     def test_discrete_exercise_skeleton_runnable(self):
         result = execute_notebook(
