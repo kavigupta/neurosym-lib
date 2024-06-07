@@ -5,18 +5,18 @@ from tests.tutorial.utils import execute_notebook
 from tutorial.process_tutorial import create_skeleton
 
 
-class TestTutorial2(unittest.TestCase):
-    def test_tutorial_2_solutions(self):
-        with open("tutorial/tutorial2_discrete_solutions.ipynb") as f:
+class TestDiscreteExercise(unittest.TestCase):
+    def test_discrete_exercise_skeleton(self):
+        with open("tutorial/discrete_exercise_solutions.ipynb") as f:
             solutions = json.load(f)
-        with open("tutorial/tutorial2_discrete.ipynb") as f:
+        with open("tutorial/discrete_exercise_skeleton.ipynb") as f:
             notebook = json.load(f)
 
         self.assertEqual(create_skeleton(solutions), notebook)
 
-    def test_tutorial_2_runnable(self):
+    def test_discrete_exercise_skeleton_runnable(self):
         result = execute_notebook(
-            "tutorial/tutorial2_discrete_solutions.ipynb",
+            "tutorial/discrete_exercise_solutions.ipynb",
             suffix="import json; print('*' * 80); print(json.dumps(abstraction_dsl.render()))",
         )
         *_, stars, actual, _ = result.split("\n")
