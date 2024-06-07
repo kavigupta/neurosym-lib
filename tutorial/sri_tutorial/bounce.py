@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 
@@ -6,7 +8,6 @@ from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import map_torch
 
 import numpy as np
-
 
 def bounce_dsl():
     L = 4
@@ -58,15 +59,17 @@ print("Defined DSL")
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 
+root = os.path.dirname(os.path.abspath(__file__))
+
 dataset_factory = lambda train_seed: DatasetWrapper(
     DatasetFromNpy(
-        "./demodata/bounce_example/train_ex_data.npy",
-        "./demodata/bounce_example/train_ex_labels.npy",
+        f"{root}/data/bounce_example/train_ex_data.npy",
+        f"{root}/data/bounce_example/train_ex_labels.npy",
         train_seed,
     ),
     DatasetFromNpy(
-        "./demodata/bounce_example/test_ex_data.npy",
-        "./demodata/bounce_example/test_ex_labels.npy",
+        f"{root}/data/bounce_example/test_ex_data.npy",
+        f"{root}/data/bounce_example/test_ex_labels.npy",
         None,
     ),
     batch_size=200,
