@@ -111,7 +111,7 @@ logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.WARN
 logging.getLogger("pytorch_lightning.accelerators.cuda").setLevel(logging.WARNING)
 
 trainer_cfg = near.NEARTrainerConfig(
-    lr=5e-3,
+    lr=7e-3,
     max_seq_len=300,
     n_epochs=100,
     num_labels=output_dim,
@@ -202,7 +202,7 @@ def testProgram(best_program_node):
         monitor="val_loss", min_delta=1e-6, patience=5, verbose=False, mode="min"
     )
     trainer = pl.Trainer(
-        max_epochs=4000,
+        max_epochs=2500,
         devices="auto",
         accelerator="cpu",
         enable_checkpointing=False,
