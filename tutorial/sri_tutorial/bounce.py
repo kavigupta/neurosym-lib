@@ -9,6 +9,7 @@ from neurosym.examples.near.operations.lists import map_torch
 
 import numpy as np
 
+
 def bounce_dsl():
     L = 4
     O = 4
@@ -131,7 +132,7 @@ trainer_cfg = near.NEARTrainerConfig(
     n_epochs=100,
     num_labels=output_dim,
     train_steps=len(datamodule.train),
-    loss_callback=regression_smooth_l1_loss,
+    loss_callback=torch.nn.functional.mse_loss,
     scheduler="cosine",
     optimizer=torch.optim.Adam,
 )
