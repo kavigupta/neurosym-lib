@@ -69,6 +69,78 @@ print("Defined NEAR")
 
 logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.WARNING)
 logging.getLogger("pytorch_lightning.accelerators.cuda").setLevel(logging.WARNING)
+
+
+trainer_cfg = near.NEARTrainerConfig(
+    lr=5e-3,
+    max_seq_len=300,
+    n_epochs=100,
+    num_labels=output_dim,
+    train_steps=len(datamodule.train),
+    loss_callback=torch.nn.functional.mse_loss,
+    scheduler="cosine",
+    optimizer=torch.optim.Adam,
+)
+
+
+def validation_cost(node):
+    trainer = pl.Trainer(
+        max_epochs=trainer_cfg.n_epochs,
+        devices="auto",
+        accelerator="cpu",
+        enable_checkpointing=False,
+        # enable_model_summary=False,
+        # enable_progress_bar=False,
+        logger=False,
+        callbacks=[
+            pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
+        ],
+    )
+    try:
+        initialized_p = neural_dsl.initialize(node.program)
+    except near.PartialProgramNotFoundError:
+        return 10000.0
+
+    model = neural_dsl.compute(initialized_p)
+    if not isinstance(model, torch.nn.Module):
+        del model
+        del initialized_p
+        model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
+    pl_model = near.NEARTrainer(model, config=trainer_cfg)
+    trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
+    return trainer.callback_metrics["val_loss"].item()
+
+
+def checker(node):
+    """
+    In NEAR, any program that has no holes is valid.
+    The hole checking is done before this function will
+    be called so we can assume that the program has no holes.
+    """
+    return set(ns.symbols_for_program(node.program)) - set(dsl.symbols()) == set()
+
+
+g = near.near_graph(
+    neural_dsl,
+    ns.parse_type(
+        s="([{f, $L}]) -> [{f, $O}]", env=ns.TypeDefiner(L=input_dim, O=output_dim)
+    ),
+    is_goal=checker,
+)
+
+iterator = ns.search.bounded_astar(g, validation_cost, max_depth=16)
+best_program_nodes = []
+# Let's collect the top four programs
+while len(best_program_nodes) <= 3:
+    try:
+        node = next(iterator)
+        cost = validation_cost(node)
+        best_program_nodes.append((node, cost))
+        print("Got another program")
+    except StopIteration:
+        print("No more programs found.")
+        break
+
 # The code below assumes you found some top 3 programs and stored them in the best_program_nodes variable.
 best_program_nodes = sorted(best_program_nodes, key=lambda x: x[1])
 for i, (node, cost) in enumerate(best_program_nodes):
