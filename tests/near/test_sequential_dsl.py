@@ -13,7 +13,6 @@ NEAR Integration tests.
 import unittest
 
 import pytest
-import torch
 
 import neurosym as ns
 from neurosym.examples import near
@@ -64,24 +63,13 @@ class TestNEARSequentialDSL(unittest.TestCase):
             },
         )
 
-        def checker(node):
-            """
-            In NEAR, any program that has no holes is valid.
-            The hole checking is done before this function will
-            be called so we can assume that the program has no holes.
-            """
-            return (
-                set(ns.symbols_for_program(node.program)) - set(original_dsl.symbols())
-                == set()
-            )
-
         g = near.near_graph(
             neural_dsl,
             ns.parse_type(
                 s="([{f, $L}]) -> [{f, $O}]",
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
-            is_goal=checker,
+            is_goal=neural_dsl.program_has_no_holes,
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
