@@ -3,6 +3,7 @@ import torch
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainer
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
+from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
 
 
@@ -16,7 +17,7 @@ class ValidationCost:
         self.error_loss = error_loss
         self.kwargs = kwargs
 
-    def __call__(self, node):
+    def __call__(self, node: DSLSearchNode) -> float:
         pl = import_pytorch_lightning()
 
         trainer = pl.Trainer(
