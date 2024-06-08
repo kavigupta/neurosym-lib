@@ -17,6 +17,7 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.validation import validation_cost
 
 from .utils import assertDSLEnumerable
 
@@ -63,33 +64,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
             },
         )
 
-        def validation_cost(node):
-            pl = ns.import_pytorch_lightning()
-
-            trainer = pl.Trainer(
-                max_epochs=10,
-                devices="auto",
-                accelerator="cpu",
-                enable_checkpointing=False,
-                logger=False,
-                callbacks=[],
-            )
-            try:
-                initialized_p = neural_dsl.initialize(node.program)
-            except near.PartialProgramNotFoundError:
-                return 10000
-
-            model = neural_dsl.compute(initialized_p)
-            if not isinstance(model, torch.nn.Module):
-                del model
-                del initialized_p
-                model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
-            pl_model = near.NEARTrainer(model, config=trainer_cfg)
-            trainer.fit(
-                pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
-            )
-            return trainer.callback_metrics["val_loss"].item()
-
         def checker(node):
             """
             In NEAR, any program that has no holes is valid.
@@ -112,7 +86,16 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.bounded_astar(g, validation_cost, max_depth=3)
+            iterator = ns.search.bounded_astar(
+                g,
+                lambda node: validation_cost(
+                    node,
+                    neural_dsl=neural_dsl,
+                    trainer_cfg=trainer_cfg,
+                    datamodule=datamodule,
+                ),
+                max_depth=3,
+            )
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1
