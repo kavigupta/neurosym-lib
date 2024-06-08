@@ -13,7 +13,6 @@ NEAR Integration tests.
 import unittest
 
 import pytest
-import torch
 
 import neurosym as ns
 from neurosym.examples import near
