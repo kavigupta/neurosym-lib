@@ -5,26 +5,26 @@
 # requires jq and jupyter-book
 
 # Find all notebooks in the tutorial directory
-NOTEBOOKS := $(wildcard tutorial/*.ipynb)
+NOTEBOOKS := $(wildcard ../tutorial/*.ipynb)
 # Define corresponding output notebook paths in the www folder
-WWW_NOTEBOOKS := $(NOTEBOOKS:tutorial/%.ipynb=www/%.ipynb)
+WWW_NOTEBOOKS := $(NOTEBOOKS:../tutorial/%.ipynb=../www/%.ipynb)
 
-all: www
+all: ../www
 
-transfer: www
-	ghp-import -n -p -f www/_build/html
+transfer: ../www
+	ghp-import -n -p -f ../www/_build/html
 
-www: $(WWW_NOTEBOOKS) www/README.md
-	jupyter-book build www
+../www: $(WWW_NOTEBOOKS) ../www/README.md
+	jupyter-book build ../www
 
 # Pattern rule for converting notebooks
-www/%.ipynb: tutorial/%.ipynb
+../www/%.ipynb: ../tutorial/%.ipynb
 	jq -M 'del(.metadata.widgets)' $< > $@
 
-www/README.md:
-	cp README.md www/README.md
+../www/README.md:
+	cp ../README.md ../www/README.md
 
 clean:
 	rm -f $(WWW_NOTEBOOKS)
-	rm -f www/README.md
-	jupyter-book clean www --all
+	rm -f ../www/README.md
+	jupyter-book clean ../www --all
