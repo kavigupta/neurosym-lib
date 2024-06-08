@@ -17,7 +17,7 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.validation import validation_cost
+from neurosym.examples.near.validation import ValidationCost
 
 from .utils import assertDSLEnumerable
 
@@ -88,8 +88,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
             n_iter = 0
             iterator = ns.search.bounded_astar(
                 g,
-                lambda node: validation_cost(
-                    node,
+                ValidationCost(
                     neural_dsl=neural_dsl,
                     trainer_cfg=trainer_cfg,
                     datamodule=datamodule,
