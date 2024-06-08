@@ -1,0 +1,1215 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Neurosymbolic Software Tutorial - Discrete &#8212; neurosym Framework Tutorial</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=87e54e7c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=3ee479438cf8b5e0d341"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'discrete_exercise_solutions';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Neurosymbolic Software Tutorial - Discrete" href="discrete_exercise_skeleton.html" />
+    <link rel="prev" title="Neurosymbolic Software Tutorial - Classification" href="near_demo_classification.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="README.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">neurosym Framework Tutorial</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="README.html">
+                    Neurosymbolic Library
+                </a>
+            </li>
+        </ul>
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="near_demo_classification.html">Neurosymbolic Software Tutorial - Classification</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Discrete</a></li>
+<li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
+<li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/discrete_exercise_solutions.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onColab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fdiscrete_exercise_solutions.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/discrete_exercise_solutions.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Neurosymbolic Software Tutorial - Discrete</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#outline">Outline</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-1-defining-a-dsl">Part 1: Defining a DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-1a-create-a-dsl">Exercise 1A: Create a DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-1b-write-your-functions">Exercise 1B: Write your functions</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-2-finding-programs">Part 2: Finding Programs</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-2-finding-a-program">Exercise 2: Finding a program</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-3-abstraction-learning">Part 3: Abstraction Learning</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-3a-fitting-a-dsl">Exercise 3A: Fitting a DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-3b-abstractions">Exercise 3B: Abstractions</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-4-bonus-python-dsl-subset">Part 4: Bonus: Python DSL Subset</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-discrete">
+<h1>Neurosymbolic Software Tutorial - Discrete<a class="headerlink" href="#neurosymbolic-software-tutorial-discrete" title="Link to this heading">#</a></h1>
+<a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/discrete_exercise_solutions.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+<section id="instruction">
+<h2>Instruction<a class="headerlink" href="#instruction" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Navigating this notebook on Google Colab: There will be text blocks and code blocks throughout the notebook. The text blocks, such as this one, will contain instructions and questions for you to consider. The code blocks, such as the one below, will contain executible code. Sometimes you will have to modify the code blocks following the instructions in the text blocks. You can run the code block by either pressing control/cmd + enter or by clicking the arrow on left-hand side.</p></li>
+<li><p>Saving Work: If you wish to save your work in this .ipynb, we recommend downloading the compressed repository from GitHub, unzipping it, uploading it to Google Drive, and opening this notebook from within Google Drive.</p></li>
+</ul>
+</section>
+<section id="outline">
+<h2>Outline<a class="headerlink" href="#outline" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Part 1: Defining a DSL</p></li>
+<li><p>Part 2: Finding Programs</p></li>
+<li><p>Part 3: Abstraction Learning</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">neurosym</span> <span class="k">as</span> <span class="nn">ns</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="part-1-defining-a-dsl">
+<h2>Part 1: Defining a DSL<a class="headerlink" href="#part-1-defining-a-dsl" title="Link to this heading">#</a></h2>
+<p>We would like to be able to define arithmetic functions, of various types.</p>
+<section id="exercise-1a-create-a-dsl">
+<h3>Exercise 1A: Create a DSL<a class="headerlink" href="#exercise-1a-create-a-dsl" title="Link to this heading">#</a></h3>
+<p>We would like our DSL to be able to represent the following functions. <strong>For future experiments, make sure you don’t include cosine.</strong></p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(f_0(x) = x + 1\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(f_1(x) = x^2 + \frac{x}{\sin x}\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(f_2(x) = (x + 2)^x\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(f_3(x) = \begin{cases}
+x^2 &amp; x &lt; 0\\
+\sqrt {x^2 + 1} &amp; x \geq 0\\
+\end{cases}\)</span></p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dslf</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">DSLFactory</span><span class="p">()</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+<span class="c1"># BEGIN SOLUTION &quot;YOUR CODE HERE&quot;</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;sin&quot;</span><span class="p">,</span> <span class="s2">&quot;f -&gt; f&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="s2">&quot;f -&gt; f&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="s2">&quot;(f, f) -&gt; b&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;ite&quot;</span><span class="p">,</span> <span class="s2">&quot;(b, f, f) -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">cond</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">cond</span> <span class="k">else</span> <span class="n">y</span><span class="p">)</span>
+<span class="c1"># END SOLUTION</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">lambdas</span><span class="p">()</span>
+<span class="n">dslf</span><span class="o">.</span><span class="n">prune_to</span><span class="p">(</span><span class="s2">&quot;f -&gt; f&quot;</span><span class="p">)</span>
+<span class="n">dsl</span> <span class="o">=</span> <span class="n">dslf</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="dsl-printout">
+<h3>DSL Printout<a class="headerlink" href="#dsl-printout" title="Link to this heading">#</a></h3>
+<p>See your DSL printed below, and ensure it is what you would expect</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>              0 :: () -&gt; f
+              1 :: () -&gt; f
+              2 :: () -&gt; f
+              + :: (f, f) -&gt; f
+              - :: (f, f) -&gt; f
+              * :: (f, f) -&gt; f
+             ** :: (f, f) -&gt; f
+              / :: (f, f) -&gt; f
+            sin :: f -&gt; f
+           sqrt :: f -&gt; f
+              &lt; :: (f, f) -&gt; b
+            ite :: (b, f, f) -&gt; f
+            lam :: L&lt;#body|f&gt; -&gt; f -&gt; #body
+           $0_0 :: V&lt;f@0&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-1b-write-your-functions">
+<h3>Exercise 1B: Write your functions<a class="headerlink" href="#exercise-1b-write-your-functions" title="Link to this heading">#</a></h3>
+<p>We have provided <span class="math notranslate nohighlight">\(f_0\)</span>, it is up to you to write <span class="math notranslate nohighlight">\(f_1\)</span> through <span class="math notranslate nohighlight">\(f_3\)</span>. Note that there are no leaf nodes in the neurosym DSLs, so terminal productions are represented as s-expressions with no children. Run the tests in the following cell to make sure your DSL and programs are working properly</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">f_0</span> <span class="o">=</span> <span class="s2">&quot;(lam (+ ($0_0) (1)))&quot;</span>
+<span class="c1"># BEGIN SOLUTION &quot;YOUR CODE HERE&quot;</span>
+<span class="n">f_1</span> <span class="o">=</span> <span class="s2">&quot;(lam (+ (** ($0_0) (2)) (/ ($0_0) (sin ($0_0)))))&quot;</span>
+<span class="n">f_2</span> <span class="o">=</span> <span class="s2">&quot;(lam (** (+ ($0_0) (2)) ($0_0)))&quot;</span>
+<span class="n">f_3</span> <span class="o">=</span> <span class="s2">&quot;(lam (ite (&lt; ($0_0) (0)) (** ($0_0) (2)) (sqrt (+ (1) (** ($0_0) (2))))))&quot;</span>
+<span class="c1"># END SOLUTION</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_program</span><span class="p">(</span><span class="n">actual_program</span><span class="p">,</span> <span class="n">expected_fn</span><span class="p">):</span>
+    <span class="n">actual_fn</span> <span class="o">=</span> <span class="n">dsl</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">parse_s_expression</span><span class="p">(</span><span class="n">actual_program</span><span class="p">)))</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">actual</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">actual_fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">])</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">expected_fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">])</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">actual</span> <span class="o">-</span> <span class="n">expected</span><span class="p">)</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mf">1e-5</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">~</span><span class="n">bad</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">return</span>
+    <span class="p">[[</span><span class="n">bad_input</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;On input </span><span class="si">{</span><span class="n">inputs</span><span class="p">[</span><span class="n">bad_input</span><span class="p">]</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected</span><span class="p">[</span><span class="n">bad_input</span><span class="p">]</span><span class="si">}</span><span class="s2"> but recvd </span><span class="si">{</span><span class="n">actual</span><span class="p">[</span><span class="n">bad_input</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">test_program</span><span class="p">(</span><span class="n">f_0</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">test_program</span><span class="p">(</span><span class="n">f_1</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">x</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">test_program</span><span class="p">(</span><span class="n">f_2</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">test_program</span><span class="p">(</span><span class="n">f_3</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="part-2-finding-programs">
+<h2>Part 2: Finding Programs<a class="headerlink" href="#part-2-finding-programs" title="Link to this heading">#</a></h2>
+<p>To begin with, we look into using enumeration to find programs. Since we don’t have a set of programs to fit a distribution to, we start with a ``uniform PCFG’’ (minor note: this is an ill-defined PCFG in this case since sampling from it has a high probability of divergence. it doesn’t matter to the enumeration algorithm, however).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dist_family</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">BigramProgramDistributionFamily</span><span class="p">(</span><span class="n">dsl</span><span class="p">)</span>
+<span class="n">uniform</span> <span class="o">=</span> <span class="n">dist_family</span><span class="o">.</span><span class="n">uniform</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can enumerate programs from this distribution by running the <code class="docutils literal notranslate"><span class="pre">dist_family.enumerate</span></code> command. This produces an infinite stream of programs, which we can limit with <code class="docutils literal notranslate"><span class="pre">islice</span></code> as below:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">prog</span><span class="p">,</span> <span class="n">like</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">dist_family</span><span class="o">.</span><span class="n">enumerate</span><span class="p">(</span><span class="n">uniform</span><span class="p">),</span> <span class="mi">10</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">prog</span><span class="p">),</span> <span class="n">like</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(lam ($0_0)) -2.4849066734313965
+(lam (0)) -2.4849066734313965
+(lam (1)) -2.4849066734313965
+(lam (2)) -2.4849066734313965
+(lam (sin ($0_0))) -4.969813346862793
+(lam (sin (0))) -4.969813346862793
+(lam (sin (1))) -4.969813346862793
+(lam (sin (2))) -4.969813346862793
+(lam (sqrt ($0_0))) -4.969813346862793
+(lam (sqrt (0))) -4.969813346862793
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can also specify a minimum likelihood, and guarantee that we see all programs above that likelihood:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">prog</span><span class="p">,</span> <span class="n">like</span> <span class="ow">in</span> <span class="n">dist_family</span><span class="o">.</span><span class="n">enumerate</span><span class="p">(</span><span class="n">uniform</span><span class="p">,</span> <span class="n">min_likelihood</span><span class="o">=-</span><span class="mi">5</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">prog</span><span class="p">),</span> <span class="n">like</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(lam ($0_0)) -2.4849066734313965
+(lam (0)) -2.4849066734313965
+(lam (1)) -2.4849066734313965
+(lam (2)) -2.4849066734313965
+(lam (sin ($0_0))) -4.969813346862793
+(lam (sin (0))) -4.969813346862793
+(lam (sin (1))) -4.969813346862793
+(lam (sin (2))) -4.969813346862793
+(lam (sqrt ($0_0))) -4.969813346862793
+(lam (sqrt (0))) -4.969813346862793
+(lam (sqrt (1))) -4.969813346862793
+(lam (sqrt (2))) -4.969813346862793
+</pre></div>
+</div>
+</div>
+</div>
+<section id="exercise-2-finding-a-program">
+<h3>Exercise 2: Finding a program<a class="headerlink" href="#exercise-2-finding-a-program" title="Link to this heading">#</a></h3>
+<p>Finish the following function below, which, given a distribution, a list of inputs and a list of outputs, finds a program matching those inputs and outputs, within epsilon at all locations. It might be helpful to look at the <code class="docutils literal notranslate"><span class="pre">test_program</span></code> method above to see how to run programs. Important detail: you will want to handle errors and <code class="docutils literal notranslate"><span class="pre">nan</span></code> values gracefully. For this, we provide the <code class="docutils literal notranslate"><span class="pre">run_safely</span></code> function, that takes a function and input and runs it, returning <code class="docutils literal notranslate"><span class="pre">None</span></code> if its output is <code class="docutils literal notranslate"><span class="pre">nan</span></code> or an error.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run_safely</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">y</span>
+
+<span class="k">def</span> <span class="nf">find_program</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">):</span>
+    <span class="c1"># BEGIN SOLUTION &quot;YOUR CODE HERE&quot;</span>
+    <span class="k">for</span> <span class="n">prog</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dist_family</span><span class="o">.</span><span class="n">enumerate</span><span class="p">(</span><span class="n">dist</span><span class="p">):</span>
+        <span class="n">actual_fn</span> <span class="o">=</span> <span class="n">dsl</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">prog</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">run_safely</span><span class="p">(</span><span class="n">actual_fn</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">o</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">epsilon</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">prog</span>
+    <span class="c1"># END SOLUTION</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Run the following tests to ensure your implementation is correct:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">find_program_for_function</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">):</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">find_program</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">find_program_for_function</span><span class="p">(</span><span class="n">uniform</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="s1">&#39;(lam (* ($0_0) (2)))&#39;</span>
+<span class="k">assert</span> <span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">find_program_for_function</span><span class="p">(</span><span class="n">uniform</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">))</span> <span class="o">==</span> <span class="s1">&#39;(lam (sqrt (* ($0_0) ($0_0))))&#39;</span>
+<span class="k">assert</span> <span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">find_program_for_function</span><span class="p">(</span><span class="n">uniform</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">))</span> <span class="o">==</span> <span class="s1">&#39;(lam ($0_0))&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>You will notice in the second test above, the enumerator came up with a “creative” solution to the absolute value problem. This is because this ended up being an easier to find solution than the more obvious <code class="docutils literal notranslate"><span class="pre">(lam</span> <span class="pre">(ite</span> <span class="pre">(&lt;</span> <span class="pre">($0_0)</span> <span class="pre">(0))</span> <span class="pre">(-</span> <span class="pre">(0)</span> <span class="pre">($0_0))</span> <span class="pre">($0_0)))</span></code>.</p>
+<p>The following cell will take slightly longer to run, but you can see that it is able to identify a solution for <span class="math notranslate nohighlight">\(\cos^2 \theta\)</span></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">find_program_for_function</span><span class="p">(</span><span class="n">uniform</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;(lam (- (1) (** (sin ($0_0)) (2))))&#39;
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="part-3-abstraction-learning">
+<h2>Part 3: Abstraction Learning<a class="headerlink" href="#part-3-abstraction-learning" title="Link to this heading">#</a></h2>
+<p>We start by introducing a dataset of smoothed sequences. These sequences have values roughly in the range <span class="math notranslate nohighlight">\([-2, 2]\)</span> are generally smoothed. We generate this data below:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">num_sequences</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">len_sequences</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">len_sequences</span><span class="p">)</span>
+<span class="n">slack</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">stride</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_sequences</span><span class="p">,</span> <span class="n">len_sequences</span> <span class="o">+</span> <span class="n">slack</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">2</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">len_sequences</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slack</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">values</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">slack</span><span class="p">)</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:,</span> <span class="p">::</span><span class="n">stride</span><span class="p">]</span>
+<span class="n">xs</span> <span class="o">=</span> <span class="n">xs</span><span class="p">[::</span><span class="n">stride</span><span class="p">]</span>
+
+<span class="n">plot_count</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="k">def</span> <span class="nf">plot_some_sequences</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">plot_count</span><span class="p">):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_some_sequences</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/f628f35cd8750d04aa7f95ba6f773ecfc9e7c0fd038e7a2cc8481454b66066cc.png" src="_images/f628f35cd8750d04aa7f95ba6f773ecfc9e7c0fd038e7a2cc8481454b66066cc.png" />
+</div>
+</div>
+<p>We provide a function for finding the best program out of a list that matches a given data sequence:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">evaluate_all_programs</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">programs</span><span class="p">):</span>
+    <span class="n">filtered_programs</span><span class="p">,</span> <span class="n">evaluations</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">prog</span> <span class="ow">in</span> <span class="n">programs</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">actual_fn</span> <span class="o">=</span> <span class="n">dsl</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">prog</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">xs</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">run_safely</span><span class="p">(</span><span class="n">actual_fn</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">ys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filtered_programs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prog</span><span class="p">)</span>
+            <span class="n">evaluations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ys</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filtered_programs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">evaluations</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">best_fits</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+    <span class="n">programs</span> <span class="o">=</span> <span class="p">[</span><span class="n">prog</span> <span class="k">for</span> <span class="n">prog</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">family</span><span class="o">.</span><span class="n">enumerate</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span> <span class="mi">5000</span><span class="p">)]</span>
+    <span class="n">programs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">programs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="n">filtered_programs</span><span class="p">,</span> <span class="n">ys</span> <span class="o">=</span> <span class="n">evaluate_all_programs</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">programs</span><span class="p">)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">((</span><span class="n">ys</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">values</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">program_idxs</span> <span class="o">=</span> <span class="n">errors</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mean error: &quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">filtered_programs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">program_idxs</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">plot_programs_against_data</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">best_programs</span><span class="p">):</span>
+    <span class="n">plot_some_sequences</span><span class="p">()</span>
+    <span class="n">best_programs</span> <span class="o">=</span> <span class="n">best_programs</span><span class="p">[:</span><span class="n">plot_count</span><span class="p">]</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">evals</span> <span class="o">=</span> <span class="n">evaluate_all_programs</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">best_programs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prog</span><span class="p">,</span> <span class="n">ev</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">best_programs</span><span class="p">,</span> <span class="n">evals</span><span class="p">):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ev</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">prog</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\$&quot;</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now we find the best programs among the first 50k enumerated programs</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_programs</span> <span class="o">=</span> <span class="n">best_fits</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">dist_family</span><span class="p">,</span> <span class="n">uniform</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean error:  15.650219661625867
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_programs_against_data</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">best_programs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/c5e05efc5ae854cce35cdb663d75e8786f6d4f198765aaadc134a7e2b5d09dd2.png" src="_images/c5e05efc5ae854cce35cdb663d75e8786f6d4f198765aaadc134a7e2b5d09dd2.png" />
+</div>
+</div>
+<section id="exercise-3a-fitting-a-dsl">
+<h3>Exercise 3A: Fitting a DSL<a class="headerlink" href="#exercise-3a-fitting-a-dsl" title="Link to this heading">#</a></h3>
+<p>Fit a function to the <code class="docutils literal notranslate"><span class="pre">best_programs</span></code>. Useful functions to know are <code class="docutils literal notranslate"><span class="pre">dist_family.fit_distribution</span></code> and <code class="docutils literal notranslate"><span class="pre">distribution.bound_minimum_likelihood</span></code>. Use a parameter of 0.01 as the minimum likelihood.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># BEGIN SOLUTION fitted_dist = ______</span>
+<span class="n">fitted_dist</span> <span class="o">=</span> <span class="n">dist_family</span><span class="o">.</span><span class="n">fit_distribution</span><span class="p">(</span><span class="n">best_programs</span><span class="p">)</span><span class="o">.</span><span class="n">bound_minimum_likelihood</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="c1"># END SOLUTION</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We then check the fit. This should lead to a lower mean error:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_programs_fitted</span> <span class="o">=</span> <span class="n">best_fits</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">dist_family</span><span class="p">,</span> <span class="n">fitted_dist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean error:  9.899277966459383
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_programs_against_data</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">best_programs_fitted</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/f136887fe11f33a94b0e1d34ea3956c79b702ea092719f51b83a5a99f113b7fb.png" src="_images/f136887fe11f33a94b0e1d34ea3956c79b702ea092719f51b83a5a99f113b7fb.png" />
+</div>
+</div>
+</section>
+<section id="exercise-3b-abstractions">
+<h3>Exercise 3B: Abstractions<a class="headerlink" href="#exercise-3b-abstractions" title="Link to this heading">#</a></h3>
+<p>You can use the function <code class="docutils literal notranslate"><span class="pre">ns.compression.multi_step_compression</span></code> to get a new dsl and rewritten programs. Use this function to create a new DSL with 5 new abstractions and a new distribution</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># BEGIN SOLUTION abstraction_dsl, abstraction_family, abstraction_dist = ______</span>
+<span class="n">abstraction_dsl</span><span class="p">,</span> <span class="n">rewritten</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">compression</span><span class="o">.</span><span class="n">multi_step_compression</span><span class="p">(</span><span class="n">dsl</span><span class="p">,</span> <span class="n">best_programs_fitted</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">abstraction_family</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">BigramProgramDistributionFamily</span><span class="p">(</span><span class="n">abstraction_dsl</span><span class="p">)</span>
+<span class="n">abstraction_dist</span> <span class="o">=</span> <span class="n">abstraction_family</span><span class="o">.</span><span class="n">fit_distribution</span><span class="p">(</span><span class="n">rewritten</span><span class="p">)</span><span class="o">.</span><span class="n">bound_minimum_likelihood</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="c1"># END SOLUTION</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>You can see your printed DSL here</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">abstraction_dsl</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>              0 :: () -&gt; f
+              1 :: () -&gt; f
+              2 :: () -&gt; f
+              + :: (f, f) -&gt; f
+              - :: (f, f) -&gt; f
+              * :: (f, f) -&gt; f
+             ** :: (f, f) -&gt; f
+              / :: (f, f) -&gt; f
+            sin :: f -&gt; f
+           sqrt :: f -&gt; f
+              &lt; :: (f, f) -&gt; b
+            ite :: (b, f, f) -&gt; f
+            lam :: L&lt;#body|f&gt; -&gt; f -&gt; #body
+           $0_0 :: V&lt;f@0&gt;
+           __10 :: (f, f) -&gt; f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
+           __20 :: () -&gt; f = (lam-abstr () (sqrt (2)))
+           __30 :: (f, f) -&gt; f -&gt; f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0_0))))))
+           __40 :: (f, f) -&gt; f = (lam-abstr (#0 #1) (ite (&lt; #1 #0) (1) (0)))
+           __50 :: () -&gt; f = (lam-abstr () (sin (1)))
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now can see how this effects our program fitting</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_programs_abstractions</span> <span class="o">=</span> <span class="n">best_fits</span><span class="p">(</span><span class="n">abstraction_dsl</span><span class="p">,</span> <span class="n">abstraction_family</span><span class="p">,</span> <span class="n">abstraction_dist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean error:  8.449844222785112
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_programs_against_data</span><span class="p">(</span><span class="n">abstraction_dsl</span><span class="p">,</span> <span class="n">best_programs_abstractions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/324681b92463b361defd1a4fdf4ca1b6c3eca5d6c21d07d0d0dfe95193d12927.png" src="_images/324681b92463b361defd1a4fdf4ca1b6c3eca5d6c21d07d0d0dfe95193d12927.png" />
+</div>
+</div>
+</section>
+</section>
+<section id="part-4-bonus-python-dsl-subset">
+<h2>Part 4: Bonus: Python DSL Subset<a class="headerlink" href="#part-4-bonus-python-dsl-subset" title="Link to this heading">#</a></h2>
+<p>This section does not contain any exercises, and exists only as a showcase of the Python DSL Subset feature of the neurosymbolic library.</p>
+<p>First, we have a method for converting Python code into s-expressions compatible with the neurosym library</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">x = 2</span>
+<span class="s2">y = 2 + x</span>
+<span class="s2">z = x + y</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">code_s</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">python_to_type_annotated_ns_s_exp</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">code_s</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;(Module~M (/seq~seqS~3 (Assign~S (list~_L_~1 (Name~L (const-&amp;x:0~Name) (Store~Ctx))) (Constant~E (const-i2~Const) (const-None~ConstKind)) (const-None~TC)) (Assign~S (list~_L_~1 (Name~L (const-&amp;y:0~Name) (Store~Ctx))) (BinOp~E (Constant~E (const-i2~Const) (const-None~ConstKind)) (Add~O) (Name~E (const-&amp;x:0~Name) (Load~Ctx))) (const-None~TC)) (Assign~S (list~_L_~1 (Name~L (const-&amp;z:0~Name) (Store~Ctx))) (BinOp~E (Name~E (const-&amp;x:0~Name) (Load~Ctx)) (Add~O) (Name~E (const-&amp;y:0~Name) (Load~Ctx))) (const-None~TC))) (list~_TI_~0))&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<p>We would like to be able to fit distributions to these programs, but unfortunately the Python DSL is infinite in our framework, as we do not support arbitrary leaves. Thus, we need to establish a DSL subset.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">subset</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">PythonDSLSubset</span><span class="o">.</span><span class="n">from_s_exps</span><span class="p">([</span><span class="n">code_s</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can then create Python DSL as such. Note that the DSL produced is quite large.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dsl_python</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">create_python_dsl</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">python_dfa</span><span class="p">(),</span> <span class="n">subset</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dsl_python</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>       Module~M :: (seqS, [TI]) -&gt; M
+       Assert~S :: (E, E) -&gt; S
+       Assign~S :: ([L], E, TC) -&gt; S
+     AsyncFor~S :: (L, E, seqS, seqS, TC) -&gt; S
+    AugAssign~S :: (L, O, E) -&gt; S
+       Delete~S :: [L] -&gt; S
+         Expr~S :: E -&gt; S
+          For~S :: (L, E, seqS, seqS, TC) -&gt; S
+           If~S :: (E, seqS, seqS) -&gt; S
+        Raise~S :: (E, E) -&gt; S
+       Return~S :: E -&gt; S
+        While~S :: (E, seqS, seqS) -&gt; S
+      /splice~S :: seqS -&gt; S
+        Await~E :: E -&gt; E
+        BinOp~E :: (E, O, E) -&gt; E
+     Constant~E :: (Const, ConstKind) -&gt; E
+        IfExp~E :: (E, E, E) -&gt; E
+         Name~E :: (Name, Ctx) -&gt; E
+    NamedExpr~E :: (L, E) -&gt; E
+      Starred~E :: (E, Ctx) -&gt; E
+    Subscript~E :: (E, SliceRoot, Ctx) -&gt; E
+      UnaryOp~E :: (O, E) -&gt; E
+        Yield~E :: E -&gt; E
+    YieldFrom~E :: E -&gt; E
+_slice_content~SliceRoot :: E -&gt; SliceRoot
+_slice_slice~SliceRoot :: Slice -&gt; SliceRoot
+    Slice~Slice :: (E, E, E) -&gt; Slice
+         List~L :: ([L], Ctx) -&gt; L
+         Name~L :: (Name, Ctx) -&gt; L
+      Starred~L :: (L, Ctx) -&gt; L
+    Subscript~L :: (E, SliceRoot, Ctx) -&gt; L
+        Tuple~L :: ([L], Ctx) -&gt; L
+_starred_content~L :: L -&gt; L
+_starred_starred~L :: L -&gt; L
+    /seq~seqS~3 :: (S, S, S) -&gt; seqS
+ /subseq~seqS~3 :: (S, S, S) -&gt; seqS
+/choiceseq~seqS~3 :: (S, S, S) -&gt; seqS
+     list~_L_~1 :: L -&gt; [L]
+    list~_TI_~0 :: () -&gt; [TI]
+const-&amp;x:0~Name :: () -&gt; Name
+const-&amp;y:0~Name :: () -&gt; Name
+const-&amp;z:0~Name :: () -&gt; Name
+       Load~Ctx :: () -&gt; Ctx
+      Store~Ctx :: () -&gt; Ctx
+ const-i2~Const :: () -&gt; Const
+const-None~ConstKind :: () -&gt; ConstKind
+  const-None~TC :: () -&gt; TC
+          Add~O :: () -&gt; O
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can enumerate some programs from this DSL, adding in a <code class="docutils literal notranslate"><span class="pre">DefUseChainPreorderMask</span></code> which enforces that our distribution only produces programs where the def-use chains are all valid</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">python_family</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">BigramProgramDistributionFamily</span><span class="p">(</span>
+    <span class="n">dsl_python</span><span class="p">,</span>
+    <span class="n">additional_preorder_masks</span><span class="o">=</span><span class="p">[</span>
+        <span class="k">lambda</span> <span class="n">dist</span><span class="p">,</span> <span class="n">dsl</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">python_def_use_mask</span><span class="o">.</span><span class="n">DefUseChainPreorderMask</span><span class="p">(</span>
+            <span class="n">dist</span><span class="p">,</span> <span class="n">dsl</span><span class="p">,</span> <span class="n">ns</span><span class="o">.</span><span class="n">python_def_use_mask</span><span class="o">.</span><span class="n">DefUseMaskConfiguration</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">python_dfa</span><span class="p">(),</span> <span class="p">{})</span>
+        <span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">node_ordering</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">python_def_use_mask</span><span class="o">.</span><span class="n">PythonNodeOrdering</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">python_dist</span> <span class="o">=</span> <span class="n">python_family</span><span class="o">.</span><span class="n">fit_distribution</span><span class="p">([</span><span class="n">code_s</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that in all the produced programs, def-use chains are preserved</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">like</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">python_family</span><span class="o">.</span><span class="n">enumerate</span><span class="p">(</span><span class="n">python_dist</span><span class="p">),</span> <span class="mi">10</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">s_exp_to_python</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*&quot;</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>x = 2
+x = 2 + x
+x = 2 + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+x = x + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+x = 2
+****************************************************************************************************
+x = 2
+x = 2 + x
+y = 2 + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+y = x + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+y = 2
+****************************************************************************************************
+x = 2
+x = 2 + x
+z = 2 + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+z = x + x
+****************************************************************************************************
+x = 2
+x = 2 + x
+z = 2
+****************************************************************************************************
+x = 2
+x = x + x
+x = 2 + x
+****************************************************************************************************
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="near_demo_classification.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Neurosymbolic Software Tutorial - Classification</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="discrete_exercise_skeleton.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Neurosymbolic Software Tutorial - Discrete</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#outline">Outline</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-1-defining-a-dsl">Part 1: Defining a DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-1a-create-a-dsl">Exercise 1A: Create a DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-1b-write-your-functions">Exercise 1B: Write your functions</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-2-finding-programs">Part 2: Finding Programs</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-2-finding-a-program">Exercise 2: Finding a program</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-3-abstraction-learning">Part 3: Abstraction Learning</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-3a-fitting-a-dsl">Exercise 3A: Fitting a DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-3b-abstractions">Exercise 3B: Abstractions</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-4-bonus-python-dsl-subset">Part 4: Bonus: Python DSL Subset</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Neurosymbolic Team (neurosymbolic.org)
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
