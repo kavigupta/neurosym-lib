@@ -10,6 +10,8 @@ from math import sqrt
 
 import numpy as np
 
+root_folder = os.path.dirname(os.path.abspath(__file__))
+
 ## Example 1: Random walk changes color when y < 0.5
 
 
@@ -42,12 +44,12 @@ X_train, Y_train = genRandomWalkPoints(100, 10, rng, thresholdFun)
 X_test, Y_test = genRandomWalkPoints(30, 10, rng, thresholdFun)
 
 
-os.makedirs("./demodata/classification_example/", exist_ok=True)
-np.save("./demodata/classification_example/train_ex_data.npy", X_train)
-np.save("./demodata/classification_example/train_ex_labels.npy", Y_train)
+os.makedirs(f"{root_folder}/data/classification_example/", exist_ok=True)
+np.save(f"{root_folder}/data/classification_example/train_ex_data.npy", X_train)
+np.save(f"{root_folder}/data/classification_example/train_ex_labels.npy", Y_train)
 
-np.save("./demodata/classification_example/test_ex_data.npy", X_test)
-np.save("./demodata/classification_example/test_ex_labels.npy", Y_test)
+np.save(f"{root_folder}/data/classification_example/test_ex_data.npy", X_test)
+np.save(f"{root_folder}/data/classification_example/test_ex_labels.npy", Y_test)
 
 print("Done with classification")
 
@@ -104,12 +106,12 @@ B = 30
 X_test, Y_test = genTransitionPoints(B, 20, (rng.randn(B, 4) - 0.5) * 0.3, mirrors)
 
 
-os.makedirs("./demodata/mirrors_example/", exist_ok=True)
-np.save("./demodata/mirrors_example/train_ex_data.npy", X_train)
-np.save("./demodata/mirrors_example/train_ex_labels.npy", Y_train)
+os.makedirs(f"{root_folder}/data/mirrors_example/", exist_ok=True)
+np.save(f"{root_folder}/data/mirrors_example/train_ex_data.npy", X_train)
+np.save(f"{root_folder}/data/mirrors_example/train_ex_labels.npy", Y_train)
 
-np.save("./demodata/mirrors_example/test_ex_data.npy", X_test)
-np.save("./demodata/mirrors_example/test_ex_labels.npy", Y_test)
+np.save(f"{root_folder}/data/mirrors_example/test_ex_data.npy", X_test)
+np.save(f"{root_folder}/data/mirrors_example/test_ex_labels.npy", Y_test)
 
 print("Done with mirrors")
 
@@ -145,11 +147,11 @@ init = (rng.randn(B, 4) - 0.5) * 0.4 + np.array([0, 5.0, 3.5, 0])
 X_test, Y_test = genTransitionPoints(B, 35, init, floorBounce)
 
 
-os.makedirs("./demodata/bounce_example/", exist_ok=True)
-np.save("./demodata/bounce_example/train_ex_data.npy", X_train)
-np.save("./demodata/bounce_example/train_ex_labels.npy", Y_train)
+os.makedirs(f"{root_folder}/data/bounce_example/", exist_ok=True)
+np.save(f"{root_folder}/data/bounce_example/train_ex_data.npy", X_train)
+np.save(f"{root_folder}/data/bounce_example/train_ex_labels.npy", Y_train)
 
-np.save("./demodata/bounce_example/test_ex_data.npy", X_test)
-np.save("./demodata/bounce_example/test_ex_labels.npy", Y_test)
+np.save(f"{root_folder}/data/bounce_example/test_ex_data.npy", X_test)
+np.save(f"{root_folder}/data/bounce_example/test_ex_labels.npy", Y_test)
 
 print("Done with bounce")
