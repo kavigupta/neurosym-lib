@@ -44,7 +44,7 @@ class BaseTrainer(pl.LightningModule):
         super().__init__()
         self.config = config
         self.model = model
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["model"])
 
     def loss(self) -> dict:
         # pylint: disable=arguments-differ
