@@ -108,19 +108,13 @@ class DatasetWrapper(pl.LightningDataModule):
         self.batch_size = batch_size
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.train, batch_size=self.batch_size, num_workers=4
-        )
+        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test, batch_size=self.batch_size, num_workers=4
-        )
+        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test, batch_size=self.batch_size, num_workers=4
-        )
+        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
 
 
 def numpy_dataset_from_github(
