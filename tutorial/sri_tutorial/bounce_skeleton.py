@@ -1,41 +1,22 @@
+import logging
 import os
 
+import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-
-import pytorch_lightning as pl
-import logging
 
 import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import map_torch
 
-import numpy as np
-
 
 def bounce_dsl():
     L = 4
     O = 4
     dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
-    ## DSL for the bounce example.
-    dslf.typedef("fL", "{f, $L}")
-
-    dslf.parameterized(
-        "linear_bool",
-        "() -> $fL -> f",
-        lambda lin: lin,
-        dict(lin=lambda: nn.Linear(L, 1)),
-    )
-    dslf.parameterized(
-        "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
-    )
-
-    dslf.concrete("ite", "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a", ite_torch)
-    dslf.concrete(
-        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
-    )
-
+    "YOUR CODE HERE"
     dslf.prune_to("[$fL] -> [$fL]")
     return dslf.finalize()
 
@@ -103,50 +84,21 @@ trainer_cfg = near.NEARTrainerConfig(
     optimizer=torch.optim.Adam,
 )
 
-
-def validation_cost(node):
-    trainer = pl.Trainer(
-        max_epochs=trainer_cfg.n_epochs,
-        devices="auto",
-        accelerator="cpu",
-        enable_checkpointing=False,
-        # enable_model_summary=False,
-        # enable_progress_bar=False,
-        logger=False,
-        callbacks=[
-            pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
-        ],
-    )
-    try:
-        initialized_p = neural_dsl.initialize(node.program)
-    except near.PartialProgramNotFoundError:
-        return 10000.0
-
-    model = neural_dsl.compute(initialized_p)
-    if not isinstance(model, torch.nn.Module):
-        del model
-        del initialized_p
-        model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
-    pl_model = near.NEARTrainer(model, config=trainer_cfg)
-    trainer.fit(pl_model, datamodule.train_dataloader(), datamodule.val_dataloader())
-    return trainer.callback_metrics["val_loss"].item()
-
-
-def checker(node):
-    """
-    In NEAR, any program that has no holes is valid.
-    The hole checking is done before this function will
-    be called so we can assume that the program has no holes.
-    """
-    return set(ns.symbols_for_program(node.program)) - set(dsl.symbols()) == set()
-
+validation_cost = near.ValidationCost(
+    neural_dsl=neural_dsl,
+    trainer_cfg=trainer_cfg,
+    datamodule=datamodule,
+    callbacks=[
+        pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
+    ],
+)
 
 g = near.near_graph(
     neural_dsl,
     ns.parse_type(
         s="([{f, $L}]) -> [{f, $O}]", env=ns.TypeDefiner(L=input_dim, O=output_dim)
     ),
-    is_goal=checker,
+    is_goal=neural_dsl.program_has_no_holes,
 )
 
 iterator = ns.search.bounded_astar(g, validation_cost, max_depth=16)
@@ -211,7 +163,6 @@ trajectoryb = testProgram(best_program_nodes[1])
 
 # And then the code below plots it to show how it compares to a trajectory in the training set.
 import matplotlib.pyplot as plt
-
 
 title = "Bouncing ball (ground truth in black)"
 
