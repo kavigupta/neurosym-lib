@@ -111,6 +111,8 @@ validation_cost = near.ValidationCost(
     callbacks=[
         pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
     ],
+    enable_model_summary=False,
+    progress_by_epoch=True,
 )
 
 g = near.near_graph(
