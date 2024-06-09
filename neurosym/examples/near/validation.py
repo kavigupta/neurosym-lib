@@ -64,6 +64,9 @@ class ValidationCost:
 
     @staticmethod
     def duplicate(callbacks):
+        """
+        Reinitialize all callbacks to avoid sharing state between different validation runs.
+        """
         out = []
         for cb in callbacks:
             out.append(cb.__class__(**{k: getattr(cb, k) for k in cb.__init__.__code__.co_varnames if hasattr(cb, k)}))
