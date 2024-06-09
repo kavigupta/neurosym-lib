@@ -1,5 +1,5 @@
-import warnings
 import logging
+import warnings
 
 
 def import_pytorch_lightning():

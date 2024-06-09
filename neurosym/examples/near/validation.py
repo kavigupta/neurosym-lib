@@ -4,9 +4,9 @@ import tqdm.auto as tqdm
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainer
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
-from neurosym.programs.s_expression_render import render_s_expression
 
 pl = import_pytorch_lightning()
 
