@@ -1,6 +1,64 @@
+import logging
+import os
+
+import numpy as np
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+
+import neurosym as ns
+from neurosym.examples import near
+from neurosym.examples.near.operations.basic import ite_torch
+from neurosym.examples.near.operations.lists import map_torch
 
 
+def bounce_dsl():
+    L = 4
+    O = 4
+    dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
+    # BEGIN SOLUTION "YOUR CODE HERE"
+    ## DSL for the bounce example.
+    dslf.typedef("fL", "{f, $L}")
 
+    dslf.parameterized(
+        "linear_bool",
+        "() -> $fL -> f",
+        lambda lin: lin,
+        dict(lin=lambda: nn.Linear(L, 1)),
+    )
+    dslf.parameterized(
+        "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
+    )
+
+    dslf.concrete("ite", "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a", ite_torch)
+    dslf.concrete(
+        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
+    )
+    # END SOLUTION
+    dslf.prune_to("[$fL] -> [$fL]")
+    return dslf.finalize()
+
+
+dsl = bounce_dsl()
+print("Defined DSL")
+
+from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+
+root = os.path.dirname(os.path.abspath(__file__))
+
+dataset_factory = lambda train_seed: DatasetWrapper(
+    DatasetFromNpy(
+        f"{root}/data/bounce_example/train_ex_data.npy",
+        f"{root}/data/bounce_example/train_ex_labels.npy",
+        train_seed,
+    ),
+    DatasetFromNpy(
+        f"{root}/data/bounce_example/test_ex_data.npy",
+        f"{root}/data/bounce_example/test_ex_labels.npy",
+        None,
+    ),
+    batch_size=200,
+)
 datamodule = dataset_factory(42)
 input_dim, output_dim = 4, 4
 print("Data has been loaded.")
@@ -51,6 +109,8 @@ validation_cost = near.ValidationCost(
     callbacks=[
         pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=5)
     ],
+    enable_progress_bar=False,
+    progress_by_epoch=True,
 )
 
 g = near.near_graph(
