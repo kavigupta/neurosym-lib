@@ -62,8 +62,16 @@ class ValidationCost:
         self.fit_trainer(trainer, model, pbar)
         return trainer.callback_metrics["val_loss"].item()
 
+    @staticmethod
+    def duplicate(callbacks):
+        out = []
+        for cb in callbacks:
+            out.append(cb.__class__(**{k: getattr(cb, k) for k in cb.__init__.__code__.co_varnames if hasattr(cb, k)}))
+        return out
+
     def get_trainer_and_pbar(self, label=None):
         callbacks = list(self.callbacks)
+        callbacks = self.duplicate(self.callbacks)
         if self.progress_by_epoch:
             print("training", label if label else "")
             pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
