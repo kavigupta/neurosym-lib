@@ -1,5 +1,33 @@
+import logging
+import os
 
+import numpy as np
+import matplotlib.pyplot as plt
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
 
+import neurosym as ns
+from neurosym.examples import near
+from neurosym.examples.near.operations.basic import ite_torch
+from neurosym.examples.near.operations.lists import map_torch
+
+from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+
+dataset_factory = lambda train_seed: DatasetWrapper(
+    DatasetFromNpy(
+        f"bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
+        f"bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
+        train_seed,
+    ),
+    DatasetFromNpy(
+        f"bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
+        f"bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
+        None,
+    ),
+    batch_size=200,
+)
+datamodule = dataset_factory(42)
 
 datamodule = dataset_factory(42)
 input_dim, output_dim = 4, 4
@@ -150,4 +178,4 @@ plt.title(title)
 plt.xlim(-5, 10)
 plt.ylim(-5, 7)
 plt.grid(True)
-plt.show()
+# plt.show()
