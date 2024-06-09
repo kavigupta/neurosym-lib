@@ -65,7 +65,26 @@ def run_notebook(notebook_path):
         f.write(json.dumps(notebook_json, indent=1) + "\n")
 
 
+def run_python(python_path):
+    with open(python_path) as f:
+        python_code = f.read()
+    python_code = python_code.split("\n")
+    python_code = remove_solution_comments(python_code)
+    python_code = "\n".join(python_code)
+    with open(python_path.replace("_solutions.py", "_skeleton.py"), "w") as f:
+        f.write(python_code)
+
+
+def run(path):
+    if path.endswith(".ipynb"):
+        run_notebook(path)
+    elif path.endswith(".py"):
+        run_python(path)
+    else:
+        raise ValueError("Path must be a .ipynb or .py file.")
+
+
 if __name__ == "__main__":
     import sys
 
-    run_notebook(sys.argv[1])
+    run(sys.argv[1])
