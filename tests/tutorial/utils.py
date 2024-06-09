@@ -4,7 +4,7 @@ import sys
 import tempfile
 
 
-def execute_notebook(filename, suffix):
+def execute_notebook(filename, suffix, **kwargs):
     with open(filename) as ff:
         nb_out = json.load(ff)
 
@@ -31,5 +31,5 @@ def execute_notebook(filename, suffix):
         with open(f.name, "w") as f:
             f.write(source_code)
 
-        result = subprocess.check_output([sys.executable, f.name])
+        result = subprocess.check_output([sys.executable, f.name], **kwargs)
     return result.decode("utf-8")
