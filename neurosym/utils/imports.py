@@ -1,6 +1,7 @@
 import warnings
 import logging
 
+
 def import_pytorch_lightning():
     # filter deprecation warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -9,6 +10,6 @@ def import_pytorch_lightning():
     warnings.filterwarnings("default", category=DeprecationWarning)
     warnings.filterwarnings("ignore", ".*does not have many workers.*")
     warnings.filterwarnings("ignore", ".*GPU available but not used.*")
-    logger = logging.getLogger('pytorch_lightning.utilities.rank_zero')
+    logger = logging.getLogger("pytorch_lightning.utilities.rank_zero")
     logger.setLevel(logging.ERROR)
     return pl

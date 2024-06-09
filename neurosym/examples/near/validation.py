@@ -69,7 +69,15 @@ class ValidationCost:
         """
         out = []
         for cb in callbacks:
-            out.append(cb.__class__(**{k: getattr(cb, k) for k in cb.__init__.__code__.co_varnames if hasattr(cb, k)}))
+            out.append(
+                cb.__class__(
+                    **{
+                        k: getattr(cb, k)
+                        for k in cb.__init__.__code__.co_varnames
+                        if hasattr(cb, k)
+                    }
+                )
+            )
         return out
 
     def get_trainer_and_pbar(self, label=None):
