@@ -1,43 +1,17 @@
-import logging
 import os
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+
+import pytorch_lightning as pl
+import logging
 
 import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.examples.near.operations.lists import map_torch
 
-from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
-
-dataset_factory = lambda train_seed: DatasetWrapper(
-    DatasetFromNpy(
-        f"bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
-        f"bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
-        train_seed,
-    ),
-    DatasetFromNpy(
-        f"bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
-        f"bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
-        None,
-    ),
-    batch_size=200,
-)
-datamodule = dataset_factory(42)
-
-datamodule = dataset_factory(42)
-
-
-def plot_trajectory(trajectory, color):
-    plt.scatter(trajectory[:, 0], trajectory[:, 1], marker="o", color=color)
-    plt.plot(trajectory[:, 0], trajectory[:, 1], alpha=0.2, color=color)
-    plt.xlim(-5, 10)
-    plt.ylim(-5, 7)
-    plt.grid(True)
+import numpy as np
 
 
 def bounce_dsl():
@@ -67,10 +41,28 @@ def bounce_dsl():
     return dslf.finalize()
 
 
-input_dim, output_dim = 4, 4
-
 dsl = bounce_dsl()
+print("Defined DSL")
 
+from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+
+root = os.path.dirname(os.path.abspath(__file__))
+
+dataset_factory = lambda train_seed: DatasetWrapper(
+    DatasetFromNpy(
+        f"{root}/data/bounce_example/train_ex_data.npy",
+        f"{root}/data/bounce_example/train_ex_labels.npy",
+        train_seed,
+    ),
+    DatasetFromNpy(
+        f"{root}/data/bounce_example/test_ex_data.npy",
+        f"{root}/data/bounce_example/test_ex_labels.npy",
+        None,
+    ),
+    batch_size=200,
+)
+datamodule = dataset_factory(42)
+input_dim, output_dim = 4, 4
 print("Data has been loaded.")
 
 print("Now, you have to add the code to actually search for a program using NEAR")
