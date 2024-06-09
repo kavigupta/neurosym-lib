@@ -5,7 +5,6 @@ from tutorial.process_tutorial import create_skeleton
 
 from .utils import execute_notebook
 
-
 validate = """
 def validate(t):
     vy = t[:, -1]
