@@ -30,7 +30,47 @@ dataset_factory = lambda train_seed: DatasetWrapper(
 datamodule = dataset_factory(42)
 
 datamodule = dataset_factory(42)
+
+
+def plot_trajectory(trajectory, color):
+    plt.scatter(trajectory[:, 0], trajectory[:, 1], marker="o", color=color)
+    plt.plot(trajectory[:, 0], trajectory[:, 1], alpha=0.2, color=color)
+    plt.xlim(-5, 10)
+    plt.ylim(-5, 7)
+    plt.grid(True)
+
+
+def bounce_dsl():
+    L = 4
+    O = 4
+    dslf = ns.DSLFactory(L=L, O=O, max_overall_depth=5)
+    # BEGIN SOLUTION "YOUR CODE HERE"
+    ## DSL for the bounce example.
+    dslf.typedef("fL", "{f, $L}")
+
+    dslf.parameterized(
+        "linear_bool",
+        "() -> $fL -> f",
+        lambda lin: lin,
+        dict(lin=lambda: nn.Linear(L, 1)),
+    )
+    dslf.parameterized(
+        "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
+    )
+
+    dslf.concrete("ite", "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a", ite_torch)
+    dslf.concrete(
+        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
+    )
+    # END SOLUTION
+    dslf.prune_to("[$fL] -> [$fL]")
+    return dslf.finalize()
+
+
 input_dim, output_dim = 4, 4
+
+dsl = bounce_dsl()
+
 print("Data has been loaded.")
 
 print("Now, you have to add the code to actually search for a program using NEAR")
