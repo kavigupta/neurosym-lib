@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Neurosymbolic Software Tutorial - Classification &#8212; neurosym Framework Tutorial</title>
+    <title>Neurosymbolic Software Tutorial - Regression - Solution &#8212; neurosym Framework Tutorial</title>
   
   
   
@@ -57,11 +57,9 @@
     <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'near_demo_classification';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'near_demo_regression_solutions';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Neurosymbolic Software Tutorial - Regression" href="near_demo_regression.html" />
-    <link rel="prev" title="The neurosym Library" href="README.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -124,6 +122,8 @@
       
       
       
+        
+      
       <div class="bd-sidebar-primary bd-sidebar">
         
 
@@ -171,8 +171,8 @@
                 </a>
             </li>
         </ul>
-        <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Classification</a></li>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="near_demo_classification.html">Neurosymbolic Software Tutorial - Classification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
 <li class="toctree-l1"><a class="reference internal" href="near_demo_regression_solution.html">Neurosymbolic Software Tutorial - Regression - Solution</a></li>
 <li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
@@ -231,7 +231,7 @@
       
       
       
-      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/near_demo_classification.ipynb" target="_blank"
+      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/near_demo_regression_solutions.ipynb" target="_blank"
    class="btn btn-sm dropdown-item"
    title="Launch onColab"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -279,7 +279,7 @@
       
       
       
-      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fnear_demo_classification.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fnear_demo_regression_solutions.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -309,7 +309,7 @@
       
       
       
-      <li><a href="_sources/near_demo_classification.ipynb" target="_blank"
+      <li><a href="_sources/near_demo_regression_solutions.ipynb" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -393,7 +393,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Neurosymbolic Software Tutorial - Classification</h1>
+    <h1>Neurosymbolic Software Tutorial - Regression - Solution</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -429,9 +429,9 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-classification">
-<h1>Neurosymbolic Software Tutorial - Classification<a class="headerlink" href="#neurosymbolic-software-tutorial-classification" title="Link to this heading">#</a></h1>
-<a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/near_demo_classification.ipynb">
+  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-regression-solution">
+<h1>Neurosymbolic Software Tutorial - Regression - Solution<a class="headerlink" href="#neurosymbolic-software-tutorial-regression-solution" title="Link to this heading">#</a></h1>
+<a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/near_demo_regression.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 <section id="instruction">
@@ -481,12 +481,8 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="kn">import</span> <span class="nn">os</span>
-
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="n">IS_REGRESSION</span> <span class="o">=</span> <span class="kc">False</span>
-
-
+<span class="n">IS_REGRESSION</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">def</span> <span class="nf">datagen</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="c1"># generates a numpy trajectory of shape</span>
@@ -497,17 +493,24 @@ document.write(`
 
     <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span>
-        <span class="n">X</span><span class="p">[:,</span> <span class="n">t</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">step</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.2</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="n">t</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">step</span>
     <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="c1"># normalize X b/w -1 and 1</span>
     <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
     <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+
     <span class="k">if</span> <span class="n">is_regression</span><span class="p">:</span>
-        <span class="c1"># y = distance from origin of X</span>
-        <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-        <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># # y = distance from origin of X</span>
+        <span class="c1"># Y = np.zeros((B, T, 1))</span>
+        <span class="c1"># Y = np.linalg.norm(X, axis=2, keepdims=True)</span>
+        <span class="c1"># Y = Y.reshape(-1, T, 1)</span>
+        <span class="c1"># Y = Y.astype(np.float32)</span>
+
+        <span class="n">Y</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># for all values of X &gt; 0, y *= 10 else y *= -10</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Y</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Y</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># y = quadrant of X</span>
         <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
@@ -520,63 +523,52 @@ document.write(`
                     <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="k">elif</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="k">else</span><span class="p">:</span>  <span class="c1"># x &gt; 0 and y &lt; 0</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># x &gt; 0 and y &lt; 0</span>
                     <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
-    <span class="c1"># normalize X b/w -1 and 1</span>
-
     <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span>
 
-
-<span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">datagen</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="n">IS_REGRESSION</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">datagen</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="n">IS_REGRESSION</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">datagen</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="n">IS_REGRESSION</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">datagen</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="n">IS_REGRESSION</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="c1"># save data</span>
-<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;../data/classification_example/&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;../data/classification_example/train_ex_data.npy&quot;</span><span class="p">,</span> <span class="n">X_train</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;../data/classification_example/train_ex_labels.npy&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;../data/classification_example/test_ex_data.npy&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;../data/classification_example/test_ex_labels.npy&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s1">&#39;../data/regression_example/&#39;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;../data/regression_example/train_ex_data.npy&#39;</span><span class="p">,</span> <span class="n">X_train</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;../data/regression_example/train_ex_labels.npy&#39;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;../data/regression_example/test_ex_data.npy&#39;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;../data/regression_example/test_ex_labels.npy&#39;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">Normalize</span>
-
 
 <span class="k">def</span> <span class="nf">plot_trajectory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
-
+    
     <span class="k">if</span> <span class="n">is_regression</span><span class="p">:</span>
-        <span class="n">cmap_name</span> <span class="o">=</span> <span class="s2">&quot;gray_r&quot;</span>
+        <span class="n">cmap_name</span> <span class="o">=</span> <span class="s1">&#39;jet&#39;</span>
         <span class="n">colorbar_label</span> <span class="o">=</span> <span class="s2">&quot;Distance from origin&quot;</span>
         <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Trajectories and their distances from origin&quot;</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">vmax</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">cmap_name</span> <span class="o">=</span> <span class="s2">&quot;jet&quot;</span>
+        <span class="n">cmap_name</span> <span class="o">=</span> <span class="s1">&#39;jet&#39;</span>
         <span class="n">colorbar_label</span> <span class="o">=</span> <span class="s2">&quot;Quadrant&quot;</span>
         <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Trajectories and their quadrants&quot;</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">vmax</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-
+    
     <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
         <span class="n">trajectory</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
         <span class="n">output</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
 
-        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-            <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
-            <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
-            <span class="n">c</span><span class="o">=</span><span class="n">output</span><span class="p">,</span>
-            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
-            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap_name</span><span class="p">,</span>
-            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
-
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">output</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap_name</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    
     <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">colorbar_label</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -584,14 +576,13 @@ document.write(`
     <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-
 <span class="c1"># Hope its clear that we are trying to predict the distance from origin</span>
 <span class="n">plot_trajectory</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">is_regression</span><span class="o">=</span><span class="n">IS_REGRESSION</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/687275c8fd818beb99a6665f63a2dc558fb397afb1affa4282330c692b4bee3b.png" src="_images/687275c8fd818beb99a6665f63a2dc558fb397afb1affa4282330c692b4bee3b.png" />
+<img alt="_images/50f50c4981bc97c9eb4cf72f423f900fc895f403a454ad26188d2eff4a2808f7.png" src="_images/50f50c4981bc97c9eb4cf72f423f900fc895f403a454ad26188d2eff4a2808f7.png" />
 </div>
 </div>
 <section id="exercise">
@@ -599,7 +590,7 @@ document.write(`
 <p><em>Observe the scatterplot above. Hypothesize what underlying function would allow us to generate this data. Concretely, write down the mathematical operators (<code class="docutils literal notranslate"><span class="pre">sin</span></code>, <code class="docutils literal notranslate"><span class="pre">pow</span></code>, <code class="docutils literal notranslate"><span class="pre">exp</span></code>, etc.) that would be useful to discover the underlying function.</em></p>
 <details>
   <summary>Spoiler! Click to see the answer!</summary>
-  y is 0 if the point is in the first or second quadrant (where x >= 0), and 1 otherwise. 
+  y increases linearly with abs(X). Also, the rate of increase of y is higher for X > 0 than for X <= 0.
 </details>
 <p>Some useful operators are:</p>
 <ul class="simple">
@@ -630,48 +621,23 @@ document.write(`
     <span class="n">dslf</span> <span class="o">=</span> <span class="n">DSLFactory</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">max_overall_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
     <span class="n">dslf</span><span class="o">.</span><span class="n">typedef</span><span class="p">(</span><span class="s2">&quot;fL&quot;</span><span class="p">,</span> <span class="s2">&quot;{f, $L}&quot;</span><span class="p">)</span>
 
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;mul&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-        <span class="s2">&quot;fold&quot;</span><span class="p">,</span> <span class="s2">&quot;((#a, #a) -&gt; #a) -&gt; [#a] -&gt; #a&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">fold_torch</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-        <span class="s2">&quot;sum&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span>
-        <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; $fL&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">L</span> <span class="o">!=</span> <span class="n">O</span><span class="p">:</span>
-        <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span>
-            <span class="s2">&quot;output&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;(([$fL]) -&gt; [$fL]) -&gt; [$fL] -&gt; [{f, $O}]&quot;</span><span class="p">,</span>
-            <span class="k">lambda</span> <span class="n">f</span><span class="p">,</span> <span class="n">lin</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">lin</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
-            <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="p">)),</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-            <span class="s2">&quot;output&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;(([$fL]) -&gt; [$fL]) -&gt; [$fL] -&gt; [{f, $O}]&quot;</span><span class="p">,</span>
-            <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
-        <span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-        <span class="s2">&quot;ite&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a&quot;</span><span class="p">,</span>
-        <span class="k">lambda</span> <span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">:</span> <span class="n">ite_torch</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">),</span>
-    <span class="p">)</span>
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-        <span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; #b) -&gt; [#a] -&gt; [#b]&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">map_torch</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="c1"># dslf.concrete(&quot;add&quot;, &quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;, lambda: lambda x, y: x + y)</span>
+    <span class="c1"># dslf.concrete(&quot;mul&quot;, &quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;, lambda: lambda x, y: x * y)</span>
+    <span class="c1"># dslf.concrete(&quot;fold&quot;, &quot;((#a, #a) -&gt; #a) -&gt; [#a] -&gt; #a&quot;, lambda f: lambda x: fold_torch(f, x))</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
 
-    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
-        <span class="s2">&quot;compose&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; #b, #b -&gt; #c) -&gt; #a -&gt; #c&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">g</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-    <span class="p">)</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span><span class="s2">&quot;linear_bool&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; $fL&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">)))</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="s2">&quot;(([$fL]) -&gt; [$fL]) -&gt; [$fL] -&gt; [{f, $O}]&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">,</span> <span class="n">lin</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">lin</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="p">)))</span>
 
+    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;ite&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">:</span> <span class="n">ite_torch</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">))</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; #b) -&gt; [#a] -&gt; [#b]&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">map_torch</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+    <span class="c1"># dslf.concrete(&quot;compose&quot;, &quot;(#a -&gt; #b, #b -&gt; #c) -&gt; #a -&gt; #c&quot;, lambda f, g: lambda x: g(f(x)))</span>
+    
     <span class="n">dslf</span><span class="o">.</span><span class="n">prune_to</span><span class="p">(</span><span class="s2">&quot;[{f, $L}] -&gt; [{f, $O}]&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dslf</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
 
-
-<span class="n">dsl</span> <span class="o">=</span> <span class="n">simple_dsl</span><span class="p">(</span><span class="n">X_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">dsl</span> <span class="o">=</span> <span class="n">simple_dsl</span><span class="p">(</span><span class="n">X_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -681,16 +647,12 @@ document.write(`
   from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>            add :: () -&gt; ({f, 2}, {f, 2}) -&gt; {f, 2}
-            mul :: () -&gt; ({f, 2}, {f, 2}) -&gt; {f, 2}
-           fold :: ((#a, #a) -&gt; #a) -&gt; [#a] -&gt; #a
-            sum :: () -&gt; {f, 2} -&gt; f
-         output :: ([{f, 2}] -&gt; [{f, 2}]) -&gt; [{f, 2}] -&gt; [{f, 2}]
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>            sum :: () -&gt; {f, 2} -&gt; f
             ite :: (#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a
             map :: (#a -&gt; #b) -&gt; [#a] -&gt; [#b]
-      compose_0 :: (#a -&gt; [{f, 2}], [{f, 2}] -&gt; #c) -&gt; #a -&gt; #c
-      compose_1 :: (#a -&gt; {f, 2}, {f, 2} -&gt; #c) -&gt; #a -&gt; #c
+linear_bool[lin] :: () -&gt; {f, 2} -&gt; f
     linear[lin] :: () -&gt; {f, 2} -&gt; {f, 2}
+    output[lin] :: ([{f, 2}] -&gt; [{f, 2}]) -&gt; [{f, 2}] -&gt; [{f, 1}]
 </pre></div>
 </div>
 </div>
@@ -714,17 +676,16 @@ document.write(`
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neurosym.datasets.load_data</span> <span class="kn">import</span> <span class="n">DatasetFromNpy</span><span class="p">,</span> <span class="n">DatasetWrapper</span>
 
-
 <span class="k">def</span> <span class="nf">dataset_factory</span><span class="p">(</span><span class="n">train_seed</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">DatasetWrapper</span><span class="p">(</span>
         <span class="n">DatasetFromNpy</span><span class="p">(</span>
-            <span class="s2">&quot;../data/classification_example/train_ex_data.npy&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;../data/classification_example/train_ex_labels.npy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;../data/regression_example/train_ex_data.npy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;../data/regression_example/train_ex_labels.npy&quot;</span><span class="p">,</span>
             <span class="n">train_seed</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">DatasetFromNpy</span><span class="p">(</span>
-            <span class="s2">&quot;../data/classification_example/test_ex_data.npy&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;../data/classification_example/test_ex_labels.npy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;../data/regression_example/test_ex_data.npy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;../data/regression_example/test_ex_labels.npy&quot;</span><span class="p">,</span>
             <span class="kc">None</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">batch_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
@@ -733,12 +694,14 @@ document.write(`
 
 <span class="n">datamodule</span> <span class="o">=</span> <span class="n">dataset_factory</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">get_io_dims</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">IS_REGRESSION</span><span class="p">:</span>
+    <span class="n">output_dim</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2 2
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2 1
 </pre></div>
 </div>
 </div>
@@ -774,30 +737,40 @@ document.write(`
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neurosym.utils.imports</span> <span class="kn">import</span> <span class="n">import_pytorch_lightning</span>
 
+
 <span class="n">pl</span> <span class="o">=</span> <span class="n">import_pytorch_lightning</span><span class="p">()</span>
-
-
-<span class="k">def</span> <span class="nf">classification_cross_entropy_loss</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">regression_mse_loss</span><span class="p">(</span>
     <span class="n">predictions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    predictions: (B, T, O)</span>
-<span class="sd">    targets: (B, T, 1)</span>
+<span class="sd">    Not used. Retained for reference for implementing a regression loss.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (B, T, 1) -&gt; (B, T)</span>
-    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Targets must be 2D for classification&quot;</span>
     <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">targets</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
 
+
+<span class="k">def</span> <span class="nf">regression_smooth_l1_loss</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    MSE loss is sensitive to outliers. Smooth L1 loss deals with outliers by</span>
+<span class="sd">    using MSE loss when L1 distance is less than beta and a diminished </span>
+<span class="sd">    L1 loss otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">targets</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">smooth_l1_loss</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
 
 <span class="n">trainer_cfg</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainerConfig</span><span class="p">(</span>
-    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
     <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">num_labels</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
     <span class="n">train_steps</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="p">),</span>
-    <span class="n">loss_callback</span><span class="o">=</span><span class="n">classification_cross_entropy_loss</span><span class="p">,</span>
+    <span class="n">loss_callback</span><span class="o">=</span><span class="n">regression_smooth_l1_loss</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">validation_cost</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">ValidationCost</span><span class="p">(</span>
@@ -806,6 +779,10 @@ document.write(`
     <span class="n">datamodule</span><span class="o">=</span><span class="n">datamodule</span><span class="p">,</span>
     <span class="n">enable_model_summary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">check_val_every_n_epoch</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -821,80 +798,108 @@ document.write(`
     <span class="n">is_goal</span><span class="o">=</span><span class="n">neural_dsl</span><span class="o">.</span><span class="n">program_has_no_holes</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">iterator</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">bounded_astar</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">validation_cost</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">best_program_node</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">node</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
-    <span class="n">cost</span> <span class="o">=</span> <span class="n">validation_cost</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-    <span class="n">best_program_node</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
-
-<span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
-    <span class="k">pass</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>
+<span class="n">iterator</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">bounded_astar</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">validation_cost</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">best_program_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="c1"># Let&#39;s collect the top four programs</span>
+<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">validation_cost</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">best_program_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No more programs found.&quot;</span><span class="p">)</span>
+        <span class="k">break</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 47.33it/s, train_loss=0.700, val_loss=0.693] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 57.72it/s, train_loss=0.686, val_loss=0.684] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 63.57it/s, train_loss=0.661, val_loss=0.725] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 51.99it/s, train_loss=0.665, val_loss=0.736] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 58.00it/s, train_loss=0.675, val_loss=0.684] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 58.96it/s, train_loss=0.687, val_loss=0.707] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 70.68it/s, train_loss=0.701, val_loss=0.727] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 58.86it/s, train_loss=0.680, val_loss=0.707] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 63.73it/s, train_loss=0.690, val_loss=0.720] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 61.91it/s, train_loss=0.691, val_loss=0.686] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 74.30it/s, train_loss=0.711, val_loss=0.758] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 57.30it/s, train_loss=0.688, val_loss=0.701] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 59.73it/s, train_loss=0.691, val_loss=0.692] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 69.16it/s, train_loss=0.691, val_loss=0.696] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 92.04it/s, train_loss=0.678, val_loss=0.703] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 60.42it/s, train_loss=0.689, val_loss=0.702] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 72.98it/s, train_loss=0.690, val_loss=0.703] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 52.01it/s, train_loss=0.687, val_loss=0.711] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 63.80it/s, train_loss=0.690, val_loss=0.699] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 53.63it/s, train_loss=0.686, val_loss=0.707]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 72.42it/s, train_loss=0.696, val_loss=0.687] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 46.62it/s, train_loss=0.694, val_loss=0.702] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 47.61it/s, train_loss=0.679, val_loss=0.713] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.61it/s, train_loss=0.681, val_loss=0.709]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.21it/s, train_loss=0.682, val_loss=0.698] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 45.77it/s, train_loss=0.690, val_loss=0.704] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 67.65it/s, train_loss=0.705, val_loss=0.650] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 56.13it/s, train_loss=0.682, val_loss=0.711] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 49.13it/s, train_loss=0.691, val_loss=0.698] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.95it/s, train_loss=0.688, val_loss=0.710] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 64.39it/s, train_loss=0.688, val_loss=0.711] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 48.17it/s, train_loss=0.693, val_loss=0.705]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 53.67it/s, train_loss=0.690, val_loss=0.702] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 41.16it/s, train_loss=0.691, val_loss=0.701]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 39.78it/s, train_loss=0.690, val_loss=0.702]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 55.83it/s, train_loss=0.693, val_loss=0.704]
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 52.59it/s, train_loss=0.689, val_loss=0.709] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 60.96it/s, train_loss=0.695, val_loss=0.679] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 57.76it/s, train_loss=0.679, val_loss=0.704] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.44it/s, train_loss=0.690, val_loss=0.701] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 53.09it/s, train_loss=0.666, val_loss=0.708] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.48it/s, train_loss=0.710, val_loss=0.747] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 75.95it/s, train_loss=0.618, val_loss=0.620] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 54.30it/s, train_loss=0.731, val_loss=0.600] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 67.94it/s, train_loss=0.627, val_loss=0.650] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 85.18it/s, train_loss=0.629, val_loss=0.663] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 67.59it/s, train_loss=0.703, val_loss=0.737] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 74.58it/s, train_loss=0.662, val_loss=0.663] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 67.58it/s, train_loss=0.731, val_loss=0.756] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 58.92it/s, train_loss=0.649, val_loss=0.690] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 92.95it/s, train_loss=0.684, val_loss=0.710] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 64.22it/s, train_loss=0.667, val_loss=0.741] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 62.05it/s, train_loss=0.715, val_loss=0.726] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 62.32it/s, train_loss=0.684, val_loss=0.722] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 69.13it/s, train_loss=0.655, val_loss=0.684] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 51.96it/s, train_loss=0.707, val_loss=0.745] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 82.87it/s, train_loss=0.694, val_loss=0.710] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 67.44it/s, train_loss=0.650, val_loss=0.655] 
-Epoch 9: 100%|██████████| 3/3 [00:00&lt;00:00, 95.77it/s, train_loss=0.694, val_loss=0.746] 
-DONE
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 5: 100%|██████████| 5/5 [00:00&lt;00:00, 76.15it/s, train_loss=0.0169, val_loss=0.0715] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 81.55it/s, train_loss=0.0129, val_loss=0.0477] 
+Epoch 21: 100%|██████████| 5/5 [00:00&lt;00:00, 86.01it/s, train_loss=0.012, val_loss=0.0565]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 78.88it/s, train_loss=0.0106, val_loss=0.0487]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 91.98it/s, train_loss=0.062, val_loss=0.138]  
+Epoch 5: 100%|██████████| 5/5 [00:00&lt;00:00, 88.11it/s, train_loss=0.0196, val_loss=0.0739] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 82.76it/s, train_loss=0.0101, val_loss=0.0459]  
+Epoch 5: 100%|██████████| 5/5 [00:00&lt;00:00, 98.76it/s, train_loss=0.0136, val_loss=0.0484] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 111.60it/s, train_loss=0.0129, val_loss=0.0419]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 107.62it/s, train_loss=0.018, val_loss=0.0694] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 103.09it/s, train_loss=0.0192, val_loss=0.061] 
+Epoch 25: 100%|██████████| 5/5 [00:00&lt;00:00, 94.62it/s, train_loss=0.0159, val_loss=0.065]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 115.60it/s, train_loss=0.102, val_loss=0.198] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.43it/s, train_loss=0.0514, val_loss=0.136] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 88.46it/s, train_loss=0.075, val_loss=0.153]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 108.68it/s, train_loss=0.0296, val_loss=0.0516]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 90.51it/s, train_loss=0.0749, val_loss=0.161] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 86.76it/s, train_loss=0.011, val_loss=0.0434]   
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 107.46it/s, train_loss=0.0183, val_loss=0.0712]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 90.54it/s, train_loss=0.0168, val_loss=0.0663] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 108.91it/s, train_loss=0.0159, val_loss=0.0638]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 108.51it/s, train_loss=0.0227, val_loss=0.0639]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 99.50it/s, train_loss=0.0734, val_loss=0.0812] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 113.43it/s, train_loss=0.0509, val_loss=0.0766]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 90.50it/s, train_loss=0.0183, val_loss=0.0723] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 94.60it/s, train_loss=0.0169, val_loss=0.0666] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 86.44it/s, train_loss=0.0104, val_loss=0.0412]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 96.48it/s, train_loss=0.0101, val_loss=0.0414]  
+Epoch 9: 100%|██████████| 5/5 [00:00&lt;00:00, 99.67it/s, train_loss=0.0158, val_loss=0.0623] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.19it/s, train_loss=0.0121, val_loss=0.031]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 81.32it/s, train_loss=0.0116, val_loss=0.0469] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 95.17it/s, train_loss=0.019, val_loss=0.0732]  
+Epoch 5: 100%|██████████| 5/5 [00:00&lt;00:00, 94.86it/s, train_loss=0.0164, val_loss=0.0672] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 92.12it/s, train_loss=0.0109, val_loss=0.0423]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 97.03it/s, train_loss=0.0345, val_loss=0.0975] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 90.46it/s, train_loss=0.00881, val_loss=0.0364] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 91.72it/s, train_loss=0.0237, val_loss=0.0644] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 98.62it/s, train_loss=0.0167, val_loss=0.0693] 
+Epoch 21: 100%|██████████| 5/5 [00:00&lt;00:00, 107.48it/s, train_loss=0.021, val_loss=0.0766] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.18it/s, train_loss=0.0252, val_loss=0.0849] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 78.97it/s, train_loss=0.0135, val_loss=0.0418] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 99.05it/s, train_loss=0.0174, val_loss=0.065]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 96.07it/s, train_loss=0.034, val_loss=0.109]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 91.29it/s, train_loss=0.0131, val_loss=0.0513] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.90it/s, train_loss=0.0162, val_loss=0.0646] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 92.69it/s, train_loss=0.0111, val_loss=0.0458]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 94.59it/s, train_loss=0.0181, val_loss=0.0719] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.24it/s, train_loss=0.0118, val_loss=0.0441] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 95.15it/s, train_loss=0.00941, val_loss=0.0342] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.21it/s, train_loss=0.0204, val_loss=0.0652] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 82.32it/s, train_loss=0.151, val_loss=0.238] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.00it/s, train_loss=0.0133, val_loss=0.0565] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 88.80it/s, train_loss=0.104, val_loss=0.180]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 86.94it/s, train_loss=0.0104, val_loss=0.0419]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 100.10it/s, train_loss=0.0186, val_loss=0.0726]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 97.77it/s, train_loss=0.00933, val_loss=0.035]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 90.01it/s, train_loss=0.0127, val_loss=0.044]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 86.31it/s, train_loss=0.0495, val_loss=0.124] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 99.84it/s, train_loss=0.00868, val_loss=0.031]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 96.67it/s, train_loss=0.0154, val_loss=0.0645] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 110.13it/s, train_loss=0.130, val_loss=0.229]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.60it/s, train_loss=0.0128, val_loss=0.0483] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 110.71it/s, train_loss=0.0179, val_loss=0.0713]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 107.19it/s, train_loss=0.0163, val_loss=0.0664]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 106.31it/s, train_loss=0.0135, val_loss=0.0546]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 106.51it/s, train_loss=0.0165, val_loss=0.0659]
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 102.39it/s, train_loss=0.062, val_loss=0.126] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.68it/s, train_loss=0.0186, val_loss=0.0724] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.27it/s, train_loss=0.00973, val_loss=0.039]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 86.04it/s, train_loss=0.0138, val_loss=0.056]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.40it/s, train_loss=0.0101, val_loss=0.0306]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 96.83it/s, train_loss=0.0157, val_loss=0.069]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 97.59it/s, train_loss=0.0528, val_loss=0.125] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 94.54it/s, train_loss=0.189, val_loss=0.269] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 95.19it/s, train_loss=0.0197, val_loss=0.0735] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 91.66it/s, train_loss=0.355, val_loss=0.478] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 91.84it/s, train_loss=0.032, val_loss=0.0633]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 74.53it/s, train_loss=0.0212, val_loss=0.0557] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 88.65it/s, train_loss=0.00913, val_loss=0.0326] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 89.29it/s, train_loss=0.0104, val_loss=0.0349]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 87.87it/s, train_loss=0.00865, val_loss=0.037]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 59.99it/s, train_loss=0.0167, val_loss=0.0554] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 93.41it/s, train_loss=0.0261, val_loss=0.0665] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 94.84it/s, train_loss=0.0109, val_loss=0.0485]  
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 85.68it/s, train_loss=0.0261, val_loss=0.0897] 
+Epoch 29: 100%|██████████| 5/5 [00:00&lt;00:00, 84.49it/s, train_loss=0.0103, val_loss=0.0343]  
+No more programs found.
 </pre></div>
 </div>
 </div>
@@ -918,90 +923,78 @@ DONE
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
 
-    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-        <span class="n">x</span><span class="p">,</span>
-        <span class="n">y</span><span class="p">,</span>
-        <span class="n">sexpr</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span>
-        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
-        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
-        <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">boxstyle</span><span class="o">=</span><span class="s2">&quot;round,pad=0.5&quot;</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sexpr</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">boxstyle</span><span class="o">=</span><span class="s1">&#39;round,pad=0.5&#39;</span><span class="p">))</span>
 
     <span class="n">num_children</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sexpr</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">num_children</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">child_y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">level</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sexpr</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
             <span class="n">child_x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="n">dx</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_children</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">dx</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">child_x</span><span class="p">],</span> <span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="n">text_offset</span><span class="p">,</span> <span class="n">child_y</span> <span class="o">+</span> <span class="n">text_offset</span><span class="p">],</span> <span class="s2">&quot;k-&quot;</span><span class="p">)</span>
-            <span class="n">plot_expression</span><span class="p">(</span>
-                <span class="n">child</span><span class="p">,</span>
-                <span class="n">x</span><span class="o">=</span><span class="n">child_x</span><span class="p">,</span>
-                <span class="n">y</span><span class="o">=</span><span class="n">child_y</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="n">dx</span><span class="o">=</span><span class="n">dx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
-                <span class="n">text_offset</span><span class="o">=</span><span class="n">text_offset</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">child_x</span><span class="p">],</span> <span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="n">text_offset</span><span class="p">,</span> <span class="n">child_y</span> <span class="o">+</span> <span class="n">text_offset</span><span class="p">],</span> <span class="s1">&#39;k-&#39;</span><span class="p">)</span>
+            <span class="n">plot_expression</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">child_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">child_y</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">text_offset</span><span class="o">=</span><span class="n">text_offset</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
+<span class="n">best_program_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;(</span><span class="si">{i}</span><span class="s2">) Cost: </span><span class="si">{cost:.4f}</span><span class="s2">, </span><span class="si">{program}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">program</span><span class="p">),</span> <span class="n">cost</span><span class="o">=</span><span class="n">cost</span><span class="p">))</span>
 
+<span class="n">best_program_node</span> <span class="o">=</span> <span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">))</span>
 <span class="n">plot_expression</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(output (map (linear)))
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0) Cost: 0.0666, (output (map (ite (sum) (linear) (linear))))
+(1) Cost: 0.0694, (output (map (linear)))
+(2) Cost: 0.0812, (output (map (ite (linear_bool) (linear) (linear))))
+(output (map (ite (sum) (linear) (linear))))
 </pre></div>
 </div>
-<img alt="_images/5c679e505c7df3e743d764edf6f481f5d6be1cd98ef9415d00845d39deab7242.png" src="_images/5c679e505c7df3e743d764edf6f481f5d6be1cd98ef9415d00845d39deab7242.png" />
+<img alt="_images/aa5bfbb9d94ac94c980914fb6de46b23a3cce344f4f09bd7b0c42923735287c7.png" src="_images/aa5bfbb9d94ac94c980914fb6de46b23a3cce344f4f09bd7b0c42923735287c7.png" />
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">module</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">TorchProgramModule</span><span class="p">(</span><span class="n">dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">)</span>
-<span class="n">lin</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">contained_modules</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="c1"># a satisfactory set of weights. @TODO: Remove</span>
-<span class="c1"># lin.weight.data = torch.tensor([[0., 1.], [0., 0.]])</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_program_node</span> <span class="o">=</span> <span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">module</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">TorchProgramModule</span><span class="p">(</span><span class="n">dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">)</span>
+<span class="c1"># # a satisfactory set of weights. @TODO: Remove</span>
+<span class="c1"># # lin.weight.data = torch.tensor([[0., 1.], [0., 0.]])</span>
 <span class="c1"># lin.bias.data = torch.tensor([0., 0.])</span>
-
 <span class="n">pl_model</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainer</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">trainer_cfg</span><span class="p">)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span>
-    <span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">max_epochs</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
     <span class="n">devices</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="n">accelerator</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
     <span class="n">enable_checkpointing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">enable_model_summary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">callbacks</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">pl_model</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">(),</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">())</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">pl_model</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">(),</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">()</span>
+<span class="p">)</span>
 
 <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
 
 <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>    
 <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">Y</span> <span class="o">=</span> <span class="n">lin</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">module</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
-<span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">Y</span>
 <span class="c1"># Using imshow to plot y as a heatmap</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span>
-    <span class="n">y</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span>
-<span class="p">)</span>  <span class="c1"># Choose any colormap that suits your needs</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
-    <span class="s2">&quot;Output heatmap</span><span class="se">\n</span><span class="si">{program_str}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">program_str</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">)</span>
-    <span class="p">)</span>
-<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Distance from origin&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Output heatmap</span><span class="se">\n</span><span class="si">{program}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span><span class="p">)))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;X-axis&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Y-axis&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -1009,7 +1002,7 @@ DONE
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/ddba2b203507e247d0a16fd367c8f61abc73e68b7100951e85761040d1f00ff2.png" src="_images/ddba2b203507e247d0a16fd367c8f61abc73e68b7100951e85761040d1f00ff2.png" />
+<img alt="_images/9f4fbcf08837f0b4b26361ee74936c1434337529f660c137cfe8be0fbdfef9fc.png" src="_images/9f4fbcf08837f0b4b26361ee74936c1434337529f660c137cfe8be0fbdfef9fc.png" />
 </div>
 </div>
 <p>Notice that the output heatmap plots program output within the range <code class="docutils literal notranslate"><span class="pre">[-3,</span> <span class="pre">3]</span></code> while the data we trained on was within the range <code class="docutils literal notranslate"><span class="pre">[-1,</span> <span class="pre">1]</span></code>.</p>
@@ -1050,24 +1043,6 @@ DONE
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
-    <a class="left-prev"
-       href="README.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">The <code class="docutils literal notranslate"><span class="pre">neurosym</span></code> Library</p>
-      </div>
-    </a>
-    <a class="right-next"
-       href="near_demo_regression.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Neurosymbolic Software Tutorial - Regression</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
-    </a>
 </div>
                 </footer>
               

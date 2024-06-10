@@ -28,6 +28,15 @@ Feel free to reach out to Kavi Gupta or Atharva Sehgal. You can reach out to us 
 The goal of this notebook is to provide a walk-through of the neurosymbolic programming pipeline with a synthetic classification task.
 
 - Part 1: Data Exploration
+- Part 2: DSL Generation
+- Part 3: Program Generation
+- Part 4: Program Inspection
+
+## [Notebook 2 - Regression](https://neurosymbolic-learning.github.io/near_demo_regression.html)
+
+The goal of this notebook is to provide a walk-through of the neurosymbolic programming pipeline with a synthetic regression task.
+
+- Part 1: Data Exploration
     - We're going to define a function `datagen()` and plot trajectories generated with datagen.
     - **Exercise**: Before reading through the code, look at the trajectory plot and hypothesize what the underlying function might be. Write down what mathematical operators (`sin`, `pow`, `exp`, etc.) would be useful to discover the underlying function.
 - Part 2: DSL Generation
@@ -38,16 +47,6 @@ The goal of this notebook is to provide a walk-through of the neurosymbolic prog
 - Part 4: Program Inspection
     - We will render the program found by NEAR and inspect it's performance. 
     - **Exercise**: Inspect the program found after search. Try different hyperparamters.
-
-
-## [Notebook 2 - Regression](https://neurosymbolic-learning.github.io/near_demo_regression.html)
-
-The goal of this notebook is to provide a walk-through of the neurosymbolic programming pipeline with a synthetic regression task.
-
-- Part 1: Data Exploration
-- Part 2: DSL Generation
-- Part 3: Program Generation
-- Part 4: Program Inspection
 
 ## [Notebook 3 - Abstraction Learning](https://neurosymbolic-learning.github.io/discrete_exercise_skeleton.html)
 
