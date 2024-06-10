@@ -174,7 +174,10 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Classification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bouncing_ball_exercise_skeleton.html">Neurosymbolic Software Tutorial - NEAR Bouncing Ball</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bouncing_ball_exercise_solutions.html">Neurosymbolic Software Tutorial - NEAR Bouncing Ball</a></li>
 <li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
+<li class="toctree-l1"><a class="reference internal" href="discrete_exercise_solutions.html">Neurosymbolic Software Tutorial - Discrete - Solution</a></li>
 <li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
 </ul>
 
@@ -217,37 +220,6 @@
         <div class="header-article-item">
 
 <div class="article-header-buttons">
-
-
-
-
-
-<div class="dropdown dropdown-launch-buttons">
-  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
-    <i class="fas fa-rocket"></i>
-  </button>
-  <ul class="dropdown-menu">
-      
-      
-      
-      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/near_demo_classification.ipynb" target="_blank"
-   class="btn btn-sm dropdown-item"
-   title="Launch onColab"
-   data-bs-placement="left" data-bs-toggle="tooltip"
->
-  
-
-<span class="btn__icon-container">
-  
-    <img src="_static/images/logo_colab.png">
-  </span>
-<span class="btn__text-container">Colab</span>
-</a>
-</li>
-      
-  </ul>
-</div>
-
 
 
 
@@ -413,6 +385,7 @@ document.write(`
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-3-program-generation">Part 3: Program Generation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#near-with-a-search">NEAR with A* Search</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-4-program-inspection">Part 4: Program Inspection</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Exercise</a></li>
 </ul>
@@ -609,6 +582,20 @@ document.write(`
 </section>
 <section id="part-2-dsl-generation">
 <h2>Part 2: DSL Generation<a class="headerlink" href="#part-2-dsl-generation" title="Link to this heading">#</a></h2>
+<p>Given the following observations, we can conjecture that the DSL will contain the following functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">linear(X)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: A linear function allows us to express decision boundaries of the form <code class="docutils literal notranslate"><span class="pre">(a</span> <span class="pre">*</span> <span class="pre">x)</span> <span class="pre">+</span> <span class="pre">b</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> where <code class="docutils literal notranslate"><span class="pre">a,</span> <span class="pre">b</span></code> are trainable parameters. We can conjecture that the DSL will contain a linear function that will be used in conjunction with other functions to solve this problem.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">map(f,</span> <span class="pre">X)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: <code class="docutils literal notranslate"><span class="pre">map</span></code> is a higher-order function that applies a function <code class="docutils literal notranslate"><span class="pre">f</span></code> to each element of <code class="docutils literal notranslate"><span class="pre">X</span></code>. It will allow us to predict each data point independent of other data points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compose(f,</span> <span class="pre">g)</span> <span class="pre">-&gt;</span> <span class="pre">h</span></code>: <code class="docutils literal notranslate"><span class="pre">compose</span></code> is a higher-order function that composes two functions <code class="docutils literal notranslate"><span class="pre">f</span></code> and <code class="docutils literal notranslate"><span class="pre">g</span></code>. It will allow us to combine multiple functions together.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output(X)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: We will need a function that transforms the intermediate output of our program into the final output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">if_then_else(cond,</span> <span class="pre">then,</span> <span class="pre">else)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: The if-then-else will allow us to reason about discontinuous functions.</p></li>
+</ul>
+<p>Let’s also add some extra functions to our DSL:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">add(X,</span> <span class="pre">Y)</span> <span class="pre">-&gt;</span> <span class="pre">Z</span></code>: Implements element-wise addition.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mul(X,</span> <span class="pre">Y)</span> <span class="pre">-&gt;</span> <span class="pre">Z</span></code>: Implements element-wise multiplication.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fold(f,</span> <span class="pre">X)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: <code class="docutils literal notranslate"><span class="pre">fold</span></code> is a higher-order function that applies a function <code class="docutils literal notranslate"><span class="pre">f</span></code> to each element of <code class="docutils literal notranslate"><span class="pre">X</span></code> and accumulates the result. It will allow us to aggregate information from all data points.</p></li>
+</ul>
 <ul class="simple">
 <li><p>Cell 1: Predefined DSL.</p>
 <ul>
@@ -694,6 +681,12 @@ document.write(`
 </div>
 </div>
 </div>
+<p>A couple of things to note:</p>
+<ul class="simple">
+<li><p><em>Type Definitions and Tags</em>: The DSL uses types (e.g., <code class="docutils literal notranslate"><span class="pre">$fL</span></code> for tensors of length <code class="docutils literal notranslate"><span class="pre">L</span></code>) and tags (<code class="docutils literal notranslate"><span class="pre">#a</span></code>, <code class="docutils literal notranslate"><span class="pre">#b</span></code>, <code class="docutils literal notranslate"><span class="pre">#c</span></code>) for type safety.</p></li>
+<li><p><em>Concrete vs. Parameterized Functions</em>: The DSL offers fixed-behavior functions (add, mul, etc.) and parametrized ones (linear, output) for flexibility. Any composition of these functions is also differentiable.</p></li>
+<li><p><em>Pruning</em>: The DSL can be pruned with prune_to to restrict to specific function types, optimizing for certain operations.</p></li>
+</ul>
 <section id="id1">
 <h3>Exercise<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <p><em>Augment the DSL above with the operators you wrote down earlier.</em></p>
@@ -701,7 +694,14 @@ document.write(`
 </section>
 <section id="part-3-program-generation">
 <h2>Part 3: Program Generation<a class="headerlink" href="#part-3-program-generation" title="Link to this heading">#</a></h2>
-<p>We’re going to use neural guided search to search for the program in the DSL that maximally fits the dataset.</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Admissible_heuristic">Admissible heuristics</a> are heuristics that never overestimate the cost of reaching a goal. These heuristics can be used as part of an informed search algorithm, such as <a class="reference external" href="https://en.wikipedia.org/wiki/A*_search_algorithm">A* search</a>. Here, we use the assumption that sufficiently large neural networks have greater representational power compared to neurosymbolic models or symbolic models, and use this neural relaxation as an admissible heuristic over the program graph search space.</p>
+<p><img alt="img" src="https://github.com/neurosymbolic-learning/Neurosymbolic_Tutorial/blob/popl23/imgs/admissible.png?raw=true" /></p>
+<p>Operationally, we will synthesize our program top-down and fill holes with a neural network. To do this, we must first define an extension to our DSL that allows us to specify how to fill holes in our program. We will add the following neural functions to our DSL:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MLP(X)</span> <span class="pre">-&gt;</span> <span class="pre">Y</span></code>: A multi-layer perceptron (MLP) that takes in <code class="docutils literal notranslate"><span class="pre">X</span></code> and outputs <code class="docutils literal notranslate"><span class="pre">Y</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RNN(List[X])</span> <span class="pre">-&gt;</span> <span class="pre">List[Y]</span></code>: A recurrent neural network (RNN) that takes in a list of <code class="docutils literal notranslate"><span class="pre">X</span></code> and outputs a classification <code class="docutils literal notranslate"><span class="pre">Y</span></code>. This is equvalent to a seq2seq RNN with a single output.</p></li>
+</ul>
+<p>Notice that we add type signatures to each partial program. This ensures that we use a type-appropriate neural network to fill each hole.</p>
 <ul class="simple">
 <li><p>Cell 1: Define a pytorch dataset from the saved data.</p></li>
 <li><p>Cell 2: Define <code class="docutils literal notranslate"><span class="pre">neural_dsl</span></code>. This DSL extend the DSL we created with <em>neural modules</em>.</p></li>
@@ -769,6 +769,17 @@ document.write(`
 </div>
 </div>
 </div>
+</section>
+<section id="near-with-a-search">
+<h2>NEAR with A* Search<a class="headerlink" href="#near-with-a-search" title="Link to this heading">#</a></h2>
+<p>We can use NEAR as a heuristic to guide A* search. We maintain a frontier of nodes (starting with an empty program), and at each iteration we choose a node on the frontier to explore by using the NEAR heuristic with a structural cost to estimate its path cost. The search terminates when the frontier is empty, after which we return the best complete program found during our search.</p>
+<p>In the code below, we define three functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">classification_cross_entropy_loss</span></code> measures the fitness of a program on the validation dataset. This will serve as a way to score partial programs during search.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">near.near_graph</span></code>: This function instantiates the search graph over the space of programs we want to search over.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ns.search.bounded_astar</span></code>: This function implements a bounded version of the A* algorithm.</p></li>
+</ul>
+<p>Note that each of these functions is independent of the dataset, the DSL, and other functions. This modularity allows us to easily reuse and redefine our synthesis pipeline for different datasets, DSLs, and functions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neurosym.utils.imports</span> <span class="kn">import</span> <span class="n">import_pytorch_lightning</span>
@@ -1094,6 +1105,7 @@ DONE
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-3-program-generation">Part 3: Program Generation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#near-with-a-search">NEAR with A* Search</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-4-program-inspection">Part 4: Program Inspection</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Exercise</a></li>
 </ul>
