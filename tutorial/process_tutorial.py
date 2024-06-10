@@ -6,7 +6,9 @@ def update_links(notebook_json, path):
     for cell in notebook_json["cells"]:
         if cell["cell_type"] == "markdown":
             cell["source"] = [
-                x.replace(path, path.replace("_solutions.ipynb", "_skeleton.ipynb"))
+                x.replace(
+                    path, path.replace("_solutions.ipynb", "_skeleton.ipynb")
+                ).replace(" - Solution", "")
                 for x in cell["source"]
             ]
     return notebook_json

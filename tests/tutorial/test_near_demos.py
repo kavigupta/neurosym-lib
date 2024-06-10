@@ -31,7 +31,7 @@ class TestNearDemos(unittest.TestCase):
         layer won't be able to approximate a non-linear function
         """
         result = execute_notebook(
-            "tutorial/near_demo_regression.ipynb",
+            "tutorial/near_demo_regression_solutions.ipynb",
             suffix="import json; print('*' * 80); "
             + "print(json.dumps([len(module.contained_modules)]))",
         )
