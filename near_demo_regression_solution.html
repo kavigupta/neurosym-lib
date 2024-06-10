@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Neurosymbolic Software Tutorial - Regression &#8212; neurosym Framework Tutorial</title>
+    <title>Neurosymbolic Software Tutorial - Regression - Solution &#8212; neurosym Framework Tutorial</title>
   
   
   
@@ -57,11 +57,11 @@
     <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'near_demo_regression';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'near_demo_regression_solution';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Neurosymbolic Software Tutorial - Regression - Solution" href="near_demo_regression_solution.html" />
-    <link rel="prev" title="Neurosymbolic Software Tutorial - Classification" href="near_demo_classification.html" />
+    <link rel="next" title="Neurosymbolic Software Tutorial - Discrete" href="discrete_exercise_skeleton.html" />
+    <link rel="prev" title="Neurosymbolic Software Tutorial - Regression" href="near_demo_regression.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -173,8 +173,8 @@
         </ul>
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="near_demo_classification.html">Neurosymbolic Software Tutorial - Classification</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Regression</a></li>
-<li class="toctree-l1"><a class="reference internal" href="near_demo_regression_solution.html">Neurosymbolic Software Tutorial - Regression - Solution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Regression - Solution</a></li>
 <li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
 <li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
 </ul>
@@ -231,7 +231,7 @@
       
       
       
-      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/near_demo_regression.ipynb" target="_blank"
+      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/near_demo_regression_solution.ipynb" target="_blank"
    class="btn btn-sm dropdown-item"
    title="Launch onColab"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -279,7 +279,7 @@
       
       
       
-      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fnear_demo_regression.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fnear_demo_regression_solution.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -309,7 +309,7 @@
       
       
       
-      <li><a href="_sources/near_demo_regression.ipynb" target="_blank"
+      <li><a href="_sources/near_demo_regression_solution.ipynb" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -393,7 +393,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Neurosymbolic Software Tutorial - Regression</h1>
+    <h1>Neurosymbolic Software Tutorial - Regression - Solution</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -429,8 +429,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-regression">
-<h1>Neurosymbolic Software Tutorial - Regression<a class="headerlink" href="#neurosymbolic-software-tutorial-regression" title="Link to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-regression-solution">
+<h1>Neurosymbolic Software Tutorial - Regression - Solution<a class="headerlink" href="#neurosymbolic-software-tutorial-regression-solution" title="Link to this heading">#</a></h1>
 <a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/near_demo_regression.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
@@ -621,9 +621,6 @@ document.write(`
     <span class="n">dslf</span> <span class="o">=</span> <span class="n">DSLFactory</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">max_overall_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
     <span class="n">dslf</span><span class="o">.</span><span class="n">typedef</span><span class="p">(</span><span class="s2">&quot;fL&quot;</span><span class="p">,</span> <span class="s2">&quot;{f, $L}&quot;</span><span class="p">)</span>
 
-    <span class="c1"># dslf.concrete(&quot;add&quot;, &quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;, lambda: lambda x, y: x + y)</span>
-    <span class="c1"># dslf.concrete(&quot;mul&quot;, &quot;() -&gt; ($fL, $fL) -&gt; $fL&quot;, lambda: lambda x, y: x * y)</span>
-    <span class="c1"># dslf.concrete(&quot;fold&quot;, &quot;((#a, #a) -&gt; #a) -&gt; [#a] -&gt; #a&quot;, lambda f: lambda x: fold_torch(f, x))</span>
     <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
 
     <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span><span class="s2">&quot;linear_bool&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
@@ -632,7 +629,6 @@ document.write(`
 
     <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;ite&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">:</span> <span class="n">ite_torch</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">))</span>
     <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; #b) -&gt; [#a] -&gt; [#b]&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">map_torch</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
-    <span class="c1"># dslf.concrete(&quot;compose&quot;, &quot;(#a -&gt; #b, #b -&gt; #c) -&gt; #a -&gt; #c&quot;, lambda f, g: lambda x: g(f(x)))</span>
     
     <span class="n">dslf</span><span class="o">.</span><span class="n">prune_to</span><span class="p">(</span><span class="s2">&quot;[{f, $L}] -&gt; [{f, $O}]&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dslf</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
@@ -1044,20 +1040,20 @@ No more programs found.
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="near_demo_classification.html"
+       href="near_demo_regression.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Neurosymbolic Software Tutorial - Classification</p>
+        <p class="prev-next-title">Neurosymbolic Software Tutorial - Regression</p>
       </div>
     </a>
     <a class="right-next"
-       href="near_demo_regression_solution.html"
+       href="discrete_exercise_skeleton.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Neurosymbolic Software Tutorial - Regression - Solution</p>
+        <p class="prev-next-title">Neurosymbolic Software Tutorial - Discrete</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -174,6 +174,7 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Neurosymbolic Software Tutorial - Classification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="near_demo_regression_solution.html">Neurosymbolic Software Tutorial - Regression - Solution</a></li>
 <li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
 <li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
 </ul>
@@ -624,6 +625,16 @@ document.write(`
 <span class="kn">from</span> <span class="nn">neurosym.dsl.dsl_factory</span> <span class="kn">import</span> <span class="n">DSLFactory</span>
 <span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.basic</span> <span class="kn">import</span> <span class="n">ite_torch</span>
 <span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.lists</span> <span class="kn">import</span> <span class="n">fold_torch</span><span class="p">,</span> <span class="n">map_torch</span>
+
+<span class="n">trajectory</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">trajectory</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">trajectory</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">out</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">simple_dsl</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="p">):</span>
