@@ -1,0 +1,829 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Neurosymbolic Software Tutorial - NEAR Bouncing Ball &#8212; neurosym Framework Tutorial</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=87e54e7c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=3ee479438cf8b5e0d341"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'bouncing_ball_exercise_skeleton';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="README.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">neurosym Framework Tutorial</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="README.html">
+                    Neurosymbolic Library
+                </a>
+            </li>
+        </ul>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="near_demo_classification.html">Neurosymbolic Software Tutorial - Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
+<li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/bouncing_ball_exercise_skeleton.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onColab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fbouncing_ball_exercise_skeleton.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/bouncing_ball_exercise_skeleton.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Neurosymbolic Software Tutorial - NEAR Bouncing Ball</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-dsl">Exercise: DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-neural-dsl">Setting up Neural DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-near">Run NEAR</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#top-3-programs">Top 3 Programs</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting-trajectories">Plotting Trajectories</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-near-bouncing-ball">
+<h1>Neurosymbolic Software Tutorial - NEAR Bouncing Ball<a class="headerlink" href="#neurosymbolic-software-tutorial-near-bouncing-ball" title="Link to this heading">#</a></h1>
+<a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/discrete_exercise_solutions.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+<section id="instruction">
+<h2>Instruction<a class="headerlink" href="#instruction" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Navigating this notebook on Google Colab: There will be text blocks and code blocks throughout the notebook. The text blocks, such as this one, will contain instructions and questions for you to consider. The code blocks, such as the one below, will contain executible code. Sometimes you will have to modify the code blocks following the instructions in the text blocks. You can run the code block by either pressing control/cmd + enter or by clicking the arrow on left-hand side.</p></li>
+<li><p>Saving Work: If you wish to save your work in this .ipynb, we recommend downloading the compressed repository from GitHub, unzipping it, uploading it to Google Drive, and opening this notebook from within Google Drive.</p></li>
+</ul>
+</section>
+<section id="notebook">
+<h2>Notebook<a class="headerlink" href="#notebook" title="Link to this heading">#</a></h2>
+<p>In this notebook, you will construct a DSL to simulate a bouncing ball</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">import</span> <span class="nn">neurosym</span> <span class="k">as</span> <span class="nn">ns</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples</span> <span class="kn">import</span> <span class="n">near</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.basic</span> <span class="kn">import</span> <span class="n">ite_torch</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.lists</span> <span class="kn">import</span> <span class="n">map_torch</span>
+
+<span class="kn">from</span> <span class="nn">neurosym.datasets.load_data</span> <span class="kn">import</span> <span class="n">DatasetFromNpy</span><span class="p">,</span> <span class="n">DatasetWrapper</span>
+<span class="kn">from</span> <span class="nn">neurosym.utils.imports</span> <span class="kn">import</span> <span class="n">import_pytorch_lightning</span>
+<span class="n">pl</span> <span class="o">=</span> <span class="n">import_pytorch_lightning</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="data">
+<h2>Data<a class="headerlink" href="#data" title="Link to this heading">#</a></h2>
+<p>We then load and plot some bouncing ball trajectories. Note that these trajectories are represented as a list <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">vx,</span> <span class="pre">vy]</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset_factory</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">train_seed</span><span class="p">:</span> <span class="n">DatasetWrapper</span><span class="p">(</span>
+    <span class="n">DatasetFromNpy</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/train_ex_data.npy&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy&quot;</span><span class="p">,</span>
+        <span class="n">train_seed</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">DatasetFromNpy</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/test_ex_data.npy&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy&quot;</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">datamodule</span> <span class="o">=</span> <span class="n">dataset_factory</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_trajectory</span><span class="p">(</span><span class="n">trajectory</span><span class="p">,</span> <span class="n">color</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">plot_trajectory</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;input[0] :&quot;</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;output[0]:&quot;</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-dsl">
+<h2>Exercise: DSL<a class="headerlink" href="#exercise-dsl" title="Link to this heading">#</a></h2>
+<p>Fill in the <code class="docutils literal notranslate"><span class="pre">bounce_dsl</span></code> to parameterize the space of functions that could represent the trajectories of bouncing balls.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">bounce_dsl</span><span class="p">():</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">O</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">dslf</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">DSLFactory</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">max_overall_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="s2">&quot;YOUR CODE HERE&quot;</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">prune_to</span><span class="p">(</span><span class="s2">&quot;[$fL] -&gt; [$fL]&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dslf</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dsl</span> <span class="o">=</span> <span class="n">bounce_dsl</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="dsl-printout">
+<h3>DSL Printout<a class="headerlink" href="#dsl-printout" title="Link to this heading">#</a></h3>
+<p>See your DSL printed below, and ensure it is what you would expect</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="setting-up-neural-dsl">
+<h3>Setting up Neural DSL<a class="headerlink" href="#setting-up-neural-dsl" title="Link to this heading">#</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">TypeDefiner</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">output_dim</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">typedef</span><span class="p">(</span><span class="s2">&quot;fL&quot;</span><span class="p">,</span> <span class="s2">&quot;{f, $L}&quot;</span><span class="p">)</span>
+<span class="n">neural_dsl</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NeuralDSL</span><span class="o">.</span><span class="n">from_dsl</span><span class="p">(</span>
+    <span class="n">dsl</span><span class="o">=</span><span class="n">dsl</span><span class="p">,</span>
+    <span class="n">modules</span><span class="o">=</span><span class="p">{</span>
+        <span class="o">**</span><span class="n">near</span><span class="o">.</span><span class="n">create_modules</span><span class="p">(</span>
+            <span class="s2">&quot;mlp&quot;</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="s2">&quot;($fL) -&gt; $fL&quot;</span><span class="p">)],</span>
+            <span class="n">near</span><span class="o">.</span><span class="n">mlp_factory</span><span class="p">(</span><span class="n">hidden_size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="o">**</span><span class="n">near</span><span class="o">.</span><span class="n">create_modules</span><span class="p">(</span>
+            <span class="s2">&quot;rnn_seq2seq&quot;</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="s2">&quot;([$fL]) -&gt; [$fL]&quot;</span><span class="p">)],</span>
+            <span class="n">near</span><span class="o">.</span><span class="n">rnn_factory_seq2seq</span><span class="p">(</span><span class="n">hidden_size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;pytorch_lightning.utilities.rank_zero&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;pytorch_lightning.accelerators.cuda&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+
+
+<span class="n">trainer_cfg</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainerConfig</span><span class="p">(</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">5e-3</span><span class="p">,</span>
+    <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">num_labels</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+    <span class="n">train_steps</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="p">),</span>
+    <span class="n">loss_callback</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">validation_cost</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">ValidationCost</span><span class="p">(</span>
+    <span class="n">neural_dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span>
+    <span class="n">trainer_cfg</span><span class="o">=</span><span class="n">trainer_cfg</span><span class="p">,</span>
+    <span class="n">datamodule</span><span class="o">=</span><span class="n">datamodule</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">enable_model_summary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">progress_by_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">near_graph</span><span class="p">(</span>
+    <span class="n">neural_dsl</span><span class="p">,</span>
+    <span class="n">ns</span><span class="o">.</span><span class="n">parse_type</span><span class="p">(</span>
+        <span class="n">s</span><span class="o">=</span><span class="s2">&quot;([{f, $L}]) -&gt; [{f, $O}]&quot;</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">TypeDefiner</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">output_dim</span><span class="p">)</span>
+    <span class="p">),</span>
+    <span class="n">is_goal</span><span class="o">=</span><span class="n">neural_dsl</span><span class="o">.</span><span class="n">program_has_no_holes</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="run-near">
+<h3>Run NEAR<a class="headerlink" href="#run-near" title="Link to this heading">#</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">iterator</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">bounded_astar</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">validation_cost</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">best_program_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="c1"># Let&#39;s collect the top four programs</span>
+<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">validation_cost</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">best_program_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got another program&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No more programs found.&quot;</span><span class="p">)</span>
+        <span class="k">break</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="top-3-programs">
+<h3>Top 3 Programs<a class="headerlink" href="#top-3-programs" title="Link to this heading">#</a></h3>
+<p>The code below assumes you found some top 3 programs and stored them in the best_program_nodes variable.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_program_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;(</span><span class="si">{i}</span><span class="s2">) Cost: </span><span class="si">{cost:.4f}</span><span class="s2">, </span><span class="si">{program}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">program</span><span class="p">),</span> <span class="n">cost</span><span class="o">=</span><span class="n">cost</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The function below is set up to further fine tune the program, test it, and return a set of values produced by it.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">testProgram</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">TorchProgramModule</span><span class="p">(</span>
+        <span class="n">dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span>
+    <span class="p">)</span>
+    <span class="n">pl_model</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainer</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">trainer_cfg</span><span class="p">)</span>
+    <span class="n">trainer</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span>
+        <span class="n">max_epochs</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+        <span class="n">devices</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="n">accelerator</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+        <span class="n">enable_checkpointing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">pl_model</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">(),</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">())</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">T</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.21413583</span><span class="p">,</span> <span class="mf">4.4062634</span><span class="p">,</span> <span class="mf">3.4344807</span><span class="p">,</span> <span class="mf">0.12440437</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+        <span class="n">path</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">module</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">Y</span>
+    <span class="k">return</span> <span class="n">path</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We generate trajectories for the top 2 programs.</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="n">testProgram</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">trajectoryb</span> <span class="o">=</span> <span class="n">testProgram</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="plotting-trajectories">
+<h2>Plotting Trajectories<a class="headerlink" href="#plotting-trajectories" title="Link to this heading">#</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">trajectory</span><span class="p">,</span> <span class="s2">&quot;C0&quot;</span><span class="p">)</span>
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">trajectoryb</span><span class="p">,</span> <span class="s2">&quot;C1&quot;</span><span class="p">)</span>
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;black&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Bouncing ball (ground truth in black)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-dsl">Exercise: DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-neural-dsl">Setting up Neural DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-near">Run NEAR</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#top-3-programs">Top 3 Programs</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting-trajectories">Plotting Trajectories</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Neurosymbolic Team (neurosymbolic.org)
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

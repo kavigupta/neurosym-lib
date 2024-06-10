@@ -1,0 +1,1093 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Neurosymbolic Software Tutorial - NEAR Bouncing Ball &#8212; neurosym Framework Tutorial</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=3ee479438cf8b5e0d341" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=87e54e7c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=3ee479438cf8b5e0d341"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'bouncing_ball_exercise_solutions';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+
+<a class="navbar-brand logo" href="README.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">neurosym Framework Tutorial</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="README.html">
+                    Neurosymbolic Library
+                </a>
+            </li>
+        </ul>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="near_demo_regression.html">Neurosymbolic Software Tutorial - Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="near_demo_classification.html">Neurosymbolic Software Tutorial - Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="discrete_exercise_skeleton.html">Neurosymbolic Software Tutorial - Discrete</a></li>
+<li class="toctree-l1"><a class="reference external" href="http://www.neurosymbolic.org/">Project Website</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/www/bouncing_ball_exercise_solutions.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onColab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/kavigupta/neurosym-lib/issues/new?title=Issue%20on%20page%20%2Fbouncing_ball_exercise_solutions.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/bouncing_ball_exercise_solutions.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Neurosymbolic Software Tutorial - NEAR Bouncing Ball</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-dsl">Exercise: DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-neural-dsl">Setting up Neural DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-near">Run NEAR</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#top-3-programs">Top 3 Programs</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting-trajectories">Plotting Trajectories</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-software-tutorial-near-bouncing-ball">
+<h1>Neurosymbolic Software Tutorial - NEAR Bouncing Ball<a class="headerlink" href="#neurosymbolic-software-tutorial-near-bouncing-ball" title="Link to this heading">#</a></h1>
+<a target="_blank" href="https://colab.research.google.com/github/kavigupta/neurosym-lib/blob/main/tutorial/discrete_exercise_solutions.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+<section id="instruction">
+<h2>Instruction<a class="headerlink" href="#instruction" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Navigating this notebook on Google Colab: There will be text blocks and code blocks throughout the notebook. The text blocks, such as this one, will contain instructions and questions for you to consider. The code blocks, such as the one below, will contain executible code. Sometimes you will have to modify the code blocks following the instructions in the text blocks. You can run the code block by either pressing control/cmd + enter or by clicking the arrow on left-hand side.</p></li>
+<li><p>Saving Work: If you wish to save your work in this .ipynb, we recommend downloading the compressed repository from GitHub, unzipping it, uploading it to Google Drive, and opening this notebook from within Google Drive.</p></li>
+</ul>
+</section>
+<section id="notebook">
+<h2>Notebook<a class="headerlink" href="#notebook" title="Link to this heading">#</a></h2>
+<p>In this notebook, you will construct a DSL to simulate a bouncing ball</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">import</span> <span class="nn">neurosym</span> <span class="k">as</span> <span class="nn">ns</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples</span> <span class="kn">import</span> <span class="n">near</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.basic</span> <span class="kn">import</span> <span class="n">ite_torch</span>
+<span class="kn">from</span> <span class="nn">neurosym.examples.near.operations.lists</span> <span class="kn">import</span> <span class="n">map_torch</span>
+
+<span class="kn">from</span> <span class="nn">neurosym.datasets.load_data</span> <span class="kn">import</span> <span class="n">DatasetFromNpy</span><span class="p">,</span> <span class="n">DatasetWrapper</span>
+<span class="kn">from</span> <span class="nn">neurosym.utils.imports</span> <span class="kn">import</span> <span class="n">import_pytorch_lightning</span>
+<span class="n">pl</span> <span class="o">=</span> <span class="n">import_pytorch_lightning</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="data">
+<h2>Data<a class="headerlink" href="#data" title="Link to this heading">#</a></h2>
+<p>We then load and plot some bouncing ball trajectories. Note that these trajectories are represented as a list <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">vx,</span> <span class="pre">vy]</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset_factory</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">train_seed</span><span class="p">:</span> <span class="n">DatasetWrapper</span><span class="p">(</span>
+    <span class="n">DatasetFromNpy</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/train_ex_data.npy&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy&quot;</span><span class="p">,</span>
+        <span class="n">train_seed</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">DatasetFromNpy</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/test_ex_data.npy&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy&quot;</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">datamodule</span> <span class="o">=</span> <span class="n">dataset_factory</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_trajectory</span><span class="p">(</span><span class="n">trajectory</span><span class="p">,</span> <span class="n">color</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">trajectory</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">plot_trajectory</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/538790f1b6b83a7d76e2d84e5b1375a0cb98dd5467a06250f319b63ecc0d355a.png" src="_images/538790f1b6b83a7d76e2d84e5b1375a0cb98dd5467a06250f319b63ecc0d355a.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;input[0] :&quot;</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;output[0]:&quot;</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>input[0] : [-0.40642968  4.5408607   2.9196808  -0.05576635]
+output[0]: [-0.11446159  4.535284    2.9196808  -1.0357664 ]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-dsl">
+<h2>Exercise: DSL<a class="headerlink" href="#exercise-dsl" title="Link to this heading">#</a></h2>
+<p>Fill in the <code class="docutils literal notranslate"><span class="pre">bounce_dsl</span></code> to parameterize the space of functions that could represent the trajectories of bouncing balls.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">bounce_dsl</span><span class="p">():</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">O</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">dslf</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">DSLFactory</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">max_overall_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="c1"># BEGIN SOLUTION &quot;YOUR CODE HERE&quot;</span>
+    <span class="c1">## DSL for the bounce example.</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">typedef</span><span class="p">(</span><span class="s2">&quot;fL&quot;</span><span class="p">,</span> <span class="s2">&quot;{f, $L}&quot;</span><span class="p">)</span>
+
+    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span>
+        <span class="s2">&quot;linear_bool&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;() -&gt; $fL -&gt; f&quot;</span><span class="p">,</span>
+        <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span>
+        <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="p">)</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">parameterized</span><span class="p">(</span>
+        <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;() -&gt; $fL -&gt; $fL&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">lin</span><span class="p">:</span> <span class="n">lin</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lin</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span><span class="s2">&quot;ite&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a&quot;</span><span class="p">,</span> <span class="n">ite_torch</span><span class="p">)</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">concrete</span><span class="p">(</span>
+        <span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="s2">&quot;(#a -&gt; #b) -&gt; [#a] -&gt; [#b]&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">map_torch</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># END SOLUTION</span>
+    <span class="n">dslf</span><span class="o">.</span><span class="n">prune_to</span><span class="p">(</span><span class="s2">&quot;[$fL] -&gt; [$fL]&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dslf</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dsl</span> <span class="o">=</span> <span class="n">bounce_dsl</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="dsl-printout">
+<h3>DSL Printout<a class="headerlink" href="#dsl-printout" title="Link to this heading">#</a></h3>
+<p>See your DSL printed below, and ensure it is what you would expect</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dsl</span><span class="o">.</span><span class="n">render</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>            ite :: (#a -&gt; f, #a -&gt; #a, #a -&gt; #a) -&gt; #a -&gt; #a
+            map :: (#a -&gt; #b) -&gt; [#a] -&gt; [#b]
+linear_bool[lin] :: () -&gt; {f, 4} -&gt; f
+    linear[lin] :: () -&gt; {f, 4} -&gt; {f, 4}
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="setting-up-neural-dsl">
+<h3>Setting up Neural DSL<a class="headerlink" href="#setting-up-neural-dsl" title="Link to this heading">#</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">TypeDefiner</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">output_dim</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">typedef</span><span class="p">(</span><span class="s2">&quot;fL&quot;</span><span class="p">,</span> <span class="s2">&quot;{f, $L}&quot;</span><span class="p">)</span>
+<span class="n">neural_dsl</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NeuralDSL</span><span class="o">.</span><span class="n">from_dsl</span><span class="p">(</span>
+    <span class="n">dsl</span><span class="o">=</span><span class="n">dsl</span><span class="p">,</span>
+    <span class="n">modules</span><span class="o">=</span><span class="p">{</span>
+        <span class="o">**</span><span class="n">near</span><span class="o">.</span><span class="n">create_modules</span><span class="p">(</span>
+            <span class="s2">&quot;mlp&quot;</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="s2">&quot;($fL) -&gt; $fL&quot;</span><span class="p">)],</span>
+            <span class="n">near</span><span class="o">.</span><span class="n">mlp_factory</span><span class="p">(</span><span class="n">hidden_size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="o">**</span><span class="n">near</span><span class="o">.</span><span class="n">create_modules</span><span class="p">(</span>
+            <span class="s2">&quot;rnn_seq2seq&quot;</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="s2">&quot;([$fL]) -&gt; [$fL]&quot;</span><span class="p">)],</span>
+            <span class="n">near</span><span class="o">.</span><span class="n">rnn_factory_seq2seq</span><span class="p">(</span><span class="n">hidden_size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;pytorch_lightning.utilities.rank_zero&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;pytorch_lightning.accelerators.cuda&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+
+
+<span class="n">trainer_cfg</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainerConfig</span><span class="p">(</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">5e-3</span><span class="p">,</span>
+    <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">num_labels</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+    <span class="n">train_steps</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="p">),</span>
+    <span class="n">loss_callback</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">validation_cost</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">ValidationCost</span><span class="p">(</span>
+    <span class="n">neural_dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span>
+    <span class="n">trainer_cfg</span><span class="o">=</span><span class="n">trainer_cfg</span><span class="p">,</span>
+    <span class="n">datamodule</span><span class="o">=</span><span class="n">datamodule</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">enable_model_summary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">progress_by_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">near_graph</span><span class="p">(</span>
+    <span class="n">neural_dsl</span><span class="p">,</span>
+    <span class="n">ns</span><span class="o">.</span><span class="n">parse_type</span><span class="p">(</span>
+        <span class="n">s</span><span class="o">=</span><span class="s2">&quot;([{f, $L}]) -&gt; [{f, $O}]&quot;</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">TypeDefiner</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">output_dim</span><span class="p">)</span>
+    <span class="p">),</span>
+    <span class="n">is_goal</span><span class="o">=</span><span class="n">neural_dsl</span><span class="o">.</span><span class="n">program_has_no_holes</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="run-near">
+<h3>Run NEAR<a class="headerlink" href="#run-near" title="Link to this heading">#</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">iterator</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">bounded_astar</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">validation_cost</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">best_program_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="c1"># Let&#39;s collect the top four programs</span>
+<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">validation_cost</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">best_program_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got another program&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No more programs found.&quot;</span><span class="p">)</span>
+        <span class="k">break</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training ??::&lt;[{f, 4}] -&gt; [{f, 4}]&gt;
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "866833f51bb04296a082341c7fb56638", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (ite ??::&lt;[{f, 4}] -&gt; f&gt; ??::&lt;[{f, 4}] -&gt; [{f, 4}]&gt; ??::&lt;[{f, 4}] -&gt; [{f, 4}]&gt;)
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eb8ae8eb846a45428c9719a7cd6fed66", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map ??::&lt;{f, 4} -&gt; {f, 4}&gt;)
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4502515906f3497c86ee540652209fe7", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (__neural_dsl_internal_rnn_seq2seq_1)
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7a8dcfce2d2e49779e09ff1ac93ada97", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a1d2b26942bf4ac5851ecbb84b6972ad", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (linear))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "388fe36c7aac4a68b1248f2e8bb26727", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (__neural_dsl_internal_mlp_1))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5c19a885d5d04b5293c64ac5e927894a", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (linear))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d56e025782204fd78df022abfed6ec8f", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Got another program
+training (map (ite (linear_bool) ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3eab315839044fa98154a0b4bceb7634", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f87c7a93bf364cb5b9e49f659d6ffbbb", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4634594204f74c2480cf35a766ebf2a5", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "74087fd7e1354beea1e5e85fc943d83d", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6fd0f43eb61947d28db60a3bc8b41cae", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c30cc02001f744719b4ed91d348c2bc2", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0d3d3013b2e340cab00bea3c5930b761", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "232af919063f4340a5eec199968d2fdd", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fb98202c000a470d9f3d111be7624c57", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ad7f7ea964d947268372f0283163ddbd", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6e1fd593e6bb4b719b7cb5977de07949", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Got another program
+training (map (ite (linear_bool) (ite (linear_bool) ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4b070942c53449b989c674e66417cd18", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "78aa3b65ced64153964109851a58053f", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0924c89191af48ecb2e66547cc5a5c6f", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "64bb0aba2b7d4b0f8b31a9c14b7d0e92", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6a1670baa5d84ef9a1493ed73efc7e28", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "71758eb5b6be4b7fbbce7f826312fe32", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1beede1200744369bc092354d7d464c4", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a03cdd9d47764eb394eab540e72c22ef", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "362cc75a4cac4c01a7214bb8fe16ad35", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1)) ??::&lt;{f, 4} -&gt; {f, 4}&gt;))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "54901dcdd1de4baaa9e9b83215d78987", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1)) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "85307996716546f49edb34c6995365c8", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1)) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d7f7f9e4c1124e63a4d1ff59c55dd85e", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1)) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "63b332c340a445bebf7b3f53de84df6f", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear)) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "e03781d4c5b140f5855f0ae573cf9d60", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear)) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "740716ba2f384e7ba342872b76b8db08", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear)) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6a1accea4aa845acbdf1dbcbb17b3a44", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "15256517b6b24460b0b8bdf54b24910c", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c117ec98e47941d2a3d488517abf0a5c", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3690ce8f46bc4683a4ea312ad32b3281", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1)) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f5e9d54f64ad419ca0584be26540b009", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1)) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "326241045e784a64a4745b108a860b42", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1)) (__neural_dsl_internal_mlp_1)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2a0819bcb7f942e5a439e4ac18d4f4bf", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) (linear)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "96538568ce854ffb8a131a77c0b4c9de", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Got another program
+training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "cf949ca5482f49059eefaa9a0d8ebf4d", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "55c5f36b97d24a51b110a360bcd84b5a", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (linear) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fd1a402da9d944e3b91abb72504f975b", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (__neural_dsl_internal_mlp_1) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7bf0b82972e64d519c1954bb5c266522", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c2f25d960a674d9194a760c33fe79858", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "09a4e6f9ff9b443d9be0dd81737a3f0d", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7f4a2479363a4e76ad2c5727c0b4e1dd", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (linear) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9e588d8978ac40c4b44bd531dd75bfc3", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (linear) (linear))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c79f6af1bbae47fc9448e0eb244952c7", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7bfc1a4bd268470eb55c24a45e22b091", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "33d816a1d64445889b9ac13a22cc722d", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "716c4b85bc9b405f985abc7e03d304e2", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ebcfd84cf1754180abc0be3cc0c7d710", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (__neural_dsl_internal_mlp_1) ??::&lt;{f, 4} -&gt; {f, 4}&gt;)))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3b07c7bc24dd4c709715a871c1ae22ae", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "027f5b3120a14853bdd16a112daa9b82", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (linear))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "be87e76d4df44e209918ac1fa0d601aa", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (__neural_dsl_internal_mlp_1) (__neural_dsl_internal_mlp_1))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d4193f94c2054bb28aebacdc6530eb38", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) (ite ??::&lt;{f, 4} -&gt; f&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt; ??::&lt;{f, 4} -&gt; {f, 4}&gt;))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2b55c164d6c246fc957d3988d1eb3e9e", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) (linear))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3ed793baf74c433d95a4976edfbb1a14", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) (__neural_dsl_internal_mlp_1))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eef98119645e4f37bc499d6abfe0f7e2", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>training (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) (linear))))
+</pre></div>
+</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ccd7d8f3074a4acf808ffc36e669c94e", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Got another program
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="top-3-programs">
+<h3>Top 3 Programs<a class="headerlink" href="#top-3-programs" title="Link to this heading">#</a></h3>
+<p>The code below assumes you found some top 3 programs and stored them in the best_program_nodes variable.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_program_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;(</span><span class="si">{i}</span><span class="s2">) Cost: </span><span class="si">{cost:.4f}</span><span class="s2">, </span><span class="si">{program}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">ns</span><span class="o">.</span><span class="n">render_s_expression</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">program</span><span class="p">),</span> <span class="n">cost</span><span class="o">=</span><span class="n">cost</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0) Cost: 9.5617, (map (ite (linear_bool) (linear) (linear)))
+(1) Cost: 9.9155, (map (ite (linear_bool) (ite (linear_bool) (linear) (linear)) (linear)))
+(2) Cost: 14.4255, (map (ite (linear_bool) (linear) (ite (linear_bool) (linear) (linear))))
+(3) Cost: 18.8737, (map (linear))
+</pre></div>
+</div>
+</div>
+</div>
+<p>The function below is set up to further fine tune the program, test it, and return a set of values produced by it.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">testProgram</span><span class="p">(</span><span class="n">best_program_node</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">TorchProgramModule</span><span class="p">(</span>
+        <span class="n">dsl</span><span class="o">=</span><span class="n">neural_dsl</span><span class="p">,</span> <span class="n">program</span><span class="o">=</span><span class="n">best_program_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">program</span>
+    <span class="p">)</span>
+    <span class="n">pl_model</span> <span class="o">=</span> <span class="n">near</span><span class="o">.</span><span class="n">NEARTrainer</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">trainer_cfg</span><span class="p">)</span>
+    <span class="n">trainer</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span>
+        <span class="n">max_epochs</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+        <span class="n">devices</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="n">accelerator</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+        <span class="n">enable_checkpointing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">pl_model</span><span class="p">,</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">(),</span> <span class="n">datamodule</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">())</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">T</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.21413583</span><span class="p">,</span> <span class="mf">4.4062634</span><span class="p">,</span> <span class="mf">3.4344807</span><span class="p">,</span> <span class="mf">0.12440437</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+        <span class="n">path</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">module</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">Y</span>
+    <span class="k">return</span> <span class="n">path</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We generate trajectories for the top 2 programs.</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="n">testProgram</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">trajectoryb</span> <span class="o">=</span> <span class="n">testProgram</span><span class="p">(</span><span class="n">best_program_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  | Name  | Type               | Params
+---------------------------------------------
+0 | model | TorchProgramModule | 45    
+---------------------------------------------
+45        Trainable params
+0         Non-trainable params
+45        Total params
+0.000     Total estimated model params size (MB)
+
+  | Name  | Type               | Params
+---------------------------------------------
+0 | model | TorchProgramModule | 70    
+---------------------------------------------
+70        Trainable params
+0         Non-trainable params
+70        Total params
+0.000     Total estimated model params size (MB)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="plotting-trajectories">
+<h2>Plotting Trajectories<a class="headerlink" href="#plotting-trajectories" title="Link to this heading">#</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">trajectory</span><span class="p">,</span> <span class="s2">&quot;C0&quot;</span><span class="p">)</span>
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">trajectoryb</span><span class="p">,</span> <span class="s2">&quot;C1&quot;</span><span class="p">)</span>
+<span class="n">plot_trajectory</span><span class="p">(</span><span class="n">datamodule</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;black&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Bouncing ball (ground truth in black)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/7606f366d9b8e664546926325b40beb1b591bf221b9201a22a1b774793db063c.png" src="_images/7606f366d9b8e664546926325b40beb1b591bf221b9201a22a1b774793db063c.png" />
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instruction">Instruction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook">Notebook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercise-dsl">Exercise: DSL</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dsl-printout">DSL Printout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-neural-dsl">Setting up Neural DSL</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-near">Run NEAR</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#top-3-programs">Top 3 Programs</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting-trajectories">Plotting Trajectories</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Neurosymbolic Team (neurosymbolic.org)
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=3ee479438cf8b5e0d341"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=3ee479438cf8b5e0d341"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

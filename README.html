@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Neurosymbolic Library &#8212; neurosym Framework Tutorial</title>
+    <title>The neurosym Library &#8212; neurosym Framework Tutorial</title>
   
   
   
@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=384b581d" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=87e54e7c" />
   
@@ -170,7 +170,7 @@
         <ul class="nav bd-sidenav bd-sidenav__home-link">
             <li class="toctree-l1 current active">
                 <a class="reference internal" href="#">
-                    Neurosymbolic Library
+                    The neurosym Library
                 </a>
             </li>
         </ul>
@@ -351,7 +351,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
 </div></div>
       
     </div>
@@ -362,11 +364,23 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Neurosymbolic Library</h1>
+    <h1>The neurosym Library</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setup">Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#asking-for-help">Asking for Help</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-1-classification">Notebook 1 - Classification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-2-regression">Notebook 2 - Regression</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-3-abstraction-learning">Notebook 3 - Abstraction Learning</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -376,10 +390,73 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="neurosymbolic-library">
-<h1>Neurosymbolic Library<a class="headerlink" href="#neurosymbolic-library" title="Link to this heading">#</a></h1>
-<p>NOTE: this library is still under development. Please check back later for more updates.</p>
-<p>Do not use this library for production or research purposes yet, it <em>will</em> change in the future.</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="the-neurosym-library">
+<h1>The <code class="docutils literal notranslate"><span class="pre">neurosym</span></code> Library<a class="headerlink" href="#the-neurosym-library" title="Link to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">neurosym</span></code> library is a Python package for neurosymbolic program synthesis. We aim to provide a set of tools for DSL design, program search, and program abstraction in a self-contained package.</p>
+<p>For the 2024 Neurosymbolic Programming Summer School, the we provide a set of notebooks provide a hands-on component (30 min each) to complement the tutorials. We provide code as an initial walk-through of baseline methods, with optional exercises for open-ended exploration. The dataset we’ll be working is synthetically generated data.</p>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">#</a></h2>
+<p>To install the library, you can use pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>neurosym
+</pre></div>
+</div>
+<p>NOTE: For the tutorial, we will be working on Google Colab, so you don’t need to install the library locally. You can simply run <code class="docutils literal notranslate"><span class="pre">!pip</span> <span class="pre">install</span> <span class="pre">neurosym</span></code> in the notebook which will run a shell command to install the library.</p>
+</section>
+<section id="asking-for-help">
+<h2>Asking for Help<a class="headerlink" href="#asking-for-help" title="Link to this heading">#</a></h2>
+<p>Feel free to reach out to Kavi Gupta or Atharva Sehgal. You can reach out to us in three ways:</p>
+<ul class="simple">
+<li><p>In Person: Flag us down any time during the conference!</p></li>
+<li><p>Via email: Reach out at <code class="docutils literal notranslate"><span class="pre">kavig&#64;mit.edu</span></code> or <code class="docutils literal notranslate"><span class="pre">atharvas&#64;utexas.edu</span></code>.</p></li>
+</ul>
+</section>
+<section id="notebook-1-classification">
+<h2><a class="reference external" href="https://neurosymbolic-learning.github.io/near_demo_classification.html">Notebook 1 - Classification</a><a class="headerlink" href="#notebook-1-classification" title="Link to this heading">#</a></h2>
+<p>The goal of this notebook is to provide a walk-through of the neurosymbolic programming pipeline with a synthetic classification task.</p>
+<ul class="simple">
+<li><p>Part 1: Data Exploration</p>
+<ul>
+<li><p>We’re going to define a function <code class="docutils literal notranslate"><span class="pre">datagen()</span></code> and plot trajectories generated with datagen.</p></li>
+<li><p><strong>Exercise</strong>: Before reading through the code, look at the trajectory plot and hypothesize what the underlying function might be. Write down what mathematical operators (<code class="docutils literal notranslate"><span class="pre">sin</span></code>, <code class="docutils literal notranslate"><span class="pre">pow</span></code>, <code class="docutils literal notranslate"><span class="pre">exp</span></code>, etc.) would be useful to discover the underlying function.</p></li>
+</ul>
+</li>
+<li><p>Part 2: DSL Generation</p>
+<ul>
+<li><p>We’re going to formalize our intuition by writing a DSL. Write code for the DSL.</p></li>
+<li><p><strong>Exercise</strong>: Modify the DSL with the mathematical operators we wrote down earlier.</p></li>
+</ul>
+</li>
+<li><p>Part 3: Program Generation</p>
+<ul>
+<li><p>We’re going to use Neural guided search (NEAR) to search for the best-fit program in the DSL.</p></li>
+</ul>
+</li>
+<li><p>Part 4: Program Inspection</p>
+<ul>
+<li><p>We will render the program found by NEAR and inspect it’s performance.</p></li>
+<li><p><strong>Exercise</strong>: Inspect the program found after search. Try different hyperparamters.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="notebook-2-regression">
+<h2><a class="reference external" href="https://neurosymbolic-learning.github.io/near_demo_regression.html">Notebook 2 - Regression</a><a class="headerlink" href="#notebook-2-regression" title="Link to this heading">#</a></h2>
+<p>The goal of this notebook is to provide a walk-through of the neurosymbolic programming pipeline with a synthetic regression task.</p>
+<ul class="simple">
+<li><p>Part 1: Data Exploration</p></li>
+<li><p>Part 2: DSL Generation</p></li>
+<li><p>Part 3: Program Generation</p></li>
+<li><p>Part 4: Program Inspection</p></li>
+</ul>
+</section>
+<section id="notebook-3-abstraction-learning">
+<h2><a class="reference external" href="https://neurosymbolic-learning.github.io/discrete_exercise_skeleton.html">Notebook 3 - Abstraction Learning</a><a class="headerlink" href="#notebook-3-abstraction-learning" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Part 1: Defining a DSL</p></li>
+<li><p>Part 2: Finding Programs</p></li>
+<li><p>Part 3: Abstraction Learning</p></li>
+</ul>
+</section>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -429,6 +506,25 @@ document.write(`
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setup">Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#asking-for-help">Asking for Help</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-1-classification">Notebook 1 - Classification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-2-regression">Notebook 2 - Regression</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-3-abstraction-learning">Notebook 3 - Abstraction Learning</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
