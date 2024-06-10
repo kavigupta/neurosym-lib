@@ -1,6 +1,6 @@
 # The `neurosym` Library
 
-The `neurosym` library is a Python package for neurosymbolic program synthesis. We aim to provide a set of tools for DSL design, program search, and program abstraction in a self-contained package.
+The [`neurosym` library](https://github.com/kavigupta/neurosym-lib/) is a Python package for neurosymbolic program synthesis. We aim to provide a set of tools for DSL design, program search, and program abstraction in a self-contained package.
 
 For the 2024 Neurosymbolic Programming Summer School, the we provide a set of notebooks provide a hands-on component (30 min each) to complement the tutorials. We provide code as an initial walk-through of baseline methods, with optional exercises for open-ended exploration. The dataset we'll be working is synthetically generated data. 
 
