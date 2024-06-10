@@ -16,7 +16,7 @@ NOTE: For the tutorial, we will be working on Google Colab, so you don't need to
 
 ## Asking for Help
 
-Feel free to reach out to Kavi Gupta or Atharva Sehgal. You can reach out to us in three ways:
+Feel free to reach out to Kavi Gupta or Atharva Sehgal. You can reach out to us in two ways:
 
 - In Person: Flag us down any time during the conference!
 - Via email: Reach out at `kavig@mit.edu` or `atharvas@utexas.edu`.
