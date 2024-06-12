@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Set, Tuple, Union
+from typing import Callable, Dict, List, Set, Tuple, Union
 
 from torch import nn
 
@@ -25,7 +25,6 @@ class NeuralDSL(DSL):
     """
     A neural DSL extends ``DSL`` to handle neural heuristics (ie: type-appropriate NN productions)
     These neural heuristics can be used to fill holes in partial programs.
-    Required to run NEAR.
     """
 
     # partial_programs: Dict[Type, SExpression]
@@ -41,13 +40,9 @@ class NeuralDSL(DSL):
 
         The type specific modules are used to fill holes in partial programs.
 
-        Args:
-            dsl: The DSL to extend.
-            modules: A dictionary mapping types to tags and functions that
-                are used to initialize the modules for that type.
-
-        Returns:
-            A NeuralDSL.
+        :param dsl: The DSL to extend.
+        :param modules: A dictionary mapping types to tags and functions that
+            are used to initialize the modules for that type.
         """
         partial_productions = []
         type_to_symbol = {}
@@ -132,7 +127,14 @@ def create_module_for_type(module_factory, t):
     return lambda: module_factory(*shape)
 
 
-def create_modules(tag, types, module_factory):
+def create_modules(tag: str, types: List[Type], module_factory):
+    """
+    Create a dictionary of modules for a set of types, given the module factory.
+
+    :param tag: Tag to use for the modules.
+    :param types: Types to create modules for.
+    :param module_factory: Function that creates a module given the input and output shapes.
+    """
     return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
 
 

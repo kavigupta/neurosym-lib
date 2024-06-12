@@ -9,6 +9,14 @@ from .base import BaseConfig
 
 @dataclass
 class RNNConfig(BaseConfig):
+    """
+    Represents the configuration of an RNN module.
+
+    :param input_size: The size of the input.
+    :param hidden_size: The size of the hidden layer.
+    :param output_size: The size of the output.
+    """
+
     input_size: int
     hidden_size: int
     output_size: int
@@ -68,11 +76,23 @@ class RNN(nn.Module):
 
 
 class Seq2SeqRNN(RNN):
+    """
+    RNN module for sequence-to-sequence tasks.
+
+    :param config: Configuration for the RNN.
+    """
+
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
         return self.seq2seq(inp, hidden)
 
 
 class Seq2ClassRNN(RNN):
+    """
+    RNN module for sequence-to-class tasks.
+
+    :param config: Configuration for the RNN.
+    """
+
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
         return self.seq2class(inp, hidden)
 

@@ -10,6 +10,18 @@ from .base import BaseConfig
 
 @dataclass
 class MLPConfig(BaseConfig):
+    """
+    Represents the configuration of an MLP module.
+
+    :param input_size: The size of the input.
+    :param hidden_size: The size of the hidden layer.
+    :param output_size: The size of the output.
+    :param dropout: Dropout rate to apply to the hidden layer.
+    :param bias: Whether to use bias in the linear layers.
+    :param nonlinearity: Nonlinearity to use in the hidden layer.
+    :param loss: Loss function to use for training the model.
+    """
+
     input_size: int
     hidden_size: int
     output_size: int
@@ -20,7 +32,11 @@ class MLPConfig(BaseConfig):
 
 
 class MLP(nn.Sequential):
-    """Simple MLP module."""
+    """
+    Simple MLP module.
+
+    :param config: Configuration for the MLP.
+    """
 
     def __init__(self, config: MLPConfig):
         self.config = config

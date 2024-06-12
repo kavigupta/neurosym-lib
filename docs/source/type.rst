@@ -5,6 +5,11 @@ Types
     :members:
 
 .. autofunction:: neurosym.parse_type
+.. autoclass:: neurosym.TypeDefiner
+
+
+Subclasses of :class:`Type`
+------------------------------------------
 
 .. autoclass:: neurosym.AtomicType
 .. autoclass:: neurosym.TensorType

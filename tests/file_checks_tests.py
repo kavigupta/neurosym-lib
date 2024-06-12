@@ -100,9 +100,13 @@ class AllFunctionsDocumentedTest(unittest.TestCase):
     pattern = re.compile(r"\b(ns|near)(\.(\w+))+")
 
     def normalize(self, function):
-        return function.replace("ns.", "neurosym.").replace(
+        function = function.replace("ns.", "neurosym.").replace(
             "near.", "neurosym.examples.near."
         )
+        function = {
+            "neurosym.examples.near.NeuralDSL.from_dsl": "neurosym.examples.near.NeuralDSL"
+        }.get(function, function)
+        return function
 
     @parameterized.parameterized.expand(
         [(path,) for path in files_to_examine("tests", "tutorial")]

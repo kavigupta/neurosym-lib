@@ -16,27 +16,53 @@ SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
 
 class TypeDefiner:
+    """
+    A class that facilitates in parsing type strings, allowing for the definition of
+        variables and filters that can be used to parse type strings.
+
+    :param env: A dictionary that maps type variable names to objects, which
+        can be types, sizes, etc.
+    """
+
     def __init__(self, **env):
         self.env = env
         self.filters = {}
 
-    def __call__(self, type_str):
+    def __call__(self, type_str: str) -> Type:
+        """
+        Parse a type string into a type.
+        """
         return parse_type(type_str, self)
 
-    def sig(self, type_str):
+    def sig(self, type_str: str) -> FunctionTypeSignature:
+        """
+        Parse a type string into a function type signature.
+        """
         typ = self(type_str)
         return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
-    def typedef(self, key, type_str):
+    def typedef(self, key: str, type_str: str):
+        """
+        Define a type definition.
+        """
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
+        """
+        Define a type variable with a filter.
+        """
         self.filters[key] = type_filter
 
     def lookup_type(self, key):
+        """
+        Look up a type definition.
+        """
         return self.env[key]
 
     def lookup_filter(self, key):
+        """
+        Look up a filter.
+        """
         return self.filters[key]
 
 
