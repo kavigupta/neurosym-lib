@@ -124,7 +124,7 @@ class DSLFactory:
         :param symbol: The symbol for the production.
         :param type_str: The type string for the production.
         :param semantics: The semantics to use for the production. This should have
-            a type corresponding to `type_str`. Note: *this is not checked*.
+            a type corresponding to ``type_str``. Note: *this is not checked*.
         """
         sig = self.t.sig(type_str)
         self._concrete_productions.append(
@@ -149,7 +149,7 @@ class DSLFactory:
         :param symbol: The symbol for the production.
         :param type_str: The type string for the production.
         :param semantics: The semantics to use for the production. This should have
-            a type corresponding to `type_str`. Note: *this is not checked*.
+            a type corresponding to ``type_str``. Note: *this is not checked*.
         :param parameters: A dictionary mapping parameter names to functions that
             generate initial parameter values.
         """

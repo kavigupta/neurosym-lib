@@ -274,7 +274,7 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
 def compute_transition(transitions, state, typ, fields):
     """
     Compute the list of states that the DFA should transition to
-        for each child of a node of type `typ` in state `state`.
+        for each child of a node of type ``typ`` in state ``state``.
 
     :param transitions: the transition dictionary
     :param state: the current state
@@ -312,7 +312,7 @@ def all_types_as_string(ts):
 def compute_match(transition, key, default=None):
     """
     Compute the match for the given key in the transition dictionary. Handles tuples
-        and the special case where the key is `all`.
+        and the special case where the key is ``all``.
 
     :param transition: the transition dictionary
     :param key: the key to look up

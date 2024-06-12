@@ -23,7 +23,7 @@ class PartialProgramNotFoundError(Exception):
 @dataclass
 class NeuralDSL(DSL):
     """
-    A neural DSL extends `DSL` to handle neural heuristics (ie: type-appropriate NN productions)
+    A neural DSL extends ``DSL`` to handle neural heuristics (ie: type-appropriate NN productions)
     These neural heuristics can be used to fill holes in partial programs.
     Required to run NEAR.
     """

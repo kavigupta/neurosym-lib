@@ -338,7 +338,7 @@ def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False
     Returns a tuple of (atomic_types, constructors), where atomic_types
         represents the atomic types in the universe, and constructors
         is a list of tuples of the form (arity, constructor), where
-        constructor is a function that takes `arity` types and
+        constructor is a function that takes ``arity`` types and
         produces a new type.
     """
     atomic_types = set()

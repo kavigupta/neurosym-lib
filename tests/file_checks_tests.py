@@ -1,10 +1,10 @@
 import ast
-from functools import lru_cache
 import glob
 import json
 import os
 import re
 import unittest
+from functools import lru_cache
 
 import parameterized
 

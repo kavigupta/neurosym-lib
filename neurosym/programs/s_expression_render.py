@@ -11,7 +11,7 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
 
     If we are exporting for stitch and the SExpression is a leaf,
         it will be converted to a string with the prefix "leaf-".
-        This is because stitch does not distinguish `(f)` from `f`.
+        This is because stitch does not distinguish ``(f)`` from ``f``.
 
     Args:
         s_exp: The SExpression to convert.
@@ -80,9 +80,9 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     Render an SExpression as a string.
 
     :param s_exp: The SExpression to render.
-    :param for_stitch: Whether we are parsing this expression from `stitch_core`,
+    :param for_stitch: Whether we are parsing this expression from ``stitch_core``,
         in which case we need to handle the "leaf-" prefix that we introduced
-        in `parse_s_expression`.
+        in ``parse_s_expression``.
 
 
     :returns: The string representing the SExpression.
@@ -99,7 +99,7 @@ def parse_s_expression(
     :param s: The string to parse.
     :param should_not_be_leaf: A set of symbols that should not be converted to leaves.
         Instead, they should be converted to SExpressions with no children.
-    :param for_stitch: Whether we are rendering this s-expression for `stitch_core`,
+    :param for_stitch: Whether we are rendering this s-expression for ``stitch_core``,
         in which case we need to tag leaf nodes with "leaf-" prefix.
 
     :returns: The SExpression representing the string.

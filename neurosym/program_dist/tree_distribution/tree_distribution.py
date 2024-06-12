@@ -85,10 +85,6 @@ class TreeDistribution:
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
-    """
-    See `tree_dist_enumerator.py` for more information.
-    """
-
     @abstractmethod
     def compute_tree_distribution(
         self, distribution: Union[ProgramDistribution, NoneType]
@@ -96,7 +92,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         """
         Returns a tree distribution representing the given program distribution.
 
-        If `distribution` is `None`, returns a tree distribution with all fields
+        If ``distribution`` is ``None``, returns a tree distribution with all fields
             initialized, but the probabilities are not guaranteed to have any properties.
             This is useful for tasks where you want the skeleton of the tree distribution,
             but don't need the actual distribution.
@@ -104,7 +100,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
 
     def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
         """
-        Cached version of `compute_tree_distribution`.
+        Cached version of ``compute_tree_distribution``.
         """
         # This is a bit of a hack, but it reduces the need to pass around
         # the tree distribution everywhere, or to compute it multiple times.
@@ -118,7 +114,7 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
     @cached_property
     def tree_distribution_skeleton(self) -> TreeDistribution:
         """
-        Cached version of `compute_tree_distribution(None)`.
+        Cached version of ``compute_tree_distribution(None)``.
         """
 
         return self.compute_tree_distribution(None)
