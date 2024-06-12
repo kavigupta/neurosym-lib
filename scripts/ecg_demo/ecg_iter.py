@@ -387,7 +387,7 @@ g = near.near_graph(
     ),
     is_goal=checker,
 )
-iterator = ns.search.async_bounded_astar(
+iterator = ns.search.bounded_astar_async(
     g, cost_plus_heuristic, max_depth=15, max_workers=32, verbose=True
 )
 

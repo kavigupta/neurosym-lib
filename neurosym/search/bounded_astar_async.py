@@ -45,7 +45,7 @@ class FuturePriorityQueue(queue.PriorityQueue):
         return self.get_nowait()
 
 
-def async_bounded_astar(
+def bounded_astar_async(
     g: SearchGraph,
     cost_plus_heuristic: Callable[[SExpression], float],
     max_depth: int,
