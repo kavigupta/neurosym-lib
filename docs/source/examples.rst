@@ -1,4 +1,9 @@
 Examples
 ===========================================
 
-.. autofunction:: neurosym.examples.basic_arith_dsl
+
+.. toctree::
+    :maxdepth: 1
+    
+    near
+    examples_other

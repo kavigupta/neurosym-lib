@@ -20,6 +20,22 @@ def classification_mse_loss(predictions, targets):
 
 @dataclass
 class NEARTrainerConfig(BaseTrainerConfig):
+    """
+    Configuration class for training a NEAR model.
+
+    :param lr: Learning rate for the optimizer (default: 1e-4)
+    :param weight_decay: Weight decay for the optimizer (default: 0.0)
+    :param n_epochs: Number of epochs to train for (default: 10)
+    :param seed: Random seed for reproducibility (default: 44)
+    :param evaluate: Whether to evaluate the model after training (default: True)
+    :param resume: Path to a checkpoint to resume training from (default: "")
+    :param scheduler: Learning rate scheduler to use (default: "cosine")
+    :param sav_dir: Directory to save checkpoints to (default: "data/shapeworldonly_checkpoints")
+    :param optimizer: Optimizer to use (default: torch.optim.Adam)
+    :param max_seq_len: Maximum sequence length for the model (default: 100)
+    :param loss_callback: Loss function to use (default: ``classification_mse_loss``)
+    """
+
     max_seq_len: int = 100
     loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = (
         classification_mse_loss
