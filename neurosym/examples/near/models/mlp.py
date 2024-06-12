@@ -43,9 +43,21 @@ class MLP(nn.Sequential):
         self.apply(init_weights)
 
 
-def mlp_factory(**kwargs):
+def mlp_factory(
+    hidden_size: int,
+    dropout: float = 0.0,
+    bias: bool = True,
+    nonlinearity: str = "LeakyReLU",
+    loss: str = "MSELoss",
+):
     """
     Allows instantiating an MLP module with a given input and output size.
+
+    :param hidden_size: Number of hidden units in the MLP.
+    :param dropout: Dropout rate to apply to the hidden layer.
+    :param bias: Whether to use bias in the linear layers.
+    :param nonlinearity: Nonlinearity to use in the hidden layer.
+    :param loss: Loss function to use for training the model.
     """
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
@@ -56,7 +68,11 @@ def mlp_factory(**kwargs):
             model_name="mlp",
             input_size=input_size,
             output_size=output_size,
-            **kwargs,
+            hidden_size=hidden_size,
+            dropout=dropout,
+            bias=bias,
+            nonlinearity=nonlinearity,
+            loss=loss,
         )
         return MLP(cfg)
 
