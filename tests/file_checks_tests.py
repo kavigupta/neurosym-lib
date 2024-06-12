@@ -12,6 +12,8 @@ def files_to_examine(*paths):
     for path in paths:
         for root, _, files in os.walk(path):
             for file in files:
+                if ".ipynb_checkpoints" in root:
+                    continue
                 if file.endswith(".py") or file.endswith(".ipynb"):
                     yield os.path.join(root, file)
 
