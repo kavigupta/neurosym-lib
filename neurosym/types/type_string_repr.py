@@ -146,7 +146,7 @@ def parse_type_from_buf_multi(reversed_buf, env):
     return ArrowType((t_head,), t_tail)
 
 
-def lex(s):
+def lex_type(s):
     buf = []
     for c in s:
         if c in SPECIAL_CHARS:
@@ -195,7 +195,7 @@ def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
     if env is None:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)
-    buf = lex(s)[::-1]
+    buf = lex_type(s)[::-1]
     t = parse_type_from_buf_multi(buf, env)
     assert buf == [], f"Extra tokens {buf[::-1]}"
     return t
