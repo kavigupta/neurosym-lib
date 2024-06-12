@@ -2,10 +2,10 @@
 from dataclasses import dataclass
 
 import torch
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, balanced_accuracy_score
 from torch import nn
 
-from .base_trainer import BaseTrainer, BaseTrainerConfig, TrainingError, get_loss_fn
+from .base_trainer import BaseTrainer, BaseTrainerConfig, TrainingError
 
 
 @dataclass
@@ -27,7 +27,7 @@ class ECGTrainer(BaseTrainer):
         super().__init__(model=model, config=config)
         assert config.num_labels > 0, "Number of labels must be set programmatically"
         self.is_regression = config.is_regression
-        self.loss_fn = get_loss_fn(self.config.loss_fn)
+        self.loss_fn = self.get_loss_fn(self.config.loss_fn)
 
     def _step(self, inputs, outputs, validation=False, **kwargs):  # pylint: disable=arguments-differ
         del kwargs
@@ -41,12 +41,14 @@ class ECGTrainer(BaseTrainer):
             if validation:
                 self.log("val_acc", metrics_dict["hamming_accuracy"])
                 self.log("val_auroc", metrics_dict["auroc"])
+                self.log("val_weighted_avg_f1", metrics_dict["weighted_avg_f1"])
             else:
                 self.log("train_acc", metrics_dict["hamming_accuracy"])
                 self.log("train_auroc", metrics_dict["auroc"])
+                self.log("train_weighted_avg_f1", metrics_dict["weighted_avg_f1"])
         except Exception as e:
             # print("training error")
-            # import IPython; IPython.embed()
+            import IPython; IPython.embed()
             raise TrainingError(e) from e  # pylint: disable=raise-missing-from
         return losses
 
@@ -60,4 +62,5 @@ class ECGTrainer(BaseTrainer):
             predictions.argmax(dim=-1), outputs.argmax(dim=-1), self.config.num_labels
         )
         metrics_dict["auroc"] = roc_auc_score(y_true=outputs, y_score=predictions)
+        metrics_dict["acc"] = balanced_accuracy_score(y_true=outputs.argmax(-1), y_pred=predictions.argmax(-1))
         return metrics_dict

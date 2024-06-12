@@ -6,11 +6,13 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 
+from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.program_dist.distribution import (
     ProgramDistribution,
     ProgramDistributionFamily,
 )
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
+from neurosym.program_dist.tree_distribution.ordering import NodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     PreorderMask,
 )
@@ -36,10 +38,21 @@ class TreeDistribution:
     symbols: List[Tuple[str, int]]
     # Preorder mask constructor
     mask_constructor: Callable[["TreeDistribution"], PreorderMask]
+    # Node ordering
+    node_ordering: Callable[["TreeDistribution"], NodeOrdering]
 
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
         return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
+
+    @cached_property
+    def index_within_distribution_list(
+        self,
+    ) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]:
+        return {
+            k: {x: i for i, (x, _) in enumerate(v)}
+            for k, v in self.distribution.items()
+        }
 
     @cached_property
     def distribution_dict(self) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, float]]:
@@ -66,6 +79,10 @@ class TreeDistribution:
             for k, (syms, log_probs) in self.likelihood_arrays.items()
         }
 
+    @cached_property
+    def ordering(self) -> NodeOrdering:
+        return self.node_ordering(self)
+
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
     """
@@ -80,8 +97,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         Returns a tree distribution representing the given program distribution.
 
         If `distribution` is `None`, returns a tree distribution with all fields
-            initialized except `distribution`. This is useful for tasks where you want
-            the skeleton of the tree distribution, but don't need the actual distribution.
+            initialized, but the probabilities are not guaranteed to have any properties.
+            This is useful for tasks where you want the skeleton of the tree distribution,
+            but don't need the actual distribution.
         """
 
     def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
@@ -124,17 +142,38 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         )
 
     def compute_likelihood(
-        self, dist: ProgramDistribution, program: SExpression
+        self,
+        dist: ProgramDistribution,
+        program: SExpression,
+        tracker: Union[NoneType, Callable[[SExpression, float], NoneType]] = None,
     ) -> float:
         """
         Compute the likelihood of a program under a distribution.
         """
+        # pylint: disable=cyclic-import
         from .tree_dist_likelihood_computer import compute_likelihood
 
         dist = self.tree_distribution(dist)
         preorder_mask = dist.mask_constructor(dist)
         preorder_mask.on_entry(0, 0)
-        return compute_likelihood(dist, program, ((0, 0),), preorder_mask)
+        return compute_likelihood(dist, program, ((0, 0),), preorder_mask, tracker)
+
+    def compute_likelihood_per_node(
+        self,
+        dist: ProgramDistribution,
+        program: SExpression,
+    ) -> Dict[SExpression, float]:
+        """
+        Compute the likelihood of a program under a distribution.
+        """
+        likelihoods = []
+
+        self.compute_likelihood(
+            dist,
+            program,
+            lambda nodes, likelihood: likelihoods.append((nodes, likelihood)),
+        )
+        return likelihoods
 
     def sample(
         self,
@@ -151,6 +190,6 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
 
         tree_dist = self.tree_distribution(dist)
         element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)
-        assert element.symbol == "<root>"
+        assert element.symbol == ROOT_SYMBOL
         [element] = element.children
         return element

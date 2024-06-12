@@ -14,6 +14,8 @@ from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
 from .production import Production
 
+ROOT_SYMBOL = "<root>"
+
 
 @dataclass
 class DSL:
@@ -48,6 +50,12 @@ class DSL:
 
     def symbols(self):
         return self._production_by_symbol.keys()
+
+    def ordered_symbols(self, *, include_root=False):
+        symbols = sorted(self.symbols())
+        if include_root:
+            symbols = [ROOT_SYMBOL] + symbols
+        return symbols
 
     def arity(self, sym: str) -> int:
         """

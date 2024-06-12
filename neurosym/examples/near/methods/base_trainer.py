@@ -12,20 +12,6 @@ class TrainingError(Exception):
     pass
 
 
-def get_loss_fn(loss_fn):
-    match loss_fn:
-        case "CrossEntropyLoss":
-            return nn.CrossEntropyLoss()
-        case "BCEWithLogitsLoss":
-            return nn.BCEWithLogitsLoss()
-        case "MSELoss":
-            return nn.MSELoss()
-        case "NLLLoss":
-            return nn.NLLLoss()
-        case _:
-            raise NotImplementedError(f"Loss function {loss_fn} not implemented")  # noqa: E501
-
-
 @dataclass
 class BaseTrainerConfig:
     lr: float = 1e-4
@@ -61,6 +47,20 @@ class BaseTrainer(L.LightningModule):
         self.config = config
         self.model = model
         self.save_hyperparameters(ignore=["model"])
+
+    @staticmethod
+    def get_loss_fn(loss_fn):
+        match loss_fn:
+            case "CrossEntropyLoss":
+                return nn.CrossEntropyLoss()
+            case "BCEWithLogitsLoss":
+                return nn.BCEWithLogitsLoss()
+            case "MSELoss":
+                return nn.MSELoss()
+            case "NLLLoss":
+                return nn.NLLLoss()
+            case _:
+                raise NotImplementedError(f"Loss function {loss_fn} not implemented")  # noqa: E501
 
     @staticmethod
     def compute_average_f1_score(
@@ -116,7 +116,6 @@ class BaseTrainer(L.LightningModule):
                     predictions = (
                         predictions.reshape(-1, predictions.shape[-1])
                         .clamp(min=1e-10)
-                        .log()
                         .log_softmax(dim=-1)
                     )
                     targets = targets.view(-1)

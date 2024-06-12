@@ -1,4 +1,6 @@
 # pylint: skip-file
+import os
+import pickle
 import queue
 from concurrent.futures import Future, ProcessPoolExecutor
 from typing import Callable
@@ -74,7 +76,7 @@ def async_bounded_astar(
         def add_to_fringe(node, depth):
             future = executor.submit(cost_plus_heuristic, node)
             fringe.putitem(
-                future, future_fn=lambda ret: BoundedAStarNode(ret, node, depth)
+                future, future_fn=lambda ret: BoundedAStarNode(ret[0], node, depth, ret[1])
             )
 
         add_to_fringe(g.initial_node(), 0)
@@ -95,12 +97,25 @@ def async_bounded_astar(
 
                 if best_node is None or fringe_var.cost < best_node.cost:
                     best_node = fringe_var
+                    # save the best node so far:
+                    if not os.path.exists("list_best_nodes.pkl"):
+                        with open("list_best_nodes.pkl", "wb") as f:
+                            pickle.dump([], f)
+                    
+                    with open("list_best_nodes.pkl", "rb") as f:
+                        best_nodes = pickle.load(f)
+                    best_nodes.append(best_node)
+                    with open("list_best_nodes.pkl", "wb") as f:
+                        pickle.dump(best_nodes, f)
+
                 if verbose:
                     depth = best_node.depth
                     cost = best_node.cost
                     program = render_s_expression(best_node.node.program)
+                    program_acc = best_node.metrics[0]
+                    program_auroc = best_node.metrics[1]
                     pbar.set_description(
-                        f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}"
+                        f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}, F1: {program_acc:.4}, AUROC: {program_auroc:.4}"
                     )
                     pbar.update(1)
             except queue.Empty:

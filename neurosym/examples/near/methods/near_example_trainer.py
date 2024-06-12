@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from .base_trainer import BaseTrainer, BaseTrainerConfig, get_loss_fn
+from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
 @dataclass
@@ -26,7 +26,7 @@ class NEARTrainer(BaseTrainer):
         assert config.num_labels > 0, "Number of labels must be set programmatically"
         self.is_regression = config.is_regression
 
-        self.loss_fn = get_loss_fn(self.config.loss_fn)
+        self.loss_fn = self.get_loss_fn(self.config.loss_fn)
 
     def _step(self, inputs, outputs, validation=False, **kwargs):
         # pylint: disable=arguments-differ

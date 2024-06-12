@@ -1,7 +1,9 @@
 # pylint: skip-file
+import os
+import pickle
 import queue
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Tuple
 
 from tqdm.auto import tqdm
 
@@ -31,7 +33,8 @@ def bounded_astar(
     fringe = queue.PriorityQueue()
 
     def add_to_fringe(node, depth):
-        fringe.put(BoundedAStarNode(cost_plus_heuristic(node), node, depth))
+        cost, metrics = cost_plus_heuristic(node)
+        fringe.put(BoundedAStarNode(cost, node, depth, metrics))
 
     add_to_fringe(g.initial_node(), 0)
     best_node = None
@@ -50,15 +53,25 @@ def bounded_astar(
 
         if best_node is None or fringe_var.cost < best_node.cost:
             best_node = fringe_var
+            # save the best node so far:
+            if not os.path.exists("list_best_nodes.pkl"):
+                with open("list_best_nodes.pkl", "wb") as f:
+                    pickle.dump([], f)
+            with open("list_best_nodes.pkl", "rb") as f:
+                best_nodes = pickle.load(f)
+            best_nodes.append(best_node)
+            with open("list_best_nodes.pkl", "wb") as f:
+                pickle.dump(best_nodes, f)
         if verbose:
             depth = best_node.depth
             cost = best_node.cost
             program = render_s_expression(best_node.node.program)
+            program_acc = best_node.metrics[0]
+            program_auroc = best_node.metrics[1]
             pbar.set_description(
-                f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}"
+                f"Depth: {depth}, Cost: {cost:.4}, Program: {program:.50}, Acc: {program_acc:.4}, AUROC: {program_auroc:.4}"
             )
             pbar.update(1)
-
 
 @dataclass(order=True)
 class BoundedAStarNode:
@@ -69,3 +82,5 @@ class BoundedAStarNode:
     cost: float
     node: SExpression = field(compare=False)
     depth: int = field(compare=True)
+    # Accuracy, AUROC
+    metrics: Tuple[float, float] = field(compare=False)

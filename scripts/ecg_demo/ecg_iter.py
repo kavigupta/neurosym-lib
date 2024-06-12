@@ -43,7 +43,7 @@ def filter_multilabel(split):
     X = X[mask]
     y = y[mask]
 
-    # normalize each column of X to [-1, 1]
+    # normalize each column of X to [0, 1]
     X = (X - X.min(0)) / (X.max(0) - X.min(0))
 
     # save as filtered
@@ -137,6 +137,10 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     dslf.typedef("fOut", "{f, $O}")
     dslf.typedef("fFeat", "{f, $F}")
 
+    # "add(select_interval(channel_2), select_amplitude(channel_8))
+    # "add(select_interval_channel_2, select_amplitude_channel_8)
+    # "add(??, ??)"
+
     for i in range(12):
         dslf.concrete(
             f"channel_{i}",
@@ -193,7 +197,12 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
             case _:
                 return True
 
+    def filter_same_type(x):
+        
+        raise NotImplementedError
+
     dslf.filtered_type_variable("num", lambda x: filter_constants(x))
+    dslf.filtered_type_variable("num", lambda x: filter_same_type(x))
     dslf.concrete(
         "add",
         "(%num, %num) -> %num",
@@ -204,11 +213,11 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         "(%num, %num) -> %num",
         lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),
     )
-    dslf.concrete(
-        "sub",
-        "(%num, %num) -> %num",
-        lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),
-    )
+    # dslf.concrete(
+    #     "sub",
+    #     "(%num, %num) -> %num",
+    #     lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),
+    # )
 
     # dslf.parameterized("linear_bool", "() -> $fFeat -> $fFeat", lambda lin: lin, dict(lin=lambda: nn.Linear(input_dim, 1)))
     dslf.parameterized(
@@ -302,7 +311,7 @@ def validation_cost(node):
     # Initialize the trainer with the given configuration
 
     early_stop_callback = EarlyStopping(
-        monitor="train_acc", min_delta=1e-2, patience=5, verbose=False, mode="max"
+        monitor="train_acc", min_delta=1e-3, patience=5, verbose=False, mode="max"
     )
     trainer = Trainer(
         max_epochs=trainer_cfg.n_epochs,
@@ -324,7 +333,7 @@ def validation_cost(node):
 
         IPython.embed()
         # Return a high cost if the partial program is not found
-        return 10000.0
+        return 10000.0, (0.0, 0.0)
 
     # Compute the model from the initialized program
     if initialized_p.symbol.startswith(neural_dsl.neural_fn_tag):
@@ -341,16 +350,25 @@ def validation_cost(node):
         trainer.validate(pl_model, datamodule.val_dataloader(), verbose=False)
     except near.TrainingError as e:
         print("Training error\n", e, "\n", render_s_expression(node.program))
-        return 10000.0
+        return 10000.0, (0.0, 0.0)
 
     # Return the validation loss
-    return trainer.callback_metrics["val_acc"].item()
+    metrics = (
+        # trainer.callback_metrics['val_acc'].item(),
+        trainer.callback_metrics['val_weighted_avg_f1'].item(),
+        trainer.callback_metrics['val_auroc'].item()
+    )
+    return trainer.callback_metrics["val_acc"].item(), metrics
 
 
+# penalty = 0.01
 def cost_plus_heuristic(node):
-    cost = validation_cost(node)  # accuracy [0, 1]
-    # n_holes = len(list(ns.all_holes(node.program)))
-    return -1 * cost
+    cost, metrics = validation_cost(node)  # accuracy [0, 1]
+    n_holes = len(list(ns.all_holes(node.program)))
+    # edge_cost = penalty * n_holes
+    # tot_cost = edge_cost - cost
+    tot_cost = 1 - cost
+    return tot_cost, metrics
 
 
 def checker(node):
@@ -370,30 +388,30 @@ g = near.near_graph(
     is_goal=checker,
 )
 iterator = ns.search.async_bounded_astar(
-    g, cost_plus_heuristic, max_depth=15, max_workers=40, verbose=True
+    g, cost_plus_heuristic, max_depth=15, max_workers=32, verbose=True
 )
+
+# iterator = ns.search.bounded_astar(
+#     g, cost_plus_heuristic, max_depth=15, verbose=True
+# )
+count = 0
 best_program_nodes = []
 for node in iterator:
     cost = validation_cost(node)
     best_program_nodes.append((node, cost))
+    print("Found a program node with cost", cost)
+    count += 1
+    if count > 10:
+        break
+
 
 # save the best program nodes
 import pickle
 
 with open("best_program_nodes.pkl", "wb") as f:
     pickle.dump(best_program_nodes, f)
-
-# import asyncio
-
-# async def find_best_programs():
-#     iterator = ns.search.async_bounded_astar(g, cost_plus_heuristic, max_depth=7)
-#     best_program_nodes = []
-#     async for node in iterator:
-#         cost = validation_cost(node)
-#         best_program_nodes.append((node, cost))
-
-#     return best_program_nodes
-
-# loop = asyncio.get_event_loop()
-# best_program_nodes = loop.run_until_complete(find_best_programs())
 import IPython; IPython.embed()
+
+
+# Depth: 0, Cost: -0.4897, Program: ??::<{f, 144} -> {f, 9}>: : 0it [0Depth: 0, Cost: -0.4897, Program:Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 2it [00:11,  6.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:11,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 6it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -Depth: 3, Cost: -0.5749, Program: (output (select_ampDepth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_Depth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_6))) : : 14558it [Depth: 6, CostDepth: 8, Cost: -0.602, ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it] 
+# ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it]

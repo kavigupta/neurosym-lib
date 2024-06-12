@@ -3,18 +3,21 @@ from fractions import Fraction
 
 import numpy as np
 import torch
+from parameterized import parameterized
 
 import neurosym as ns
 from tests.utils import assertDSL
 
-from .utils import ProbabilityTester
+from .utils import ChildrenInOrderAsserterMask, ChildrenInOrderMask, ProbabilityTester
 
 
-def get_dsl(with_vars=False):
+def get_dsl(with_vars=False, with_3=False):
     dslf = ns.DSLFactory()
     dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("2", "() -> i", lambda: 2)
+    if with_3:
+        dslf.concrete("3", "() -> i", lambda: 3)
     if with_vars:
         dslf.concrete("call", "(i -> i, i) -> i", lambda f, x: f(x))
         dslf.lambdas()
@@ -22,10 +25,38 @@ def get_dsl(with_vars=False):
     return dslf.finalize()
 
 
+def get_dsl_for_ordering():
+    dslf = ns.DSLFactory()
+    dslf.concrete("+", "(i, i, i) -> t", lambda x, y: x + y)
+    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.concrete("2", "() -> i", lambda: 2)
+    dslf.concrete("3", "() -> i", lambda: 2)
+    dslf.prune_to("t")
+    return dslf.finalize()
+
+
 dsl = get_dsl()
 fam = ns.BigramProgramDistributionFamily(dsl)
+dsl_with_3 = get_dsl(with_3=True)
+fam_with_3 = ns.BigramProgramDistributionFamily(dsl_with_3)
+fam_with_3_no_type_mask = ns.BigramProgramDistributionFamily(
+    dsl_with_3, include_type_preorder_mask=False
+)
 dsl_with_vars = get_dsl(with_vars=True)
 fam_with_vars = ns.BigramProgramDistributionFamily(dsl_with_vars)
+dsl_for_ordering = get_dsl_for_ordering()
+fam_with_ordering = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderMask]
+)
+fam_with_ordering_asserted = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering, additional_preorder_masks=[ChildrenInOrderAsserterMask]
+)
+fam_with_ordering_231 = ns.BigramProgramDistributionFamily(
+    dsl_for_ordering,
+    additional_preorder_masks=[ChildrenInOrderMask],
+    # 2 3 1 means go to index 2 first, then 0 second, then 1 third
+    node_ordering=lambda dist: ns.DictionaryNodeOrdering(dist, {"+": [2, 0, 1]}),
+)
 
 uniform = [
     [
@@ -166,115 +197,198 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
         # see test_call_with_variables for the math
         self.assertBinomial(n, 1 / 80, 0.01, samples.count("(call (lam ($0_0)) (1))"))
 
+    def test_sample_with_ordering(self):
+        dist = fam_with_ordering.uniform()
+        n = 10_000
+        samples = [
+            fam_with_ordering.sample(dist, np.random.RandomState(i)) for i in range(n)
+        ]
+        samples = [ns.render_s_expression(x) for x in samples]
+        self.assertEqual(set(samples), {"(+ (1) (2) (3))"})
+
+    def test_sample_with_ordering_231(self):
+        dist = fam_with_ordering_231.uniform()
+        n = 10_000
+        samples = [
+            fam_with_ordering_231.sample(dist, np.random.RandomState(i))
+            for i in range(n)
+        ]
+        samples = [ns.render_s_expression(x) for x in samples]
+        self.assertEqual(set(samples), {"(+ (2) (3) (1))"})
+
 
 class BigramCountProgramsTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
+    def convert(self, family, count):
+        symbol_text = lambda x: family.tree_distribution_skeleton.symbols[x][0]
+        numerators = {
+            tuple((symbol_text(sym), pos) for sym, pos in chain): {
+                symbol_text(sym): count for sym, count in counts.items()
+            }
+            for chain, counts in count.numerators.items()
+        }
+        denominators = {
+            tuple((symbol_text(sym), pos) for sym, pos in chain): {
+                tuple(symbol_text(sym) for sym in syms): count
+                for syms, count in counts.items()
+            }
+            for chain, counts in count.denominators.items()
+        }
+        return numerators, denominators
+
+    def count_programs(self, family, programs):
+        counts = family.count_programs(
+            [[ns.parse_s_expression(x) for x in ps] for ps in programs]
+        )
+        return [self.convert(family, count) for count in counts.counts]
+
     def test_counts_single_program(self):
-        data = [[ns.parse_s_expression("(+ (1) (2))")]]
-        counts = fam.count_programs(data)
+        counts = self.count_programs(fam, [["(+ (1) (2))"]])
         self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 2 as the second arg
-                            ((1, 1),): {3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    )
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"2": 1},
+                    },
+                    {
+                        # all symbols could be anything else
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                )
+            ],
         )
 
     def test_counts_multiple_programs(self):
-        data = [
-            [ns.parse_s_expression(x) for x in ("(+ (1) (2))", "(+ (1) (1))")],
-        ]
-        counts = fam.count_programs(data)
+        counts = self.count_programs(fam, [["(+ (1) (2))", "(+ (1) (1))"]])
+        print(counts)
+
         self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 2},
-                            # + -> 1 as the first arg (twice)
-                            ((1, 0),): {2: 2},
-                            # + -> 1 as the second arg; + -> 2 as the second arg
-                            ((1, 1),): {2: 1, 3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 2},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 2},
-                            ((1, 1),): {(1, 2, 3): 2},
-                        },
-                    )
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 2},
+                        (("+", 0),): {"1": 2},
+                        (("+", 1),): {"2": 1, "1": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 2},
+                        (("+", 0),): {("+", "1", "2"): 2},
+                        (("+", 1),): {("+", "1", "2"): 2},
+                    },
+                )
+            ],
         )
 
     def test_counts_separate_programs(self):
-        data = [
-            [ns.parse_s_expression("(+ (1) (2))")],
-            [ns.parse_s_expression("(+ (1) (1))")],
-        ]
-        counts = fam.count_programs(data)
-        np.testing.assert_equal(
+        counts = self.count_programs(fam, [["(+ (1) (2))"], ["(+ (1) (1))"]])
+        self.assertEqual(
             counts,
-            ns.BigramProgramCountsBatch(
-                [
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 2 as the second arg
-                            ((1, 1),): {3: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    ),
-                    ns.BigramProgramCounts(
-                        {
-                            # root -> +
-                            ((0, 0),): {1: 1},
-                            # + -> 1 as the first arg
-                            ((1, 0),): {2: 1},
-                            # + -> 1 as the second arg
-                            ((1, 1),): {2: 1},
-                        },
-                        {
-                            # root -> ?
-                            ((0, 0),): {(1, 2, 3): 1},
-                            # + -> ?
-                            ((1, 0),): {(1, 2, 3): 1},
-                            ((1, 1),): {(1, 2, 3): 1},
-                        },
-                    ),
-                ]
-            ),
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"2": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                ),
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"1": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2"): 1},
+                        (("+", 0),): {("+", "1", "2"): 1},
+                        (("+", 1),): {("+", "1", "2"): 1},
+                    },
+                ),
+            ],
+        )
+
+    def test_counts_variables(self):
+        counts = self.count_programs(fam_with_vars, [["(call (lam ($0_0)) (1))"]])
+        self.assertEqual(
+            counts,
+            [
+                (
+                    {
+                        (("<root>", 0),): {"call": 1},
+                        (("call", 0),): {"lam": 1},
+                        (("lam", 0),): {"$0_0": 1},
+                        (("call", 1),): {"1": 1},
+                    },
+                    {
+                        (("<root>", 0),): {("+", "1", "2", "call"): 1},
+                        (("call", 0),): {("lam",): 1},
+                        (("lam", 0),): {("$0_0", "+", "1", "2", "call"): 1},
+                        (("call", 1),): {("+", "1", "2", "call"): 1},
+                    },
+                )
+            ],
+        )
+
+    def test_counts_single_program_ordered(self):
+        counts = self.count_programs(fam_with_ordering, [["(+ (1) (2) (3))"]])
+        print(counts)
+        self.assertEqual(
+            counts,
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"1": 1},
+                        (("+", 1),): {"2": 1},
+                        (("+", 2),): {"3": 1},
+                    },
+                    {
+                        # note that there's no multiplicity here
+                        # because the ordering mask doesn't allow it
+                        (("<root>", 0),): {("+",): 1},
+                        (("+", 0),): {("1",): 1},
+                        (("+", 1),): {("2",): 1},
+                        (("+", 2),): {("3",): 1},
+                    },
+                )
+            ],
+        )
+
+    def test_counts_single_program_ordered_231(self):
+        counts = self.count_programs(fam_with_ordering_231, [["(+ (2) (3) (1))"]])
+        print(counts)
+        self.assertEqual(
+            counts,
+            [
+                (
+                    {
+                        (("<root>", 0),): {"+": 1},
+                        (("+", 0),): {"2": 1},
+                        (("+", 1),): {"3": 1},
+                        (("+", 2),): {"1": 1},
+                    },
+                    {
+                        # note that there's no multiplicity here
+                        # because the ordering mask doesn't allow it
+                        (("<root>", 0),): {("+",): 1},
+                        (("+", 0),): {("2",): 1},
+                        (("+", 1),): {("3",): 1},
+                        (("+", 2),): {("1",): 1},
+                    },
+                )
+            ],
         )
 
 
@@ -340,13 +454,28 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
 
 
 class BigramLikelihoodTest(unittest.TestCase):
-    def assertLikelihood(self, dist, program, str_prob, family=fam):
-        likelihood = family.compute_likelihood(dist, ns.parse_s_expression(program))
+    def assertLikelihood(self, dist, program, str_prob, family=fam, **kwargs):
+        likelihood = family.compute_likelihood(
+            dist, ns.parse_s_expression(program), **kwargs
+        )
+        self.assertEqual(self.render_likelihood(likelihood), str_prob)
+
+    def assertLikelihoods(self, dist, program, nodes_and_probs, family=fam):
+        likelihoods = family.compute_likelihood_per_node(
+            dist, ns.parse_s_expression(program)
+        )
+        likelihoods = [
+            (ns.render_s_expression(node), self.render_likelihood(prob))
+            for node, prob in likelihoods
+        ]
+        print(likelihoods)
+        self.assertEqual(likelihoods, nodes_and_probs)
+
+    def render_likelihood(self, likelihood):
         prob = np.exp(likelihood)
         prob = Fraction.from_float(float(prob)).limit_denominator(1000)
         result = f"log({prob})"
-        print(result)
-        self.assertEqual(result, str_prob)
+        return result
 
     def test_leaf(self):
         self.assertLikelihood(fam.uniform(), "(1)", "log(1/3)")
@@ -356,6 +485,17 @@ class BigramLikelihoodTest(unittest.TestCase):
 
     def test_plus_nested(self):
         self.assertLikelihood(fam.uniform(), "(+ (1) (+ (1) (2)))", "log(1/243)")
+        self.assertLikelihoods(
+            fam.uniform(),
+            "(+ (1) (+ (1) (2)))",
+            [
+                ("(+ (1) (+ (1) (2)))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(+ (1) (2))", "log(1/3)"),
+                ("(1)", "log(1/3)"),
+                ("(2)", "log(1/3)"),
+            ],
+        )
 
     def test_leaf_with_variables(self):
         self.assertLikelihood(
@@ -372,4 +512,296 @@ class BigramLikelihoodTest(unittest.TestCase):
             "(call (lam ($0_0)) (1))",
             "log(1/80)",
             family=fam_with_vars,
+        )
+        self.assertLikelihoods(
+            fam_with_vars.uniform(),
+            "(call (lam ($0_0)) (1))",
+            [
+                ("(call (lam ($0_0)) (1))", "log(1/4)"),
+                ("(lam ($0_0))", "log(1)"),
+                ("($0_0)", "log(1/5)"),
+                ("(1)", "log(1/4)"),
+            ],
+            family=fam_with_vars,
+        )
+
+    def test_ordered(self):
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1)",
+            family=fam_with_ordering,
+        )
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (2) (3) (1))",
+            "log(0)",
+            family=fam_with_ordering,
+        )
+
+    def test_ordered_tracker(self):
+        def tracker(node, likelihood):
+            tracked.append(
+                (ns.render_s_expression(node), self.render_likelihood(likelihood))
+            )
+
+        tracked = []
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1)",
+            family=fam_with_ordering,
+            tracker=tracker,
+        )
+        print(tracked)
+        self.assertEqual(
+            tracked,
+            [
+                ("(+ (1) (2) (3))", "log(1)"),
+                ("(1)", "log(1)"),
+                ("(2)", "log(1)"),
+                ("(3)", "log(1)"),
+            ],
+        )
+
+        tracked = []
+        self.assertLikelihood(
+            fam_with_ordering.uniform(),
+            "(+ (2) (3) (1))",
+            "log(0)",
+            family=fam_with_ordering,
+            tracker=tracker,
+        )
+        print(tracked)
+        self.assertEqual(
+            tracked,
+            [
+                ("(+ (2) (3) (1))", "log(1)"),
+                ("(2)", "log(0)"),
+                ("(3)", "log(0)"),
+                ("(1)", "log(0)"),
+            ],
+        )
+
+    def test_ordered_asserting(self):
+        self.assertLikelihood(
+            fam_with_ordering_asserted.uniform(),
+            "(+ (1) (2) (3))",
+            "log(1/27)",
+            family=fam_with_ordering_asserted,
+        )
+        # distribution where 1 is not allowed
+        dist = fam_with_ordering_asserted.uniform()
+        dist.distribution[:, :, 2] = 0
+        self.assertLikelihood(
+            dist,
+            "(+ (1) (2) (3))",
+            "log(0)",
+            family=fam_with_ordering_asserted,
+        )
+
+    def test_ordered_231(self):
+        self.assertLikelihood(
+            fam_with_ordering_231.uniform(),
+            "(+ (2) (3) (1))",
+            "log(1)",
+            family=fam_with_ordering_231,
+        )
+        self.assertLikelihood(
+            fam_with_ordering_231.uniform(),
+            "(+ (1) (2) (3))",
+            "log(0)",
+            family=fam_with_ordering_231,
+        )
+
+    def test_likelihood_clamped(self, kwargs=lambda x: {}):
+        dist = fam.counts_to_distribution(
+            fam.count_programs([[ns.parse_s_expression("(1)")]]),
+        )[0]
+        self.assertEqual(
+            fam.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
+        )
+        dist = dist.bound_minimum_likelihood(0.01, **kwargs(dist))
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            fam.compute_likelihood(dist, ns.parse_s_expression("(2)")),
+            np.log(1 / 100),
+            1,
+        )
+        # should be *very* approximately 1/100 * 1/3 * 1/3
+        # even the (+ (1) (1)) should be since the + -> 1 bigram wasn't seen
+        # in the original
+        # the 1/3 comes from the fact that in the original the + -> 1 and + -> 2 bigrams
+        # were undefined, so now they're uniform
+        for code in "(+ (1) (2))", "(+ (1) (1))", "(+ (2) (2))":
+            self.assertAlmostEqual(
+                fam.compute_likelihood(dist, ns.parse_s_expression(code)),
+                np.log(1 / 100 * 1 / 3 * 1 / 3),
+                1,
+            )
+
+    def test_likelihood_clamped_mask_full(self):
+        self.test_likelihood_clamped(
+            lambda dist: dict(
+                symbol_mask=np.ones((dist.distribution.shape[0]), dtype=np.bool_)
+            )
+        )
+
+    @parameterized.expand([(True,), (False,)])
+    def test_likelihood_clamped_mask_partial(self, include_type_mask):
+        family = fam_with_3 if include_type_mask else fam_with_3_no_type_mask
+        dist = family.counts_to_distribution(
+            family.count_programs([[ns.parse_s_expression("(1)")]]),
+        )[0]
+        self.assertEqual(
+            family.compute_likelihood(dist, ns.parse_s_expression("(2)")), -np.inf
+        )
+        self.assertEqual(
+            [x for x, _ in family.tree_distribution_skeleton.symbols],
+            ["<root>", "+", "1", "2", "3"],
+        )
+        print(np.array(np.where(dist.distribution)).T)
+        dist = dist.bound_minimum_likelihood(
+            0.01, symbol_mask=np.array([True, True, True, True, False])
+        )
+        print(np.array(np.where(dist.distribution)).T)
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            family.compute_likelihood(dist, ns.parse_s_expression("(2)")),
+            np.log(1 / 100),
+            1,
+        )
+        # should be *very* approximately 1/100
+        self.assertAlmostEqual(
+            family.compute_likelihood(dist, ns.parse_s_expression("(3)")),
+            -np.inf,
+            1,
+        )
+
+        # see test_likelihood_clamped for the math
+        for code in "(+ (1) (2))", "(+ (1) (1))", "(+ (2) (2))":
+            self.assertAlmostEqual(
+                family.compute_likelihood(dist, ns.parse_s_expression(code)),
+                np.log(1 / 100 * 1 / 3 * 1 / 3),
+                1,
+            )
+
+        # remains -inf because 3 is impossible
+        for code in "(+ (1) (3))", "(+ (3) (3))", "(+ (3) (2))":
+            self.assertAlmostEqual(
+                family.compute_likelihood(dist, ns.parse_s_expression(code)),
+                -np.inf,
+                1,
+            )
+
+
+class BigramMixTest(unittest.TestCase):
+    def fit_family_to_programs(self, family, programs):
+        return family.counts_to_distribution(
+            family.count_programs([[ns.parse_s_expression(x) for x in programs]]),
+        )[0]
+
+    def merged(self, fam_1, programs_1, fam_2, programs_2, weight):
+        dist_1 = self.fit_family_to_programs(fam_1, programs_1)
+        dist_2 = self.fit_family_to_programs(fam_2, programs_2)
+        return dist_1.mix_with_other(dist_2, weight)
+
+    def assertClose(self, dist_merged, dist_expected):
+        delta = dist_merged.distribution - dist_expected.distribution
+        bad = np.abs(delta) > 1e-6
+        if bad.any():
+            syms = dist_merged.dist_fam.symbols()
+            for parent, which in np.array(np.where(bad.any(-1))).T:
+                actual = dist_merged.distribution[parent, which]
+                expected = dist_expected.distribution[parent, which]
+                select = (actual > 0) | (expected > 0)
+                actual, expected = [
+                    {syms[i]: arr[i] for i in np.where(select)[0]}
+                    for arr in (actual, expected)
+                ]
+                self.assertEqual(
+                    actual, expected, f"At {syms[parent]}'s {which}th child"
+                )
+
+    def assertMix(self, fam_1, programs_1, fam_2, programs_2, weight_1, weight_2):
+        self.assertClose(
+            self.merged(
+                fam_1, programs_1, fam_2, programs_2, weight_2 / (weight_1 + weight_2)
+            ),
+            self.fit_family_to_programs(
+                fam_1 if len(fam_1.symbols()) > len(fam_2.symbols()) else fam_2,
+                programs_1 * weight_1 + programs_2 * weight_2,
+            ),
+        )
+
+    def assertMixBoth(self, fam_1, programs_1, fam_2, programs_2, weight_1, weight_2):
+        # pylint: disable=arguments-out-of-order
+        self.assertMix(fam_1, programs_1, fam_2, programs_2, weight_1, weight_2)
+        self.assertMix(fam_2, programs_2, fam_1, programs_1, weight_2, weight_1)
+
+    progs_1 = "(1)", "(+ (1) (2))"
+    progs_2 = "(+ (2) (2))", "(2)"
+    progs_3 = "(+ (2) (3))", "(3)"
+
+    def test_merge_bigrams_same_dsl_equal_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 1, 1)
+
+    def test_merge_bigrams_same_dsl_more_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 2, 1)
+
+    def test_merge_bigrams_same_dsl_less_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam, self.progs_2, 2, 5)
+
+    def test_merge_bigrams_with_different_fams_equal_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 1, 1)
+
+    def test_merge_bigrams_with_different_fams_more_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 9, 4)
+
+    def test_merge_bigrams_with_different_fams_less_weight(self):
+        self.assertMixBoth(fam, self.progs_1, fam_with_3, self.progs_3, 2, 4)
+
+    def test_non_subset_fails(self):
+        with self.assertRaises(ValueError) as cm:
+            self.merged(fam_with_3, self.progs_3, fam_with_vars, self.progs_1, 1)
+
+        self.assertEqual(
+            str(cm.exception),
+            "DSL not compatible, extra symbols in this: '3', "
+            "extra symbols in other: '$0_0', '$1_0', '$2_0', '$3_0', 'call', 'lam'",
+        )
+
+
+class OrderingTest(unittest.TestCase):
+    def test_traversal(self):
+        ordering = fam_with_ordering.tree_distribution_skeleton.ordering
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (1) (2) (3))")
+                )
+            ],
+            ["(+ (1) (2) (3))", "(1)", "(2)", "(3)"],
+        )
+
+    def test_traversal_231(self):
+        ordering = fam_with_ordering_231.tree_distribution_skeleton.ordering
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (2) (3) (1))")
+                )
+            ],
+            ["(+ (2) (3) (1))", "(1)", "(2)", "(3)"],
+        )
+        self.assertEqual(
+            [
+                ns.render_s_expression(x)
+                for x in ordering.traverse_preorder(
+                    ns.parse_s_expression("(+ (1) (2) (3))")
+                )
+            ],
+            ["(+ (1) (2) (3))", "(3)", "(1)", "(2)"],
         )
