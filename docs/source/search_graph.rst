@@ -5,6 +5,7 @@ Search Graph
     :members:
 .. autoclass:: neurosym.DSLSearchGraph
     :members:
+.. autofunction:: neurosym.search.bfs
 .. autoclass:: neurosym.MetadataComputer
     :members:
 .. autoclass:: neurosym.NoMetadataComputer
