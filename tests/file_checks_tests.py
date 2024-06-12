@@ -1,15 +1,33 @@
 import ast
+import json
 import os
 import unittest
 
 import parameterized
 
+from tests.tutorial.utils import ipynb_to_py
 
-def files_to_examine(path):
-    for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith(".py"):
-                yield os.path.join(root, file)
+
+def files_to_examine(*paths):
+    for path in paths:
+        for root, _, files in os.walk(path):
+            for file in files:
+                if ".ipynb_checkpoints" in root:
+                    continue
+                if file.endswith(".py") or file.endswith(".ipynb"):
+                    yield os.path.join(root, file)
+
+
+def read_python_file(path):
+    with open(path) as f:
+        text = f.read()
+    if path.endswith(".py"):
+        return text
+    if path.endswith(".ipynb"):
+        code = ipynb_to_py(json.loads(text))
+        code = "\n".join(code)
+        return code
+    raise ValueError(f"Unknown file type: {path}")
 
 
 class GatherImports(ast.NodeVisitor):
@@ -24,10 +42,11 @@ class GatherImports(ast.NodeVisitor):
 
 
 class OnlyDirectImportsTest(unittest.TestCase):
-    @parameterized.parameterized.expand([(path,) for path in files_to_examine("tests")])
+    @parameterized.parameterized.expand(
+        [(path,) for path in files_to_examine("tests", "tutorial")]
+    )
     def test_only_direct_import(self, path):
-        with open(path) as f:
-            code = f.read()
+        code = read_python_file(path)
         tree = ast.parse(code)
         gatherer = GatherImports()
         gatherer.visit(tree)
