@@ -8,18 +8,7 @@ import numpy as np
 
 
 class Type(ABC):
-    """
-    Represents a type, used to describe nodes in an `ns.DSL`.
-    """
-
-    @abstractmethod
-    def walk_type_nodes(self) -> Iterator["Type"]:
-        """
-        Walk the type tree and yield all children nodes.
-        """
-        raise NotImplementedError
-
-    def node_summary(self) -> str:
+    def node_summary(self):
         """
         Return a summary of this node, excluding children. This is useful
             for caching in certain contexts, such as the TreeTrie.
@@ -118,6 +107,14 @@ class Type(ABC):
         depth = max(children + [0]) + np.log2(len(children) + 1)
         return depth
 
+    def walk_type_nodes(self) -> Iterator["Type"]:
+        """
+        Walk the type tree and yield all children nodes.
+        """
+        yield self
+        for child in self.children():
+            yield from child.walk_type_nodes()
+
 
 class UnificationError(Exception):
     pass
@@ -129,9 +126,6 @@ class AtomicType(Type):
 
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
-
-    def walk_type_nodes(self):
-        yield self
 
     def inherent_parameters(self):
         return dict(name=self.name)
@@ -163,10 +157,6 @@ class TensorType(Type):
     dtype: Type
     shape: Tuple[int]
 
-    def walk_type_nodes(self):
-        # is atomic. we do not consider the dtype and shape as nodes.
-        yield self
-
     def inherent_parameters(self):
         return dict(dtype=self.dtype, shape=self.shape)
 
@@ -197,10 +187,6 @@ class ListType(Type):
     """
 
     element_type: Type
-
-    def walk_type_nodes(self):
-        yield self
-        yield from self.element_type.walk_type_nodes()
 
     def inherent_parameters(self):
         return dict()
@@ -238,12 +224,6 @@ class ArrowType(Type):
             tuple(t.subst_type_vars(subst) for t in self.input_type),
             self.output_type.subst_type_vars(subst),
         )
-
-    def walk_type_nodes(self):
-        yield self
-        for t in self.input_type:
-            yield from t.walk_type_nodes()
-        yield from self.output_type.walk_type_nodes()
 
     def inherent_parameters(self):
         return dict()
@@ -292,9 +272,6 @@ class GenericTypeVariable(Type):
 
     def subst_type_vars(self, subst: Dict[str, Type]):
         return subst.get(self.name, self)
-
-    def walk_type_nodes(self):
-        yield self
 
     def inherent_parameters(self):
         return dict()
