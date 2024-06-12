@@ -133,7 +133,9 @@ class TestRender(unittest.TestCase):
 
 class TestLex(unittest.TestCase):
     def test_tensor(self):
-        self.assertEqual(ns.lex_type("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"])
+        self.assertEqual(
+            ns.lex_type("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"]
+        )
 
     def test_list(self):
         self.assertEqual(ns.lex_type("[int]"), ["[", "int", "]"])

@@ -1,7 +1,7 @@
+from typing import List
+
 import torch
 import tqdm.auto as tqdm
-
-from typing import List
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
