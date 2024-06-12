@@ -1,3 +1,4 @@
+from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.program_dist.tree_distribution.ordering import (
     DefaultNodeOrdering,
     DictionaryNodeOrdering,

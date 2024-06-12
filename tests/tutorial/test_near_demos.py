@@ -3,6 +3,8 @@ import unittest
 
 import numpy as np
 
+from tutorial.process_tutorial import create_skeleton
+
 from .utils import execute_notebook
 
 
@@ -40,3 +42,14 @@ class TestNearDemos(unittest.TestCase):
         assert stars == "*" * 80
         n_layers = json.loads(len_module)[0]
         self.assertGreaterEqual(n_layers, 1)
+
+    def test_discrete_exercise_skeleton(self):
+        with open("tutorial/near_demo_regression_solutions.ipynb") as f:
+            solutions = json.load(f)
+        with open("tutorial/near_demo_regression_skeleton.ipynb") as f:
+            notebook = json.load(f)
+
+        self.assertEqual(
+            create_skeleton(solutions, "near_demo_regression_solutions.ipynb"),
+            notebook,
+        )
