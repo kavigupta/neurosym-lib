@@ -95,14 +95,12 @@ def parse_s_expression(
     """
     Parse a string into an SExpression.
 
-    Args:
-        s: The string to parse.
-        should_not_be_leaf: A set of symbols that should not be converted to leaves.
-            Instead, they should be converted to SExpressions with no children.
-        for_stitch: Whether the Pair is being converted for use with stitch.
+    :param s: The string to parse.
+    :param should_not_be_leaf: A set of symbols that should not be converted to leaves.
+        Instead, they should be converted to SExpressions with no children.
+    :param for_stitch: Whether the Pair is being converted for use with stitch.
 
-    Returns:
-        The SExpression representing the string.
+    :returns: The SExpression representing the string.
     """
     if should_not_be_leaf is None:
         should_not_be_leaf = set()
