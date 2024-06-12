@@ -1,4 +1,4 @@
-DSL Utilities
+DSLs
 ===========================================
 
 .. autoclass:: neurosym.DSLFactory

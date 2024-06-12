@@ -10,4 +10,6 @@ Contents
    :maxdepth: 1
 
    s_expressions
+   type
    dsls
+   search_graph

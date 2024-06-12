@@ -1,4 +1,4 @@
-S-Expression Utilities
+S-Expressions
 ===========================================
 
 .. autoclass:: neurosym.SExpression

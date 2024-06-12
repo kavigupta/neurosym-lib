@@ -2,22 +2,27 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, Iterator, List, Tuple
 
 import numpy as np
 
 
 class Type(ABC):
+    """
+    Represents a type, used to describe nodes in an `ns.DSL`.
+    """
+
     @abstractmethod
-    def walk_type_nodes(self):
+    def walk_type_nodes(self) -> Iterator["Type"]:
         """
-        Walk the type tree and yield all nodes.
+        Walk the type tree and yield all children nodes.
         """
         raise NotImplementedError
 
-    def node_summary(self):
+    def node_summary(self) -> str:
         """
-        Return a summary of the node.
+        Return a summary of this node, excluding children. This is useful
+            for caching in certain contexts, such as the TreeTrie.
         """
         summary_dict = {
             "_type": self.__class__.__name__,
