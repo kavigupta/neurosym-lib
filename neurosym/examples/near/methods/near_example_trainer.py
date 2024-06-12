@@ -45,8 +45,10 @@ class NEARTrainerConfig(BaseTrainerConfig):
 
 class NEARTrainer(BaseTrainer):
     """
-    An abstract class that defines the basic functions to
-    implement and train a neural module.
+    Trainer class for training a NEAR model. Is a pl.LightningModule.
+
+    :param model: The module to train
+    :param config: Configuration for the trainer
     """
 
     def __init__(self, model: nn.Module, config: NEARTrainerConfig):

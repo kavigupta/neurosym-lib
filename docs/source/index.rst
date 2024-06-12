@@ -7,10 +7,12 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    s_expressions
    type
    dsls
    search_graph
+   datasets
    examples
+   utils

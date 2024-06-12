@@ -5,7 +5,16 @@
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
+.. autoclass:: neurosym.examples.near.NEARTrainer
 .. autoclass:: neurosym.examples.near.ValidationCost
+.. autoclass:: neurosym.examples.near.TorchProgramModule
+
+NEAR Operations
+--------------------------------------------
+
+.. autofunction:: neurosym.examples.near.operations.ite_torch
+.. autofunction:: neurosym.examples.near.operations.map_torch
+.. autofunction:: neurosym.examples.near.operations.fold_torch
 
 NEAR Factory Functions
 --------------------------------------------
