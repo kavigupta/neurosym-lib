@@ -64,6 +64,9 @@ class NoPrintsTest(unittest.TestCase):
         if path in {"neurosym/examples/near/methods/near_example_trainer.py"}:
             # skip this file, it is an example
             return
+        if path in {"neurosym/utils/logging.py"}:
+            # skip this file, it is a logging utility
+            return
         with open(path) as f:
             code = f.read()
         code = ast.parse(code)
