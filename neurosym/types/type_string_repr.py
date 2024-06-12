@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Union
+from typing import List, Union
 
 from neurosym.types.type import (
     ArrowType,
@@ -66,7 +66,12 @@ class TypeDefiner:
         return self.filters[key]
 
 
-def render_type(t):
+def render_type(t: Type) -> str:
+    """
+    Render a type into a human-readable string. Inverse of ``parse_type``.
+
+    :param t: The type to render
+    """
     if isinstance(t, AtomicType):
         return t.name
     if isinstance(t, TypeVariable):
@@ -146,7 +151,10 @@ def parse_type_from_buf_multi(reversed_buf, env):
     return ArrowType((t_head,), t_tail)
 
 
-def lex_type(s):
+def lex_type(s: str) -> List[str]:
+    """
+    Lex a type string into tokens.
+    """
     buf = []
     for c in s:
         if c in SPECIAL_CHARS:
