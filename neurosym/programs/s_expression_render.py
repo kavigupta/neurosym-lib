@@ -79,12 +79,13 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     """
     Render an SExpression as a string.
 
-    Args:
-        s_exp: The SExpression to render.
-        for_stitch: Whether the Pair is being converted for use with stitch.
+    :param s_exp: The SExpression to render.
+    :param for_stitch: Whether we are parsing this expression from `stitch_core`,
+        in which case we need to handle the "leaf-" prefix that we introduced
+        in `parse_s_expression`.
 
-    Returns:
-        The string representing the SExpression.
+
+    :returns: The string representing the SExpression.
     """
     return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
 
@@ -93,12 +94,13 @@ def parse_s_expression(
     s: str, *, should_not_be_leaf: Set[str] = None, for_stitch: bool = False
 ) -> SExpression:
     """
-    Parse a string into an SExpression.
+    Parse an SExpression from a string.
 
     :param s: The string to parse.
     :param should_not_be_leaf: A set of symbols that should not be converted to leaves.
         Instead, they should be converted to SExpressions with no children.
-    :param for_stitch: Whether the Pair is being converted for use with stitch.
+    :param for_stitch: Whether we are rendering this s-expression for `stitch_core`,
+        in which case we need to tag leaf nodes with "leaf-" prefix.
 
     :returns: The SExpression representing the string.
     """
