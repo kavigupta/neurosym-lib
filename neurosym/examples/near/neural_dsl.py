@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Set, Tuple, Union
 
 from torch import nn
 
+from neurosym.programs.s_expression_render import symbols_for_program
+from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.types.type_signature import FunctionTypeSignature
 
 from ...dsl.dsl import DSL
@@ -29,6 +31,7 @@ class NeuralDSL(DSL):
     neural_fn_tag = "__neural_dsl_internal__"
     # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
+    original_symbols: Set[str]
 
     @classmethod
     def from_dsl(
@@ -77,6 +80,7 @@ class NeuralDSL(DSL):
             max_type_depth=dsl.max_type_depth,
             max_env_depth=dsl.max_env_depth,
             type_to_symbol=type_to_symbol,
+            original_symbols=set(dsl.symbols()),
         )
 
     def get_partial_program(self, hole: Hole) -> Production:
@@ -113,6 +117,15 @@ class NeuralDSL(DSL):
             tuple(self.initialize(child) for child in prog.children),
             prod.initialize(self),
         )
+
+    def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
+        """
+        Returns True if the given program has no holes.
+        """
+        if isinstance(program, DSLSearchNode):
+            program = program.program
+        assert isinstance(program, SExpression)
+        return set(symbols_for_program(program)) - self.original_symbols == set()
 
 
 def create_module_for_type(module_factory, t, known_atom_shapes):

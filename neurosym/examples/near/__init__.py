@@ -1,3 +1,5 @@
+from neurosym.examples.near.validation import ValidationCost
+
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .dsls.simple_constants_dsl import simple_constants_dsl

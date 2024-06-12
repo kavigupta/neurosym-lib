@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="neurosym",
-    version="0.0.43",
+    version="0.0.60",
     author="Kavi Gupta, Atharva Sehgal, Maddy Bowers, Armando Solar-Lezama",
     author_email="kavig+neurosym@mit.edu",
     description="Neurosymbolic library.",
@@ -32,5 +32,8 @@ setuptools.setup(
         "scikit-learn",
         "pandas",
         "s-exp-parser==1.3.1",
+        "increase_recursionlimit==1.0.0",
+        "no_toplevel_code==1.0.0",
+        "ast-scope==0.4.3",
     ],
 )

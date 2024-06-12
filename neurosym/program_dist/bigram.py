@@ -51,7 +51,7 @@ class BigramProgramDistribution:
                 distribution[mask_square], min_likelihood
             )
         distribution = self.dist_fam.mask_invalid(distribution)
-        distribution = distribution / distribution.sum(-1)[..., None]
+        distribution = distribution / (distribution.sum(-1)[..., None] + 1e-10)
         return BigramProgramDistribution(self.dist_fam, distribution)
 
     def _square_mask(self, symbol_mask):
@@ -376,7 +376,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             masks.append(TypePreorderMask(tree_dist, self._dsl))
         for mask in self._additional_preorder_masks:
             masks.append(mask(tree_dist, self._dsl))
-        return ConjunctionPreorderMask(tree_dist, masks)
+        return ConjunctionPreorderMask.of(tree_dist, masks)
 
     def mask_invalid(self, distribution):
         return distribution * self._valid_mask

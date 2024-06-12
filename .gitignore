@@ -1,10 +1,11 @@
 **/__pycache__
 .ipynb_checkpoints
-*.ipynb
+Untitled.ipynb
 env
 *.swp
 .idea
 *.egg-info
 dist
+.vs
 build
-.DS_Store
+.DS_Storeneurosym-env

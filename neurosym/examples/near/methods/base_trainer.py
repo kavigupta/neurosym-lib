@@ -1,15 +1,14 @@
-import sys
+import warnings
 from dataclasses import dataclass
 from typing import Tuple
 
-import lightning as L
 import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
+from neurosym.utils.imports import import_pytorch_lightning
 
-class TrainingError(Exception):
-    pass
+pl = import_pytorch_lightning()
 
 
 @dataclass
@@ -25,7 +24,7 @@ class BaseTrainerConfig:
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
     scheduler: str = "cosine"
-    optimizer: str = "adam"
+    optimizer: str = torch.optim.Adam
 
 
 class BaseTrainer(L.LightningModule):
@@ -48,92 +47,9 @@ class BaseTrainer(L.LightningModule):
         self.model = model
         self.save_hyperparameters(ignore=["model"])
 
-    @staticmethod
-    def get_loss_fn(loss_fn):
-        match loss_fn:
-            case "CrossEntropyLoss":
-                return nn.CrossEntropyLoss()
-            case "BCEWithLogitsLoss":
-                return nn.BCEWithLogitsLoss()
-            case "MSELoss":
-                return nn.MSELoss()
-            case "NLLLoss":
-                return nn.NLLLoss()
-            case _:
-                raise NotImplementedError(f"Loss function {loss_fn} not implemented")  # noqa: E501
-
-    @staticmethod
-    def compute_average_f1_score(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
-    ):  # noqa: E501
-        if num_labels > 1:
-            weighted_avg_f1 = 1 - f1_score(targets, predictions, average="weighted")
-            unweighted_avg_f1 = 1 - f1_score(targets, predictions, average="macro")
-            all_f1 = 1 - f1_score(targets, predictions, average=None)
-            return dict(
-                weighted_avg_f1=weighted_avg_f1,
-                unweighted_avg_f1=unweighted_avg_f1,
-                all_f1s=all_f1,
-            )
-        avg_f1 = 1 - f1_score(targets, predictions, average="binary")
-        all_f1 = 1 - f1_score(targets, predictions, average=None)
-        return dict(avg_f1=avg_f1, all_f1s=all_f1)
-
-    @staticmethod
-    def label_correctness(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
-    ):  # noqa: E501
-        hamming_accuracy = 1 - hamming_loss(
-            targets.squeeze().cpu(), predictions.squeeze().cpu()
-        )
-        f1_scores = BaseTrainer.compute_average_f1_score(
-            predictions, targets, num_labels
-        )  # noqa: E501
-        return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
-
-    def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
+    def loss(self) -> dict:
         # pylint: disable=arguments-differ
-        if len(predictions.shape) == 3:
-            # Handling seq2seq classification loss.
-            match self.config.loss_fn:
-                case "CrossEntropyLoss":
-                    targets = targets.squeeze(-1)
-                    assert (
-                        len(targets.shape) == 2
-                    ), "Targets must be 2D for classification"
-                    predictions = predictions.reshape(-1, predictions.shape[-1])
-                    targets = targets.view(-1)
-                case "MSELoss":
-                    if not self.is_regression:
-                        targets = targets.squeeze(-1)
-                        # pylint: disable=not-callable
-                        targets = torch.nn.functional.one_hot(
-                            targets, num_classes=self.config.num_labels
-                        ).float()
-                    predictions = predictions.reshape(-1, predictions.shape[-1])
-                    targets = targets.view(-1, targets.shape[-1])
-                case "NLLLoss":
-                    predictions = (
-                        predictions.reshape(-1, predictions.shape[-1])
-                        .clamp(min=1e-10)
-                        .log_softmax(dim=-1)
-                    )
-                    targets = targets.view(-1)
-                case "MultiLabelSoftMarginLoss":
-                    # Available in pytorch.
-                    raise NotImplementedError("TODO")
-                case _:
-                    raise NotImplementedError(
-                        f"Loss function {self.config.loss_fn} not implemented for seq2seq models"
-                    )
-        elif len(predictions.shape) == 2:
-            match self.config.loss_fn:
-                case "CrossEntropyLoss":
-                    targets = targets.argmax(dim=-1)
-                    # predictions = predictions.softmax(dim=-1)
-
-        loss = self.loss_fn(predictions, targets)
-        return loss
+        raise NotImplementedError("Loss function not implemented.")
 
     def _step(self) -> dict:
         raise NotImplementedError("Step function not implemented.")
@@ -176,9 +92,7 @@ class BaseTrainer(L.LightningModule):
             if param.requires_grad and valid_name:
                 params.append(param)
             else:
-                print(
-                    f"WARNING: Parameter {name} removed from optimizer", file=sys.stderr
-                )
+                warnings.warn(f"WARNING: Parameter {name} removed from optimizer")
         return params
 
     @staticmethod
@@ -218,24 +132,10 @@ class BaseTrainer(L.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-
-        match self.config.optimizer:
-            case "adam":
-                optimizer = torch.optim.Adam(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "sgd":
-                optimizer = torch.optim.SGD(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "adamw":
-                optimizer = torch.optim.AdamW(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case _:
-                raise NotImplementedError(
-                    f"Optimizer {self.config.optimizer} not implemented"
-                )  # noqa: E501
+        optimizer_fn = self.config.optimizer
+        optimizer = optimizer_fn(
+            params, lr=self.config.lr, weight_decay=self.config.weight_decay
+        )
 
         assert self.config.train_steps != -1, "Train steps not set"
         total_steps = int(self.config.n_epochs * (self.config.train_steps))

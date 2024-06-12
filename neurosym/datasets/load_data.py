@@ -2,9 +2,12 @@ import io
 import os
 
 import numpy as np
-import lightning as L
 import requests
 import torch
+
+from neurosym.utils.imports import import_pytorch_lightning
+
+pl = import_pytorch_lightning()
 
 
 def get_raw_url(github_folder, filename):
@@ -86,16 +89,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         else:
             self.ordering = np.arange(len(self.inputs))
 
-    def get_io_dims(self):
-        if self.is_regression:
-            return self.inputs.shape[-1], self.outputs.shape[-1]
-
-        if np.issubdtype(self.outputs.dtype, np.integer):
-            n_classes = len(np.unique(self.outputs))
-        else:
-            n_classes = self.outputs.shape[-1]
-
-        return self.inputs.shape[-1], n_classes
+    def get_io_dims(self, is_regression=False):
+        out = self.outputs.shape[-1] if is_regression else len(np.unique(self.outputs))
+        return self.inputs.shape[-1], out
 
     def __len__(self):
         return len(self.inputs)

@@ -12,7 +12,10 @@ from neurosym.programs.s_expression import SExpression
 def collect_preorder_symbols(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
-    replace_node_midstream: Callable[[SExpression, PreorderMask], SExpression] = None,
+    replace_node_midstream: Callable[
+        [SExpression, PreorderMask, int, List[int]], SExpression
+    ] = None,
+    symbol_to_index_fn=None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
@@ -20,7 +23,12 @@ def collect_preorder_symbols(
     mask = tree_dist.mask_constructor(tree_dist)
     mask.on_entry(0, 0)
     yield from collect_preorder_symbols_dfs(
-        s_exp, tree_dist, mask, ((0, 0),), replace_node_midstream=replace_node_midstream
+        s_exp,
+        tree_dist,
+        mask,
+        ((0, 0),),
+        replace_node_midstream=replace_node_midstream,
+        symbol_to_index_fn=symbol_to_index_fn,
     )
 
 
@@ -29,7 +37,10 @@ def collect_preorder_symbols_dfs(
     tree_dist: TreeDistribution,
     mask: PreorderMask,
     parents: Tuple[Tuple[int, int], ...],
-    replace_node_midstream: Callable[[SExpression, PreorderMask], SExpression] = None,
+    replace_node_midstream: Callable[
+        [SExpression, PreorderMask, int, List[int]], SExpression
+    ] = None,
+    symbol_to_index_fn=None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
     Collects the alernate symbols that could have been selected in the tree distribution.
@@ -39,9 +50,13 @@ def collect_preorder_symbols_dfs(
     bool_mask = mask.compute_mask(position, idxs)
     alts = tuple(int(x) for x in idxs[bool_mask])
     if replace_node_midstream is not None:
-        s_exp = replace_node_midstream(s_exp, mask)
+        s_exp = replace_node_midstream(s_exp, mask, position, alts)
     yield s_exp, alts, mask
-    sym_idx = tree_dist.symbol_to_index[s_exp.symbol]
+    sym_idx = (
+        tree_dist.symbol_to_index[s_exp.symbol]
+        if symbol_to_index_fn is None
+        else symbol_to_index_fn(mask, s_exp.symbol)
+    )
     mask.on_entry(position, sym_idx)
     order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
     for idx, child in zip(order, [s_exp.children[i] for i in order]):
@@ -52,6 +67,7 @@ def collect_preorder_symbols_dfs(
             mask,
             new_parents,
             replace_node_midstream=replace_node_midstream,
+            symbol_to_index_fn=symbol_to_index_fn,
         )
     mask.on_exit(position, sym_idx)
 
