@@ -66,6 +66,7 @@ from .search_graph.metadata_computer import NoMetadataComputer
 from .types.type import (
     ArrowType,
     AtomicType,
+    FilteredTypeVariable,
     ListType,
     TensorType,
     Type,

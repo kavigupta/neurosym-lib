@@ -7,6 +7,7 @@ from neurosym.types.type import (
     FilteredTypeVariable,
     ListType,
     TensorType,
+    Type,
     TypeVariable,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
@@ -134,7 +135,37 @@ def lex(s):
     return [tok for tok in buf if tok != ""]
 
 
-def parse_type(s, env: Union[TypeDefiner, NoneType] = None):
+def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
+    """
+    Parse the given string into a type. The string should be in the format of the
+    type string representation. The type string representation is a string that
+    represents a type in a human-readable format.
+
+    See the documentation for each Type subclass for more information on the
+    type string representation for that type. A few edge cases for the ``ArrowType``
+    are worth mentioning:
+
+    If the input type is a single type, the parentheses are optional, unless the
+    input type is another ``ArrowType``. So the parentheses are optional in the
+    following cases
+
+        .. code-block:: python
+
+            (a) -> b
+            ([a]) -> b
+            ({a, 2}) -> b
+            ([a -> b]) -> c
+
+    but are required in the following cases
+
+        .. code-block:: python
+
+            (a, b) -> c
+            (a -> b) -> c
+
+    :param s: The string to parse
+    :param env: The environment to use for looking up types and filters
+    """
     if env is None:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)

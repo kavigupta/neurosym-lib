@@ -199,6 +199,8 @@ class ListType(Type):
     """
     Represents a list of elements of a given type. These types are rendered as strings of
     the form ``[element_type]``, e.g., ``ListType(ns.AtomicType("f"))`` is rendered as ``"[f]"``.
+
+    :field element_type: the type of the elements in the list.
     """
 
     element_type: Type
@@ -228,7 +230,11 @@ class ArrowType(Type):
     An arrow type represents a function type. It is a type that takes a tuple of input
     types and returns an output type. These types are rendered as strings of the form
     ``(input_type1, input_type2, ...) -> (output_type)``, e.g.,
-    ``ArrowType((ns.AtomicType("f"), ns.AtomicType("f")), ns.AtomicType("f"))`` is rendered as ``"(f, f) -> f"``.
+    ``ArrowType((ns.AtomicType("f"), ns.AtomicType("f")), ns.AtomicType("f"))`` is rendered
+    as ``"(f, f) -> f"``.
+
+    :field input_type: a tuple of input types.
+    :field output_type: the output type.
     """
 
     input_type: Tuple[Type]
@@ -276,6 +282,11 @@ class ArrowType(Type):
 
 @dataclass(frozen=True, eq=True)
 class GenericTypeVariable(Type):
+    """
+    Base class for type variables. See ``TypeVariable`` and ``FilteredTypeVariable`` for
+    concrete implementations and documentation
+    """
+
     name: str
 
     @classmethod
@@ -304,11 +315,29 @@ class GenericTypeVariable(Type):
 
 
 class TypeVariable(GenericTypeVariable):
-    pass
+    """
+    A type variable is a type that can be unified with any other type, but must be
+    unified with the same type throughout the type tree. Type variables are used to
+    represent generic types in the type system. These types are rendered as strings of
+    the form ``#name``, e.g., ``TypeVariable("x")`` is rendered as ``#x``.
+
+    :field name: the name of the type variable.
+    """
 
 
 @dataclass(frozen=True, eq=True)
 class FilteredTypeVariable(GenericTypeVariable):
+    """
+    A filtered type variable is a type variable (see ``TypeVariable``) that can only be
+    unified with types that satisfy a given predicate. These types are rendered as
+    strings of the form ``%name``, e.g., ``FilteredTypeVariable("x", lambda t: isinstance(t, ns.AtomicType))``
+    is rendered as ``%x``.
+
+    :field name: the name of the type variable.
+    :field type_filter: a predicate that takes a type and returns True if the type can be unifie
+        with the type variable.
+    """
+
     type_filter: Callable[[Type], bool]
 
     def unify(

@@ -4,6 +4,11 @@ Types
 .. autoclass:: neurosym.Type
     :members:
 
-.. autoclass:: neurosym.AtomicType
+.. autofunction:: neurosym.parse_type
 
+.. autoclass:: neurosym.AtomicType
 .. autoclass:: neurosym.TensorType
+.. autoclass:: neurosym.ListType
+.. autoclass:: neurosym.ArrowType
+.. autoclass:: neurosym.TypeVariable
+.. autoclass:: neurosym.FilteredTypeVariable
