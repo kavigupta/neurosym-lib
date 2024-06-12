@@ -62,7 +62,7 @@ from .programs.s_expression_render import (
 )
 from .search_graph.dsl_search_graph import DSLSearchGraph, SearchGraph
 from .search_graph.hole_set_chooser import ChooseAll, ChooseFirst, HoleSetChooser
-from .search_graph.metadata_computer import NoMetadataComputer
+from .search_graph.metadata_computer import MetadataComputer, NoMetadataComputer
 from .types.type import (
     ArrowType,
     AtomicType,
