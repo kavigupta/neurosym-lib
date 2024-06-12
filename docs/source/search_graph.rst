@@ -1,6 +1,8 @@
 Search Graph
 ===========================================
 
+.. autoclass:: neurosym.SearchGraph
+    :members:
 .. autoclass:: neurosym.DSLSearchGraph
     :members:
 .. autoclass:: neurosym.HoleSetChooser
