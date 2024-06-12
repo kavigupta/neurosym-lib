@@ -8,6 +8,18 @@ def execute_notebook(filename, suffix, **kwargs):
     with open(filename) as ff:
         nb_out = json.load(ff)
 
+    source_code = ipynb_to_py(nb_out)
+    source_code += [suffix]
+    source_code = "\n".join(source_code)
+    with tempfile.NamedTemporaryFile("w", delete=True) as f:
+        with open(f.name, "w") as f:
+            f.write(source_code)
+
+        result = subprocess.check_output([sys.executable, f.name], **kwargs)
+    return result.decode("utf-8")
+
+
+def ipynb_to_py(nb_out):
     source_code = [
         "".join(cell["source"]) + "\n\nplt.close()"
         for cell in nb_out["cells"]
@@ -25,11 +37,5 @@ def execute_notebook(filename, suffix, **kwargs):
         for line in source_code
         if not line.startswith("%") and not line.startswith("!")
     ]
-    source_code += [suffix]
-    source_code = "\n".join(source_code)
-    with tempfile.NamedTemporaryFile("w", delete=True) as f:
-        with open(f.name, "w") as f:
-            f.write(source_code)
 
-        result = subprocess.check_output([sys.executable, f.name], **kwargs)
-    return result.decode("utf-8")
+    return source_code

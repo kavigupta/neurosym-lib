@@ -7,6 +7,7 @@ from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
@@ -36,7 +37,7 @@ class ValidationCost:
         error_loss=10000,
         progress_by_epoch=False,
         callbacks=(),
-        **kwargs
+        **kwargs,
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
@@ -84,7 +85,7 @@ class ValidationCost:
         callbacks = list(self.callbacks)
         callbacks = self.duplicate(self.callbacks)
         if self.progress_by_epoch:
-            print("training", label if label else "")
+            log(f"Training {label}")
             pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
             callbacks.append(ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:

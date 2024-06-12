@@ -5,12 +5,15 @@ import unittest
 
 import parameterized
 
+from tests.tutorial.utils import ipynb_to_py
 
 def files_to_examine(*paths):
     for path in paths:
         for root, _, files in os.walk(path):
             for file in files:
-                if file.endswith(".py"):
+                if ".ipynb_checkpoints" in root:
+                    continue
+                if file.endswith(".py") or file.endswith(".ipynb"):
                     yield os.path.join(root, file)
 
 
@@ -20,10 +23,8 @@ def read_python_file(path):
     if path.endswith(".py"):
         return text
     if path.endswith(".ipynb"):
-        text = json.loads(text)
-        cells = text["cells"]
-        code_cells = [cell["source"] for cell in cells if cell["cell_type"] == "code"]
-        code = "\n".join(code_cells)
+        code = ipynb_to_py(json.loads(text))
+        code = "\n".join(code)
         return code
     raise ValueError(f"Unknown file type: {path}")
 
@@ -63,6 +64,9 @@ class NoPrintsTest(unittest.TestCase):
     def test_only_direct_import(self, path):
         if path in {"neurosym/examples/near/methods/near_example_trainer.py"}:
             # skip this file, it is an example
+            return
+        if path in {"neurosym/utils/logging.py"}:
+            # skip this file, it is a logging utility
             return
         with open(path) as f:
             code = f.read()
