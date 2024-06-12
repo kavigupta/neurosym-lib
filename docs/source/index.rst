@@ -13,3 +13,4 @@ Contents
    type
    dsls
    search_graph
+   examples
