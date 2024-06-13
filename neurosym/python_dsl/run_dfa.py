@@ -1,22 +1,24 @@
 import copy
+from typing import Iterable, Tuple
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 from neurosym.python_dsl.python_ast_tools import clean_type, is_sequence
 
 
-def run_dfa_on_program(dfa, node, state):
+def run_dfa_on_program(
+    dfa, node: SExpression, state: str
+) -> Iterable[Tuple[SExpression, str]]:
     """
-    Runs the dfa on a program, yielding the node and the state
-        for each node in the program.
+    Runs 
+    the dfa on a program, yielding the node and the state
+    for each node in the program.
 
-    Args:
-        dfa: The dfa.
-        node: The node.
-        state: The root state
+    :param dfa: The dfa to run.
+    :param node: The node to run the dfa on.
+    :param state: The state to start
 
-    Yields:
-        A tuple of the node and the state, for each node in the program.
+    :yields: A tuple of the node and the state, for each node in the program.
     """
     if not isinstance(node, (SExpression, str)):
         raise ValueError(f"expected SExpression or str, got {node}")
@@ -35,18 +37,16 @@ def run_dfa_on_program(dfa, node, state):
         yield from run_dfa_on_program(dfa, child, dfa_states[i % len(dfa_states)])
 
 
-def add_disambiguating_type_tags(dfa, prog, start_state):
+def add_disambiguating_type_tags(dfa, prog: SExpression, start_state: str) -> SExpression:
     """
     Add disambiguating type tags to a program, which appended to each symbol in the program,
-        after the separator. Also adds a sequence length tag if the symbol is a sequence type.
+    after the separator. Also adds a sequence length tag if the symbol is a sequence type.
 
-    Args:
-        dfa: The dfa.
-        prog: The program.
-        start_state: The state for the root node.
+    :param dfa: The dfa to run.
+    :param prog: The program to add type tags to.
+    :param start_state: The state to start the dfa in.
 
-    Returns:
-        The program with disambiguating type tags.
+    :returns: The program with the type tags added.
     """
     prog = copy.deepcopy(prog)
     node_id_to_new_symbol = {}

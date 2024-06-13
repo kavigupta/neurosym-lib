@@ -18,7 +18,17 @@ def collect_preorder_symbols(
     symbol_to_index_fn=None,
 ) -> Iterator[Tuple[SExpression, List[str], PreorderMask]]:
     """
-    Collects the alernate symbols that could have been selected in the tree distribution.
+    Collects the alernate symbols that could have been selected in the tree distribution,
+    and yields the S-Expression, the alternate symbols, and the mask at each node.
+
+    :param s_exp: The S-Expression to collect the alternate symbols for.
+    :param tree_dist: The tree distribution.
+    :param replace_node_midstream: A function that takes the current node, the mask, the
+        position of the node, and the alternate symbols that could have been selected, and
+        returns the new node. This is used to replace the node as it is being visited. The
+        returned node is then visited in place of the original node.
+    :param symbol_to_index_fn: A function that takes the mask and the symbol and returns
+        the index of the symbol in the tree distribution.
     """
     mask = tree_dist.mask_constructor(tree_dist)
     mask.on_entry(0, 0)
@@ -80,6 +90,15 @@ def annotate_with_alternate_symbols(
     """
     Annotates the S-Expression with the alternate symbols that could have been
     selected in the tree distribution.
+
+    Exists mostly for testing purposes.
+
+    :param s_exp: The S-Expression to annotate.
+    :param tree_dist: The tree distribution.
+    :param summary_fn: A function that takes the chosen symbol and the alternate
+        symbols and returns the new symbol.
+
+    :returns: The annotated S-Expression.
     """
     preorder_symbols = [
         (node, alts) for node, alts, _ in collect_preorder_symbols(s_exp, tree_dist)
