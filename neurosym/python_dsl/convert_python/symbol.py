@@ -31,9 +31,7 @@ class PythonSymbol:
         if isinstance(scope, str):
             assert scope.isdigit(), f"scope must be int or None, got {scope!r}"
         else:
-            assert isinstance(
-                scope, int
-            ), f"scope must be int or None, got {scope!r}"
+            assert isinstance(scope, int), f"scope must be int or None, got {scope!r}"
 
     @classmethod
     def parse(cls, x):
