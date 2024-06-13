@@ -6,12 +6,23 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'neurosym'
-copyright = '2024, Kavi Gupta, Atharva Sehgal, Maddy Bowers, Armando Solar-Lezama'
-author = 'Kavi Gupta, Atharva Sehgal, Maddy Bowers, Armando Solar-Lezama'
+# read $(dirname $0)/../setup.cfg
 
-release = "0.1.11"
-version = "0.1.11"
+import os
+import configparser
+
+
+config = configparser.ConfigParser()
+with open(os.path.join(os.path.dirname(__file__), "..", "..", "setup.cfg")) as f:
+    config.read_file(f)
+config = config["metadata"]
+
+
+project = config["name"]
+author = config["author"]
+copyright = "2024, " + author
+
+release = version = config["version"]
 
 # -- General configuration
 
