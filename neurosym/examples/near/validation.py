@@ -55,7 +55,7 @@ class ValidationCost:
         datamodule: DatasetWrapper,
         error_loss=10000,
         progress_by_epoch=False,
-        callbacks: List[pl.callbacks.Callback] = [],
+        callbacks: List[pl.callbacks.Callback] = (),
         **kwargs,
     ):
         self.neural_dsl = neural_dsl

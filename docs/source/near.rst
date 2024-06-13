@@ -31,6 +31,6 @@ NEAR Factory Functions
 
 Example Datasets/DSLs
 --------------------------------------------
-.. autoclass:: neurosym.datasets.near_data_example
+.. autofunction:: neurosym.datasets.near_data_example
 .. autofunction:: neurosym.examples.near.differentiable_arith_dsl
 .. autofunction:: neurosym.examples.near.example_rnn_dsl
