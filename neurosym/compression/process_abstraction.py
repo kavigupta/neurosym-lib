@@ -176,7 +176,13 @@ class StitchLambdaRewriter:
 
 def single_step_compression(dsl, programs):
     """
-    Run a single step of compression on a list of programs.
+    Run single step of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+
+    :return: The DSL with up to 1 additional abstraction, and the programs
+        rewritten to use the new abstractions.
     """
     programs_orig = programs
     rewriter = StitchLambdaRewriter(dsl)

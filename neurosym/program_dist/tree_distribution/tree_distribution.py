@@ -25,7 +25,16 @@ class TreeDistribution:
     Distribution over SExpressions as trees.
 
     Internally, we represent the productions in the language as integers, which we
-        call indices.
+    call indices.
+
+    :param limit: The maximum number of parent nodes that can be conditioned on.
+    :param distribution: A dictionary mapping paths in the tree to lists of (production index, likelihood)
+        pairs. The path is a tuple of tuples of (ancestor index, position), which is the path to the current
+        node, with the most immediate ancestor at the end.
+    :param symbols: A list of (symbol, arity) pairs, where arity is the number of children the symbol has.
+        The root symbol should be at index 0.
+    :param mask_constructor: A function that constructs a preorder mask for the tree distribution.
+    :param node_ordering: A function that constructs a node ordering for the tree distribution.
     """
 
     limit: int
@@ -43,12 +52,20 @@ class TreeDistribution:
 
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
+        """
+        Dictionary mapping symbols to their indices.
+        """
         return {symbol: i for i, (symbol, _) in enumerate(self.symbols)}
 
     @cached_property
     def index_within_distribution_list(
         self,
     ) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]:
+        """
+        Index within the distribution list for each production, for each path.
+        (The dependence on the path is because the distribution lists do not
+        include productions with -inf likelihood.)
+        """
         return {
             k: {x: i for i, (x, _) in enumerate(v)}
             for k, v in self.distribution.items()
@@ -56,12 +73,18 @@ class TreeDistribution:
 
     @cached_property
     def distribution_dict(self) -> Dict[Tuple[Tuple[int, int], ...], Dict[int, float]]:
+        """
+        Distributions, as dictionaries.
+        """
         return {k: dict(v) for k, v in self.distribution.items()}
 
     @cached_property
     def likelihood_arrays(
         self,
     ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Distributions, as arrays.
+        """
         return {
             k: (
                 np.array([x[0] for x in v]),
@@ -74,6 +97,9 @@ class TreeDistribution:
     def sampling_dict_arrays(
         self,
     ) -> Dict[Tuple[Tuple[int, int], ...], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Like likelihood_arrays, but with probabilities instead of log probabilities.
+        """
         return {
             k: (syms, np.exp(log_probs))
             for k, (syms, log_probs) in self.likelihood_arrays.items()
@@ -81,6 +107,9 @@ class TreeDistribution:
 
     @cached_property
     def ordering(self) -> NodeOrdering:
+        """
+        Get the node ordering for this tree distribution.
+        """
         return self.node_ordering(self)
 
 

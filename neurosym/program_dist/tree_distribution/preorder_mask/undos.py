@@ -1,7 +1,11 @@
-def chain_undos(undos):
+from types import NoneType
+from typing import Callable, List
+
+
+def chain_undos(undos: List[Callable[[], NoneType]]) -> Callable[[], NoneType]:
     """
     Run a series of undo functions. The undos are run in reverse order,
-        so the last undo function is run first.
+    so the last undo function is run first.
     """
 
     def undo():

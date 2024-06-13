@@ -45,7 +45,15 @@ class NodeOrdering(ABC):
 
 class DictionaryNodeOrdering(NodeOrdering):
     """
-    Orders the subnodes of a node according to a dictionary.
+    Orders the subnodes of a node according to a dictionary. The dictionary maps
+    symbol indices to lists of integers, which are the indices of the subnodes.
+
+    If a symbol is not in the dictionary, the subnodes are ordered in the default order.
+
+    :param dist: The tree distribution to order.
+    :param ordering: The ordering dictionary.
+    :param tolerate_missing: Whether to tolerate missing symbols in the ordering. If False,
+        an exception will be raised if a symbol in the ordering is not in the distribution.
     """
 
     def __init__(self, dist, ordering: Dict[str, List[int]], tolerate_missing=False):
@@ -64,7 +72,7 @@ class DictionaryNodeOrdering(NodeOrdering):
 
 class DefaultNodeOrdering(NodeOrdering):
     """
-    Orders the subnodes of a node according to their symbol indices.
+    Orders the subnodes of a node in the default order, 0, 1, 2, ...
     """
 
     def compute_order(self, root_sym_idx: int) -> Union[List[int], NoneType]:
