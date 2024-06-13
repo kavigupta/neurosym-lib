@@ -76,4 +76,4 @@ from .types.type import (
 )
 from .types.type_signature import bottom_up_enumerate_types, expansions
 from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_type
-from .types.type_with_environment import Environment, TypeWithEnvironment
+from .types.type_with_environment import Environment, PermissiveEnvironmment, TypeWithEnvironment

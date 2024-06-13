@@ -55,4 +55,5 @@ dslf.parameterized(
     dict(counter=lambda: [0]),
 )
 
+# comment is in examples_other.rst
 mutable_arith_combinators_dsl = dslf.finalize()

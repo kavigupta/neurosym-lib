@@ -7,7 +7,12 @@ Types
 .. autofunction:: neurosym.parse_type
 .. autofunction:: neurosym.render_type
 .. autoclass:: neurosym.TypeDefiner
-
+.. autoclass:: neurosym.Environment
+    :members:
+.. autoclass:: neurosym.PermissiveEnvironmment
+    :members:
+.. autoclass:: neurosym.TypeWithEnvironment
+    :members:
 
 Subclasses of :class:`Type`
 ------------------------------------------

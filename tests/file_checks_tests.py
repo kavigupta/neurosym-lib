@@ -90,7 +90,9 @@ def documented_functions():
             text = f.read()
         functions.update(
             x.group("name")
-            for x in re.finditer(r".. (autofunction|autoclass):: (?P<name>.*)", text)
+            for x in re.finditer(
+                r".. auto(function|class|attribute):: (?P<name>.*)", text
+            )
         )
     return functions
 
@@ -108,6 +110,7 @@ class AllFunctionsDocumentedTest(unittest.TestCase):
             "neurosym.examples.near.NeuralDSL.from_dsl": "neurosym.examples.near.NeuralDSL",
             "neurosym.PythonDSLSubset.from_s_exps": "neurosym.PythonDSLSubset",
             "neurosym.PythonDSLSubset.from_programs": "neurosym.PythonDSLSubset",
+            "neurosym.Environment.empty": "neurosym.Environment",
         }.get(function, function)
         return function
 
