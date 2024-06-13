@@ -118,7 +118,9 @@ class Type(ABC):
 
 
 class UnificationError(Exception):
-    pass
+    """
+    Raised when two types cannot be unified.
+    """
 
 
 @dataclass(frozen=True, eq=True)

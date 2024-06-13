@@ -13,6 +13,7 @@ Types
     :members:
 .. autoclass:: neurosym.TypeWithEnvironment
     :members:
+.. autoclass:: neurosym.UnificationError
 
 Subclasses of :class:`Type`
 ------------------------------------------
@@ -27,3 +28,5 @@ Subclasses of :class:`Type`
 Other helpful functions
 ------------------------------------------
 .. autofunction:: neurosym.lex_type
+.. autofunction:: neurosym.type_expansions
+.. autofunction:: neurosym.bottom_up_enumerate_types

@@ -228,6 +228,11 @@ def bottom_up_enumerate_types(
     """
     Returns a list of all possible expansions of the given terminals
     using the given constructors.
+
+    :param terminals: The atomic types to use.
+    :param constructors: The constructors to use.
+    :param max_expansion_steps: The maximum number of times to apply a constructor.
+    :param max_overall_depth: The maximum depth of the resulting types.
     """
     assert (
         min(max_expansion_steps, max_overall_depth) < np.inf
@@ -302,7 +307,20 @@ def type_expansions(
     exclude_variables=(),
 ):
     """
-    Returns a list of all possible expansions of the given type.
+    Returns a list of all possible expansions of the given type, where the
+    variables in exclude_variables are not expanded.
+
+    This is useful for expanding a type signature, where some of the type
+    variables should not be expanded.
+
+    :param sig: The type to expand.
+    :param terminals: The atomic types to use.
+    :param constructors: The constructors to use.
+    :param max_expansion_steps: The maximum number of times to apply a constructor.
+    :param max_overall_depth: The maximum depth of the resulting types.
+    :param exclude_variables: The type variables to exclude from expansion.
+
+    :return: A list of all possible expansions of the given type.
     """
     # pylint: disable=cyclic-import
     from neurosym.types.type_string_repr import render_type

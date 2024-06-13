@@ -4,6 +4,9 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 
 def list_dsl(*output_types):
+    """
+    The List DSL from the DreamCoder repository.
+    """
     dslf = DSLFactory(max_overall_depth=5, max_expansion_steps=3)
 
     for i in range(6):
