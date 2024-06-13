@@ -158,7 +158,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_1(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[#a] -> #b"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -182,7 +182,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_2(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("([#a], [#b]) -> #c"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -218,7 +218,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_3(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[([#a], [#b]) -> #c]]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -229,7 +229,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_1(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[#a] -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -247,7 +247,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_2(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -265,7 +265,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_all_variables(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -277,7 +277,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_just_one(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("(#a, #b) -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
