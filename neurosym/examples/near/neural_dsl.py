@@ -119,7 +119,7 @@ class NeuralDSL(DSL):
         if isinstance(program, DSLSearchNode):
             program = program.program
         assert isinstance(program, SExpression)
-        return set(symbols_for_program(program)) - self.original_symbols == set()
+        return symbols_for_program(program) - self.original_symbols == set()
 
 
 def create_module_for_type(module_factory, t):
