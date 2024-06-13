@@ -176,6 +176,12 @@ class BigramProgramCountsBatch:
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
+    """
+    A family of bigram program distributions. These are TreeProgramDistributions
+    that are conditioned on just the parent and the position of the child
+    in the parent. This is a kind of TreeProgramDistributionFamily.
+    """
+
     def __init__(
         self,
         dsl: DSL,

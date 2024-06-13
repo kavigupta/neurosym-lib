@@ -29,15 +29,23 @@ class PythonDSLSubset:
 
     @property
     def lengths_by_sequence_type(self) -> Dict[str, List[int]]:
+        """
+        Compute the lengths by sequence type.
+        """
         return {k: sorted(v) for k, v in self._lengths_by_sequence_type.items()}
 
     @property
     def leaves(self) -> Dict[str, List[str]]:
+        """
+        Compute the leaves.
+        """
         return {k: sorted(v) for k, v in self._leaves.items()}
 
     def add_s_exps(self, *s_exps):
         """
         Add the following s-expressions to the subset. They must be type-annotated.
+
+        :param s_exps: the s-expressions to add
         """
         for s_exp in s_exps:
             for node in traverse(s_exp):
@@ -52,7 +60,9 @@ class PythonDSLSubset:
     @classmethod
     def from_s_exps(cls, s_exps):
         """
-        Factory version of add_s_exps.
+        Factory version of ``add_s_exps``.
+
+        :param s_exps: the s-expressions to add
         """
         subset = cls()
         subset.add_s_exps(*s_exps)
@@ -68,12 +78,11 @@ class PythonDSLSubset:
         Add the programs to the subset. The root symbol of the DSL is passed as an argument,
             and can be a single string or a tuple of strings.
 
-        Args:
-            dfa: the dfa of the DSL
-            programs: the programs to extract the subset from
-            root: the root symbol of the DSL. If a tuple is passed, it must
-                be the same length as the programs, providing a root symbol for each program.
-            abstrs: abstractions: their bodies will be added to the list of programs
+        :param dfa: the dfa of the DSL
+        :param programs: the programs to extract the subset from
+        :param root: the root symbol of the DSL. If a tuple is passed, it must
+            be the same length as the programs, providing a root symbol for each program.
+        :param abstrs: abstractions: their bodies will be added to the list of programs
         """
         if isinstance(root, str):
             root = [root] * len(programs)
@@ -96,7 +105,7 @@ class PythonDSLSubset:
         cls, dfa, *programs: Tuple[PythonAST, ...], root: Union[str, Tuple[str, ...]]
     ):
         """
-        Factory version of add_programs.
+        Factory version of ``add_programs``.
         """
         subset = cls()
         subset.add_programs(dfa, *programs, root=root)
@@ -105,7 +114,7 @@ class PythonDSLSubset:
     def fill_in_missing_lengths(self):
         """
         Fill in "missing lengths" for each sequence type. E.g., if the lengths
-            of a sequence type are [1, 3], this function will add 2 to the list.
+        of a sequence type are [1, 3], this function will add 2 to the list.
         """
         self._lengths_by_sequence_type = {
             seq_type: set(range(min(lengths), max(lengths) + 1))

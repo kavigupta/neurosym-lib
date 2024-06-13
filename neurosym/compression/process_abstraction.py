@@ -1,7 +1,9 @@
 import itertools
-from typing import Union
+from typing import List, Union
 
 import stitch_core
+
+from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
 from ..programs.s_expression import SExpression
@@ -206,9 +208,16 @@ def single_step_compression(dsl, programs):
     return dsl2, rewritten
 
 
-def multi_step_compression(dsl, programs, iterations):
+def multi_step_compression(dsl: DSL, programs: List[SExpression], iterations: int):
     """
     Run multiple steps of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+    :param iterations: The number of iterations to run.
+
+    :return: The DSL with up to `iterations` new abstraction productions, and the programs
+        rewritten to use the new abstractions.
     """
     for _ in range(iterations):
         dsl, programs = single_step_compression(dsl, programs)

@@ -15,6 +15,7 @@ Contents
    dist
    search_graph
    datasets
+   compression
    python
    examples
    utils

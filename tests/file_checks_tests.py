@@ -105,7 +105,9 @@ class AllFunctionsDocumentedTest(unittest.TestCase):
         if function.startswith("near."):
             function = function.replace("near.", "neurosym.examples.near.", 1)
         function = {
-            "neurosym.examples.near.NeuralDSL.from_dsl": "neurosym.examples.near.NeuralDSL"
+            "neurosym.examples.near.NeuralDSL.from_dsl": "neurosym.examples.near.NeuralDSL",
+            "neurosym.PythonDSLSubset.from_s_exps": "neurosym.PythonDSLSubset",
+            "neurosym.PythonDSLSubset.from_programs": "neurosym.PythonDSLSubset",
         }.get(function, function)
         return function
 
