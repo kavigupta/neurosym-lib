@@ -8,6 +8,7 @@
 .. autoclass:: neurosym.examples.near.NEARTrainer
 .. autoclass:: neurosym.examples.near.ValidationCost
 .. autoclass:: neurosym.examples.near.TorchProgramModule
+.. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 
 NEAR Operations
 --------------------------------------------
