@@ -22,13 +22,18 @@ class PythonSymbol:
     """
 
     name: str
-    scope: Union[int, None]
+    scope: Union[int, str, None]
 
     def __post_init__(self):
-        if self.scope is not None:
+        scope = self.scope
+        if scope is None:
+            return
+        if isinstance(scope, str):
+            assert scope.isdigit(), f"scope must be int or None, got {scope!r}"
+        else:
             assert isinstance(
-                self.scope, int
-            ), f"scope must be int or None, got {self.scope}"
+                scope, int
+            ), f"scope must be int or None, got {scope!r}"
 
     @classmethod
     def parse(cls, x):
