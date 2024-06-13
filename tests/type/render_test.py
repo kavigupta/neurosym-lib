@@ -133,25 +133,27 @@ class TestRender(unittest.TestCase):
 
 class TestLex(unittest.TestCase):
     def test_tensor(self):
-        self.assertEqual(ns.lex("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"])
+        self.assertEqual(
+            ns.lex_type("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"]
+        )
 
     def test_list(self):
-        self.assertEqual(ns.lex("[int]"), ["[", "int", "]"])
+        self.assertEqual(ns.lex_type("[int]"), ["[", "int", "]"])
 
     def test_arrow(self):
         self.assertEqual(
-            ns.lex("(int, float) -> bool"),
+            ns.lex_type("(int, float) -> bool"),
             ["(", "int", ",", "float", ")", "->", "bool"],
         )
 
     def test_no_args(self):
-        self.assertEqual(ns.lex("() -> bool"), ["(", ")", "->", "bool"])
+        self.assertEqual(ns.lex_type("() -> bool"), ["(", ")", "->", "bool"])
 
     def test_dollar(self):
-        self.assertEqual(ns.lex("$x"), ["$x"])
+        self.assertEqual(ns.lex_type("$x"), ["$x"])
 
     def test_dollar_arrow(self):
-        self.assertEqual(ns.lex("$fL -> $fL"), ["$fL", "->", "$fL"])
+        self.assertEqual(ns.lex_type("$fL -> $fL"), ["$fL", "->", "$fL"])
 
 
 class TestParse(unittest.TestCase):
