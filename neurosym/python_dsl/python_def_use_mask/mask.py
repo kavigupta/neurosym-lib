@@ -1,6 +1,6 @@
 import copy
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
@@ -10,7 +10,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_un
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
 from .extra_var import ExtraVar, canonicalized_python_name_leaf_regex
-from .handler import DefaultHandler, HandlerPuller, default_handler
+from .handler import DefaultHandler, Handler, HandlerPuller, default_handler
 from .names import NAME_REGEX
 from .special_case_symbol_predicate import NameEPredicate, SpecialCaseSymbolPredicate
 
@@ -18,7 +18,12 @@ from .special_case_symbol_predicate import NameEPredicate, SpecialCaseSymbolPred
 @dataclass
 class DefUseMaskConfiguration:
     """
-    Configuration for the DefUseMask.
+    Configuration for the ``DefUseChainPreorderMask``.
+
+    :param dfa: The deterministic tree finite automaton that defines the syntax of the language.
+        See ``ns.python_dfa`` for more information.
+    :param node_hooks: A dictionary of node hooks that can be used to define custom behavior for
+        specific nodes in the syntax tree, indexed by the prefix of the node name.
     """
 
     dfa: Dict
@@ -58,11 +63,10 @@ class DefUseChainPreorderMask(PreorderMask):
 
     The idea is to have a stack of Handler objects, one for each node in the syntax tree.
 
-    Args:
-        tree_dist: The tree distribution that the mask is applied to.
-        dsl: The domain-specific language that the mask is applied to.
-        config: The configuration for the mask.
-        special_case_predicate_fns: A list of functions that return special case predicates.
+    :param tree_dist: The tree distribution that the mask is applied to.
+    :param dsl: The domain-specific language that the mask is applied to.
+    :param config: The configuration for the mask.
+    :param special_case_predicate_fns: A list of functions that return special case predicates.
     """
 
     def __init__(
@@ -88,7 +92,7 @@ class DefUseChainPreorderMask(PreorderMask):
         self.handlers = []
         self.config = config
 
-    def currently_defined_indices(self):
+    def currently_defined_indices(self) -> List[int]:
         """
         Return the indices of the symbols that are currently defined.
         """
@@ -97,8 +101,11 @@ class DefUseChainPreorderMask(PreorderMask):
     def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
         """
         Compute the mask for the given position and symbols. If the last handler is
-            defining, then all symbols are valid. Otherwise, only the symbols that
-            match the handler's names are valid.
+        defining, then all symbols are valid. Otherwise, only the symbols that
+        match the handler's names are valid.
+
+        :param position: The position in the program.
+        :param symbols: The symbols to consider.
         """
         return self.handlers[-1].compute_mask(
             position, symbols, self.idx_to_name, self.special_case_predicates
@@ -107,6 +114,9 @@ class DefUseChainPreorderMask(PreorderMask):
     def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Updates the stack of handlers when entering a node.
+
+        :param position: The position in the program.
+        :param symbol: The symbol of the node.
         """
         if not self.handlers:
             assert position == symbol == 0
@@ -126,6 +136,9 @@ class DefUseChainPreorderMask(PreorderMask):
     def on_exit(self, position: int, symbol: int) -> Callable[[], None]:
         """
         Updates the stack of handlers when exiting a node.
+
+        :param position: The position in the program.
+        :param symbol: The symbol of the node.
         """
         popped = self.handlers.pop()
         undo_pop = lambda: self.handlers.append(popped)
@@ -136,31 +149,37 @@ class DefUseChainPreorderMask(PreorderMask):
 
         return chain_undos([undo_pop, undo])
 
-    def with_handler(self, handler_fn):
+    def with_handler(self, handler_fn: Callable[["DefUseChainPreorderMask"], Handler]):
         """
-        With a new handler function, return a new mask.
+        Create a copy of this mask with a single handler, as defined by the handler_fn.
+
+        :param handler_fn: The new handler function.
         """
         mask_copy = copy.copy(self)
         handler = handler_fn(mask_copy)
         mask_copy.handlers = [handler]
         return mask_copy
 
-    def id_to_name_and_arity(self, symbol_id):
+    def id_to_name_and_arity(self, symbol_id: Union[int, ExtraVar]) -> Tuple[str, int]:
         """
-        Convert the symbol ID to a string of the symbol name, and the arity of the symbol.
+        Look up a symbol ID, and get a string of the symbol name, and the arity of the symbol.
+
+        :param symbol_id: The symbol ID.
         """
 
         if isinstance(symbol_id, ExtraVar):
             return symbol_id.leaf_name(), 0
         return self.tree_dist.symbols[symbol_id]
 
-    def id_to_name(self, symbol_id):
+    def id_to_name(self, symbol_id: Union[int, ExtraVar]) -> str:
         """
         Convert the symbol ID to a string.
+
+        :param symbol_id: The symbol ID.
         """
         return self.id_to_name_and_arity(symbol_id)[0]
 
-    def name_to_id(self, name: str):
+    def name_to_id(self, name: str) -> Union[int, ExtraVar]:
         """
         Convert the string to a symbol ID.
         """

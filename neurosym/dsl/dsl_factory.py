@@ -1,9 +1,9 @@
 import copy
-from typing import Dict, List
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
-from ..types.type import ArrowType, AtomicType, TypeVariable
+from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
@@ -28,13 +28,16 @@ class DSLFactory:
     A factory for creating DSLs.
 
     Example usage:
-    ```
-    factory = DSLFactory()
-    factory.typedef("fn", "(i) -> i")
-    factory.concrete("inc", "$fn", lambda x: x + 1)
-    factory.concrete("const_0", "$fn", lambda x: 0)
-    factory.concrete("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
-    factory.finalize()
+
+    .. highlight:: python
+    .. code-block:: python
+
+        dslf = DSLFactory()
+        dslf.typedef("fn", "(i) -> i")
+        dslf.concrete("inc", "$fn", lambda x: x + 1)
+        dslf.concrete("const_0", "$fn", lambda x: 0)
+        dslf.concrete("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
+        dslf.finalize()
     """
 
     def __init__(
@@ -55,21 +58,40 @@ class DSLFactory:
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
 
-    def typedef(self, key, type_str):
+    def typedef(self, key: str, type_str: str):
         """
-        Define a type.
+        Define a type with the given type string.
+        The key will be used to refer to the type in future calls
+        with a $ prefix. E.g.,
+
+        .. highlight:: python
+        .. code-block:: python
+
+            dslf.typedef("fn", "(i) -> i")
+            dslf.concrete("inc", "$fn", lambda x: x + 1)
         """
         self.t.typedef(key, type_str)
 
-    def filtered_type_variable(self, key, type_filter):
+    def filtered_type_variable(self, key, type_filter: Callable[[Type], bool]):
         """
-        Define a filtered type variable.
+        Define a filtered type variable. This is a type variable that can only be
+        instantiated with types that satisfy the given filter. The key will be used to
+        refer to the type in future calls with a % prefix. E.g.,
+
+        .. highlight:: python
+        .. code-block:: python
+
+            dslf.filtered_type_variable(
+                "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
+            )
+            dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
         """
         self.t.filtered_type_variable(key, type_filter)
 
-    def known_types(self, *types):
+    def known_types(self, *types: Tuple[str, ...]):
         """
-        Add known types to the DSL.
+        Make this DSLFactory aware of the given types. These types will be used to
+        generate expansions for any productions need to be template-expanded.
         """
         self._known_types.extend(self.t(typ) for typ in types)
 
@@ -81,7 +103,13 @@ class DSLFactory:
 
     def lambdas(self, max_arity=2, max_type_depth=4, max_env_depth=4):
         """
-        Define a type.
+        Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
+        productions for each argument type/arity combination, as well as
+        ($i_j) productions for each variable de bruijn index i and type j.
+
+        :param max_arity: The maximum arity of lambda functions to generate.
+        :param max_type_depth: The maximum depth of types to generate.
+        :param max_env_depth: The maximum depth of the environment to generate.
         """
         self.lambda_parameters = dict(
             max_arity=max_arity,
@@ -89,30 +117,48 @@ class DSLFactory:
             max_env_depth=max_env_depth,
         )
 
-    def concrete(self, symbol, type_str, fn):
+    def concrete(self, symbol: str, type_str: str, semantics: object):
         """
         Add a concrete production to the DSL.
+
+        :param symbol: The symbol for the production.
+        :param type_str: The type string for the production.
+        :param semantics: The semantics to use for the production. This should have
+            a type corresponding to ``type_str``. Note: *this is not checked*.
         """
         sig = self.t.sig(type_str)
         self._concrete_productions.append(
             (
                 symbol,
                 sig,
-                fn,
+                semantics,
             )
         )
         self._signatures.append(sig)
 
-    def parameterized(self, symbol, type_str, fn, parameters):
+    def parameterized(
+        self,
+        symbol: str,
+        type_str: str,
+        semantics: object,
+        parameters: Dict[str, Callable[[], object]],
+    ):
         """
         Add a parameterized production to the DSL.
+
+        :param symbol: The symbol for the production.
+        :param type_str: The type string for the production.
+        :param semantics: The semantics to use for the production. This should have
+            a type corresponding to ``type_str``. Note: *this is not checked*.
+        :param parameters: A dictionary mapping parameter names to functions that
+            generate initial parameter values.
         """
         sig = self.t.sig(type_str)
         self._parameterized_productions.append(
             (
                 symbol,
                 sig,
-                fn,
+                semantics,
                 parameters,
             )
         )
@@ -120,13 +166,13 @@ class DSLFactory:
 
     def prune_to(
         self,
-        *target_types,
+        *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
     ):
         """
-        Prune the DSL to only include productions that can be constructed from the given
-        target types.
+        Direct the current DSLFactory to prune any productions p such that there does not exist some
+        program s and type t in target_types such that s :: t and s contains p as a production.
         """
         self.prune = True
         self.target_types = [self.t(x) for x in target_types]
@@ -173,9 +219,11 @@ class DSLFactory:
                 result.update(for_prod)
         return result
 
-    def finalize(self):
+    def finalize(self) -> DSL:
         """
-        Finalize the DSL.
+        Produce the DSL from this factory. This will generate all productions and
+        potentially raise errors if there were issues with the way the DSL was
+        constructed.
         """
 
         known_types = [x.astype() for x in self._signatures] + self._known_types

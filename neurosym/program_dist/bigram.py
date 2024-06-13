@@ -176,6 +176,12 @@ class BigramProgramCountsBatch:
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
+    """
+    A family of bigram program distributions. These are TreeProgramDistributions
+    that are conditioned on just the parent and the position of the child
+    in the parent. This is a kind of TreeProgramDistributionFamily.
+    """
+
     def __init__(
         self,
         dsl: DSL,
@@ -253,28 +259,28 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             s be a symbol
             d be the "denominator" (which is the set of *possible* symbols s'
                 that could have appeared in this context g).
-        The ngram `g` is really the context that `s` appears in. So for example
-            `(+ (- 1 2) 3)` if we're thinking about the symbol s=`-` its bigram g=`(+, 0)`
+        The ngram ``g`` is really the context that ``s`` appears in. So for example
+            ``(+ (- 1 2) 3)`` if we're thinking about the symbol s=``-`` its bigram g=``(+, 0)``
             indicating it's the first argument of a "+". This is the bigram notion from
             DreamCoder where it's not just the parent (analogous to "previous token" in NLP)
             but also includes which child of the parent we are. In general, we also filter
             on other characteristics (e.g., type checking), not just ngrams. See the
             preorder mask for more details.
 
-        In this particular example, `d` would be the set of symbols that *could* have
-            appeared in that same position `g`, for example `1` or `+` or `-` or anything
+        In this particular example, ``d`` would be the set of symbols that *could* have
+            appeared in that same position ``g``, for example ``1`` or ``+`` or ``-`` or anything
             else that type checks. This is called the denominator because the
-            probability of choosing `s` among `(s' in d)` is going to be
+            probability of choosing ``s`` among ``(s' in d)`` is going to be
                 P(s)/sum_{s' in d} P(s')
-            These probabilities will depend on the parameters `theta` of the bigram model
-            (and of course, specifically the unigram it assigns to the context `g`).
+            These probabilities will depend on the parameters ``theta`` of the bigram model
+            (and of course, specifically the unigram it assigns to the context ``g``).
 
         (See also math below) Our goal is to compute the loglikelihood of the actual
             program P under the bigram parameters theta. Which, for a bigram is the sum
-            of the logprob over all subtrees of the symbol `s` context `g` and denominator `d` for
+            of the logprob over all subtrees of the symbol ``s`` context ``g`` and denominator ``d`` for
             that subtree. We can factor this overall sum into two parts: a numerator based on
-            sthe actual symbol `s` and a denominator based on the alternative symbols in `d`
-            for that context `g`.
+            sthe actual symbol ``s`` and a denominator based on the alternative symbols in ``d``
+            for that context ``g``.
 
         sum_p log P(p | theta)
             = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
@@ -286,7 +292,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
         For each (g,s) instance in the corpus the numerator is the same, and for each (g,d)
             instance the denominator is the same, so we can instead come up with counts for
-            each of these (calling them `numcount` and `dencount`) and rewrite our sum as a
+            each of these (calling them ``numcount`` and ``dencount``) and rewrite our sum as a
             sum over the unique (g,s) and (g,d) instances:
 
         numer

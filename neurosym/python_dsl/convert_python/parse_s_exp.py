@@ -119,7 +119,10 @@ def s_exp_to_python_ast(
 ) -> PythonAST:
     """
     Converts an s expression to a PythonAST object. If the code is a string,
-        it is first parsed into an s-expression.
+    it is first parsed into an SExpression.
+
+    :param code: The code to convert.
+    :param node_hooks: A dictionary of node hooks to use.
     """
     with increase_recursionlimit():
         if isinstance(code, str):

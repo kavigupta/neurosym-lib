@@ -3,6 +3,9 @@ import warnings
 
 
 def import_pytorch_lightning():
+    """
+    Import pytorch_lightning with warnings suppressed.
+    """
     # filter deprecation warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     import pytorch_lightning as pl

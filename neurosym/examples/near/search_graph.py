@@ -1,10 +1,13 @@
+from neurosym.dsl.dsl import DSL
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
+from neurosym.search_graph.search_graph import SearchGraph
 from neurosym.search_graph.search_graph_transformer import (
     FilterEdgesGraph,
     LimitEdgesGraph,
 )
+from neurosym.types.type import Type
 
 
 class FilterUnexpandableNodes(FilterEdgesGraph):
@@ -19,7 +22,17 @@ class FilterUnexpandableNodes(FilterEdgesGraph):
         return True
 
 
-def near_graph(dsl, root_type, *, max_num_edges=100, is_goal=lambda x: True):
+def near_graph(
+    dsl: DSL, root_type: Type, *, max_num_edges=100, is_goal=lambda x: True
+) -> SearchGraph:
+    """
+    Creates a search graph for the NEAR DSL.
+
+    :param dsl: DSL to create the search graph for
+    :param root_type: Type of the root node
+    :param max_num_edges: Maximum number of edges for each node in the graph
+    :param is_goal: Goal predicate
+    """
     graph = DSLSearchGraph(
         dsl,
         root_type,

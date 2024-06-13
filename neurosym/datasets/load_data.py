@@ -59,10 +59,14 @@ def load_npy(path_or_url):
 
 class DatasetFromNpy(torch.utils.data.Dataset):
     """
-    A dataset from an array, loaded from a url.
+    A dataset from an array, loaded from a url or local path.
 
-    TODO test/val split
+    :param input_url: the url of the numpy file containing the inputs.
+    :param output_url: the url of the numpy file containing the outputs.
+    :param seed: the seed for the random permutation of the dataset.
     """
+
+    # TODO test/val split
 
     def __init__(self, input_url, output_url, seed):
         """
@@ -96,6 +100,11 @@ class DatasetFromNpy(torch.utils.data.Dataset):
 
 
 class DatasetWrapper(pl.LightningDataModule):
+    """
+    Dataset wrapper for PyTorch Lightning, with a train/test split. Wraps two
+        torch.utils.data.Dataset objects.
+    """
+
     def __init__(
         self,
         train: torch.utils.data.Dataset,
