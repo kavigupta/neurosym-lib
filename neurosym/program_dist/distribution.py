@@ -34,7 +34,7 @@ class ProgramDistributionFamily(ABC):
     def with_parameters(self, parameters: torch.Tensor) -> ProgramDistributionBatch:
         """
         Initializes a distribution from the given parameters. The parameters
-        should have the shape (batch_size, *self.parameters_shape()).
+        should have the shape ``(batch_size, *self.parameters_shape())``.
         """
 
     @abstractmethod
