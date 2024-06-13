@@ -9,6 +9,14 @@ from .base import BaseConfig
 
 @dataclass
 class RNNConfig(BaseConfig):
+    """
+    Represents the configuration of an RNN module.
+
+    :param input_size: The size of the input.
+    :param hidden_size: The size of the hidden layer.
+    :param output_size: The size of the output.
+    """
+
     input_size: int
     hidden_size: int
     output_size: int
@@ -68,49 +76,65 @@ class RNN(nn.Module):
 
 
 class Seq2SeqRNN(RNN):
+    """
+    RNN module for sequence-to-sequence tasks.
+
+    :param config: Configuration for the RNN.
+    """
+
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
         return self.seq2seq(inp, hidden)
 
 
 class Seq2ClassRNN(RNN):
+    """
+    RNN module for sequence-to-class tasks.
+
+    :param config: Configuration for the RNN.
+    """
+
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
         return self.seq2class(inp, hidden)
 
 
-def rnn_factory_seq2seq(**kwargs):
+def rnn_factory_seq2seq(hidden_size: int):
     """
-    Allows instantiating an MLP module with a given input and output size.
+    Allows instantiating a RNN module for sequence-to-sequence tasks, with a given hidden size.
+
+    :param hidden_size: Size of the hidden layer in the RNN.
     """
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
-        assert len(input_shape) == 1, "MLP takes a single input only."
+        assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
         cfg = RNNConfig(
             model_name="rnn",
             input_size=input_size,
             output_size=output_size,
-            **kwargs,
+            hidden_size=hidden_size,
         )
         return Seq2SeqRNN(cfg)
 
     return construct_model
 
 
-def rnn_factory_seq2class(**kwargs):
+def rnn_factory_seq2class(hidden_size: int):
     """
-    Allows instantiating an MLP module with a given input and output size.
+    Allows instantiating a RNN module for sequence-to-class tasks, with a given hidden size.
+
+    :param hidden_size: Size of the hidden layer in the RNN.
     """
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
-        assert len(input_shape) == 1, "MLP takes a single input only."
+        assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
         cfg = RNNConfig(
             model_name="rnn",
             input_size=input_size,
             output_size=output_size,
-            **kwargs,
+            hidden_size=hidden_size,
         )
         return Seq2ClassRNN(cfg)
 
