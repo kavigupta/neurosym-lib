@@ -18,7 +18,12 @@ from .special_case_symbol_predicate import NameEPredicate, SpecialCaseSymbolPred
 @dataclass
 class DefUseMaskConfiguration:
     """
-    Configuration for the DefUseMask.
+    Configuration for the ``DefUseChainPreorderMask``.
+
+    :param dfa: The deterministic tree finite automaton that defines the syntax of the language.
+        See ``ns.python_dfa`` for more information.
+    :param node_hooks: A dictionary of node hooks that can be used to define custom behavior for
+        specific nodes in the syntax tree, indexed by the prefix of the node name.
     """
 
     dfa: Dict

@@ -222,8 +222,14 @@ python_transitions = frozendict(
 @lru_cache(None)
 def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     """
-    Export a Discrete Tree Finite Automaton for the Python AST,
-        in the form of a dictionary of the form dict[state, dict[tag, list[state]]].
+    Export a Discrete Tree Finite Automaton for the Python AST.
+
+    This DFA can be used to annotate the nodes of a Python AST with their node
+    type. This is useful for deduplicating similar-looking nodes in the AST
+    and making distinctions like Name nodes that are used as variables
+    and Name nodes that are used as expressions.
+
+    :return: a dictionary representing the DFA, of the form dict[state, dict[tag, list[state]]].
     """
     all_tags = [
         x
