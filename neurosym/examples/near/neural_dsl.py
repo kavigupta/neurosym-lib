@@ -16,7 +16,7 @@ from ...types.type import ArrowType, ListType, TensorType, Type
 
 class PartialProgramNotFoundError(Exception):
     """
-    Raised when a partial program cannot be found.
+    Raised when a partial program cannot be found for a hole.
     """
 
 
