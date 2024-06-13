@@ -131,14 +131,10 @@ def create_python_dsl(
     """
     Create a DSL from a DFA and a subset of the DSL.
 
-    Args:
-        dfa: the DFA of the DSL
-        dsl_subset: the subset of the DSL
-        start_state: the start state of the DSL
-        add_additional_productions: a function that adds additional productions to the DSL
-
-    Returns:
-        the DSL
+    :param dfa: the DFA of the DSL. See ``ns.python_dfa()`` for more information.
+    :param dsl_subset: the subset of the DSL
+    :param start_state: the root state of the DSL
+    :param add_additional_productions: a function that adds additional productions to the DSL
     """
     dslf = DSLFactory()
     for target in dfa:

@@ -33,6 +33,8 @@ def python_ordering_dictionary():
 class PythonNodeOrdering(DictionaryNodeOrdering):
     """
     Orders the subnodes of a node according to a dictionary.
+
+    :param dist: The ``TreeDistribution`` that the ordering is applied to.
     """
 
     def __init__(self, dist):
