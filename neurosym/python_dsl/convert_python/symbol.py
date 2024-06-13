@@ -1,6 +1,7 @@
 import ast
 import uuid
 from dataclasses import dataclass
+from typing import Union
 
 import ast_scope
 from no_toplevel_code import wrap_ast
@@ -13,12 +14,21 @@ class PythonSymbol:
     """
     Represents a symbol, like &x:3. This means the symbol x in static frame 3.
     Can also represent a global symbol that's either a builtin or an imported
-        value. This differs from a symbol defined in the block of code that happens
-        to be in global scope, which will be given a static frame number.
+    value. This differs from a symbol defined in the block of code that happens
+    to be in global scope, which will be given a static frame number.
+
+    :param name: The name of the symbol.
+    :param scope: The scope of the symbol, or None if it's a global symbol.
     """
 
     name: str
-    scope: ast_scope.scope.Scope
+    scope: Union[int, None]
+
+    def __post_init__(self):
+        if self.scope is not None:
+            assert isinstance(
+                self.scope, int
+            ), f"scope must be int or None, got {self.scope}"
 
     @classmethod
     def parse(cls, x):

@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Union
+from typing import List, Union
 
 from neurosym.types.type import (
     ArrowType,
@@ -7,6 +7,7 @@ from neurosym.types.type import (
     FilteredTypeVariable,
     ListType,
     TensorType,
+    Type,
     TypeVariable,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
@@ -15,31 +16,62 @@ SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
 
 class TypeDefiner:
+    """
+    A class that facilitates in parsing type strings, allowing for the definition of
+        variables and filters that can be used to parse type strings.
+
+    :param env: A dictionary that maps type variable names to objects, which
+        can be types, sizes, etc.
+    """
+
     def __init__(self, **env):
         self.env = env
         self.filters = {}
 
-    def __call__(self, type_str):
+    def __call__(self, type_str: str) -> Type:
+        """
+        Parse a type string into a type.
+        """
         return parse_type(type_str, self)
 
-    def sig(self, type_str):
+    def sig(self, type_str: str) -> FunctionTypeSignature:
+        """
+        Parse a type string into a function type signature.
+        """
         typ = self(type_str)
         return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
-    def typedef(self, key, type_str):
+    def typedef(self, key: str, type_str: str):
+        """
+        Define a type definition.
+        """
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
+        """
+        Define a type variable with a filter.
+        """
         self.filters[key] = type_filter
 
     def lookup_type(self, key):
+        """
+        Look up a type definition.
+        """
         return self.env[key]
 
     def lookup_filter(self, key):
+        """
+        Look up a filter.
+        """
         return self.filters[key]
 
 
-def render_type(t):
+def render_type(t: Type) -> str:
+    """
+    Render a type into a human-readable string. Inverse of ``parse_type``.
+
+    :param t: The type to render
+    """
     if isinstance(t, AtomicType):
         return t.name
     if isinstance(t, TypeVariable):
@@ -119,7 +151,10 @@ def parse_type_from_buf_multi(reversed_buf, env):
     return ArrowType((t_head,), t_tail)
 
 
-def lex_type(s):
+def lex_type(s: str) -> List[str]:
+    """
+    Lex a type string into tokens.
+    """
     buf = []
     for c in s:
         if c in SPECIAL_CHARS:
@@ -134,7 +169,37 @@ def lex_type(s):
     return [tok for tok in buf if tok != ""]
 
 
-def parse_type(s, env: Union[TypeDefiner, NoneType] = None):
+def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
+    """
+    Parse the given string into a type. The string should be in the format of the
+    type string representation. The type string representation is a string that
+    represents a type in a human-readable format.
+
+    See the documentation for each Type subclass for more information on the
+    type string representation for that type. A few edge cases for the ``ArrowType``
+    are worth mentioning:
+
+    If the input type is a single type, the parentheses are optional, unless the
+    input type is another ``ArrowType``. So the parentheses are optional in the
+    following cases
+
+        .. code-block:: python
+
+            (a) -> b
+            ([a]) -> b
+            ({a, 2}) -> b
+            ([a -> b]) -> c
+
+    but are required in the following cases
+
+        .. code-block:: python
+
+            (a, b) -> c
+            (a -> b) -> c
+
+    :param s: The string to parse
+    :param env: The environment to use for looking up types and filters
+    """
     if env is None:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)

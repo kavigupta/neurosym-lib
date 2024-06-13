@@ -1,11 +1,21 @@
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 
 @dataclass(frozen=True, eq=True)
 class SExpression:
+    """
+    Represents an s-expression, that is, an expression that contains a
+    symbol and a list of children, which are also s-expressions or strings
+    (leaves).
+
+    :field symbol: The symbol of the s-expression.
+    :field children: A tuple of children of the s-expression. Each child can
+        be either a string or another s-expression.
+    """
+
     symbol: str
-    children: Tuple["SExpression"]
+    children: Tuple[Union["SExpression", str]]
 
     @property
     def postorder(self):
@@ -15,10 +25,12 @@ class SExpression:
 
     def replace_symbols_by_id(self, id_to_symbol):
         """
-        Replace symbols in the S-expression based on the given mapping.
+        Replace symbols in the S-expression based on the given mapping. The current
+        SExpression will not be mutated
 
-        Args:
-            id_to_symbol: A mapping from id(node) to a new symbol.
+        :param id_to_symbol: A mapping from id(node) to a new symbol.
+
+        :return: A new S-expression with the symbols replaced.
         """
         return SExpression(
             id_to_symbol.get(id(self), self.symbol),
@@ -28,10 +40,11 @@ class SExpression:
     def replace_nodes_by_id(self, id_to_new_node):
         """
         Replace nodes in the S-expression based on the given mapping. Any remapped
-            node will not have its children replaced.
+        node will not have its children replaced. The current SExpression will
+        not be mutated
 
-        Args:
-            id_to_new_node: A mapping from id(node) to a new node.
+        :param id_to_new_node: A mapping from id(node) to a new node.
+        :return: A new S-expression with the nodes replaced.
         """
         if id(self) in id_to_new_node:
             return id_to_new_node[id(self)]

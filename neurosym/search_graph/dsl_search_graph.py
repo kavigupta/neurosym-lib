@@ -1,5 +1,4 @@
 import itertools
-from abc import ABC
 from typing import Callable
 
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
@@ -14,13 +13,16 @@ from .hole_set_chooser import HoleSetChooser
 from .search_graph import SearchGraph
 
 
-class DSLSearchGraph(SearchGraph, ABC):
+class DSLSearchGraph(SearchGraph):
     """
-    Represents a search graph where nodes are SExpressions with holes in them, and edges
-    are expansions of those holes.
+    Represents a search graph where nodes are ns.SExpression objects with holes
+    in them, and edges are expansions of those holes.
 
     :param dsl: DSL to use for expanding holes
     :param target_type: Type of the SExpressions we are searching for
+    :param hole_set_chooser: Chooser for sets of holes to expand
+    :param test_predicate: Predicate for goal nodes
+    :param metadata_computer: Computer for metadata for nodes
     """
 
     def __init__(

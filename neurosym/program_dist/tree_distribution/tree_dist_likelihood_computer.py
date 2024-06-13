@@ -20,7 +20,7 @@ def compute_likelihood(
     """
     Compute the likelihood of a program under a distribution.
 
-    If `tracker` is not None, it will be called with each node and the likelihood
+    If ``tracker`` is not None, it will be called with each node and the likelihood
         of that node. This can be useful for debugging why a program has a certain
         likelihood.
     """

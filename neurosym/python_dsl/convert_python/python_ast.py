@@ -15,13 +15,17 @@ from .symbol import PythonSymbol
 
 class PythonAST(ABC):
     """
-    Represents a Parsed AST.
+    Represents a Python AST. This is a tree-like structure that can be converted to and from
+    Python ASTs and s-expressions.
     """
 
     @abstractmethod
     def to_ns_s_exp(self, config=frozendict()) -> SExpression:
         """
-        Convert this PythonAST into a pair s-expression.
+        Convert this PythonAST into an SExpression object
+
+        :param config: A configuration dictionary. This can contain the key
+            ``no_leaves``: If True, then leaf nodes will be replaced with a placeholder.
         """
 
     def to_python(self) -> str:
@@ -37,19 +41,56 @@ class PythonAST(ABC):
     @abstractmethod
     def to_python_ast(self) -> ast.AST:
         """
-        Convert this PythonAST into a python AST.
+        Convert this PythonAST into an ast.AST object.
         """
 
     @abstractmethod
     def map(self, fn):
         """
         Map the given function over this PythonAST. fn is run in post-order,
-            i.e., run on all the children and then on the new object.
+        i.e., run on all the children and then on the new object.
         """
 
 
 @dataclass
+class NodeAST(PythonAST):
+    """
+    The NodeAST represents a node in the Python AST. It has a type and a list of children.
+
+    :param typ: The type of the node, which should be a subclass of ast.AST.
+    :param children: The children of the node.
+    """
+
+    typ: type
+    children: List[PythonAST]
+
+    def to_ns_s_exp(self, config=frozendict()):
+        if not self.children and not config.get("no_leaves", False):
+            return self.typ.__name__
+
+        return SExpression(
+            self.typ.__name__, [x.to_ns_s_exp(config) for x in self.children]
+        )
+
+    def to_python_ast(self):
+        out = self.typ(*[x.to_python_ast() for x in self.children])
+        out.lineno = 0
+        return out
+
+    def map(self, fn):
+        return fn(NodeAST(self.typ, [x.map(fn) for x in self.children]))
+
+
+@dataclass
 class SequenceAST(PythonAST):
+    """
+    Represents a sequence within the PythonAST, to represent a sequence of statements
+    in a body.
+
+    :param head: The head of the sequence (either /seq or /subseq)
+    :param elements: The elements of the sequence.
+    """
+
     head: str
     elements: List[PythonAST]
 
@@ -75,29 +116,13 @@ class SequenceAST(PythonAST):
 
 
 @dataclass
-class NodeAST(PythonAST):
-    typ: type
-    children: List[PythonAST]
-
-    def to_ns_s_exp(self, config=frozendict()):
-        if not self.children and not config.get("no_leaves", False):
-            return self.typ.__name__
-
-        return SExpression(
-            self.typ.__name__, [x.to_ns_s_exp(config) for x in self.children]
-        )
-
-    def to_python_ast(self):
-        out = self.typ(*[x.to_python_ast() for x in self.children])
-        out.lineno = 0
-        return out
-
-    def map(self, fn):
-        return fn(NodeAST(self.typ, [x.map(fn) for x in self.children]))
-
-
-@dataclass
 class ListAST(PythonAST):
+    """
+    Represents a list in the Python AST that is not a sequence.
+
+    :param children: The children of the list.
+    """
+
     children: List[PythonAST]
 
     def to_ns_s_exp(self, config=frozendict()):
@@ -115,6 +140,12 @@ class ListAST(PythonAST):
 
 @dataclass
 class LeafAST(PythonAST):
+    """
+    Represents a leaf in the Python AST. This is a leaf node that is not an ast.AST object.
+
+    :param leaf: The leaf object.
+    """
+
     leaf: object
 
     def __post_init__(self):
@@ -167,6 +198,14 @@ class LeafAST(PythonAST):
 
 @dataclass
 class SliceElementAST(PythonAST):
+    """
+    Represents a slice element, which is an expression inside a slice.
+        This needs to be a separate class because some expressions are
+        only valid inside slices.
+
+    :param content: The content of the slice element.
+    """
+
     content: PythonAST
 
     @classmethod
@@ -208,6 +247,12 @@ class SliceElementAST(PythonAST):
 
 @dataclass
 class StarrableElementAST(PythonAST):
+    """
+    Represents a starrable element, which is an expression that can be starred.
+
+    :param content: The content of the starrable element.
+    """
+
     content: PythonAST
 
     def to_ns_s_exp(self, config=frozendict()):
@@ -225,6 +270,17 @@ class StarrableElementAST(PythonAST):
 
 @dataclass
 class SpliceAST(PythonAST):
+    """
+    Represents a splice in the Python AST. This is a special node that is used to splice
+    the children of the node into the parent, which must be a sequence.
+
+    :param content: The content of the splice. This is either a sequence itself, or a node
+        representing something that is a sequence but not explicitly represented as such (e.g.,
+        an abstraction that returns a sequence).
+
+    :param content: The content to splice.
+    """
+
     content: PythonAST
 
     def to_ns_s_exp(self, config=frozendict()):

@@ -1,7 +1,14 @@
+from typing import List
+
 import torch
 import tqdm.auto as tqdm
 
-from neurosym.examples.near.methods.near_example_trainer import NEARTrainer
+from neurosym.datasets.load_data import DatasetWrapper
+from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.methods.near_example_trainer import (
+    NEARTrainer,
+    NEARTrainerConfig,
+)
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.s_expression_render import render_s_expression
@@ -28,15 +35,27 @@ class ProgressBar(pl.callbacks.Callback):
 
 
 class ValidationCost:
+    """
+    A class that computes the validation cost of a program using a neural DSL.
+
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param error_loss: The loss to return if the program is invalid.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param callbacks: Callbacks to use during training.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
+
     def __init__(
         self,
         *,
-        neural_dsl,
-        trainer_cfg,
-        datamodule,
+        neural_dsl: DSL,
+        trainer_cfg: NEARTrainerConfig,
+        datamodule: DatasetWrapper,
         error_loss=10000,
         progress_by_epoch=False,
-        callbacks=(),
+        callbacks: List[pl.callbacks.Callback] = (),
         **kwargs,
     ):
         self.neural_dsl = neural_dsl
