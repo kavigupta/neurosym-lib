@@ -62,7 +62,7 @@ class NoPrintsTest(unittest.TestCase):
     @parameterized.parameterized.expand(
         [(path,) for path in files_to_examine("neurosym")]
     )
-    def test_only_direct_import(self, path):
+    def test_no_prints(self, path):
         if path in {"neurosym/examples/near/methods/near_example_trainer.py"}:
             # skip this file, it is an example
             return
