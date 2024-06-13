@@ -13,6 +13,7 @@ Preorder Mask
 .. autoclass:: neurosym.NoopPreorderMask
 .. autoclass:: neurosym.ConjunctionPreorderMask
     :members: of
+.. autoclass:: neurosym.TypePreorderMask
 
 Node Ordering
 -------------------------------------------
