@@ -8,8 +8,8 @@ from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
-    expansions,
     signature_expansions,
+    type_expansions,
     type_universe,
 )
 from ..types.type_string_repr import TypeDefiner
@@ -212,7 +212,7 @@ class DSLFactory:
             top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
             expanded = []
             for top_level in top_levels:
-                expanded += expansions(
+                expanded += type_expansions(
                     top_level,
                     types,
                     constructors_lambda,

@@ -283,7 +283,7 @@ def signature_expansions(
     }
     variables_in_return = set(sig.return_type.max_depth_per_type_variable())
     exclude_variables = variables_in_arguments & variables_in_return
-    return expansions(
+    return type_expansions(
         sig.astype(),
         terminals,
         constructors,
@@ -293,7 +293,7 @@ def signature_expansions(
     )
 
 
-def expansions(
+def type_expansions(
     sig: Type,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
