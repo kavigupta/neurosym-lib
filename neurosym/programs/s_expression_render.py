@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import Iterator, Set
 
 from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 
@@ -114,5 +114,17 @@ def parse_s_expression(
     )
 
 
-def symbols_for_program(s: SExpression) -> List[str]:
-    return [s.symbol] + [sym for x in s.children for sym in symbols_for_program(x)]
+def _symbols_for_program_gen(s: SExpression) -> Iterator[str]:
+    """
+    Produce a list of symbols in a program.
+    """
+    yield s.symbol
+    for x in s.children:
+        yield from _symbols_for_program_gen(x)
+
+
+def symbols_for_program(s: SExpression) -> Set[str]:
+    """
+    Produce a set of symbols in a program.
+    """
+    return set(_symbols_for_program_gen(s))
