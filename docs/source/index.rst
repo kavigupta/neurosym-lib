@@ -12,7 +12,9 @@ Contents
    s_expressions
    type
    dsls
+   dist
    search_graph
    datasets
+   python
    examples
    utils
