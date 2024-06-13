@@ -1,7 +1,7 @@
 import ast
-from typing import Union
 import uuid
 from dataclasses import dataclass
+from typing import Union
 
 import ast_scope
 from no_toplevel_code import wrap_ast
@@ -26,7 +26,9 @@ class PythonSymbol:
 
     def __post_init__(self):
         if self.scope is not None:
-            assert isinstance(self.scope, int), f"scope must be int or None, got {self.scope}"
+            assert isinstance(
+                self.scope, int
+            ), f"scope must be int or None, got {self.scope}"
 
     @classmethod
     def parse(cls, x):

@@ -10,7 +10,7 @@ def run_dfa_on_program(
     dfa, node: SExpression, state: str
 ) -> Iterable[Tuple[SExpression, str]]:
     """
-    Runs 
+    Runs
     the dfa on a program, yielding the node and the state
     for each node in the program.
 
@@ -37,7 +37,9 @@ def run_dfa_on_program(
         yield from run_dfa_on_program(dfa, child, dfa_states[i % len(dfa_states)])
 
 
-def add_disambiguating_type_tags(dfa, prog: SExpression, start_state: str) -> SExpression:
+def add_disambiguating_type_tags(
+    dfa, prog: SExpression, start_state: str
+) -> SExpression:
     """
     Add disambiguating type tags to a program, which appended to each symbol in the program,
     after the separator. Also adds a sequence length tag if the symbol is a sequence type.
