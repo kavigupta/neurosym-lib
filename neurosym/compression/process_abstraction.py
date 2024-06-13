@@ -174,7 +174,7 @@ class StitchLambdaRewriter:
         )
 
 
-def single_step_compression(dsl, programs):
+def single_step_compression(dsl: DSL, programs: List[SExpression]):
     """
     Run single step of compression on a list of programs.
 
