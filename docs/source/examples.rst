@@ -1,4 +1,4 @@
-Examples
+Implemented Algorithms
 ===========================================
 
 
