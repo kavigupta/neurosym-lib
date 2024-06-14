@@ -8,7 +8,12 @@ from .preorder_mask import PreorderMask
 
 class TypePreorderMask(PreorderMask):
     """
-    Masks out productions that would lead to ill-typed programs.
+    Masks out productions that would lead to ill-typed programs. This mask is
+    computed by traversing the tree in a preorder fashion and checking the types
+    of the children of the current node.
+
+    This mask can be cached by the tree distribution to speed up enumeration, the
+    cache key is the unique hash of the ``TypeWithEnvironment`` of the current node.
     """
 
     def __init__(self, tree_dist, dsl):
