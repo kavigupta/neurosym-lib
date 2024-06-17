@@ -1,24 +1,24 @@
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import time
 from typing import List, Tuple, Type, TypeVar
-from more_itertools import chunked
 
 import numpy as np
 import torch
+from more_itertools import chunked
+
+from neurosym.compression.process_abstraction import single_step_compression
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.distribution import (
+    ProgramCountsTensorBatch,
     ProgramDistribution,
-    ProgramDistributionFamily,
     ProgramDistributionBatch,
-    ProgramCountsTensorBatched,
+    ProgramDistributionFamily,
 )
-from neurosym.programs.s_expression import SExpression
-from neurosym.compression.process_abstraction import single_step_compression
-
 from neurosym.program_dist.tree_distribution.tree_dist_enumerator import (
     enumerate_tree_dist,
 )
+from neurosym.programs.s_expression import SExpression
 
 Input, Output = TypeVar("Input"), TypeVar("Output")
 
@@ -242,7 +242,7 @@ def training_loss(
     model: RecognitionModel,
     family: ProgramDistributionFamily,
     tasks: List[Task],
-    beam_counts: List[ProgramCountsTensorBatched],
+    beam_counts: List[ProgramCountsTensorBatch],
     task_log_probs: List[float],
 ) -> float:
     tensors = model(tasks)
