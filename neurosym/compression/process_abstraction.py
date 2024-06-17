@@ -1,4 +1,5 @@
 import itertools
+from types import NoneType
 from typing import List, Union
 
 import stitch_core
@@ -174,12 +175,15 @@ class StitchLambdaRewriter:
         )
 
 
-def single_step_compression(dsl: DSL, programs: List[SExpression]):
+def single_step_compression(
+    dsl: DSL, programs: List[SExpression], tasks: Union[List[str], NoneType] = None
+):
     """
     Run single step of compression on a list of programs.
 
     :param dsl: The DSL the programs are written in.
     :param programs: The programs to compress.
+    :param tasks: Optional, the task names for the programs.
 
     :return: The DSL with up to 1 additional abstraction, and the programs
         rewritten to use the new abstractions.
@@ -195,6 +199,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         no_curried_metavars=True,
         fused_lambda_tags=rewriter.fused_lambda_tags,
         abstraction_prefix=next_symbol(dsl),
+        tasks=tasks,
     )
     if not res.abstractions:
         return dsl, programs_orig

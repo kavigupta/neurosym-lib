@@ -108,3 +108,10 @@ class ProgramDistributionFamily(ABC):
             over again. If this is too large, we will spend a lot of time
             doing work that we don't need to do.
         """
+
+    @abstractmethod
+    def default_distribution(self) -> ProgramDistribution:
+        """
+        Returns a "default" distribution for this family, should be some
+            broad prior.
+        """

@@ -455,6 +455,9 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def symbols(self):
         return self._symbols
 
+    def default_distribution(self) -> BigramProgramDistribution:
+        return self.uniform()
+
 
 def bigram_mask(dsl):
     symbols = dsl.ordered_symbols(include_root=True)

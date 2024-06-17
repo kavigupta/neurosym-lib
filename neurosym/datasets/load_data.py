@@ -1,4 +1,5 @@
 import io
+import json
 import os
 
 import numpy as np
@@ -31,6 +32,24 @@ def get_raw_url(github_folder, filename):
     """
     raw_url = github_folder.replace("tree", "raw") + "/" + filename
     return raw_url
+
+
+def load_json(path_or_url, timeout=600):
+    """
+    Load a json file from a path or url.
+
+    :param path_or_url: the path or url of the json file.
+    :param timeout: the timeout for the request, in seconds.
+
+    :return: the data in the json file.
+    """
+    if os.path.exists(path_or_url):
+        # Load from local path
+        with open(path_or_url, "r") as f:
+            data = json.load(f)
+    else:
+        data = requests.get(path_or_url, timeout=timeout).json()
+    return data
 
 
 def load_npy(path_or_url):

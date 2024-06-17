@@ -1,6 +1,13 @@
 from functools import reduce
 
+import numpy as np
+from permacache import permacache
+
+from neurosym.datasets.load_data import get_raw_url, load_json
+from neurosym.dsl.dsl import DSL
 from neurosym.dsl.dsl_factory import DSLFactory
+from neurosym.examples.dreamcoder.dreamcoder import Domain, IOExample, Task
+from neurosym.programs.s_expression import SExpression
 
 
 def list_dsl(*output_types):
@@ -94,3 +101,44 @@ def list_dsl(*output_types):
     dslf.prune_to(*output_types, prune_variables=False)
 
     return dslf.finalize()
+
+
+@permacache("neurosym/examples/dreamcoder/load_dreamcoder_task")
+def load_dreamcoder_task(name):
+    """
+    Load a task from the DreamCoder repository.
+    """
+    return load_json(
+        get_raw_url("https://github.com/ellisk42/ec/tree/master/data", f"{name}.json")
+    )
+
+
+def dreamcoder_list_tasks():
+    """
+    The List tasks from the DreamCoder repository.
+    """
+    return load_dreamcoder_task("list_tasks")
+
+
+def dreamcoder_list_tasks_2():
+    """
+    The List tasks from the DreamCoder repository.
+    """
+    return load_dreamcoder_task("list_tasks2")
+
+
+class ListDomain(Domain):
+
+    def io_log_prob(
+        self, dsl: DSL, program: SExpression, io_example: IOExample
+    ) -> float:
+        correct = dsl.compute(program)(io_example.inputs) == io_example.output
+        if correct:
+            return 0
+        return float("-inf")
+
+    def sample_task(
+        self, dsl: DSL, program: SExpression, rng: np.random.RandomState
+    ) -> Task:
+        typ = dsl.compute_type(program)
+        raise NotImplementedError(f"Sampling tasks for {typ} not implemented.")
