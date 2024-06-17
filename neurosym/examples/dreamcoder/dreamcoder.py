@@ -45,12 +45,22 @@ class RecognitionModel(torch.nn.Module, ABC):
 
 
 class Domain(ABC):
+
+    def task_log_prob(self, dsl: DSL, program: SExpression, task: Task) -> float:
+        return sum(
+            self.io_log_prob(dsl, program, example) for example in task.io_examples
+        )
+
     @abstractmethod
-    def task_log_prob(self, program: SExpression, task: Task) -> float:
+    def io_log_prob(
+        self, dsl: DSL, program: SExpression, io_example: IOExample
+    ) -> float:
         pass
 
     @abstractmethod
-    def sample_task(self, program: SExpression, rng: np.random.RandomState) -> Task:
+    def sample_task(
+        self, dsl: DSL, program: SExpression, rng: np.random.RandomState
+    ) -> Task:
         pass
 
 
@@ -194,7 +204,7 @@ def train_recogintion_model(
     ]
 
     task_log_probs = [
-        domain.task_log_prob(program, t) for program, t in zip(beams, tasks)
+        domain.task_log_prob(dsl, program, t) for program, t in zip(beams, tasks)
     ]
 
     def data_epoch():
@@ -202,7 +212,7 @@ def train_recogintion_model(
             if rng.rand() < probability_dreaming:
                 # TODO allow this to happen in parallel in some producer-consumery way
                 program = theta.sample_program(dsl, rng)
-                task = domain.sample_task(program, rng)
+                task = domain.sample_task(dsl, program, rng)
                 counts = [family.count_programs(program)]
                 yield task, counts, log_prob
             else:
