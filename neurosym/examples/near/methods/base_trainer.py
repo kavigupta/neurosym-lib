@@ -1,4 +1,4 @@
-import sys
+import warnings
 from dataclasses import dataclass
 from typing import Tuple
 
@@ -22,8 +22,7 @@ class BaseTrainerConfig:
     scheduler: str = "cosine"
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
-    scheduler: str = "cosine"
-    optimizer: str = "adam"
+    optimizer: str = torch.optim.Adam
 
 
 class BaseTrainer(pl.LightningModule):
@@ -44,9 +43,10 @@ class BaseTrainer(pl.LightningModule):
         super().__init__()
         self.config = config
         self.model = model
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["model"])
 
     def loss(self) -> dict:
+        # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
 
     def _step(self) -> dict:
@@ -90,9 +90,7 @@ class BaseTrainer(pl.LightningModule):
             if param.requires_grad and valid_name:
                 params.append(param)
             else:
-                print(
-                    f"WARNING: Parameter {name} removed from optimizer", file=sys.stderr
-                )
+                warnings.warn(f"WARNING: Parameter {name} removed from optimizer")
         return params
 
     @staticmethod
@@ -132,24 +130,10 @@ class BaseTrainer(pl.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-
-        match self.config.optimizer:
-            case "adam":
-                optimizer = torch.optim.Adam(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "sgd":
-                optimizer = torch.optim.SGD(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case "adamw":
-                optimizer = torch.optim.AdamW(
-                    params, lr=self.config.lr, weight_decay=self.config.weight_decay
-                )
-            case _:
-                raise NotImplementedError(
-                    f"Optimizer {self.config.optimizer} not implemented"
-                )  # noqa: E501
+        optimizer_fn = self.config.optimizer
+        optimizer = optimizer_fn(
+            params, lr=self.config.lr, weight_decay=self.config.weight_decay
+        )
 
         assert self.config.train_steps != -1, "Train steps not set"
         total_steps = int(self.config.n_epochs * (self.config.train_steps))

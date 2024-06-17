@@ -1,3 +1,5 @@
+from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+from neurosym.program_dist.distribution import ProgramDistributionFamily
 from neurosym.program_dist.tree_distribution.ordering import (
     DefaultNodeOrdering,
     DictionaryNodeOrdering,
@@ -12,12 +14,14 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
-from neurosym.python_dsl import python_ast_tools
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
+from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
 from neurosym.python_dsl.convert_python.convert import (
     python_statement_to_python_ast,
     python_statements_to_python_ast,
     python_to_s_exp,
+    python_to_type_annotated_ns_s_exp,
     s_exp_to_python,
     to_type_annotated_ns_s_exp,
 )
@@ -35,6 +39,7 @@ from neurosym.python_dsl.convert_python.python_ast import (
 )
 from neurosym.python_dsl.convert_python.symbol import PythonSymbol
 from neurosym.python_dsl.dfa import python_dfa
+from neurosym.python_dsl.python_dsl_subset import PythonDSLSubset, create_python_dsl
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on_program
 from neurosym.utils.imports import import_pytorch_lightning
 
@@ -56,18 +61,23 @@ from .programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
-from .search_graph.dsl_search_graph import DSLSearchGraph
-from .search_graph.hole_set_chooser import ChooseFirst
-from .search_graph.metadata_computer import NoMetadataComputer
+from .search_graph.dsl_search_graph import DSLSearchGraph, SearchGraph
+from .search_graph.hole_set_chooser import ChooseAll, ChooseFirst, HoleSetChooser
+from .search_graph.metadata_computer import MetadataComputer, NoMetadataComputer
 from .types.type import (
     ArrowType,
     AtomicType,
+    FilteredTypeVariable,
     ListType,
     TensorType,
     Type,
     TypeVariable,
     UnificationError,
 )
-from .types.type_signature import bottom_up_enumerate_types, expansions
-from .types.type_string_repr import TypeDefiner, lex, parse_type, render_type
-from .types.type_with_environment import Environment, TypeWithEnvironment
+from .types.type_signature import bottom_up_enumerate_types, type_expansions
+from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_type
+from .types.type_with_environment import (
+    Environment,
+    PermissiveEnvironmment,
+    TypeWithEnvironment,
+)

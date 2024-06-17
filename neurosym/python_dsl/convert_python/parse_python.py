@@ -80,12 +80,10 @@ def python_to_python_ast(
     Parse the given python code into a PythonAST. If the code is a string,
         it is first parsed into an AST.
 
-    Args:
-        code: The python code to parse.
-        descoper: The descoper to use. If None, a new one is created.
+    :param code: The python code to parse.
+    :param descoper: The descoper to use. If None, a new one is created.
 
-    Returns:
-        The parsed PythonAST.
+    :return: The parsed PythonAST.
     """
 
     with increase_recursionlimit():

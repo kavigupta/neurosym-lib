@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import Iterator, Set
 
 from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 
@@ -11,7 +11,7 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
 
     If we are exporting for stitch and the SExpression is a leaf,
         it will be converted to a string with the prefix "leaf-".
-        This is because stitch does not distinguish `(f)` from `f`.
+        This is because stitch does not distinguish ``(f)`` from ``f``.
 
     Args:
         s_exp: The SExpression to convert.
@@ -79,12 +79,13 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
     """
     Render an SExpression as a string.
 
-    Args:
-        s_exp: The SExpression to render.
-        for_stitch: Whether the Pair is being converted for use with stitch.
+    :param s_exp: The SExpression to render.
+    :param for_stitch: Whether we are parsing this expression from ``stitch_core``,
+        in which case we need to handle the "leaf-" prefix that we introduced
+        in ``parse_s_expression``.
 
-    Returns:
-        The string representing the SExpression.
+
+    :returns: The string representing the SExpression.
     """
     return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
 
@@ -93,16 +94,15 @@ def parse_s_expression(
     s: str, *, should_not_be_leaf: Set[str] = None, for_stitch: bool = False
 ) -> SExpression:
     """
-    Parse a string into an SExpression.
+    Parse an SExpression from a string.
 
-    Args:
-        s: The string to parse.
-        should_not_be_leaf: A set of symbols that should not be converted to leaves.
-            Instead, they should be converted to SExpressions with no children.
-        for_stitch: Whether the Pair is being converted for use with stitch.
+    :param s: The string to parse.
+    :param should_not_be_leaf: A set of symbols that should not be converted to leaves.
+        Instead, they should be converted to SExpressions with no children.
+    :param for_stitch: Whether we are rendering this s-expression for ``stitch_core``,
+        in which case we need to tag leaf nodes with "leaf-" prefix.
 
-    Returns:
-        The SExpression representing the string.
+    :returns: The SExpression representing the string.
     """
     if should_not_be_leaf is None:
         should_not_be_leaf = set()
@@ -114,5 +114,17 @@ def parse_s_expression(
     )
 
 
-def symbols_for_program(s: SExpression) -> List[str]:
-    return [s.symbol] + [sym for x in s.children for sym in symbols_for_program(x)]
+def _symbols_for_program_gen(s: SExpression) -> Iterator[str]:
+    """
+    Produce a list of symbols in a program.
+    """
+    yield s.symbol
+    for x in s.children:
+        yield from _symbols_for_program_gen(x)
+
+
+def symbols_for_program(s: SExpression) -> Set[str]:
+    """
+    Produce a set of symbols in a program.
+    """
+    return set(_symbols_for_program_gen(s))

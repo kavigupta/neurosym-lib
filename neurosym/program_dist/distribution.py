@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar
+from typing import List, TypeVar, Union
 
 import numpy as np
 import torch
@@ -34,14 +34,14 @@ class ProgramDistributionFamily(ABC):
     def with_parameters(self, parameters: torch.Tensor) -> ProgramDistributionBatch:
         """
         Initializes a distribution from the given parameters. The parameters
-            should have the shape (batch_size, *self.parameters_shape()).
+        should have the shape ``(batch_size, *self.parameters_shape())``.
         """
 
     @abstractmethod
     def count_programs(self, data: List[List[SExpression]]) -> ProgramCountsTensorBatch:
         """
         For each program, count its components' occurrences in the data. This
-            depends on the type of distribution.
+        depends on the type of distribution.
         """
 
     @abstractmethod
@@ -52,15 +52,30 @@ class ProgramDistributionFamily(ABC):
         Converts the counts to a distribution.
         """
 
+    def fit_distribution(
+        self, data: Union[List[List[SExpression]], List[SExpression]]
+    ) -> Union[ProgramDistributionBatch, ProgramDistribution]:
+        """
+        Fits a distribution to the data.
+        """
+        single_batch = isinstance(data[0], SExpression)
+        if single_batch:
+            data = [data]
+        counts = self.count_programs(data)
+        distribution = self.counts_to_distribution(counts)
+        if single_batch:
+            return distribution[0]
+        return distribution
+
     @abstractmethod
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: ProgramCountsTensorBatch
     ) -> torch.float32:
         """
         Returns the loss between the parameters and actual counts, for
-            several count tensors. Keep in mind that the parameters
-            here should have a batch dimension, and
-            parameters.shape[0] == len(actual).
+        several count tensors. Keep in mind that the parameters
+        here should have a batch dimension, and
+        parameters.shape[0] == len(actual).
         """
 
     @abstractmethod
@@ -86,12 +101,12 @@ class ProgramDistributionFamily(ABC):
         """
         Enumerate all programs using iterative deepening. Yields (program, likelihood).
 
-        Args:
-            dist: The distribution to sample from.
-            chunk_size: The amount of likelihood to consider at once. If this is
-                too small, we will spend a lot of time doing the same work over and
-                over again. If this is too large, we will spend a lot of time
-                doing work that we don't need to do.
+        :param dist: The distribution to sample from.
+        :param min_likelihood: The minimum likelihood to consider.
+        :param chunk_size: The amount of likelihood to consider at once. If this is
+            too small, we will spend a lot of time doing the same work over and
+            over again. If this is too large, we will spend a lot of time
+            doing work that we don't need to do.
         """
 
     @abstractmethod

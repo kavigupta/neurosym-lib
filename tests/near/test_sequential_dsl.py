@@ -13,7 +13,6 @@ NEAR Integration tests.
 import unittest
 
 import pytest
-import torch
 
 import neurosym as ns
 from neurosym.examples import near
@@ -63,56 +62,26 @@ class TestNEARSequentialDSL(unittest.TestCase):
             },
         )
 
-        def validation_cost(node):
-            pl = ns.import_pytorch_lightning()
-
-            trainer = pl.Trainer(
-                max_epochs=10,
-                devices="auto",
-                accelerator="cpu",
-                enable_checkpointing=False,
-                logger=False,
-                callbacks=[],
-            )
-            try:
-                initialized_p = neural_dsl.initialize(node.program)
-            except near.PartialProgramNotFoundError:
-                return 10000
-
-            model = neural_dsl.compute(initialized_p)
-            if not isinstance(model, torch.nn.Module):
-                del model
-                del initialized_p
-                model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
-            pl_model = near.NEARTrainer(model, config=trainer_cfg)
-            trainer.fit(
-                pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
-            )
-            return trainer.callback_metrics["val_loss"].item()
-
-        def checker(node):
-            """
-            In NEAR, any program that has no holes is valid.
-            The hole checking is done before this function will
-            be called so we can assume that the program has no holes.
-            """
-            return (
-                set(ns.symbols_for_program(node.program)) - set(original_dsl.symbols())
-                == set()
-            )
-
         g = near.near_graph(
             neural_dsl,
             ns.parse_type(
                 s="([{f, $L}]) -> [{f, $O}]",
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
-            is_goal=checker,
+            is_goal=neural_dsl.program_has_no_holes,
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.bounded_astar(g, validation_cost, max_depth=3)
+            iterator = ns.search.bounded_astar(
+                g,
+                near.ValidationCost(
+                    neural_dsl=neural_dsl,
+                    trainer_cfg=trainer_cfg,
+                    datamodule=datamodule,
+                ),
+                max_depth=3,
+            )
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1

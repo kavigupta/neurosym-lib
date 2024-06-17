@@ -228,6 +228,11 @@ def bottom_up_enumerate_types(
     """
     Returns a list of all possible expansions of the given terminals
     using the given constructors.
+
+    :param terminals: The atomic types to use.
+    :param constructors: The constructors to use.
+    :param max_expansion_steps: The maximum number of times to apply a constructor.
+    :param max_overall_depth: The maximum depth of the resulting types.
     """
     assert (
         min(max_expansion_steps, max_overall_depth) < np.inf
@@ -283,7 +288,7 @@ def signature_expansions(
     }
     variables_in_return = set(sig.return_type.max_depth_per_type_variable())
     exclude_variables = variables_in_arguments & variables_in_return
-    return expansions(
+    return type_expansions(
         sig.astype(),
         terminals,
         constructors,
@@ -293,7 +298,7 @@ def signature_expansions(
     )
 
 
-def expansions(
+def type_expansions(
     sig: Type,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
@@ -302,7 +307,20 @@ def expansions(
     exclude_variables=(),
 ):
     """
-    Returns a list of all possible expansions of the given type.
+    Returns a list of all possible expansions of the given type, where the
+    variables in exclude_variables are not expanded.
+
+    This is useful for expanding a type signature, where some of the type
+    variables should not be expanded.
+
+    :param sig: The type to expand.
+    :param terminals: The atomic types to use.
+    :param constructors: The constructors to use.
+    :param max_expansion_steps: The maximum number of times to apply a constructor.
+    :param max_overall_depth: The maximum depth of the resulting types.
+    :param exclude_variables: The type variables to exclude from expansion.
+
+    :return: A list of all possible expansions of the given type.
     """
     # pylint: disable=cyclic-import
     from neurosym.types.type_string_repr import render_type
@@ -338,7 +356,7 @@ def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False
     Returns a tuple of (atomic_types, constructors), where atomic_types
         represents the atomic types in the universe, and constructors
         is a list of tuples of the form (arity, constructor), where
-        constructor is a function that takes `arity` types and
+        constructor is a function that takes ``arity`` types and
         produces a new type.
     """
     atomic_types = set()

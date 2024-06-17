@@ -1,7 +1,10 @@
 import itertools
-from typing import Union
+from types import NoneType
+from typing import List, Union
 
 import stitch_core
+
+from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
 from ..programs.s_expression import SExpression
@@ -34,9 +37,11 @@ def compute_abstraction_production(
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
-        lambda x: type_arguments[x.index]
-        if isinstance(x, AbstractionIndexParameter)
-        else None,
+        lambda x: (
+            type_arguments[x.index]
+            if isinstance(x, AbstractionIndexParameter)
+            else None
+        ),
     ).typ
     type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
 
@@ -75,16 +80,18 @@ def multi_lambda_to_single_lambda(dsl):
     lams = [x for x in dsl.productions if x.base_symbol() == "lam"]
     if not lams:
         return 0, {}
-    max_index = max(x.get_index() for x in lams) + 1
+    max_index = max(x.get_numerical_index() for x in lams) + 1
     multi_to_single = {}
     zero_arg_lambda = None
     for lam in lams:
         if lam.arity == 0:
             assert zero_arg_lambda is None
-            zero_arg_lambda = lam.get_index()
+            zero_arg_lambda = lam.get_numerical_index()
         if lam.arity == 1:
             continue
-        multi_to_single[lam.get_index()] = [max_index + i for i in range(lam.arity)]
+        multi_to_single[lam.get_numerical_index()] = [
+            max_index + i for i in range(lam.arity)
+        ]
         max_index += lam.arity
     return zero_arg_lambda, multi_to_single
 
@@ -110,6 +117,12 @@ class StitchLambdaRewriter:
             single[0]: multi for multi, single in self.multi_to_single.items()
         }
 
+        self.fused_lambda_tags = ",".join(
+            sorted(
+                {str(tag) for tags in self.multi_to_single.values() for tag in tags[1:]}
+            )
+        )
+
     def to_stitch(self, s_exp):
         if isinstance(s_exp, str):
             return s_exp
@@ -134,7 +147,7 @@ class StitchLambdaRewriter:
         [result] = children
         for i in reversed(range(prod.arity)):
             result = SExpression(
-                f"lam_{self.multi_to_single[prod.get_index()][i]}",
+                f"lam_{self.multi_to_single[prod.get_numerical_index()][i]}",
                 (result,),
             )
         return result
@@ -153,7 +166,8 @@ class StitchLambdaRewriter:
         index = int(s_exp.symbol[4:])
         original = self.first_single_to_multi[index]
         for i in range(len(self.multi_to_single[original])):
-            assert s_exp.symbol == f"lam_{self.multi_to_single[original][i]}"
+            expected = f"lam_{self.multi_to_single[original][i]}"
+            assert s_exp.symbol == expected, f"{s_exp.symbol} != {expected}"
             [s_exp] = s_exp.children
         return SExpression(
             f"lam_{original}",
@@ -161,10 +175,20 @@ class StitchLambdaRewriter:
         )
 
 
-def single_step_compression(dsl, programs, tasks=None):
+def single_step_compression(
+    dsl: DSL, programs: List[SExpression], tasks: Union[List[str], NoneType] = None
+):
     """
-    Run a single step of compression on a list of programs.
+    Run single step of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+    :param tasks: Optional, the task names for the programs.
+
+    :return: The DSL with up to 1 additional abstraction, and the programs
+        rewritten to use the new abstractions.
     """
+    programs_orig = programs
     rewriter = StitchLambdaRewriter(dsl)
     programs = [rewriter.to_stitch(prog) for prog in programs]
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
@@ -173,9 +197,12 @@ def single_step_compression(dsl, programs, tasks=None):
         1,
         no_curried_bodies=True,
         no_curried_metavars=True,
+        fused_lambda_tags=rewriter.fused_lambda_tags,
         abstraction_prefix=next_symbol(dsl),
         tasks=tasks,
     )
+    if not res.abstractions:
+        return dsl, programs_orig
     abstr = res.abstractions[-1]
     rewritten = [
         rewriter.from_stitch(
@@ -192,9 +219,16 @@ def single_step_compression(dsl, programs, tasks=None):
     return dsl2, rewritten
 
 
-def multi_step_compression(dsl, programs, iterations):
+def multi_step_compression(dsl: DSL, programs: List[SExpression], iterations: int):
     """
     Run multiple steps of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+    :param iterations: The number of iterations to run.
+
+    :return: The DSL with up to `iterations` new abstraction productions, and the programs
+        rewritten to use the new abstractions.
     """
     for _ in range(iterations):
         dsl, programs = single_step_compression(dsl, programs)

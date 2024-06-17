@@ -3,10 +3,11 @@ from neurosym.search_graph.search_graph import SearchGraph
 
 def bfs(g: SearchGraph, iteration_limit=float("inf")):
     """
-    Performs a breadth-first search on the given search graph, yielding each node in the
-    order it was visited.
+    Performs a breadth-first search on the given search graph, yielding each goal node
+    in the order it was visited.
 
     :param g: Search graph to search over
+    :param iteration_limit: Maximum number of iterations to perform
     """
     visited = set()
     queue = [g.initial_node()]
