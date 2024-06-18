@@ -1,10 +1,10 @@
 import ast
-from inspect import isfunction, ismethoddescriptor
 import json
 import os
 import subprocess
 import unittest
 from functools import lru_cache
+from inspect import isfunction, ismethoddescriptor
 from types import ModuleType
 
 import parameterized
@@ -148,7 +148,12 @@ def read_obj_inv():
     ]
 
 
-objects = [obj for module in (ns, near) for obj in all_functions_in_module(module)]
+objects = [
+    obj
+    for module in (ns, near)
+    for obj in all_functions_in_module(module)
+    if not getattr(obj, "__internal_only__", False)
+]
 
 
 class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
