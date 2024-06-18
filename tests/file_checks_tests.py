@@ -1,13 +1,16 @@
 import ast
 import glob
+from inspect import isfunction, ismethoddescriptor
 import json
 import os
 import re
+import subprocess
 import unittest
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from types import ModuleType
 
 import parameterized
+import sphobjinv
 
 import neurosym as ns
 from neurosym.examples import near
@@ -84,63 +87,80 @@ class NoPrintsTest(unittest.TestCase):
         self.assertEqual(len(nodes), 0)
 
 
-@lru_cache(None)
-def documented_functions():
-    rst_files = glob.glob("docs/source/*.rst")
-    functions = set()
-    for rst_file in rst_files:
-        with open(rst_file) as f:
-            text = f.read()
-        functions.update(
-            x.group("name")
-            for x in re.finditer(
-                r".. auto(function|class|attribute):: (?P<name>.*)", text
-            )
-        )
-    return functions
-
-
-class AllFunctionsDocumentedTest(unittest.TestCase):
-
-    pattern = re.compile(r"\b(ns|near)(\.(\w+))+")
-
-    def normalize(self, function):
-        if function.startswith("ns."):
-            function = function.replace("ns.", "neurosym.", 1)
-        if function.startswith("near."):
-            function = function.replace("near.", "neurosym.examples.near.", 1)
-        function = {
-            "neurosym.examples.near.NeuralDSL.from_dsl": "neurosym.examples.near.NeuralDSL",
-            "neurosym.PythonDSLSubset.from_s_exps": "neurosym.PythonDSLSubset",
-            "neurosym.PythonDSLSubset.from_programs": "neurosym.PythonDSLSubset",
-            "neurosym.Environment.empty": "neurosym.Environment",
-        }.get(function, function)
-        return function
-
-    @parameterized.parameterized.expand(
-        [(path,) for path in files_to_examine("tests", "tutorial")]
-    )
-    def test_all_used_functions_documented(self, path):
-        code = read_python_file(path)
-        functions = set(x.group() for x in self.pattern.finditer(code))
-        functions = {self.normalize(f) for f in functions}
-        print(documented_functions())
-        extras = functions - documented_functions()
-        if not extras:
-            return
-        self.fail(f"Found {len(extras)} undocumented functions: {extras}")
-
-    def assertFieldDocumented(self, name, base_module, base_module_name):
+def all_functions_in_module(module):
+    if not module.__name__.startswith("neurosym"):
+        return
+    for name in dir(module):
         if name.startswith("_"):
-            return
-        if isinstance(getattr(base_module, name), ModuleType):
-            return
-        self.assertIn(base_module_name + "." + name, documented_functions())
+            continue
+        if isinstance(getattr(module, name), ModuleType):
+            yield from all_functions_in_module(getattr(module, name))
+        if isinstance(getattr(module, name), type):
+            yield from all_functions_in_class(getattr(module, name))
+        elif isfunction(getattr(module, name)):
+            yield from all_functions_in_function(getattr(module, name))
 
-    @parameterized.parameterized.expand([(name,) for name in dir(ns)])
-    def test_ns_function_documented(self, name):
-        self.assertFieldDocumented(name, ns, "neurosym")
 
-    @parameterized.parameterized.expand([(name,) for name in dir(near)])
-    def test_near_function_documented(self, name):
-        self.assertFieldDocumented(name, near, "neurosym.examples.near")
+def all_functions_in_class(cls):
+    if not cls.__module__.startswith("neurosym"):
+        return
+    yield cls
+    for name in dir(cls):
+        if name.startswith("_"):
+            continue
+        if ismethoddescriptor(getattr(cls, name)):
+            yield from all_functions_in_method(getattr(cls, name))
+
+
+def all_functions_in_method(method):
+    if not method.__class__.__module__.startswith("neurosym"):
+        return
+    yield method
+
+
+def all_functions_in_function(function):
+    if not function.__module__.startswith("neurosym"):
+        return
+    yield function
+
+
+def lookup_qualified_name(base, qualified_chunks):
+    if not qualified_chunks:
+        return base
+    return lookup_qualified_name(
+        getattr(base, qualified_chunks[0]), qualified_chunks[1:]
+    )
+
+
+def lookup_qualified_neurosym_name(qualified_name):
+    if qualified_name.startswith("neurosym."):
+        return lookup_qualified_name(ns, qualified_name.split(".")[1:])
+    raise ValueError(f"Unknown module: {qualified_name}")
+
+
+@lru_cache(None)
+def read_obj_inv():
+    path = "docs/build/html/objects.inv"
+
+    inv = sphobjinv.Inventory(path)
+    return [
+        lookup_qualified_neurosym_name(x.name)
+        for x in inv.objects
+        if x.name.startswith("neurosym")
+    ]
+
+
+objects = [obj for module in (ns, near) for obj in all_functions_in_module(module)]
+
+
+class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        subprocess.run(["make", "html"], cwd="docs", check=True)
+
+    @parameterized.parameterized.expand([(i,) for i in range(len(objects))])
+    def test_documented(self, i):
+        obj = objects[i]
+        print(obj)
+        self.assertIn(obj, read_obj_inv())

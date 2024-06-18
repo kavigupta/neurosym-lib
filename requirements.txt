@@ -13,3 +13,4 @@ isort==5.13.2
 
 # Documentation
 -r docs/requirements.txt
+sphobjinv
