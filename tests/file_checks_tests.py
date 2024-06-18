@@ -1,12 +1,10 @@
 import ast
-import glob
 from inspect import isfunction, ismethoddescriptor
 import json
 import os
-import re
 import subprocess
 import unittest
-from functools import cached_property, lru_cache
+from functools import lru_cache
 from types import ModuleType
 
 import parameterized
