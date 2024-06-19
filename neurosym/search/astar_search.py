@@ -4,6 +4,7 @@ from typing import Callable
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
+from neurosym.utils.documentation import internal_only
 
 
 def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
@@ -38,6 +39,7 @@ def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
             add_to_fringe(child)
 
 
+@internal_only
 @dataclass(order=True)
 class AStarNode:
     """
