@@ -206,6 +206,12 @@ class ConstructHandler(Handler):
 
 
 class DefaultHandler(Handler):
+    """
+    The default handler for a given symbol. This handler is used
+    when a construct does nothing interesting with symbols. Effectively, just a
+    passthrough handler.
+    """
+
     def is_defining(self, position: int) -> bool:
         return False
 
@@ -213,6 +219,16 @@ class DefaultHandler(Handler):
 def default_handler(
     position: int, symbol: int, mask, defined_production_idxs, config
 ) -> Handler:
+    """
+    Compute the default handler for a given symbol. This chooses the type
+    of the handler based on the head symbol.
+
+    :param position: The position in the s-expression.
+    :param symbol: The symbol of the construct.
+    :param mask: The mask being used.
+    :param defined_production_idxs: The list of currently defined production indices.
+    :param config: The configuration for the mask.
+    """
     # pylint: disable=cyclic-import
     from .defining_statement_handler import defining_statement_handlers
 
@@ -229,6 +245,13 @@ def default_handler(
 
 
 class HandlerPuller(ABC):
+    """
+    Represents a class that can pull a handler for a given symbol. This is
+    used to extend the behavior of the DefUsePreorderMask by providing
+    a space where hooks can be added to change the behavior of the mask
+    on newly defined symbols.
+    """
+
     @abstractmethod
     def pull_handler(
         self,
@@ -239,4 +262,17 @@ class HandlerPuller(ABC):
         config,
         handler_fn: Callable,
     ) -> Handler:
-        pass
+        """
+        Pull a handler for the given symbol, position, etc.
+
+        :param position: The position in the s-expression.
+        :param symbol: The symbol of the construct.
+        :param mask: The mask being used.
+        :param defined_production_idxs: The list of currently defined production indices.
+        :param config: The configuration for the mask.
+        :param handler_fn: The function to call to get the default handler at the given location.
+            This is provided because the default handler is not always the ``default_handler``
+            function's result, i.e., when in a target context.
+
+        :return: The handler to use for the given symbol.
+        """
