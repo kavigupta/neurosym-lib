@@ -11,13 +11,15 @@ from .utils import fit_to
 class EnumerateFittedDslTest(unittest.TestCase):
     def enumerate(self, *programs):
         _, _, fam, dist = fit_to(programs)
-        out = [
-            (
-                Fraction.from_float(np.exp(y)).limit_denominator(),
-                ns.s_exp_to_python(ns.render_s_expression(x)),
+        out = []
+        for x, y in fam.enumerate(dist, min_likelihood=-10):
+            assert isinstance(y, np.float64)
+            out.append(
+                (
+                    Fraction.from_float(np.exp(y)).limit_denominator(),
+                    ns.s_exp_to_python(ns.render_s_expression(x)),
+                )
             )
-            for x, y in fam.enumerate(dist, min_likelihood=-10)
-        ]
         out = sorted(out, key=lambda x: (-x[0], x[1]))
         print(out)
         return out
