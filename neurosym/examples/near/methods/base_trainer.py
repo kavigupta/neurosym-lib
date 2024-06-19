@@ -131,7 +131,7 @@ class BaseTrainer(pl.LightningModule):
         params = self.filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-        optimizer_fn = self.config.optimizer
+        optimizer_fn = getattr(torch.optim, self.config.optimizer.__name__)
         optimizer = optimizer_fn(
             params, lr=self.config.lr, weight_decay=self.config.weight_decay
         )

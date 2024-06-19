@@ -1,13 +1,5 @@
 """
-Test dsl/sequentual_dsl.py with NEAR search graph.
-
-We conduct the following tests:
-- Sanity check: We can find a program.
-- BFS: We can find a program with BFS.
-- Astar: We can find a program with bounded Astar search.
-- Enumerate: We can enumerate all programs of a certain size.
-- Full Integration test: Can we run a full iteration of NEAR.
-NEAR Integration tests.
+Test search/bounded_astar_async.py with NEAR search graph.
 """
 
 import unittest
@@ -18,18 +10,19 @@ import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.validation import ValidationCost
 
-from .utils import assertDSLEnumerable
 
-
-class TestNEARSequentialDSL(unittest.TestCase):
-    def test_sequential_dsl_astar(self):
+class TestNEARAsyncSearch(unittest.TestCase):
+    def test_astar_async_sequential_dsl(self):
         """
         A minimal implementation of NEAR with a simple DSL.
         search = A-star
         heuristic = validation score after training for N epochs. (pl.Trainer)
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set (pl.Trainer)
+
+        This tests an async version of bounded_astar search.
         """
+        # pylint: disable=duplicate-code
         datamodule = ns.datasets.near_data_example(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.example_rnn_dsl(input_dim, output_dim)
@@ -74,7 +67,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.bounded_astar(
+            iterator = ns.search.bounded_astar_async(
                 g,
                 ValidationCost(
                     neural_dsl=neural_dsl,
@@ -82,6 +75,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                     datamodule=datamodule,
                 ),
                 max_depth=3,
+                max_workers=4,
             )
             while True:
                 print("iteration: ", n_iter)
@@ -90,13 +84,3 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 self.assertIsNotNone(node)
                 if n_iter > 30:
                     break
-
-    def test_sequential_dsl_enumerate(self):
-        """
-        Enumerate all programs in dsl upto fixed depth. This test case makes
-        sure all DSL combinations upto a fixed depth are valid.
-        """
-        self.maxDiff = None
-        dsl = near.example_rnn_dsl(10, 4)
-
-        assertDSLEnumerable(dsl, "([$fL]) -> [$fO]")
