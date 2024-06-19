@@ -124,6 +124,7 @@ def enumerate_tree_dist_dfs_uncached(
     mask = preorder_mask.compute_mask(position, syms)
     denominator = np.logaddexp.reduce(log_probs[mask])
     for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
+        likelihood = np.float64(likelihood)
         new_parents = parents + (node,)
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
