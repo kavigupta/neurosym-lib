@@ -1,4 +1,7 @@
-from neurosym.python_dsl.python_def_use_mask.defining_statement_handler.defining_statement_handler import DefiningStatementHandler
+from neurosym.python_dsl.python_def_use_mask.defining_statement_handler.defining_statement_handler import (
+    DefiningStatementHandler,
+)
+
 from .defining_statement_handler.defining_construct_handler import (
     DefiningConstructHandler,
 )
