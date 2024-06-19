@@ -10,6 +10,7 @@ from neurosym.python_dsl.convert_python.convert import to_type_annotated_ns_s_ex
 from neurosym.python_dsl.convert_python.python_ast import PythonAST
 from neurosym.types.type import ArrowType
 from neurosym.types.type_string_repr import parse_type, render_type
+from neurosym.utils.documentation import internal_only
 
 from .names import PYTHON_DSL_SEPARATOR
 
@@ -122,6 +123,7 @@ class PythonDSLSubset:
         }
 
 
+@internal_only
 def traverse(s_exp):
     """
     Yield all the nodes in the s-expression.

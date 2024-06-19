@@ -11,6 +11,7 @@ from neurosym.types.type import (
     TypeVariable,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
+from neurosym.utils.documentation import internal_only
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
@@ -94,6 +95,7 @@ def render_type(t: Type) -> str:
     raise NotImplementedError(f"Unknown type {t}")
 
 
+@internal_only
 def parse_type_from_buf(reversed_buf, env: TypeDefiner):
     assert isinstance(env, TypeDefiner)
     first_tok = reversed_buf.pop()
@@ -139,7 +141,7 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
         return FilteredTypeVariable(name, type_filter=env.lookup_filter(name))
     return AtomicType(first_tok)
 
-
+@internal_only
 def parse_type_from_buf_multi(reversed_buf, env):
     t_head = parse_type_from_buf(reversed_buf, env)
     if not reversed_buf:
