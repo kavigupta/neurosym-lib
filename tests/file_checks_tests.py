@@ -148,12 +148,21 @@ def read_obj_inv():
     ]
 
 
-objects = [
-    obj
-    for module in (ns, near)
-    for obj in all_functions_in_module(module)
-    if not getattr(obj, "__internal_only__", False)
-]
+def get_objects():
+    objects = [
+        obj
+        for module in (ns, near)
+        for obj in all_functions_in_module(module)
+        if not getattr(obj, "__internal_only__", False)
+    ]
+    unique_objects = []
+    for obj in objects:
+        if obj not in unique_objects:
+            unique_objects.append(obj)
+    return unique_objects
+
+
+objects = get_objects()
 
 
 class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
@@ -166,4 +175,5 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
     def test_documented(self, i):
         obj = objects[i]
         print(obj)
-        self.assertIn(obj, read_obj_inv())
+        if obj not in read_obj_inv():
+            self.fail(f"Object {obj} not documented")
