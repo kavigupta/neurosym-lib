@@ -5,6 +5,7 @@ Search Graph
     :members:
 .. autoclass:: neurosym.DSLSearchGraph
     :members:
+.. autoclass:: neurosym.DSLSearchNode
 .. autofunction:: neurosym.search.bfs
 .. autofunction:: neurosym.search.astar
 .. autofunction:: neurosym.search.bounded_astar

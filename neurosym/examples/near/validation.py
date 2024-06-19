@@ -13,14 +13,19 @@ from neurosym.examples.near.models.torch_program_module import TorchProgramModul
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
+from neurosym.utils.documentation import internal_only
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
 
-# callback that updates a progress bar once per epoch
+@internal_only
 class ProgressBar(pl.callbacks.Callback):
+    """
+    callback that updates a progress bar once per epoch
+    """
+
     def __init__(self, num_epochs, progress_bar):
         self.num_epochs = num_epochs
         self.progress_bar = progress_bar
