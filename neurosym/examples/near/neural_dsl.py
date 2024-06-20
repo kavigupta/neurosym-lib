@@ -11,7 +11,7 @@ from ...dsl.dsl import DSL
 from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
-from ...types.type import ArrowType, ListType, TensorType, Type
+from ...types.type import ArrowType, AtomicType, ListType, TensorType, Type
 
 
 class PartialProgramNotFoundError(Exception):
@@ -122,12 +122,12 @@ class NeuralDSL(DSL):
         return symbols_for_program(program) - self.original_symbols == set()
 
 
-def create_module_for_type(module_factory, t):
-    shape = compute_io_shape(t)
+def create_module_for_type(module_factory, t, known_atom_shapes):
+    shape = compute_io_shape(t, known_atom_shapes)
     return lambda: module_factory(*shape)
 
 
-def create_modules(tag: str, types: List[Type], module_factory):
+def create_modules(tag: str, types: List[Type], module_factory: Callable, known_atom_shapes: Dict[str, int] = None):
     """
     Create a dictionary of modules for a set of types, given the module factory.
 
@@ -135,10 +135,13 @@ def create_modules(tag: str, types: List[Type], module_factory):
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
+    return {
+        t: (tag, create_module_for_type(module_factory, t, known_atom_shapes))
+        for t in types
+    }
 
 
-def compute_io_shape(t):
+def compute_io_shape(t, known_atom_shapes):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
@@ -155,6 +158,13 @@ def compute_io_shape(t):
                 return shape
             case ListType(element_type):
                 return get_shape(element_type)
+            case t if isinstance(t, Tuple):
+                return len(t)
+            case AtomicType(k):
+                assert known_atom_shapes is not None, \
+                "known_atom_shapes must be provided for AtomicType"
+                assert k in known_atom_shapes, f"Unknown shape for type {k}"
+                return known_atom_shapes[k]
             case _:
                 raise NotImplementedError(f"Cannot compute shape for type {t}")
 

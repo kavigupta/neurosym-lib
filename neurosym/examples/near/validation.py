@@ -110,15 +110,13 @@ class ValidationCost:
         else:
             pbar = None
 
-        trainer = pl.Trainer(
-            max_epochs=self.trainer_cfg.n_epochs,
-            devices="auto",
-            accelerator="cpu",
-            enable_checkpointing=False,
-            logger=False,
-            **self.kwargs,
-            callbacks=callbacks,
-        )
+        self.kwargs['max_epochs'] = self.kwargs.get("max_epochs", self.trainer_cfg.n_epochs)
+        self.kwargs['devices'] = self.kwargs.get("devices", "auto")
+        self.kwargs['accelerator'] = self.kwargs.get("accelerator", "cpu")
+        self.kwargs['enable_checkpointing'] = self.kwargs.get("enable_checkpointing", False)
+        self.kwargs['logger'] = self.kwargs.get("logger", False)
+        self.kwargs['callbacks'] = callbacks
+        trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
     def fit_trainer(self, trainer, model, pbar):
