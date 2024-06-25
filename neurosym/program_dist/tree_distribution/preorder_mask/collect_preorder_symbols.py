@@ -32,7 +32,7 @@ def collect_preorder_symbols(
     """
     mask = tree_dist.mask_constructor(tree_dist)
     mask.on_entry(0, 0)
-    yield from collect_preorder_symbols_dfs(
+    yield from _collect_preorder_symbols_dfs(
         s_exp,
         tree_dist,
         mask,
@@ -42,7 +42,7 @@ def collect_preorder_symbols(
     )
 
 
-def collect_preorder_symbols_dfs(
+def _collect_preorder_symbols_dfs(
     s_exp: SExpression,
     tree_dist: TreeDistribution,
     mask: PreorderMask,
@@ -71,7 +71,7 @@ def collect_preorder_symbols_dfs(
     order = tree_dist.ordering.order(sym_idx, len(s_exp.children))
     for idx, child in zip(order, [s_exp.children[i] for i in order]):
         new_parents = (parents + ((sym_idx, idx),))[-tree_dist.limit :]
-        yield from collect_preorder_symbols_dfs(
+        yield from _collect_preorder_symbols_dfs(
             child,
             tree_dist,
             mask,

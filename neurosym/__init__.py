@@ -14,7 +14,10 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
+    chain_undos,
+    remove_last_n_elements,
+)
 from neurosym.programs.hole import Hole
 from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
@@ -56,7 +59,10 @@ from .program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
     TypePreorderMask,
 )
 from .program_dist.tree_distribution.tree_dist_enumerator import enumerate_tree_dist
-from .program_dist.tree_distribution.tree_distribution import TreeDistribution
+from .program_dist.tree_distribution.tree_distribution import (
+    TreeDistribution,
+    TreeProgramDistributionFamily,
+)
 from .programs.s_expression import SExpression
 from .programs.s_expression_render import (
     parse_s_expression,

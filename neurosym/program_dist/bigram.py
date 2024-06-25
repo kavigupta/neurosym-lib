@@ -225,7 +225,7 @@ class BigramProgramCountsBatch:
         numerators = self.numerators(num_symbols, max_arity)
 
         return BigramProgramDistributionBatch(
-            self.dist_fam, counts_to_probabilities(numerators)
+            self.dist_fam, _counts_to_probabilities(numerators)
         )
 
 
@@ -261,7 +261,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
         self._dsl = dsl
-        self._symbols, self._arities, self._valid_mask = bigram_mask(dsl)
+        self._symbols, self._arities, self._valid_mask = _bigram_mask(dsl)
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
@@ -303,7 +303,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         tree_dist = self.tree_distribution_skeleton
         all_counts = []
         for programs in data:
-            numerators, denominators = count_programs(tree_dist, programs)
+            numerators, denominators = _count_programs(tree_dist, programs)
             all_counts.append(
                 BigramProgramCounts(numerators=numerators, denominators=denominators)
             )
@@ -411,7 +411,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
     def uniform(self):
         return BigramProgramDistribution(
-            self, counts_to_probabilities(self._valid_mask)
+            self, _counts_to_probabilities(self._valid_mask)
         )
 
     def compute_tree_distribution(
@@ -456,7 +456,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return self._symbols
 
 
-def bigram_mask(dsl):
+def _bigram_mask(dsl):
     symbols = dsl.ordered_symbols(include_root=True)
 
     valid_root_types = dsl.valid_root_types
@@ -487,7 +487,7 @@ def bigram_mask(dsl):
     return symbols, np.array(arities), valid_mask
 
 
-def counts_to_probabilities(counts):
+def _counts_to_probabilities(counts):
     return np.divide(
         counts,
         counts.sum(-1)[..., None],
@@ -496,7 +496,7 @@ def counts_to_probabilities(counts):
     )
 
 
-def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
+def _count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
     """
     Count the productions in the programs, indexed by the path to the node.
     """
@@ -505,7 +505,7 @@ def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
     for program in programs:
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         preorder_mask.on_entry(0, 0)
-        accumulate_counts(
+        _accumulate_counts(
             tree_dist,
             program,
             numerators,
@@ -518,7 +518,7 @@ def count_programs(tree_dist: TreeDistribution, programs: List[SExpression]):
     return numerators, denominators
 
 
-def accumulate_counts(
+def _accumulate_counts(
     tree_dist: TreeDistribution,
     program: SExpression,
     numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]],
@@ -539,7 +539,7 @@ def accumulate_counts(
     for j, child in zip(order, [program.children[i] for i in order]):
         new_ancestors = ancestors + ((this_idx, j),)
         new_ancestors = new_ancestors[-tree_dist.limit :]
-        accumulate_counts(
+        _accumulate_counts(
             tree_dist,
             child,
             numerators,
