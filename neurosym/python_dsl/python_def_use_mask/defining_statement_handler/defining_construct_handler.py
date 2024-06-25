@@ -34,7 +34,7 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
     def on_child_enter(
         self, position: int, symbol: int
     ) -> Tuple[Handler, Callable[[], None]]:
-        if self.is_construct_name_field(position):
+        if self._is_construct_name_field(position):
             return self.target_child(position, symbol)
         return super().on_child_enter(position, symbol)
 
@@ -42,7 +42,7 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
         self, position: int, symbol: int, child: Handler
     ) -> Callable[[], None]:
         undos = []
-        if self.is_construct_name_field(position):
+        if self._is_construct_name_field(position):
             for idx_list in (
                 self.original_defined_production_idxs,
                 self.defined_production_idxs,
@@ -55,7 +55,7 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
         undos.append(super().on_child_exit(position, symbol, child))
         return chain_undos(undos)
 
-    def is_construct_name_field(self, position):
+    def _is_construct_name_field(self, position):
         return (
             self.construct_name_field is not None
             and position == self.child_fields[self.construct_name_field]
