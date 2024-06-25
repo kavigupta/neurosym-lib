@@ -24,6 +24,18 @@ from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
 @dataclass
 class BigramProgramDistribution:
+    """
+    Represents a bigram program distribution. This is a distribution over
+    programs that is conditioned on the parent and the position of the child
+    in the parent.
+
+    :field dist_fam: The family of distributions that this distribution is from.
+    :field distribution: A numpy array of shape ``(num_symbols, max_arity, num_symbols)``
+        where ``num_symbols`` is the number of symbols in the DSL and ``max_arity`` is
+        the maximum arity of any symbol. The value at ``(i, j, k)`` is the probability
+        of symbol ``k`` appearing in position ``j`` of symbol ``i``.
+    """
+
     dist_fam: "BigramProgramDistributionFamily"
     distribution: np.ndarray
 
@@ -34,6 +46,17 @@ class BigramProgramDistribution:
     def bound_minimum_likelihood(
         self, min_likelihood: float, symbol_mask: np.ndarray = None
     ):
+        """
+        Ensure that the probability of any symbol is at least ``min_likelihood``,
+        approximately, except symbols that have been masked out. This is done
+        by setting the probability of any symbol that is not masked out to be at
+        least ``min_likelihood``, then renormalizing the distribution.
+
+        :param min_likelihood: The minimum likelihood that any symbol should have.
+        :param symbol_mask: A boolean array of shape ``(num_symbols,)`` that is
+            False for symbols that should not be affected by the minimum likelihood
+            bound. If None, all symbols are affected.
+        """
         assert 0 <= min_likelihood <= 1
         if symbol_mask is not None:
             assert (
@@ -61,6 +84,12 @@ class BigramProgramDistribution:
         return mask_square
 
     def mix_with_other(self, other: "BigramProgramDistribution", weight_other: float):
+        """
+        Mix this distribution with another distribution. This is done by taking
+        a weighted average of the two distributions, where the weight of the other
+        distribution is ``weight_other`` and the weight of this distribution is
+        ``1 - weight_other``.
+        """
         # pylint: disable=self-cls-assignment
         assert 0 <= weight_other <= 1
         symbols_this = self.dist_fam.symbols()
@@ -93,7 +122,7 @@ class BigramProgramDistribution:
 
 
 @dataclass
-class BigramProgramDistributionBatch:
+class _BigramProgramDistributionBatch:
     dist_fam: "BigramProgramDistributionFamily"
     distribution_batch: np.ndarray
 
@@ -224,7 +253,7 @@ class BigramProgramCountsBatch:
         # TODO(kavigupta): Implement a proper fitting algorithm here.
         numerators = self.numerators(num_symbols, max_arity)
 
-        return BigramProgramDistributionBatch(
+        return _BigramProgramDistributionBatch(
             self.dist_fam, _counts_to_probabilities(numerators)
         )
 
@@ -292,12 +321,12 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
     def with_parameters(
         self, parameters: torch.Tensor
-    ) -> BigramProgramDistributionBatch:
+    ) -> _BigramProgramDistributionBatch:
         assert (
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
         parameters = self.normalize_parameters(parameters, logits=False)
-        return BigramProgramDistributionBatch(self, parameters.detach().cpu().numpy())
+        return _BigramProgramDistributionBatch(self, parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
         tree_dist = self.tree_distribution_skeleton

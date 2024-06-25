@@ -53,6 +53,7 @@ from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import (
     BigramProgramCounts,
     BigramProgramCountsBatch,
+    BigramProgramDistribution,
     BigramProgramDistributionFamily,
 )
 from .program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
