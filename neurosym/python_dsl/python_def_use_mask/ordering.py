@@ -2,7 +2,7 @@ from neurosym.program_dist.tree_distribution.ordering import DictionaryNodeOrder
 from neurosym.python_dsl.python_ast_tools import fields_for_node
 
 
-def field_order(node, fields):
+def _fiseld_order(node, fields):
     """
     Get the order of the given fields in a node.
     """
@@ -26,7 +26,7 @@ def python_ordering_dictionary():
 
     result = {}
     for node, fields in fields:
-        result[node] = field_order(node, fields)
+        result[node] = _field_order(node, fields)
     return result
 
 

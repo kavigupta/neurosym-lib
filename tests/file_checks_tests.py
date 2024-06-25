@@ -1,10 +1,12 @@
 import ast
+import functools
+import inspect
 import json
 import os
 import subprocess
 import unittest
 from functools import lru_cache
-from inspect import isfunction, ismethoddescriptor
+from inspect import isfunction, ismethod
 from types import ModuleType
 
 import parameterized
@@ -106,8 +108,10 @@ def all_functions_in_class(cls):
     for name in dir(cls):
         if name.startswith("_"):
             continue
-        if ismethoddescriptor(getattr(cls, name)):
+        if ismethod(getattr(cls, name)):
             yield from all_functions_in_method(getattr(cls, name))
+        elif isfunction(getattr(cls, name)):
+            yield from all_functions_in_function(getattr(cls, name))
 
 
 def all_functions_in_method(method):
@@ -175,5 +179,45 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
     def test_documented(self, i):
         obj = objects[i]
         print(obj)
-        if obj not in read_obj_inv():
-            self.fail(f"Object {obj} not documented")
+        if obj in read_obj_inv():
+            return
+        if self.is_inherited_and_undocumented(obj):
+            return
+
+        self.fail(f"Object {obj} not documented")
+
+    def is_inherited_and_undocumented(self, obj):
+        if not isfunction(obj):
+            return False
+        if hasattr(obj, "__doc__") and obj.__doc__ is not None:
+            return False
+        clas = get_class_that_defined_method(obj)
+        if clas is None:
+            return False
+        for base in clas.__bases__:
+            if obj.__name__ in dir(base):
+                return True
+        return False
+
+
+def get_class_that_defined_method(meth):
+    if isinstance(meth, functools.partial):
+        return get_class_that_defined_method(meth.func)
+    if inspect.ismethod(meth) or (
+        inspect.isbuiltin(meth)
+        and getattr(meth, "__self__", None) is not None
+        and getattr(meth.__self__, "__class__", None)
+    ):
+        for cls in inspect.getmro(meth.__self__.__class__):
+            if meth.__name__ in cls.__dict__:
+                return cls
+        meth = getattr(meth, "__func__", meth)  # fallback to __qualname__ parsing
+    if inspect.isfunction(meth):
+        cls = getattr(
+            inspect.getmodule(meth),
+            meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0],
+            None,
+        )
+        if isinstance(cls, type):
+            return cls
+    return getattr(meth, "__objclass__", None)  # handle special descriptor objects
