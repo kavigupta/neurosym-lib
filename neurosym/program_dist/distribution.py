@@ -108,3 +108,15 @@ class ProgramDistributionFamily(ABC):
             over again. If this is too large, we will spend a lot of time
             doing work that we don't need to do.
         """
+
+    def compute_likelihood(
+        self, dist: ProgramDistribution, program: SExpression
+    ) -> float:
+        """
+        Computes the log-likelihood of a program under this distribution.
+
+        :param dist: The distribution to compute the likelihood under.
+        :param program: The program to compute the likelihood of.
+
+        :return: The log-likelihood of the program.
+        """

@@ -190,6 +190,13 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         dist: ProgramDistribution,
         program: SExpression,
     ) -> Dict[SExpression, float]:
+        """
+        Compute the likelihood of each node in the program, given the program distribution.
+
+        :param dist: The program distribution.
+        :param program: The program to compute the likelihoods for.
+        :return: A dictionary mapping nodes to their contributions to the likelihood.
+        """
         likelihoods = []
 
         self.compute_likelihood(
