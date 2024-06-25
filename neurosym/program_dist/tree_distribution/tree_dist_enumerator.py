@@ -38,12 +38,14 @@ def enumerate_tree_dist(
     """
     Enumerate all programs using iterative deepening.
 
-    Args:
-        tree_dist: The distribution to sample from.
-        chunk_size: The amount of likelihood to consider at once. If this is
-            too small, we will spend a lot of time doing the same work over and
-            over again. If this is too large, we will spend a lot of time
-            doing work that we don't need to do.
+    :param tree_dist: The distribution to sample from.
+    :param min_likelihood: The minimum likelihood to consider.
+    :param chunk_size: The amount of likelihood to consider at once. If this is
+        too small, we will spend a lot of time doing the same work over and
+        over again. If this is too large, we will spend a lot of time
+        doing work that we don't need to do.
+    :param use_cache: Whether to use a cache to store intermediate results.
+        This will be disabled if the mask does not support caching.
     """
     for chunk in itertools.count(1):
         likelihood_bound = -chunk * chunk_size

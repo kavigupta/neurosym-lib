@@ -113,18 +113,49 @@ class BigramProgramDistributionBatch:
 
 @dataclass
 class BigramProgramCounts:
+    """
+    Represents counts of bigram programs, both the "numerator" counts
+        (the number of times a symbol appears in a given context), and
+        the "denominator" counts (the number of times a symbol could
+        have appeared in that context).
+
+    :field numerators: A map from context ``(parent_sym, parent_child_idx)`` to a map from
+        ``child_sym`` to ``count``.
+    :field denominators: A map from context ``(parent_sym, parent_child_idx)`` to a map from
+        ``child_syms`` to ``count``. The ``child_syms`` are the set of symbols that could have
+        appeared in that context.
+    """
+
     # map from (parent_sym, parent_child_idx) to map from child_sym to count
     numerators: Dict[Tuple[Tuple[int, int], ...], Dict[int, int]]
     # map from (parent_sym, parent_child_idx) to map from potential child_sym values to count
     denominators: Dict[Tuple[Tuple[int, int], ...], Dict[Tuple[int, ...], int]]
 
     def add_to_numerator_array(self, arr, batch_idx):
+        """
+        Add the numerator counts to the given array at the given batch index.
+
+        :param arr: An array of counts, to be mutated. Must be indexable as
+            ``arr[batch_idx, parent_sym, parent_child_idx, child_sym]``.
+            A reference to this array is returned.
+        :param batch_idx: The batch index to add the counts to.
+        """
         for [(parent_sym, parent_child_idx)], children in self.numerators.items():
             for child_sym, count in children.items():
                 arr[batch_idx, parent_sym, parent_child_idx, child_sym] = count
         return arr
 
     def add_to_denominator_array(self, arr, batch_idx, backmap):
+        """
+        Add the denominator counts to the given array at the given batch index.
+
+        :param arr: An array of counts, to be mutated. Must be indexable as
+            ``arr[batch_idx, parent_sym, parent_child_idx, denominator_id]``.
+            A reference to this array is returned.
+        :param batch_idx: The batch index to add the counts to.
+        :param backmap: A mapping from the set of child symbols to the index in the
+            denominator array.
+        """
         for [(parent_sym, parent_child_idx)], children in self.denominators.items():
             for child_syms, count in children.items():
                 key = batch_idx, parent_sym, parent_child_idx, backmap[child_syms]
@@ -134,10 +165,22 @@ class BigramProgramCounts:
 
 @dataclass
 class BigramProgramCountsBatch:
+    """
+    Like BigramProgramCounts, but batched, that is, it contains a list of
+    BigramProgramCounts objects.
+
+    :field dist_fam: The family of distributions that these counts are for.
+    :field counts: A list of BigramProgramCounts objects.
+    """
+
     dist_fam: "BigramProgramDistributionFamily"
     counts: List[BigramProgramCounts]
 
     def numerators(self, num_symbols, max_arity):
+        """
+        See ``BigramProgramCounts.numerators`` for details. This is a batched version
+        that creates and returns a numpy array of counts.
+        """
         numerators = np.zeros(
             (len(self.counts), num_symbols, max_arity, num_symbols), dtype=np.int32
         )
@@ -146,6 +189,11 @@ class BigramProgramCountsBatch:
         return numerators
 
     def denominators(self, num_symbols, max_arity):
+        """
+        See ``BigramProgramCounts.denominators`` for details. This is a batched version
+        that creates and returns a numpy array of counts, along with the denominator index
+        sets that correspond to the last axis of the array.
+        """
         denominator_keys = {
             key
             for counts in self.counts
@@ -164,11 +212,17 @@ class BigramProgramCountsBatch:
         return denominators, denominator_keys
 
     def to_distribution(self, num_symbols, max_arity):
-        numerators = self.numerators(num_symbols, max_arity)
+        """
+        Convert these counts to a ``BigramProgramDistribution`` object. This is a
+        batched version that creates and returns a ``BigramProgramDistributionBatch`` object.
 
-        # We do not need to handle denominators here, as this is just
-        # a simple conversion from counts to probabilities, and we do
-        # not need to handle the case where the denominator is 0.
+        Note that we are not handling denominators here, as this is just a simple conversion
+        from counts to probabilities. This is probably not fully correct, as we should be
+        using a more sophisticated algorithm to fit the parameters to the counts. However,
+        this is a relatively simple way to get a distribution from counts.
+        """
+        # TODO(kavigupta): Implement a proper fitting algorithm here.
+        numerators = self.numerators(num_symbols, max_arity)
 
         return BigramProgramDistributionBatch(
             self.dist_fam, counts_to_probabilities(numerators)
@@ -176,6 +230,23 @@ class BigramProgramCountsBatch:
 
 
 class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
+    """
+    A family of bigram program distributions. These are TreeProgramDistributions
+    that are conditioned on just the parent and the position of the child
+    in the parent. This is a kind of TreeProgramDistributionFamily.
+
+    :param dsl: The DSL that this family is for.
+    :param valid_root_types: The types that are valid as roots of programs.
+    :param additional_preorder_masks: A tuple of functions that take a TreeDistribution
+        and return a PreorderMask. These masks are used to filter the set of possible
+        symbols that can appear in a given context.
+    :param include_type_preorder_mask: Whether to include a type preorder mask in the
+        set of masks that are used to filter the set of possible symbols that can appear
+        in a given context.
+    :param node_ordering: The node ordering to use when traversing the tree. This
+        determines the order in which the children of a node are considered.
+    """
+
     def __init__(
         self,
         dsl: DSL,
@@ -253,28 +324,28 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             s be a symbol
             d be the "denominator" (which is the set of *possible* symbols s'
                 that could have appeared in this context g).
-        The ngram `g` is really the context that `s` appears in. So for example
-            `(+ (- 1 2) 3)` if we're thinking about the symbol s=`-` its bigram g=`(+, 0)`
+        The ngram ``g`` is really the context that ``s`` appears in. So for example
+            ``(+ (- 1 2) 3)`` if we're thinking about the symbol s=``-`` its bigram g=``(+, 0)``
             indicating it's the first argument of a "+". This is the bigram notion from
             DreamCoder where it's not just the parent (analogous to "previous token" in NLP)
             but also includes which child of the parent we are. In general, we also filter
             on other characteristics (e.g., type checking), not just ngrams. See the
             preorder mask for more details.
 
-        In this particular example, `d` would be the set of symbols that *could* have
-            appeared in that same position `g`, for example `1` or `+` or `-` or anything
+        In this particular example, ``d`` would be the set of symbols that *could* have
+            appeared in that same position ``g``, for example ``1`` or ``+`` or ``-`` or anything
             else that type checks. This is called the denominator because the
-            probability of choosing `s` among `(s' in d)` is going to be
+            probability of choosing ``s`` among ``(s' in d)`` is going to be
                 P(s)/sum_{s' in d} P(s')
-            These probabilities will depend on the parameters `theta` of the bigram model
-            (and of course, specifically the unigram it assigns to the context `g`).
+            These probabilities will depend on the parameters ``theta`` of the bigram model
+            (and of course, specifically the unigram it assigns to the context ``g``).
 
         (See also math below) Our goal is to compute the loglikelihood of the actual
             program P under the bigram parameters theta. Which, for a bigram is the sum
-            of the logprob over all subtrees of the symbol `s` context `g` and denominator `d` for
+            of the logprob over all subtrees of the symbol ``s`` context ``g`` and denominator ``d`` for
             that subtree. We can factor this overall sum into two parts: a numerator based on
-            sthe actual symbol `s` and a denominator based on the alternative symbols in `d`
-            for that context `g`.
+            sthe actual symbol ``s`` and a denominator based on the alternative symbols in ``d``
+            for that context ``g``.
 
         sum_p log P(p | theta)
             = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
@@ -286,7 +357,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
 
         For each (g,s) instance in the corpus the numerator is the same, and for each (g,d)
             instance the denominator is the same, so we can instead come up with counts for
-            each of these (calling them `numcount` and `dencount`) and rewrite our sum as a
+            each of these (calling them ``numcount`` and ``dencount``) and rewrite our sum as a
             sum over the unique (g,s) and (g,d) instances:
 
         numer

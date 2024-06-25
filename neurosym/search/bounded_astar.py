@@ -10,13 +10,11 @@ def bounded_astar(
     g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float], max_depth: int
 ):
     """
-    Performs a bounded a-star search on the given search graph, yielding each node in
-    the order it was visited.
+    Performs a bounded a-star search on the given search graph, yielding each goal node in
+    the order it was visited. See ``astar`` for more details.
 
     :param g: Search graph to search over
-    :param cost_plus_heuristic: Cost plus heuristic function to use for A*.
-        The heuristic function should be admissible, i.e. it should never overestimate
-        the cost to reach the goal.
+    :param cost_plus_heuristic: An admissible cost heuristic.
     :param max_depth: Maximum depth to search to.
     """
     assert max_depth > 0

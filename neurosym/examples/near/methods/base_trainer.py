@@ -22,7 +22,6 @@ class BaseTrainerConfig:
     scheduler: str = "cosine"
     sav_dir: str = "data/shapeworldonly_checkpoints"
     _filter_param_list: Tuple[str] = ()
-    scheduler: str = "cosine"
     optimizer: str = torch.optim.Adam
 
 

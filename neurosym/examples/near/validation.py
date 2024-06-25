@@ -1,12 +1,20 @@
+from typing import List
+
 import torch
 import tqdm.auto as tqdm
 
-from neurosym.examples.near.methods.near_example_trainer import NEARTrainer
+from neurosym.datasets.load_data import DatasetWrapper
+from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.methods.near_example_trainer import (
+    NEARTrainer,
+    NEARTrainerConfig,
+)
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
@@ -27,16 +35,28 @@ class ProgressBar(pl.callbacks.Callback):
 
 
 class ValidationCost:
+    """
+    A class that computes the validation cost of a program using a neural DSL.
+
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param error_loss: The loss to return if the program is invalid.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param callbacks: Callbacks to use during training.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
+
     def __init__(
         self,
         *,
-        neural_dsl,
-        trainer_cfg,
-        datamodule,
+        neural_dsl: DSL,
+        trainer_cfg: NEARTrainerConfig,
+        datamodule: DatasetWrapper,
         error_loss=10000,
         progress_by_epoch=False,
-        callbacks=(),
-        **kwargs
+        callbacks: List[pl.callbacks.Callback] = (),
+        **kwargs,
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
@@ -84,7 +104,7 @@ class ValidationCost:
         callbacks = list(self.callbacks)
         callbacks = self.duplicate(self.callbacks)
         if self.progress_by_epoch:
-            print("training", label if label else "")
+            log(f"Training {label}")
             pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
             callbacks.append(ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:

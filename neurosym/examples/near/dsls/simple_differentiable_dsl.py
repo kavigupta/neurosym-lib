@@ -1,16 +1,3 @@
-"""
-DSL of the form:
-
-# one :: float
-# ones :: tensor[float]
-# int_int_add :: float -> float -> float
-# Tint_int_add :: tensor[float] -> float -> tensor[float]
-# Tint_Tint_add :: tensor[float] -> tensor[float] -> tensor[float]
-# Function signature for Tint_linear
-# Tint_linear :: LinearObj -> tensor[float] -> tensor[float]
-# Linear_c :: LinearQbj
-"""
-
 import torch
 from torch import nn
 
@@ -18,6 +5,11 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 
 def differentiable_arith_dsl(length):
+    """
+    A simple differentiable DSL for arithmetic operations on tensors.
+
+    :param length: Length of the tensors to operate on
+    """
     dslf = DSLFactory(L=length)
     dslf.concrete("one", "() -> f", lambda: torch.tensor(1.0))
     dslf.concrete("ones", "() -> {f, $L}", lambda: torch.ones(length))

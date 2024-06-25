@@ -19,6 +19,12 @@ from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 def python_to_s_exp(code: Union[str, ast.AST], **kwargs) -> str:
     """
     Converts python code to an s-expression.
+
+    :param code: The python code to convert.
+    :param kwargs: Additional arguments to pass to the conversion function.
+        See ``PythonAST.to_ns_s_exp`` for more information.
+
+    :return: The s-expression, as a string.
     """
     return render_s_expression(python_to_python_ast(code).to_ns_s_exp(kwargs))
 
@@ -29,6 +35,12 @@ def s_exp_to_python(
 ) -> str:
     """
     Converts an s expression to python code.
+
+    :param code: The s-expression to convert.
+    :param node_hooks: A dictionary mapping node symbol prefixes to functions that convert a
+        symbol and children nodes to python ASTs.
+
+    :return: The python code, as a string.
     """
     return s_exp_to_python_ast(code, node_hooks).to_python()
 
@@ -37,7 +49,13 @@ def to_type_annotated_ns_s_exp(
     code: PythonAST, dfa: dict, start_state: str
 ) -> SExpression:
     """
-    Like to_ns_s_exp, but adds type annotations.
+    Converts a python AST to an s-expression with type annotations.
+
+    :param code: The python AST to convert.
+    :param dfa: The DFA to use for type disambiguation.
+    :param start_state: The root state of the code.
+
+    :return: The s-expression, as a string.
     """
     return add_disambiguating_type_tags(
         dfa, code.to_ns_s_exp(dict(no_leaves=True)), start_state
@@ -46,7 +64,11 @@ def to_type_annotated_ns_s_exp(
 
 def python_statement_to_python_ast(code: Union[str, ast.AST]) -> PythonAST:
     """
-    Like python_to_python_ast, but for a single statement.
+    Like ``python_to_python_ast``, but for a single statement.
+
+    :param code: The python code to convert.
+
+    :return: The python AST.
     """
     code = python_statements_to_python_ast(code)
     assert (
@@ -58,7 +80,11 @@ def python_statement_to_python_ast(code: Union[str, ast.AST]) -> PythonAST:
 
 def python_statements_to_python_ast(code: Union[str, ast.AST]) -> SequenceAST:
     """
-    Like python_to_python_ast, but for a sequence of statements.
+    Like ``python_to_python_ast``, but for a sequence of statements.
+
+    :param code: The python code to convert.
+
+    :return: The python AST.
     """
     code = python_to_python_ast(code)
     assert isinstance(code, NodeAST) and code.typ is ast.Module
@@ -73,6 +99,12 @@ def python_to_type_annotated_ns_s_exp(
 ) -> SExpression:
     """
     Converts python code to an s-expression with type annotations.
+
+    :param code: The python code to convert.
+    :param dfa: The DFA to use for type disambiguation. If None, the default python DFA is used.
+    :param start_state: The root state of the code.
+
+    :return: The s-expression, as a string.
     """
     if dfa is None:
         dfa = python_dfa()
