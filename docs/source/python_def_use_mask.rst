@@ -29,3 +29,11 @@ Handlers for Python Def-Use Chain Preorder Mask
 .. autoclass:: neurosym.python_def_use_mask.HandlerPuller
     :members:
 
+Extra Variables
+------------------------------------------------
+
+.. autoclass:: neurosym.python_def_use_mask.ExtraVar
+    :members:
+
+.. autofunction:: neurosym.python_def_use_mask.canonicalized_python_name
+.. autofunction:: neurosym.python_def_use_mask.canonicalized_python_name_as_leaf
