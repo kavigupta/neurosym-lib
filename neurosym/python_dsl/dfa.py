@@ -319,6 +319,7 @@ def all_types_as_string(ts):
     yield ts
 
 
+@internal_only
 def compute_match(transition, key, default=None):
     """
     Compute the match for the given key in the transition dictionary. Handles tuples

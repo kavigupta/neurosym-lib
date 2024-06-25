@@ -14,8 +14,8 @@ def field_order(node, fields):
 def python_ordering_dictionary():
     """
     The ordering dictionary for Python nodes. This is a dictionary that maps node types
-        to a list of integers. The integers are the indices of the fields in the node
-        that should be visited in order.
+    to a list of integers. The integers are the indices of the fields in the node
+    that should be visited in order.
     """
     fields = [
         ("ListComp~E", ["generators", "elt"]),

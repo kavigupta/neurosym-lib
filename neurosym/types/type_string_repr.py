@@ -141,6 +141,7 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
         return FilteredTypeVariable(name, type_filter=env.lookup_filter(name))
     return AtomicType(first_tok)
 
+
 @internal_only
 def parse_type_from_buf_multi(reversed_buf, env):
     t_head = parse_type_from_buf(reversed_buf, env)

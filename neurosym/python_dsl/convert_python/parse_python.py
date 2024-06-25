@@ -5,6 +5,7 @@ from typing import List, Union
 from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.python_dsl import python_ast_tools
+from neurosym.utils.documentation import internal_only
 
 from .python_ast import (
     LeafAST,
@@ -18,6 +19,7 @@ from .python_ast import (
 from .symbol import PythonSymbol, create_descoper
 
 
+@internal_only
 def python_body_to_parsed_ast(x: List[ast.AST], descoper: dict) -> SequenceAST:
     """
     Convert a python body to a PythonAST object.
@@ -34,6 +36,7 @@ def python_body_to_parsed_ast(x: List[ast.AST], descoper: dict) -> SequenceAST:
     return SequenceAST("/seq", x)
 
 
+@internal_only
 def python_ast_to_parsed_ast(x, descoper: dict) -> PythonAST:
     """
     Convert an ast.AST object to a PythonAST object.

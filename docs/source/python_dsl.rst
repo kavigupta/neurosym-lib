@@ -6,3 +6,4 @@ Python DSL and Distributions
     :members:
 
 .. autoclass:: neurosym.python_def_use_mask.PythonNodeOrdering
+.. autofunction:: neurosym.python_def_use_mask.python_ordering_dictionary

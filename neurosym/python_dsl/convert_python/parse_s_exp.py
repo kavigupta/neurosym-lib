@@ -9,6 +9,7 @@ from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import parse_s_expression
 from neurosym.python_dsl import python_ast_tools
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
+from neurosym.utils.documentation import internal_only
 
 from .python_ast import (
     LeafAST,
@@ -23,6 +24,7 @@ from .python_ast import (
 from .symbol import PythonSymbol
 
 
+@internal_only
 def s_exp_leaf_to_value(x):
     """
     Returns (True, a python representation of the leaf) if it is a leaf,
@@ -56,6 +58,7 @@ def s_exp_leaf_to_value(x):
     return False, None
 
 
+@internal_only
 def handle_leaf(
     x: str,
     node_hooks: Dict[str, Callable[[str, List[PythonAST]], PythonAST]],
@@ -72,6 +75,7 @@ def handle_leaf(
     return NodeAST(typ, [])
 
 
+@internal_only
 def s_exp_to_parsed_ast(
     x: SExpression,
     node_hooks: Dict[str, Callable[[str, List[PythonAST]], PythonAST]],
