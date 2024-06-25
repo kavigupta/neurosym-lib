@@ -11,6 +11,8 @@ Python Def-Use Chain Preorder Mask
 .. autoclass:: neurosym.python_def_use_mask.SpecialCaseSymbolPredicate
     :members:
 
+.. autoclass:: neurosym.python_def_use_mask.NameEPredicate
+
 Handlers for Python Def-Use Chain Preorder Mask
 ------------------------------------------------
 

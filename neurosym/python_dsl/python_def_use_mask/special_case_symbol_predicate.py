@@ -37,7 +37,7 @@ class SpecialCaseSymbolPredicate(ABC):
 
 class NameEPredicate(SpecialCaseSymbolPredicate):
     """
-    Predicate that checks for the Name~E symbol and allows it only if
+    Predicate that checks for the ``Name~E`` symbol and allows it only if
     there are global names available or at least one name is present.
 
     :param tree_dist: The ``TreeDistribution`` that the predicate is applied to.
