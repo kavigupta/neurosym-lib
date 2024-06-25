@@ -6,7 +6,7 @@ from neurosym.search_graph.metadata_computer import MetadataComputer
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from ..dsl.dsl import DSL
-from ..programs.hole import Hole, all_holes, replace_holes
+from ..programs.hole import Hole, _all_holes, _replace_holes
 from ..programs.s_expression import SExpression
 from ..types.type import Type
 from .hole_set_chooser import HoleSetChooser
@@ -58,7 +58,7 @@ class DSLSearchGraph(SearchGraph):
                 *[relevant_productions[h] for h in hole_set]
             ):
                 # hole_replacements : list of SExpressions, of length len(holes)
-                expanded_program = replace_holes(
+                expanded_program = _replace_holes(
                     node.program, hole_set, hole_replacements
                 )
                 yield DSLSearchNode(
@@ -67,6 +67,6 @@ class DSLSearchGraph(SearchGraph):
                 )
 
     def is_goal_node(self, node):
-        if any(True for _ in all_holes(node.program)):
+        if any(True for _ in _all_holes(node.program)):
             return False
         return self.test_predicate(node)

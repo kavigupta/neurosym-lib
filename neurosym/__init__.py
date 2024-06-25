@@ -15,6 +15,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     PreorderMask,
 )
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
+from neurosym.programs.hole import Hole
 from neurosym.python_dsl import python_ast_tools, python_def_use_mask
 from neurosym.python_dsl.convert_python import make_python_ast
 from neurosym.python_dsl.convert_python.convert import (

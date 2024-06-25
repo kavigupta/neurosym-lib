@@ -5,7 +5,7 @@ from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 from neurosym.programs.s_expression import SExpression
 
 
-def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
+def _to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     """
     Convert an SExpression to a Pair.
 
@@ -29,7 +29,7 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
             return s_exp.symbol
         return "leaf-" + s_exp.symbol
     elements = [s_exp.symbol] + [
-        to_pair(x, for_stitch=for_stitch) for x in s_exp.children
+        _to_pair(x, for_stitch=for_stitch) for x in s_exp.children
     ]
     result = nil
     for element in reversed(elements):
@@ -37,7 +37,7 @@ def to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
     return result
 
 
-def from_pair(
+def _from_pair(
     pair: Pair, should_not_be_leaf: Set[str], for_stitch: bool
 ) -> SExpression:
     """
@@ -68,7 +68,7 @@ def from_pair(
         if not elements:
             assert isinstance(car, str), f"Expected string, got {pair.car}"
         else:
-            car = from_pair(car, should_not_be_leaf, for_stitch=for_stitch)
+            car = _from_pair(car, should_not_be_leaf, for_stitch=for_stitch)
         elements.append(car)
         pair = pair.cdr
     head, *tail = elements
@@ -87,7 +87,7 @@ def render_s_expression(s_exp: SExpression, for_stitch: bool = False) -> str:
 
     :returns: The string representing the SExpression.
     """
-    return Renderer(columns=float("inf")).render(to_pair(s_exp, for_stitch=for_stitch))
+    return Renderer(columns=float("inf")).render(_to_pair(s_exp, for_stitch=for_stitch))
 
 
 def parse_s_expression(
@@ -109,7 +109,7 @@ def parse_s_expression(
     pairs = parse(s, ParserConfig((), dots_are_cons=False))
     if len(pairs) != 1:
         raise ValueError(f"Expected one expression, got {len(pairs)}")
-    return from_pair(
+    return _from_pair(
         pairs[0], should_not_be_leaf=should_not_be_leaf, for_stitch=for_stitch
     )
 
