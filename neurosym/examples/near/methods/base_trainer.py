@@ -5,6 +5,7 @@ from typing import Tuple
 import torch
 from torch import nn
 
+from neurosym.utils.documentation import internal_only
 from neurosym.utils.imports import import_pytorch_lightning
 
 pl = import_pytorch_lightning()
@@ -51,6 +52,7 @@ class BaseTrainer(pl.LightningModule):
         self.model = model
         self.save_hyperparameters(ignore=["model"])
 
+    @internal_only
     def loss(self) -> dict:
         # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
@@ -128,6 +130,7 @@ class BaseTrainer(pl.LightningModule):
 
         return f
 
+    @internal_only  # not actually, it's just to silence the error that this isn't documented. It is an inherited method.
     def configure_optimizers(self):
         """
         A rather verbose function that instantiates the optimizer and scheduler.

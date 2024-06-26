@@ -7,6 +7,7 @@ import ast_scope
 from no_toplevel_code import wrap_ast
 
 from neurosym.python_dsl import python_ast_tools
+from neurosym.utils.documentation import internal_only
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,7 @@ class PythonSymbol:
         return f"&{self.name}:{self.scope}"
 
 
+@internal_only
 def create_descoper(code):
     """
     Creates a mapping from nodes to numerical ids for scopes.

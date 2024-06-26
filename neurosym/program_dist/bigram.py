@@ -18,6 +18,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask im
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
+from neurosym.utils.documentation import internal_only
 
 from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
@@ -481,6 +482,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             masks.append(mask(tree_dist, self._dsl))
         return ConjunctionPreorderMask.of(tree_dist, masks)
 
+    @internal_only
     def mask_invalid(self, distribution):
         return distribution * self._valid_mask
 
