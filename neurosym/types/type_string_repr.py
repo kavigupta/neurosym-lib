@@ -11,7 +11,6 @@ from neurosym.types.type import (
     TypeVariable,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
-from neurosym.utils.documentation import internal_only
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 

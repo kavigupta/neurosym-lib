@@ -4,8 +4,6 @@ from typing import Dict, List
 
 from frozendict import frozendict
 
-from neurosym.utils.documentation import internal_only
-
 from .python_ast_tools import fields_for_node
 
 # exclude these tags from the dfa. these are all python 3.10+ features,
