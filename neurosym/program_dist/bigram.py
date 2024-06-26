@@ -304,20 +304,19 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def parameters_shape(self) -> List[int]:
         return self._valid_mask.shape
 
-    def _normalize_parameters(
-        self, parameters: torch.Tensor, *, logits: bool, neg_inf=-float("inf")
-    ) -> torch.Tensor:
+    def _normalize_parameters(self, parameters: torch.Tensor) -> torch.Tensor:
+        """
+        Apply a mask to the parameters, then normalize them to be a valid
+        probability distribution. If ``logits`` is True, the parameters are
+        returned as logits, otherwise they are returned as probabilities.
+        """
         parameters = parameters.clone()
         mask = torch.tensor(self._valid_mask, device=parameters.device)[None].repeat(
             parameters.shape[0], 1, 1, 1
         )
         parameters[~mask] = -float("inf")
-        if logits:
-            parameters = parameters.log_softmax(-1)
-            parameters[~mask] = neg_inf
-        else:
-            parameters = parameters.softmax(-1)
-            parameters[~mask] = 0
+        parameters = parameters.softmax(-1)
+        parameters[~mask] = 0
         return parameters
 
     def with_parameters(
@@ -326,7 +325,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         assert (
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
-        parameters = self._normalize_parameters(parameters, logits=False)
+        parameters = self._normalize_parameters(parameters)
         return _BigramProgramDistributionBatch(self, parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
