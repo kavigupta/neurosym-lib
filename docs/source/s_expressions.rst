@@ -11,4 +11,3 @@ S-Expressions
 
 .. autoclass:: neurosym.Hole
     :members:
-
