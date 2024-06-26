@@ -296,7 +296,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         assert (
             parameters.shape[1:] == self.parameters_shape()
         ), f"Expected {self.parameters_shape()}, got {parameters.shape[1:]}"
-        parameters = self._normalize_parameters(parameters)
+        parameters = self._normalize_parameters(parameters, logits=False)
         return _BigramProgramDistributionBatch(self, parameters.detach().cpu().numpy())
 
     def count_programs(self, data: List[List[SExpression]]) -> BigramProgramCountsBatch:
