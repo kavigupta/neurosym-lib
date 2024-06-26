@@ -4,7 +4,7 @@ Getting Started
 Prerequisites
 -------------
 
-You should generally be familiar with Program Synthesis. 
+You should generally be familiar with Program Synthesis.
 
 These guides should give you a general idea of the program synthesis problem:
 
