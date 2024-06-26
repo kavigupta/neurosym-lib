@@ -4,6 +4,8 @@ Tree Distributions
 .. autoclass:: neurosym.TreeDistribution
     :members:
 .. autofunction:: neurosym.enumerate_tree_dist
+.. autoclass:: neurosym.TreeProgramDistributionFamily
+    :members:
 
 Preorder Mask
 -------------------------------------------

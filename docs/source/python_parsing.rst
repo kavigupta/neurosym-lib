@@ -23,6 +23,7 @@ PythonAST object
 .. autoclass:: neurosym.StarrableElementAST
 .. autoclass:: neurosym.SpliceAST
 .. autoclass:: neurosym.PythonSymbol
+    :members: render_symbol
 
 PythonAST factory functions
 ------------------------------------------
