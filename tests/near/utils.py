@@ -11,7 +11,6 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
         """Initialize and return True always"""
         x = x.program
         xx = dsl.compute(dsl.initialize(x))
-        print(xx)
         return True
 
     g = near.near_graph(dsl, t(out_t), is_goal=checker)
