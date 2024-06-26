@@ -5,6 +5,8 @@ import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
+from neurosym.utils.documentation import internal_only
+
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
@@ -92,6 +94,7 @@ class NEARTrainer(BaseTrainer):
         )  # noqa: E501
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
+    @internal_only
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
         # pylint: disable=arguments-differ
         loss = self.loss_fn(predictions, targets)
