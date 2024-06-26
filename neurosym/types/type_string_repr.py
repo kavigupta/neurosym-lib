@@ -32,37 +32,47 @@ class TypeDefiner:
     def __call__(self, type_str: str) -> Type:
         """
         Parse a type string into a type.
+
+        :param type_str: The type string to parse
         """
         return parse_type(type_str, self)
 
     def sig(self, type_str: str) -> FunctionTypeSignature:
         """
-        Parse a type string into a function type signature.
+        Parse a type string into a function type signature. This is
+        the same as :py:meth:`__call__`, but returns a :py:class:`FunctionTypeSignature`
         """
         typ = self(type_str)
         return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
     def typedef(self, key: str, type_str: str):
         """
-        Define a type definition.
+        Define a type alias, which can be used to look up types later.
+
+        E.g., ``typedef("fL", "{f, L}")`` defines a type alias ``$fL`` that can be used
+        in other type strings.
         """
+        if key[0] == "$":
+            key = key[1:]
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
         """
-        Define a type variable with a filter.
+        Set up a type variable with a filter. The type variable will be prefixed with a '%'
+        instead of a '#'. The filter should be a function that takes a type and returns
+        whether or not the variable can be instantiated with that type.
         """
         self.filters[key] = type_filter
 
-    def lookup_type(self, key):
+    def lookup_type(self, key: str):
         """
         Look up a type definition.
         """
         return self.env[key]
 
-    def lookup_filter(self, key):
+    def lookup_filter(self, key: str):
         """
-        Look up a filter.
+        Look up a filter definition.
         """
         return self.filters[key]
 
@@ -95,8 +105,7 @@ def render_type(t: Type) -> str:
     raise NotImplementedError(f"Unknown type {t}")
 
 
-@internal_only
-def parse_type_from_buf(reversed_buf, env: TypeDefiner):
+def _parse_type_from_buf(reversed_buf, env: TypeDefiner):
     assert isinstance(env, TypeDefiner)
     first_tok = reversed_buf.pop()
     if first_tok.isnumeric():
@@ -104,18 +113,18 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
     if first_tok.startswith("$"):
         return env.lookup_type(first_tok[1:])
     if first_tok == "{":
-        internal_type = parse_type_from_buf(reversed_buf, env)
+        internal_type = _parse_type_from_buf(reversed_buf, env)
         shape = []
         while True:
             tok = reversed_buf.pop()
             if tok == "}":
                 break
             assert tok == ",", f"Expected ',' but got {tok}"
-            size = parse_type_from_buf(reversed_buf, env)
+            size = _parse_type_from_buf(reversed_buf, env)
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
     if first_tok == "[":
-        internal_type = parse_type_from_buf_multi(reversed_buf, env)
+        internal_type = _parse_type_from_buf_multi(reversed_buf, env)
         close_bracket = reversed_buf.pop()
         assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
@@ -125,14 +134,14 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
             if reversed_buf[-1] == ")":
                 reversed_buf.pop()
                 break
-            input_types.append(parse_type_from_buf_multi(reversed_buf, env))
+            input_types.append(_parse_type_from_buf_multi(reversed_buf, env))
             tok = reversed_buf.pop()
             if tok == ")":
                 break
             assert tok == ",", f"Expected ',' but got {tok}"
         tok = reversed_buf.pop()
         assert tok == "->", f"Expected '->' but got {tok}"
-        output_type = parse_type_from_buf_multi(reversed_buf, env)
+        output_type = _parse_type_from_buf_multi(reversed_buf, env)
         return ArrowType(tuple(input_types), output_type)
     if first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
@@ -142,15 +151,14 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
     return AtomicType(first_tok)
 
 
-@internal_only
-def parse_type_from_buf_multi(reversed_buf, env):
-    t_head = parse_type_from_buf(reversed_buf, env)
+def _parse_type_from_buf_multi(reversed_buf, env):
+    t_head = _parse_type_from_buf(reversed_buf, env)
     if not reversed_buf:
         return t_head
     if reversed_buf and reversed_buf[-1] != "->":
         return t_head
     reversed_buf.pop()
-    t_tail = parse_type_from_buf_multi(reversed_buf, env)
+    t_tail = _parse_type_from_buf_multi(reversed_buf, env)
     return ArrowType((t_head,), t_tail)
 
 
@@ -207,6 +215,6 @@ def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)
     buf = lex_type(s)[::-1]
-    t = parse_type_from_buf_multi(buf, env)
+    t = _parse_type_from_buf_multi(buf, env)
     assert buf == [], f"Extra tokens {buf[::-1]}"
     return t

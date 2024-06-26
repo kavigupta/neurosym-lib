@@ -1,4 +1,23 @@
-from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+from neurosym.datasets.load_data import (
+    DatasetFromNpy,
+    DatasetWrapper,
+    numpy_dataset_from_github,
+)
+from neurosym.dsl.abstraction import (
+    AbstractionIndexParameter,
+    AbstractionParameter,
+    AbstractionProduction,
+)
+from neurosym.dsl.dsl import DSL
+from neurosym.dsl.production import (
+    Production,
+    FunctionLikeProduction,
+    ConcreteProduction,
+    LambdaProduction,
+    VariableProduction,
+    ParameterizedProduction,
+)
+from neurosym.examples.near.search_graph import FilterUnexpandableNodes
 from neurosym.program_dist.distribution import ProgramDistributionFamily
 from neurosym.program_dist.tree_distribution.ordering import (
     DefaultNodeOrdering,
@@ -46,7 +65,12 @@ from neurosym.python_dsl.dfa import python_dfa
 from neurosym.python_dsl.python_dsl_subset import PythonDSLSubset, create_python_dsl
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
+from neurosym.search_graph.search_graph_transformer import (
+    FilterEdgesGraph,
+    LimitEdgesGraph,
+)
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.tree_trie import TreeTrie
 
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
@@ -64,7 +88,7 @@ from .program_dist.tree_distribution.tree_distribution import (
     TreeDistribution,
     TreeProgramDistributionFamily,
 )
-from .programs.s_expression import SExpression
+from .programs.s_expression import InitializedSExpression, SExpression
 from .programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -77,13 +101,21 @@ from .types.type import (
     ArrowType,
     AtomicType,
     FilteredTypeVariable,
+    GenericTypeVariable,
     ListType,
     TensorType,
     Type,
     TypeVariable,
     UnificationError,
 )
-from .types.type_signature import bottom_up_enumerate_types, type_expansions
+from .types.type_signature import (
+    TypeSignature,
+    FunctionTypeSignature,
+    VariableTypeSignature,
+    LambdaTypeSignature,
+    bottom_up_enumerate_types,
+    type_expansions,
+)
 from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_type
 from .types.type_with_environment import (
     Environment,

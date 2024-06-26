@@ -5,6 +5,7 @@ from typing import Tuple
 import torch
 from torch import nn
 
+from neurosym.utils.documentation import internal_only
 from neurosym.utils.imports import import_pytorch_lightning
 
 pl = import_pytorch_lightning()
@@ -12,6 +13,11 @@ pl = import_pytorch_lightning()
 
 @dataclass
 class BaseTrainerConfig:
+    """
+    Base configuration for a trainer. See :py:class:`neurosym.examples.near.NEARTrainerConfig`
+    for more details.
+    """
+
     lr: float = 1e-4
     weight_decay: float = 0.0
     n_epochs: int = 10
@@ -29,7 +35,8 @@ class BaseTrainer(pl.LightningModule):
     """
     An abstract class that defines the supporting code to
     train a neural module. We use pytorch-lightning as the
-    base framework.
+    base framework. This class exists primarily as the base
+    class for :py:class:`neurosym.examples.near.NEARTrainer`.
     """
 
     @classmethod
@@ -45,6 +52,7 @@ class BaseTrainer(pl.LightningModule):
         self.model = model
         self.save_hyperparameters(ignore=["model"])
 
+    @internal_only
     def loss(self) -> dict:
         # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
@@ -63,7 +71,7 @@ class BaseTrainer(pl.LightningModule):
         self.log("train_loss", train_loss, prog_bar=True, sync_dist=True)
         return {"loss": train_loss}
 
-    def evaluation_step(self, evaluation_batch, batch_idx, split):
+    def _evaluation_step(self, evaluation_batch, batch_idx, split):
         # pylint: disable=arguments-differ
         del batch_idx
         losses = self._step(validation=True, **evaluation_batch)
@@ -76,14 +84,14 @@ class BaseTrainer(pl.LightningModule):
 
     def validation_step(self, val_batch, batch_idx):
         # pylint: disable=arguments-differ
-        return self.evaluation_step(val_batch, batch_idx, "val")
+        return self._evaluation_step(val_batch, batch_idx, "val")
 
     def test_step(self, test_batch, batch_idx):
         # pylint: disable=arguments-differ
-        return self.evaluation_step(test_batch, batch_idx, "test")
+        return self._evaluation_step(test_batch, batch_idx, "test")
 
     @staticmethod
-    def filter_parameters(named_parameters: dict, filter_param_list: list):
+    def _filter_parameters(named_parameters: dict, filter_param_list: list):
         params = []
         for name, param in named_parameters:
             valid_name = not any(x in name for x in filter_param_list)
@@ -94,7 +102,7 @@ class BaseTrainer(pl.LightningModule):
         return params
 
     @staticmethod
-    def warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
+    def _warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
         def f(step):
             warmup_steps = warmup_steps_pct * total_steps
             decay_steps = decay_steps_pct * total_steps
@@ -110,7 +118,7 @@ class BaseTrainer(pl.LightningModule):
 
         return f
 
-    def step_lr_scheduler(self, total_steps: int):
+    def _step_lr_scheduler(self, total_steps: int):
         def f(step: int):
             if step < total_steps * 0.3:
                 factor = 1
@@ -122,15 +130,16 @@ class BaseTrainer(pl.LightningModule):
 
         return f
 
+    @internal_only  # not actually, it's just to silence the error that this isn't documented. It is an inherited method.
     def configure_optimizers(self):
         """
         A rather verbose function that instantiates the optimizer and scheduler.
         """
         # pylint: disable=protected-access
-        params = self.filter_parameters(
+        params = self._filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
-        optimizer_fn = self.config.optimizer
+        optimizer_fn = getattr(torch.optim, self.config.optimizer.__name__)
         optimizer = optimizer_fn(
             params, lr=self.config.lr, weight_decay=self.config.weight_decay
         )
@@ -146,7 +155,7 @@ class BaseTrainer(pl.LightningModule):
                 decay_steps_pct = 0.2
                 scheduler = torch.optim.lr_scheduler.LambdaLR(
                     optimizer=optimizer,
-                    lr_lambda=self.warm_and_decay_lr_scheduler(
+                    lr_lambda=self._warm_and_decay_lr_scheduler(
                         warmup_steps_pct, decay_steps_pct, total_steps
                     ),
                 )
@@ -161,7 +170,7 @@ class BaseTrainer(pl.LightningModule):
                 )
             case "step":
                 scheduler = torch.optim.lr_scheduler.LambdaLR(
-                    optimizer=optimizer, lr_lambda=self.step_lr_scheduler(total_steps)
+                    optimizer=optimizer, lr_lambda=self._step_lr_scheduler(total_steps)
                 )
                 return (
                     [optimizer],

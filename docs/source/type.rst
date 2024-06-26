@@ -7,6 +7,7 @@ Types
 .. autofunction:: neurosym.parse_type
 .. autofunction:: neurosym.render_type
 .. autoclass:: neurosym.TypeDefiner
+    :members: __call__, sig, typedef, filtered_type_variable, lookup_type, lookup_filter
 .. autoclass:: neurosym.Environment
     :members:
 .. autoclass:: neurosym.PermissiveEnvironmment
@@ -22,8 +23,20 @@ Subclasses of :class:`Type`
 .. autoclass:: neurosym.TensorType
 .. autoclass:: neurosym.ListType
 .. autoclass:: neurosym.ArrowType
+.. autoclass:: neurosym.GenericTypeVariable
 .. autoclass:: neurosym.TypeVariable
 .. autoclass:: neurosym.FilteredTypeVariable
+
+Type Signatures
+------------------------------------------
+
+.. autoclass:: neurosym.TypeSignature
+    :members:
+.. autoclass:: neurosym.FunctionTypeSignature
+    :members: astype
+.. autoclass:: neurosym.VariableTypeSignature
+.. autoclass:: neurosym.LambdaTypeSignature
+    :members: function_arity
 
 Other helpful functions
 ------------------------------------------

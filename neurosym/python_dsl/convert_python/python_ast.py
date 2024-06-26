@@ -152,12 +152,12 @@ class LeafAST(PythonAST):
         assert not isinstance(self.leaf, PythonAST)
 
     def to_ns_s_exp(self, config=frozendict()):
-        leaf_as_string = self.render_leaf_as_string()
+        leaf_as_string = self._render_leaf_as_string()
         if not config.get("no_leaves", False):
             return leaf_as_string
         return SExpression("const-" + leaf_as_string, [])
 
-    def render_leaf_as_string(self):
+    def _render_leaf_as_string(self):
         if (
             self.leaf is True
             or self.leaf is False
@@ -166,7 +166,7 @@ class LeafAST(PythonAST):
         ):
             return str(self.leaf)
         if isinstance(self.leaf, PythonSymbol):
-            return self.leaf.render()
+            return self.leaf.render_symbol()
         if isinstance(self.leaf, float):
             return f"f{self.leaf}"
         if isinstance(self.leaf, int):

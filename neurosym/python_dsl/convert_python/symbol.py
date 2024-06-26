@@ -47,7 +47,10 @@ class PythonSymbol:
             return cls(x[2:], None)
         return None
 
-    def render(self):
+    def render_symbol(self):
+        """
+        Render this symbol with scope information.
+        """
         if self.scope is None:
             return f"g_{self.name}"
         return f"&{self.name}:{self.scope}"
@@ -64,7 +67,7 @@ def create_descoper(code):
     Returns:
         The descoper.
     """
-    globs = true_globals(code)
+    globs = _true_globals(code)
     annot = ast_scope.annotate(code)
     scopes = []
     results = {}
@@ -79,8 +82,7 @@ def create_descoper(code):
     return results
 
 
-@internal_only
-def true_globals(node):
+def _true_globals(node):
     """
     Get the true globals of a program.
 

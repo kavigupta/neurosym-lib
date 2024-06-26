@@ -254,16 +254,16 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
         result[state] = {}
         for tag in all_tags:
             t = getattr(ast, tag)
-            out = compute_transition(_python_transitions, state, t, fields_for_node(t))
+            out = _compute_transition(_python_transitions, state, t, fields_for_node(t))
             if out is not None:
                 result[state][tag] = out
         for tag in extras:
-            out = compute_transition(_python_transitions, state, tag, [None])
+            out = _compute_transition(_python_transitions, state, tag, [None])
             if out is not None:
                 result[state][tag] = out
 
         missing = (
-            set(all_types_as_string(list(_python_transitions[state])))
+            set(_all_types_as_string(list(_python_transitions[state])))
             - set(result[state])
             - {"list", "/seq", "/splice"}
         )
@@ -279,8 +279,7 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     return result
 
 
-@internal_only
-def compute_transition(transitions, state, typ, fields):
+def _compute_transition(transitions, state, typ, fields):
     """
     Compute the list of states that the DFA should transition to
         for each child of a node of type ``typ`` in state ``state``.
@@ -294,21 +293,20 @@ def compute_transition(transitions, state, typ, fields):
         the node could not be matched.
     """
     transition = transitions[state]
-    transition = compute_match(transition, typ, default=False)
+    transition = _compute_match(transition, typ, default=False)
     if transition is False:
         return None
-    return [compute_match(transition, field) for field in fields]
+    return [_compute_match(transition, field) for field in fields]
 
 
-@internal_only
-def all_types_as_string(ts):
+def _all_types_as_string(ts):
     """
     Converts all the types in the given set into strings.
         E.g., (ast.Name, ast.If) -> ["Name", "If"]
     """
     if isinstance(ts, (list, tuple)):
         for x in ts:
-            yield from all_types_as_string(x)
+            yield from _all_types_as_string(x)
         return
     if ts is all:
         return
@@ -319,8 +317,7 @@ def all_types_as_string(ts):
     yield ts
 
 
-@internal_only
-def compute_match(transition, key, default=None):
+def _compute_match(transition, key, default=None):
     """
     Compute the match for the given key in the transition dictionary. Handles tuples
         and the special case where the key is ``all``.

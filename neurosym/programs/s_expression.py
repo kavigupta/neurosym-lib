@@ -56,6 +56,16 @@ class SExpression:
 
 @dataclass
 class InitializedSExpression:
+    """
+    Represents a SExpression with an additional state. This is useful for
+    representing a program with a state, e.g. a neural network with weights.
+
+    :field symbol: The symbol of the s-expression.
+    :field children: A tuple of children of the s-expression. Each child can
+        be either a string or another s-expression.
+    :field state: A dictionary of state values.
+    """
+
     symbol: str
     children: Tuple["InitializedSExpression"]
     # state includes things related to the execution of the program,
@@ -63,6 +73,11 @@ class InitializedSExpression:
     state: Dict[str, object]
 
     def all_state_values(self):
+        """
+        Yield all state values in this InitializedSExpression and its children.
+
+        :return: An iterator over all state values.
+        """
         yield from self.state.values()
         for child in self.children:
             yield from child.all_state_values()

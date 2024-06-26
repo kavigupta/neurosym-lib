@@ -5,10 +5,19 @@ import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
 
+from neurosym.utils.documentation import internal_only
+
 from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
 def classification_mse_loss(predictions, targets):
+    """
+    Loss function that computes the mean squared error between the predictions
+    and the targets.
+
+    :param predictions: The predictions from the model. Shape: ``(..., num_classes)``
+    :param targets: The target labels, as integers. Shape: ``(..., 1)``
+    """
     # pylint: disable=not-callable
     targets = torch.nn.functional.one_hot(
         targets.squeeze(-1), num_classes=predictions.shape[-1]
@@ -33,7 +42,7 @@ class NEARTrainerConfig(BaseTrainerConfig):
     :param sav_dir: Directory to save checkpoints to (default: "data/shapeworldonly_checkpoints")
     :param optimizer: Optimizer to use (default: torch.optim.Adam)
     :param max_seq_len: Maximum sequence length for the model (default: 100)
-    :param loss_callback: Loss function to use (default: ``classification_mse_loss``)
+    :param loss_callback: Loss function to use (default: :py:func:`neurosym.examples.near.classification_mse_loss`)
     """
 
     max_seq_len: int = 100
@@ -56,9 +65,9 @@ class NEARTrainer(BaseTrainer):
         assert config.num_labels > 0, "Number of labels must be set programmatically"
         self.loss_fn = config.loss_callback
 
-    @staticmethod
-    def compute_average_f1_score(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
+    @classmethod
+    def _compute_average_f1_score(
+        cls, predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
     ):  # noqa: E501
         if num_labels > 1:
             weighted_avg_f1 = 1 - f1_score(targets, predictions, average="weighted")
@@ -73,18 +82,19 @@ class NEARTrainer(BaseTrainer):
         all_f1 = 1 - f1_score(targets, predictions, average=None)
         return dict(avg_f1=avg_f1, all_f1s=all_f1)
 
-    @staticmethod
+    @classmethod
     def label_correctness(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
+        cls, predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
     ):  # noqa: E501
         hamming_accuracy = 1 - hamming_loss(
             targets.squeeze().cpu(), predictions.squeeze().cpu()
         )
-        f1_scores = NEARTrainer.compute_average_f1_score(
+        f1_scores = cls._compute_average_f1_score(
             predictions, targets, num_labels
         )  # noqa: E501
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
 
+    @internal_only
     def loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> dict:
         # pylint: disable=arguments-differ
         loss = self.loss_fn(predictions, targets)
@@ -114,7 +124,7 @@ class NEARTrainer(BaseTrainer):
         self.logger.log_metrics(correctness, step=self.global_step)
 
 
-def main():
+def _main():
     from neurosym.utils.imports import import_pytorch_lightning
 
     pl = import_pytorch_lightning()
@@ -180,4 +190,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()
