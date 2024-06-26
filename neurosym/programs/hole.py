@@ -51,7 +51,7 @@ def _replace_holes(
     )
 
 
-def _all_holes(program: SExpression) -> Iterator[Hole]:
+def _all_holes(program: SExpression) -> List[Hole]:
     """
     Yield all holes in the given SExpression.
 

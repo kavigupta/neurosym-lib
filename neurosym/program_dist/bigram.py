@@ -274,7 +274,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def parameters_shape(self) -> List[int]:
         return self._valid_mask.shape
 
-    def normalize_parameters(
+    def _normalize_parameters(
         self, parameters: torch.Tensor, *, logits: bool, neg_inf=-float("inf")
     ) -> torch.Tensor:
         parameters = parameters.clone()
