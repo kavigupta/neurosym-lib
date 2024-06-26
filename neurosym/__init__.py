@@ -70,6 +70,7 @@ from neurosym.search_graph.search_graph_transformer import (
     LimitEdgesGraph,
 )
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.tree_trie import TreeTrie
 
 from . import compression, datasets, examples, search
 from .dsl.dsl_factory import DSLFactory
@@ -87,7 +88,7 @@ from .program_dist.tree_distribution.tree_distribution import (
     TreeDistribution,
     TreeProgramDistributionFamily,
 )
-from .programs.s_expression import SExpression
+from .programs.s_expression import InitializedSExpression, SExpression
 from .programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -100,6 +101,7 @@ from .types.type import (
     ArrowType,
     AtomicType,
     FilteredTypeVariable,
+    GenericTypeVariable,
     ListType,
     TensorType,
     Type,
