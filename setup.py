@@ -31,5 +31,6 @@ setuptools.setup(
         "increase_recursionlimit==1.0.0",
         "no_toplevel_code==1.0.0",
         "ast-scope==0.4.3",
+        "pathos==0.3.2"
     ],
 )
