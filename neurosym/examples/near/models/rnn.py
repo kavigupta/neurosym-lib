@@ -22,7 +22,7 @@ class RNNConfig(BaseConfig):
     output_size: int
 
 
-class RNN(nn.Module):
+class _RNN(nn.Module):
     """Abstract RNN module."""
 
     def __init__(self, config: RNNConfig):
@@ -41,7 +41,7 @@ class RNN(nn.Module):
         )
         self.fc = nn.Linear(config.hidden_size, config.output_size)
 
-    def seq2class(self, x, hidden: torch.Tensor = None):
+    def _seq2class(self, x, hidden: torch.Tensor = None):
         """
         :param x : (batch_size, seq_length, input_size)
         :return out : (batch_size, output_size)
@@ -56,7 +56,7 @@ class RNN(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
-    def seq2seq(self, x, hidden: torch.Tensor = None):
+    def _seq2seq(self, x, hidden: torch.Tensor = None):
         """
         :param x : (batch_size, seq_length, input_size)
         :return out : (batch_size, seq_length, output_size)
@@ -75,7 +75,7 @@ class RNN(nn.Module):
         pass
 
 
-class Seq2SeqRNN(RNN):
+class Seq2SeqRNN(_RNN):
     """
     RNN module for sequence-to-sequence tasks.
 
@@ -83,10 +83,10 @@ class Seq2SeqRNN(RNN):
     """
 
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
-        return self.seq2seq(inp, hidden)
+        return self._seq2seq(inp, hidden)
 
 
-class Seq2ClassRNN(RNN):
+class Seq2ClassRNN(_RNN):
     """
     RNN module for sequence-to-class tasks.
 
@@ -94,7 +94,7 @@ class Seq2ClassRNN(RNN):
     """
 
     def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
-        return self.seq2class(inp, hidden)
+        return self._seq2class(inp, hidden)
 
 
 def rnn_factory_seq2seq(hidden_size: int):

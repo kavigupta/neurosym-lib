@@ -13,6 +13,8 @@ from neurosym.types.type import Type
 class FilterUnexpandableNodes(FilterEdgesGraph):
     """
     Represents a search graph that removes nodes that cannot be expanded.
+
+    Currently does nothing. This is a placeholder for future functionality.
     """
 
     def include_edge(self, s, t):

@@ -114,7 +114,7 @@ class NEARTrainer(BaseTrainer):
         self.logger.log_metrics(correctness, step=self.global_step)
 
 
-def main():
+def _main():
     from neurosym.utils.imports import import_pytorch_lightning
 
     pl = import_pytorch_lightning()
@@ -180,4 +180,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()

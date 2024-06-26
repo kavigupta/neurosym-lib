@@ -5,11 +5,13 @@ from typing import Tuple
 import torch
 from torch import nn
 
+from neurosym.utils.documentation import internal_only
 from neurosym.utils.imports import import_pytorch_lightning
 
 pl = import_pytorch_lightning()
 
 
+@internal_only
 @dataclass
 class BaseTrainerConfig:
     lr: float = 1e-4
@@ -25,6 +27,7 @@ class BaseTrainerConfig:
     optimizer: str = torch.optim.Adam
 
 
+@internal_only
 class BaseTrainer(pl.LightningModule):
     """
     An abstract class that defines the supporting code to
@@ -45,6 +48,7 @@ class BaseTrainer(pl.LightningModule):
         self.model = model
         self.save_hyperparameters(ignore=["model"])
 
+    @internal_only
     def loss(self) -> dict:
         # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")

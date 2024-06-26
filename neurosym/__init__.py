@@ -1,4 +1,5 @@
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+from neurosym.examples.near.search_graph import FilterUnexpandableNodes
 from neurosym.program_dist.distribution import ProgramDistributionFamily
 from neurosym.program_dist.tree_distribution.ordering import (
     DefaultNodeOrdering,
@@ -46,6 +47,10 @@ from neurosym.python_dsl.dfa import python_dfa
 from neurosym.python_dsl.python_dsl_subset import PythonDSLSubset, create_python_dsl
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
+from neurosym.search_graph.search_graph_transformer import (
+    FilterEdgesGraph,
+    LimitEdgesGraph,
+)
 from neurosym.utils.imports import import_pytorch_lightning
 
 from . import compression, datasets, examples, search
