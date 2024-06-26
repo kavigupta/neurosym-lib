@@ -25,6 +25,16 @@ Subclasses of :class:`Type`
 .. autoclass:: neurosym.TypeVariable
 .. autoclass:: neurosym.FilteredTypeVariable
 
+Type Signatures
+------------------------------------------
+
+.. autoclass:: neurosym.TypeSignature
+    :members:
+.. autoclass:: neurosym.FunctionTypeSignature
+.. autoclass:: neurosym.VariableTypeSignature
+.. autoclass:: neurosym.LambdaTypeSignature
+    :members: function_arity
+
 Other helpful functions
 ------------------------------------------
 .. autofunction:: neurosym.lex_type

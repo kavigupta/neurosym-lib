@@ -1,5 +1,11 @@
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
-from neurosym.dsl.production import VariableProduction
+from neurosym.dsl.production import (
+    Production,
+    ConcreteProduction,
+    LambdaProduction,
+    VariableProduction,
+    ParameterizedProduction,
+)
 from neurosym.examples.near.search_graph import FilterUnexpandableNodes
 from neurosym.program_dist.distribution import ProgramDistributionFamily
 from neurosym.program_dist.tree_distribution.ordering import (
@@ -90,7 +96,10 @@ from .types.type import (
     UnificationError,
 )
 from .types.type_signature import (
+    TypeSignature,
+    FunctionTypeSignature,
     VariableTypeSignature,
+    LambdaTypeSignature,
     bottom_up_enumerate_types,
     type_expansions,
 )

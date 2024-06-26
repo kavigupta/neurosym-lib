@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import KW_ONLY, dataclass
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
+
+from torch import NoneType
 
 from ..types.type_signature import (
     LambdaTypeSignature,
@@ -13,31 +15,45 @@ class Production(ABC):
     """
     Represents a production rule in a simple s-expression grammar.
 
-    Has a symbol, a type signature, and a function that represents the fn represented.
+    Has a symbol, a type signature, and a function that computes the
+    semantics of the production.
     """
 
     @abstractmethod
-    def base_symbol(self):
-        pass
+    def base_symbol(self) -> str:
+        """
+        Get the "base" symbol of this production, without the index.
+        """
 
     @abstractmethod
-    def get_index(self):
-        pass
-
-    def get_numerical_index(self):
+    def get_index(self) -> Union[int, NoneType]:
         """
-        Like get_index, but returns 0 if the index is None.
+        Get the index of this production; this is used to disambiguate
+        productions with the same base symbol. These are created by
+        the :py:class:`neurosym.dsl.DSLFactory` either by
+        :py:meth:`neurosym.dsl.DSLFactory.lambdas` or by
+        type variables that appear on only the left or right side of a type signature
+        being enumerated as templates.
+        """
+
+    def get_numerical_index(self) -> int:
+        """
+        Like :py:meth:`get_index`, but returns 0 if the index is None.
         """
         idx = self.get_index()
         return 0 if idx is None else idx
 
     @abstractmethod
-    def with_index(self, index):
-        pass
-
-    def symbol(self):
+    def with_index(self, index: int) -> "Production":
         """
-        Return the symbol of this production.
+        A copy of this production with the given index.
+        """
+
+    def symbol(self) -> str:
+        """
+        Return the symbol of this production. This is
+        the base symbol if the index is None, otherwise
+        it is the base symbol followed by an underscore and the index.
         """
         if self.get_index() is None:
             return self.base_symbol()
@@ -97,6 +113,12 @@ class FunctionLikeProduction(Production):
 
 @dataclass
 class ConcreteProduction(FunctionLikeProduction):
+    """
+    Represents a production rule in a simple s-expression grammar, that does
+    not have any parameters. This is added to the DSL by the :py:class:`neurosym.DSLFactory`
+    when :py:meth:`neurosym.DSLFactory.concrete` is called.
+    """
+
     _symbol: str
     _type_signature: TypeSignature
     _compute: Callable[..., object]
@@ -137,6 +159,12 @@ class ConcreteProduction(FunctionLikeProduction):
 
 @dataclass
 class LambdaProduction(Production):
+    """
+    This production represents a lambda function. This is added automatically
+    to the DSL by the :py:class:`neurosym.DSLFactory` when :py:meth:`neurosym.DSLFactory.lambdas`
+    is called.
+    """
+
     _unique_id: int
     _type_signature: LambdaTypeSignature
 
@@ -217,6 +245,13 @@ class VariableProduction(Production):
 
 @dataclass
 class ParameterizedProduction(ConcreteProduction):
+    """
+    Like a concrete production, but with some parameters that need to be initialized.
+
+    This is added to the DSL by the :py:class:`neurosym.DSLFactory` when
+    :py:meth:`neurosym.DSLFactory.parameterized` is called.
+    """
+
     initializers: Dict[str, Callable[[], object]]
 
     def with_index(self, index):
