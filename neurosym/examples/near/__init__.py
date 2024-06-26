@@ -1,3 +1,4 @@
+from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
 from neurosym.examples.near.validation import ValidationCost
 
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl

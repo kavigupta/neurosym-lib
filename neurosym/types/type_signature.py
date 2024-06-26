@@ -270,7 +270,7 @@ def bottom_up_enumerate_types(
     return sorted([t for t, _, _ in overall], key=str)
 
 
-def signature_expansions(
+def _signature_expansions(
     sig: FunctionTypeSignature,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
@@ -349,13 +349,18 @@ def type_expansions(
         yield sig.subst_type_vars(remap)
 
 
-def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
+def _type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
     """
     Produce a type universe from the given types.
 
-    Returns a tuple of (atomic_types, constructors), where atomic_types
-        represents the atomic types in the universe, and constructors
-        is a list of tuples of the form (arity, constructor), where
+    :param types: The types to use.
+    :param require_arity_up_to: If specified, include all constructors up to this arity,
+        even if they are not present in the types.
+    :param no_zeroadic: If True, do not include zero-arity constructors.
+
+    :return: A tuple of ``(atomic_types, constructors)``, where ``atomic_types``
+        represents the atomic types in the universe, and ``constructors``
+        is a list of tuples of the form ``(arity, constructor)``, where
         constructor is a function that takes ``arity`` types and
         produces a new type.
     """

@@ -39,3 +39,5 @@ Example Datasets/DSLs
 Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
+.. autoclass:: neurosym.examples.near.BaseTrainerConfig
+.. autoclass:: neurosym.examples.near.BaseTrainer
