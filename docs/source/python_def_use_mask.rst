@@ -8,6 +8,11 @@ Python Def-Use Chain Preorder Mask
 
 .. autofunction:: neurosym.python_def_use_mask.match_either_name_or_global
 
+.. autoclass:: neurosym.python_def_use_mask.SpecialCaseSymbolPredicate
+    :members:
+
+.. autoclass:: neurosym.python_def_use_mask.NameEPredicate
+
 Handlers for Python Def-Use Chain Preorder Mask
 ------------------------------------------------
 
@@ -24,3 +29,11 @@ Handlers for Python Def-Use Chain Preorder Mask
 .. autoclass:: neurosym.python_def_use_mask.HandlerPuller
     :members:
 
+Extra Variables
+------------------------------------------------
+
+.. autoclass:: neurosym.python_def_use_mask.ExtraVar
+    :members:
+
+.. autofunction:: neurosym.python_def_use_mask.canonicalized_python_name
+.. autofunction:: neurosym.python_def_use_mask.canonicalized_python_name_as_leaf
