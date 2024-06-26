@@ -63,7 +63,7 @@ class BaseTrainer(pl.LightningModule):
         self.log("train_loss", train_loss, prog_bar=True, sync_dist=True)
         return {"loss": train_loss}
 
-    def evaluation_step(self, evaluation_batch, batch_idx, split):
+    def _evaluation_step(self, evaluation_batch, batch_idx, split):
         # pylint: disable=arguments-differ
         del batch_idx
         losses = self._step(validation=True, **evaluation_batch)
@@ -76,14 +76,14 @@ class BaseTrainer(pl.LightningModule):
 
     def validation_step(self, val_batch, batch_idx):
         # pylint: disable=arguments-differ
-        return self.evaluation_step(val_batch, batch_idx, "val")
+        return self._evaluation_step(val_batch, batch_idx, "val")
 
     def test_step(self, test_batch, batch_idx):
         # pylint: disable=arguments-differ
-        return self.evaluation_step(test_batch, batch_idx, "test")
+        return self._evaluation_step(test_batch, batch_idx, "test")
 
     @staticmethod
-    def filter_parameters(named_parameters: dict, filter_param_list: list):
+    def _filter_parameters(named_parameters: dict, filter_param_list: list):
         params = []
         for name, param in named_parameters:
             valid_name = not any(x in name for x in filter_param_list)
@@ -94,7 +94,7 @@ class BaseTrainer(pl.LightningModule):
         return params
 
     @staticmethod
-    def warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
+    def _warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
         def f(step):
             warmup_steps = warmup_steps_pct * total_steps
             decay_steps = decay_steps_pct * total_steps
@@ -110,7 +110,7 @@ class BaseTrainer(pl.LightningModule):
 
         return f
 
-    def step_lr_scheduler(self, total_steps: int):
+    def _step_lr_scheduler(self, total_steps: int):
         def f(step: int):
             if step < total_steps * 0.3:
                 factor = 1
@@ -127,7 +127,7 @@ class BaseTrainer(pl.LightningModule):
         A rather verbose function that instantiates the optimizer and scheduler.
         """
         # pylint: disable=protected-access
-        params = self.filter_parameters(
+        params = self._filter_parameters(
             self.named_parameters(), self.config._filter_param_list
         )
         optimizer_fn = getattr(torch.optim, self.config.optimizer.__name__)
@@ -146,7 +146,7 @@ class BaseTrainer(pl.LightningModule):
                 decay_steps_pct = 0.2
                 scheduler = torch.optim.lr_scheduler.LambdaLR(
                     optimizer=optimizer,
-                    lr_lambda=self.warm_and_decay_lr_scheduler(
+                    lr_lambda=self._warm_and_decay_lr_scheduler(
                         warmup_steps_pct, decay_steps_pct, total_steps
                     ),
                 )
@@ -161,7 +161,7 @@ class BaseTrainer(pl.LightningModule):
                 )
             case "step":
                 scheduler = torch.optim.lr_scheduler.LambdaLR(
-                    optimizer=optimizer, lr_lambda=self.step_lr_scheduler(total_steps)
+                    optimizer=optimizer, lr_lambda=self._step_lr_scheduler(total_steps)
                 )
                 return (
                     [optimizer],

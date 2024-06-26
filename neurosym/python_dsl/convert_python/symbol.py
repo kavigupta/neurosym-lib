@@ -62,7 +62,7 @@ def create_descoper(code):
     Returns:
         The descoper.
     """
-    globs = true_globals(code)
+    globs = _true_globals(code)
     annot = ast_scope.annotate(code)
     scopes = []
     results = {}
@@ -77,7 +77,7 @@ def create_descoper(code):
     return results
 
 
-def true_globals(node):
+def _true_globals(node):
     """
     Get the true globals of a program.
 

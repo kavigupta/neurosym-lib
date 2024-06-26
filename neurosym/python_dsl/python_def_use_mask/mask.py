@@ -29,7 +29,7 @@ class DefUseMaskConfiguration:
     dfa: Dict
     node_hooks: Dict[str, HandlerPuller]
 
-    def get_hook(self, symbol):
+    def _get_hook(self, symbol):
         prefixes = [x for x in self.node_hooks if symbol.startswith(x)]
         if not prefixes:
             return None
@@ -44,7 +44,7 @@ class DefUseMaskConfiguration:
         defined_production_idxs: List[int],
         handler_fn=default_handler,
     ):
-        hook = self.get_hook(symbol)
+        hook = self._get_hook(symbol)
         if hook is None:
             return None
         return hook.pull_handler(

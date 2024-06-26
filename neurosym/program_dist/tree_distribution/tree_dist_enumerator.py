@@ -52,7 +52,7 @@ def enumerate_tree_dist(
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
-        for program, likelihood in enumerate_tree_dist_dfs(
+        for program, likelihood in _enumerate_tree_dist_dfs(
             tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
         ):
             if (
@@ -65,7 +65,7 @@ def enumerate_tree_dist(
             return
 
 
-def remove_below_threshold(
+def _remove_below_threshold(
     results: List[Tuple[SExpression, float]], min_likelihood: float
 ):
     """
@@ -76,7 +76,7 @@ def remove_below_threshold(
     return results[index:]
 
 
-def enumerate_tree_dist_dfs(
+def _enumerate_tree_dist_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
     parents: Tuple[Tuple[int, int], ...],
@@ -88,8 +88,8 @@ def enumerate_tree_dist_dfs(
         if key in cache:
             old_results, old_min_likelihood = cache[key]
             if old_min_likelihood <= min_likelihood:
-                return remove_below_threshold(old_results, min_likelihood)
-    generator = enumerate_tree_dist_dfs_uncached(
+                return _remove_below_threshold(old_results, min_likelihood)
+    generator = _enumerate_tree_dist_dfs_uncached(
         tree_dist, min_likelihood, parents, preorder_mask, cache
     )
     if cache is not None:
@@ -98,7 +98,7 @@ def enumerate_tree_dist_dfs(
     return generator
 
 
-def enumerate_tree_dist_dfs_uncached(
+def _enumerate_tree_dist_dfs_uncached(
     tree_dist: TreeDistribution,
     min_likelihood: float,
     parents: Tuple[Tuple[int, int], ...],
@@ -129,7 +129,7 @@ def enumerate_tree_dist_dfs_uncached(
         new_parents = new_parents[-tree_dist.limit :]
         symbol, arity = tree_dist.symbols[node]
         undo_entry = preorder_mask.on_entry(position, node)
-        for children, child_likelihood in enumerate_children_and_likelihoods_dfs(
+        for children, child_likelihood in _enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - likelihood,
             parents,
@@ -150,7 +150,7 @@ def enumerate_tree_dist_dfs_uncached(
         undo_entry()
 
 
-def enumerate_children_and_likelihoods_dfs(
+def _enumerate_children_and_likelihoods_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
     parents: Tuple[Tuple[int, int], ...],
@@ -175,13 +175,13 @@ def enumerate_children_and_likelihoods_dfs(
     new_parents = parents + ((most_recent_parent, order[starting_index]),)
     new_parents = new_parents[-tree_dist.limit :]
 
-    for first_child, first_likelihood in enumerate_tree_dist_dfs(
+    for first_child, first_likelihood in _enumerate_tree_dist_dfs(
         tree_dist, min_likelihood, new_parents, preorder_mask, cache
     ):
         for (
             rest_children,
             rest_likelihood,
-        ) in enumerate_children_and_likelihoods_dfs(
+        ) in _enumerate_children_and_likelihoods_dfs(
             tree_dist,
             min_likelihood - first_likelihood,
             parents,

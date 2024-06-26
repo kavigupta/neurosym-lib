@@ -9,7 +9,7 @@ from .python_ast_tools import fields_for_node
 # exclude these tags from the dfa. these are all python 3.10+ features,
 # and for consistency across python versions, we exclude them. We can
 # add them back in later if we want to support them.
-excluded_python_tags = [
+_excluded_python_tags = [
     # match
     "Match",
     "MatchAs",
@@ -27,7 +27,7 @@ excluded_python_tags = [
 ]
 
 
-python_transitions = frozendict(
+_python_transitions = frozendict(
     {
         "M": {ast.Module: {"body": "seqS", "type_ignores": "[TI]"}},
         "S": {
@@ -236,7 +236,7 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
         for x in dir(ast)
         if isinstance(getattr(ast, x), type)
         and issubclass(getattr(ast, x), ast.AST)
-        and x not in excluded_python_tags
+        and x not in _excluded_python_tags
     ]
 
     extras = [
@@ -248,28 +248,28 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     ]
 
     result = {}
-    for state in python_transitions:
+    for state in _python_transitions:
         result[state] = {}
         for tag in all_tags:
             t = getattr(ast, tag)
-            out = compute_transition(python_transitions, state, t, fields_for_node(t))
+            out = _compute_transition(_python_transitions, state, t, fields_for_node(t))
             if out is not None:
                 result[state][tag] = out
         for tag in extras:
-            out = compute_transition(python_transitions, state, tag, [None])
+            out = _compute_transition(_python_transitions, state, tag, [None])
             if out is not None:
                 result[state][tag] = out
 
         missing = (
-            set(all_types_as_string(list(python_transitions[state])))
+            set(_all_types_as_string(list(_python_transitions[state])))
             - set(result[state])
             - {"list", "/seq", "/splice"}
         )
         if missing:
             raise RuntimeError(f"in state {state}: missing {missing}")
 
-        if "list" in python_transitions[state]:
-            result[state]["list"] = [python_transitions[state]["list"]]
+        if "list" in _python_transitions[state]:
+            result[state]["list"] = [_python_transitions[state]["list"]]
     result["seqS"]["/seq"] = ["S"]
     result["seqS"]["/subseq"] = ["S"]
     result["seqS"]["/choiceseq"] = ["S"]
@@ -277,7 +277,7 @@ def python_dfa() -> Dict[str, Dict[str, List[str]]]:
     return result
 
 
-def compute_transition(transitions, state, typ, fields):
+def _compute_transition(transitions, state, typ, fields):
     """
     Compute the list of states that the DFA should transition to
         for each child of a node of type ``typ`` in state ``state``.
@@ -291,20 +291,20 @@ def compute_transition(transitions, state, typ, fields):
         the node could not be matched.
     """
     transition = transitions[state]
-    transition = compute_match(transition, typ, default=False)
+    transition = _compute_match(transition, typ, default=False)
     if transition is False:
         return None
-    return [compute_match(transition, field) for field in fields]
+    return [_compute_match(transition, field) for field in fields]
 
 
-def all_types_as_string(ts):
+def _all_types_as_string(ts):
     """
     Converts all the types in the given set into strings.
         E.g., (ast.Name, ast.If) -> ["Name", "If"]
     """
     if isinstance(ts, (list, tuple)):
         for x in ts:
-            yield from all_types_as_string(x)
+            yield from _all_types_as_string(x)
         return
     if ts is all:
         return
@@ -315,7 +315,7 @@ def all_types_as_string(ts):
     yield ts
 
 
-def compute_match(transition, key, default=None):
+def _compute_match(transition, key, default=None):
     """
     Compute the match for the given key in the transition dictionary. Handles tuples
         and the special case where the key is ``all``.

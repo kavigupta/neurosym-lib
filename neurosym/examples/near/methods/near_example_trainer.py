@@ -56,9 +56,9 @@ class NEARTrainer(BaseTrainer):
         assert config.num_labels > 0, "Number of labels must be set programmatically"
         self.loss_fn = config.loss_callback
 
-    @staticmethod
-    def compute_average_f1_score(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
+    @classmethod
+    def _compute_average_f1_score(
+        cls, predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
     ):  # noqa: E501
         if num_labels > 1:
             weighted_avg_f1 = 1 - f1_score(targets, predictions, average="weighted")
@@ -114,7 +114,7 @@ class NEARTrainer(BaseTrainer):
         self.logger.log_metrics(correctness, step=self.global_step)
 
 
-def main():
+def _main():
     from neurosym.utils.imports import import_pytorch_lightning
 
     pl = import_pytorch_lightning()
@@ -180,4 +180,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()

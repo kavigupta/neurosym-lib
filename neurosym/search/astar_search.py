@@ -22,7 +22,7 @@ def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
     fringe = queue.PriorityQueue()
 
     def add_to_fringe(node):
-        fringe.put(AStarNode(cost_plus_heuristic(node), node))
+        fringe.put(_AStarNode(cost_plus_heuristic(node), node))
 
     add_to_fringe(g.initial_node())
     # this is similar to the BFS algorithm
@@ -39,7 +39,7 @@ def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
 
 
 @dataclass(order=True)
-class AStarNode:
+class _AStarNode:
     """
     Represents a node in the A* search tree.
     """

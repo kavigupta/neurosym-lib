@@ -270,7 +270,7 @@ def bottom_up_enumerate_types(
     return sorted([t for t, _, _ in overall], key=str)
 
 
-def signature_expansions(
+def _signature_expansions(
     sig: FunctionTypeSignature,
     terminals: List[Type],
     constructors: List[Tuple[int, Callable]],
@@ -349,7 +349,7 @@ def type_expansions(
         yield sig.subst_type_vars(remap)
 
 
-def type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
+def _type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
     """
     Produce a type universe from the given types.
 

@@ -10,7 +10,7 @@ from neurosym.utils.imports import import_pytorch_lightning
 pl = import_pytorch_lightning()
 
 
-def get_raw_url(github_folder, filename):
+def _get_raw_url(github_folder, filename):
     """
     Get the raw url for a file in a github folder.
 
@@ -33,7 +33,7 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-def load_npy(path_or_url):
+def _load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
 
@@ -75,8 +75,8 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         url : str
             The url of the numpy file.
         """
-        self.inputs = load_npy(input_url)
-        self.outputs = load_npy(output_url)
+        self.inputs = _load_npy(input_url)
+        self.outputs = _load_npy(output_url)
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(
@@ -156,13 +156,13 @@ def numpy_dataset_from_github(
     """
     return lambda train_seed: DatasetWrapper(
         DatasetFromNpy(
-            get_raw_url(github_url, train_input_path),
-            get_raw_url(github_url, train_output_path),
+            _get_raw_url(github_url, train_input_path),
+            _get_raw_url(github_url, train_output_path),
             train_seed,
         ),
         DatasetFromNpy(
-            get_raw_url(github_url, test_input_path),
-            get_raw_url(github_url, test_output_path),
+            _get_raw_url(github_url, test_input_path),
+            _get_raw_url(github_url, test_output_path),
             None,
         ),
     )

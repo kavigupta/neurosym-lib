@@ -8,9 +8,9 @@ from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
-    signature_expansions,
+    _signature_expansions,
+    _type_universe,
     type_expansions,
-    type_universe,
 )
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
@@ -183,7 +183,7 @@ class DSLFactory:
         self, terminals, type_constructors, constructor, symbol, sig, *args
     ):
         sigs = list(
-            signature_expansions(
+            _signature_expansions(
                 sig,
                 terminals,
                 type_constructors,
@@ -228,7 +228,7 @@ class DSLFactory:
 
         known_types = [x.astype() for x in self._signatures] + self._known_types
 
-        universe = type_universe(known_types, no_zeroadic=self._no_zeroadic)
+        universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
@@ -245,7 +245,7 @@ class DSLFactory:
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
-            types, constructors_lambda = type_universe(
+            types, constructors_lambda = _type_universe(
                 known_types,
                 require_arity_up_to=self.lambda_parameters["max_arity"],
                 no_zeroadic=self._no_zeroadic,
@@ -293,7 +293,7 @@ class DSLFactory:
 
         if self.prune:
             assert self.target_types is not None
-            sym_to_productions = prune(
+            sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
                 care_about_variables=False,
@@ -303,7 +303,7 @@ class DSLFactory:
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
             if self.prune_variables:
-                sym_to_productions = prune(
+                sym_to_productions = _prune(
                     sym_to_productions,
                     self.target_types,
                     care_about_variables=True,
@@ -313,10 +313,10 @@ class DSLFactory:
                     tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
                 )
         if "<variable>" in sym_to_productions:
-            sym_to_productions["<variable>"] = clean_variables(
+            sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = make_dsl(
+        dsl = _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
             self.max_overall_depth,
@@ -325,7 +325,7 @@ class DSLFactory:
         return dsl
 
 
-def clean_variables(variable_productions):
+def _clean_variables(variable_productions):
     type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
     type_to_idx = {t: i for i, t in enumerate(sorted(type_to_idx, key=str))}
     variable_productions = [
@@ -335,7 +335,7 @@ def clean_variables(variable_productions):
     return variable_productions
 
 
-def make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
+def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
         valid_root_types,
@@ -344,7 +344,7 @@ def make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth
     )
 
 
-def prune(
+def _prune(
     sym_to_productions,
     target_types,
     *,
@@ -354,7 +354,7 @@ def prune(
     stable_symbols,
     tolerate_pruning_entire_productions,
 ):
-    dsl = make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
+    dsl = _make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
     symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
