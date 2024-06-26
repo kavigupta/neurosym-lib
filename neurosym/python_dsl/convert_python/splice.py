@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import List
 
+from neurosym.utils.documentation import internal_only
 
+
+@internal_only
 @dataclass
 class Splice:
     """
