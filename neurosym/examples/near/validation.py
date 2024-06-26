@@ -42,6 +42,7 @@ class ProgressBar(pl.callbacks.Callback):
 class ValidationCost:
     """
     A class that computes the validation cost of a program using a neural DSL.
+    This is epsilon-admissible heuristic: https://arxiv.org/abs/2007.12101
 
     :param neural_dsl: The neural DSL to use.
     :param trainer_cfg: The configuration for the trainer.
@@ -72,6 +73,14 @@ class ValidationCost:
         self.callbacks = list(callbacks)
 
     def __call__(self, node: DSLSearchNode) -> float:
+        """
+        Initialize a pl.Trainer object and train on a partial program.
+        Returns validation cost after training.
+
+        :param node: The partial program DSLSearchNode to compute the score for.
+
+        :returns: The validation loss as a `float`.
+        """
         trainer, pbar = self.get_trainer_and_pbar(
             label=render_s_expression(node.program)
         )
