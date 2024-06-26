@@ -53,7 +53,7 @@ class BaseTrainer(pl.LightningModule):
         self.save_hyperparameters(ignore=["model"])
 
     @internal_only
-    def loss(self) -> dict:
+    def _loss(self) -> dict:
         # pylint: disable=arguments-differ
         raise NotImplementedError("Loss function not implemented.")
 

@@ -49,7 +49,7 @@ class PythonDSLSubset:
         :param s_exps: the s-expressions to add
         """
         for s_exp in s_exps:
-            for node in traverse(s_exp):
+            for node in _traverse(s_exp):
                 assert isinstance(node, SExpression)
                 symbol, state, *_ = node.symbol.split(PYTHON_DSL_SEPARATOR)
                 state = python_ast_tools.unclean_type(state)
@@ -123,14 +123,13 @@ class PythonDSLSubset:
         }
 
 
-@internal_only
-def traverse(s_exp):
+def _traverse(s_exp):
     """
     Yield all the nodes in the s-expression.
     """
     yield s_exp
     for child in s_exp.children:
-        yield from traverse(child)
+        yield from _traverse(child)
 
 
 def create_python_dsl(
