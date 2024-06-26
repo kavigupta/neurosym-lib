@@ -8,7 +8,6 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.validation import ValidationCost
 
 
 class TestNEARAsyncSearch(unittest.TestCase):
@@ -69,7 +68,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
             n_iter = 0
             iterator = ns.search.bounded_astar_async(
                 g,
-                ValidationCost(
+                near.ValidationCost(
                     neural_dsl=neural_dsl,
                     trainer_cfg=trainer_cfg,
                     datamodule=datamodule,
