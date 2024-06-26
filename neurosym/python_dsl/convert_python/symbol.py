@@ -47,7 +47,10 @@ class PythonSymbol:
             return cls(x[2:], None)
         return None
 
-    def render(self):
+    def render_symbol(self):
+        """
+        Render this symbol with scope information.
+        """
         if self.scope is None:
             return f"g_{self.name}"
         return f"&{self.name}:{self.scope}"
