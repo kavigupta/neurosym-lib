@@ -8,6 +8,7 @@ Search Graph
 .. autofunction:: neurosym.search.bfs
 .. autofunction:: neurosym.search.astar
 .. autofunction:: neurosym.search.bounded_astar
+.. autofunction:: neurosym.search.bounded_astar_async
 .. autoclass:: neurosym.MetadataComputer
     :members:
 .. autoclass:: neurosym.NoMetadataComputer
