@@ -73,14 +73,14 @@ class NEARTrainer(BaseTrainer):
         all_f1 = 1 - f1_score(targets, predictions, average=None)
         return dict(avg_f1=avg_f1, all_f1s=all_f1)
 
-    @staticmethod
+    @classmethod
     def label_correctness(
-        predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
+        cls, predictions: torch.Tensor, targets: torch.Tensor, num_labels: int
     ):  # noqa: E501
         hamming_accuracy = 1 - hamming_loss(
             targets.squeeze().cpu(), predictions.squeeze().cpu()
         )
-        f1_scores = NEARTrainer.compute_average_f1_score(
+        f1_scores = cls._compute_average_f1_score(
             predictions, targets, num_labels
         )  # noqa: E501
         return dict(hamming_accuracy=hamming_accuracy, **f1_scores)
