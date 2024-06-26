@@ -1,4 +1,13 @@
-from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+from neurosym.datasets.load_data import (
+    DatasetFromNpy,
+    DatasetWrapper,
+    numpy_dataset_from_github,
+)
+from neurosym.dsl.abstraction import (
+    AbstractionIndexParameter,
+    AbstractionParameter,
+    AbstractionProduction,
+)
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     Production,

@@ -233,9 +233,6 @@ class VariableProduction(Production):
         return {}
 
     def apply(self, dsl, state, children):
-        """
-        Apply this production to the given children.
-        """
         raise NotImplementedError
 
     def render(self):

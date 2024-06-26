@@ -18,7 +18,7 @@ class AbstractionIndexParameter:
 
     def apply(self, inputs):
         """
-        Map the parameter to a value.
+        Map the parameter to a value from the inputs.
         """
         return AbstractionParameter(inputs[self.index])
 
@@ -77,7 +77,7 @@ class AbstractionProduction(FunctionLikeProduction):
         initialized_body = state["body"]
         return dsl.compute(with_index_parameters(initialized_body, inputs))
 
-    def render_as_lambda(self):
+    def _render_as_lambda(self):
         body = render_s_expression(self._body)
         arguments = " ".join(
             render_s_expression(AbstractionIndexParameter(i))
@@ -86,7 +86,7 @@ class AbstractionProduction(FunctionLikeProduction):
         return f"(lam-abstr ({arguments}) {body})"
 
     def render(self):
-        return f"{self._symbol:>15} :: {self._type_signature.render()} = {self.render_as_lambda()}"
+        return f"{self._symbol:>15} :: {self._type_signature.render()} = {self._render_as_lambda()}"
 
 
 def with_index_parameters(ise: InitializedSExpression, inputs: tuple):

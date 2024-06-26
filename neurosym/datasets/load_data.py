@@ -1,5 +1,6 @@
 import io
 import os
+from typing import Callable
 
 import numpy as np
 import requests
@@ -10,7 +11,7 @@ from neurosym.utils.imports import import_pytorch_lightning
 pl = import_pytorch_lightning()
 
 
-def get_raw_url(github_folder, filename):
+def _get_raw_url(github_folder, filename):
     """
     Get the raw url for a file in a github folder.
 
@@ -33,7 +34,7 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-def load_npy(path_or_url):
+def _load_npy(path_or_url):
     """
     Load a numpy file from a path or url.
 
@@ -75,8 +76,8 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         url : str
             The url of the numpy file.
         """
-        self.inputs = load_npy(input_url)
-        self.outputs = load_npy(output_url)
+        self.inputs = _load_npy(input_url)
+        self.outputs = _load_npy(output_url)
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(
@@ -130,42 +131,32 @@ class DatasetWrapper(pl.LightningDataModule):
 
 
 def numpy_dataset_from_github(
-    github_url,
-    train_input_path,
-    train_output_path,
-    test_input_path,
-    test_output_path,
-):
+    github_url: str,
+    train_input_path: str,
+    train_output_path: str,
+    test_input_path: str,
+    test_output_path: str,
+) -> Callable[[int], DatasetWrapper]:
     """
     Load a dataset from a github url.
 
-    Parameters
-    ----------
-    github_url : str
-        The url of the github folder containing the data.
-    train_input_path : str
-        The path to the training input data.
-    train_output_path : str
-        The path to the training output data.
-    test_input_path : str
-        The path to the test input data.
-    test_output_path : str
-        The path to the test output data.
+    :param github_url: the url of the github folder containing the data.
+    :param train_input_path: the path to the training input data.
+    :param train_output_path: the path to the training output data.
+    :param test_input_path: the path to the test input data.
+    :param test_output_path: the path to the test output data
 
-    Returns
-    -------
-    dataset : function seed -> DatasetWrapper
-        The dataset, as a function of the seed.
+    :return: a function that takes a seed and returns a DatasetWrapper.
     """
     return lambda train_seed: DatasetWrapper(
         DatasetFromNpy(
-            get_raw_url(github_url, train_input_path),
-            get_raw_url(github_url, train_output_path),
+            _get_raw_url(github_url, train_input_path),
+            _get_raw_url(github_url, train_output_path),
             train_seed,
         ),
         DatasetFromNpy(
-            get_raw_url(github_url, test_input_path),
-            get_raw_url(github_url, test_output_path),
+            _get_raw_url(github_url, test_input_path),
+            _get_raw_url(github_url, test_output_path),
             None,
         ),
     )
