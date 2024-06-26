@@ -17,5 +17,6 @@ Search Graph
     :members:
 .. autoclass:: neurosym.NoMetadataComputer
 .. autoclass:: neurosym.HoleSetChooser
+    :members: choose_hole_sets
 .. autoclass:: neurosym.ChooseFirst
 .. autoclass:: neurosym.ChooseAll

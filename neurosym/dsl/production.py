@@ -192,7 +192,8 @@ class LambdaProduction(Production):
 
     def apply(self, dsl, state, children):
         """
-        Apply this production to the given children.
+        Apply the lambda production to its child, creating
+        a function with the child as the body.
         """
         # pylint: disable=cyclic-import
         from neurosym.dsl.lambdas import LambdaFunction

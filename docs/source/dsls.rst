@@ -17,3 +17,4 @@ Productions
 .. autoclass:: neurosym.ParameterizedProduction
 .. autoclass:: neurosym.VariableProduction
 .. autoclass:: neurosym.LambdaProduction
+    :members: apply

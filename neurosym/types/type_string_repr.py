@@ -32,25 +32,35 @@ class TypeDefiner:
     def __call__(self, type_str: str) -> Type:
         """
         Parse a type string into a type.
+
+        :param type_str: The type string to parse
         """
         return parse_type(type_str, self)
 
     def sig(self, type_str: str) -> FunctionTypeSignature:
         """
-        Parse a type string into a function type signature.
+        Parse a type string into a function type signature. This is
+        the same as :py:meth:`__call__`, but returns a :py:class:`FunctionTypeSignature`
         """
         typ = self(type_str)
         return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
     def typedef(self, key: str, type_str: str):
         """
-        Define a type definition.
+        Define a type alias, which can be used to look up types later.
+
+        E.g., ``typedef("fL", "{f, L}")`` defines a type alias ``$fL`` that can be used
+        in other type strings.
         """
+        if key[0] == "$":
+            key = key[1:]
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
         """
-        Define a type variable with a filter.
+        Set up a type variable with a filter. The type variable will be prefixed with a '%'
+        instead of a '#'. The filter should be a function that takes a type and returns
+        whether or not the variable can be instantiated with that type.
         """
         self.filters[key] = type_filter
 
