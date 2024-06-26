@@ -84,7 +84,7 @@ def name_field(node: ast.AST):
     raise NotImplementedError(f"Unexpected type: {t}")
 
 
-def is_sequence_type(x):
+def _is_sequence_type(x: str) -> bool:
     """
     Returns whether a type is a sequence type.
     Sequence types are either lists or seqS.
@@ -97,7 +97,7 @@ def is_sequence_type(x):
     return x.name == "seqS"
 
 
-def is_sequence_symbol(x):
+def _is_sequence_symbol(x: str) -> bool:
     """
     Returns whether a symbol is a sequence symbol.
     """
@@ -115,8 +115,8 @@ def is_sequence(type_name, head_symbol):
         head_symbol: The head symbol.
     """
 
-    seq_type = is_sequence_type(type_name)
-    seq_symbol = is_sequence_symbol(head_symbol)
+    seq_type = _is_sequence_type(type_name)
+    seq_symbol = _is_sequence_symbol(head_symbol)
     if type_name in pruned_python_dfa_states:
         return seq_symbol
     return seq_type and seq_symbol
