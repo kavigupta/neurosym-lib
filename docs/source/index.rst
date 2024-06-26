@@ -3,7 +3,7 @@ Welcome to ``neurosym``'s documentation!
 
 The ``neurosym`` library is a Python package for neurosymbolic program synthesis. We aim to provide a set
 of tools for DSL design, program search, and program abstraction in a self-contained package, allowing
-researchers to reuse DSLs, datasets, and algorithmic components across different research projects.
+researchers to reuse DSLs, datasets, and algorithmic components across different projects.
 
 Some examples of what you can do with ``neurosym``:
 
@@ -20,6 +20,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   installation
    s_expressions
    type
    dsls
