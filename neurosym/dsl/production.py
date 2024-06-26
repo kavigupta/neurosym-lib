@@ -99,6 +99,7 @@ class FunctionLikeProduction(Production):
     Production that acts like a function, i.e., evaluates each of its children
     as values and then applies a function to them.
     """
+
     @abstractmethod
     def evaluate(self, dsl, state, inputs):
         """
