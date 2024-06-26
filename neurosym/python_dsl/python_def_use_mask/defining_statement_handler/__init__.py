@@ -1,3 +1,7 @@
+from neurosym.utils.documentation import internal_only
+
+
+@internal_only
 def defining_statement_handlers():
     """
     Map from statement name to handler class for defining statements.

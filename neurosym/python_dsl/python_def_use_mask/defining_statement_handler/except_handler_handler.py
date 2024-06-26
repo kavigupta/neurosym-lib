@@ -1,10 +1,12 @@
 from typing import Callable, Tuple
 
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
+from neurosym.utils.documentation import internal_only
 
 from ..handler import ConstructHandler, Handler
 
 
+@internal_only
 class ExceptHandlerHandler(ConstructHandler):
     """
     Handles an exception statement, which defines a name in the except block.

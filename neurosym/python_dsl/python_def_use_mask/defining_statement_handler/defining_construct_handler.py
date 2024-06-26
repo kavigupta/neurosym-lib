@@ -4,6 +4,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
     chain_undos,
     remove_last_n_elements,
 )
+from neurosym.utils.documentation import internal_only
 
 from ..handler import Handler
 from .defining_statement_handler import ChildFrameCreatorHandler
@@ -14,7 +15,13 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
     Handles defining constructs like function and class definitions.
 
     These are constructs that have a child frame defined as the body of the construct,
-        as well as a name that is defined in the parent frame.
+    as well as a name that is defined in the parent frame.
+
+    This handler is responsible for defining the name in the parent frame and
+    defining the symbols in the child frame.
+
+    :field construct_name_field: The field in the construct that defines the name of the construct.
+        i.e., ``name`` in a function definition. Should be defined in the subclass.
     """
 
     # these fields must be defined in the subclass
@@ -60,6 +67,7 @@ class DefiningConstructHandler(ChildFrameCreatorHandler):
         return super().is_defining(position)
 
 
+@internal_only
 class FuncDefHandler(DefiningConstructHandler):
     name = "FunctionDef~S"
     targeted = ["args"]
@@ -67,6 +75,7 @@ class FuncDefHandler(DefiningConstructHandler):
     construct_name_field = "name"
 
 
+@internal_only
 class ClassDefHandler(DefiningConstructHandler):
     name = "ClassDef~S"
     targeted = []
