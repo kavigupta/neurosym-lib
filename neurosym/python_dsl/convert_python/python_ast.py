@@ -166,7 +166,7 @@ class LeafAST(PythonAST):
         ):
             return str(self.leaf)
         if isinstance(self.leaf, PythonSymbol):
-            return self.leaf.render()
+            return self.leaf.render_symbol()
         if isinstance(self.leaf, float):
             return f"f{self.leaf}"
         if isinstance(self.leaf, int):
