@@ -35,3 +35,7 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.datasets.near_data_example
 .. autofunction:: neurosym.examples.near.differentiable_arith_dsl
 .. autofunction:: neurosym.examples.near.example_rnn_dsl
+
+Utilites
+--------------------------------------------
+.. autofunction:: neurosym.examples.near.classification_mse_loss
