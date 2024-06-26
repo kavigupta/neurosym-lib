@@ -64,15 +64,15 @@ class TypeDefiner:
         """
         self.filters[key] = type_filter
 
-    def lookup_type(self, key):
+    def lookup_type(self, key: str):
         """
         Look up a type definition.
         """
         return self.env[key]
 
-    def lookup_filter(self, key):
+    def lookup_filter(self, key: str):
         """
-        Look up a filter.
+        Look up a filter definition.
         """
         return self.filters[key]
 

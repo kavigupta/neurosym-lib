@@ -7,7 +7,7 @@ Types
 .. autofunction:: neurosym.parse_type
 .. autofunction:: neurosym.render_type
 .. autoclass:: neurosym.TypeDefiner
-    :members: __call__, sig, typedef, filtered_type_variable
+    :members: __call__, sig, typedef, filtered_type_variable, lookup_type, lookup_filter
 .. autoclass:: neurosym.Environment
     :members:
 .. autoclass:: neurosym.PermissiveEnvironmment
