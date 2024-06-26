@@ -18,6 +18,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask im
 from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
+from neurosym.utils.documentation import internal_only
 
 from .tree_distribution.tree_distribution import TreeProgramDistributionFamily
 
@@ -345,70 +346,67 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
     def parameter_difference_loss(
         self, parameters: torch.tensor, actual: BigramProgramCountsBatch
     ) -> torch.float32:
-        """
-        Let
-            p be a program
-            g be a bigram context (i.e. parent +, in position 2)
-            s be a symbol
-            d be the "denominator" (which is the set of *possible* symbols s'
-                that could have appeared in this context g).
-        The ngram ``g`` is really the context that ``s`` appears in. So for example
-            ``(+ (- 1 2) 3)`` if we're thinking about the symbol s=``-`` its bigram g=``(+, 0)``
-            indicating it's the first argument of a "+". This is the bigram notion from
-            DreamCoder where it's not just the parent (analogous to "previous token" in NLP)
-            but also includes which child of the parent we are. In general, we also filter
-            on other characteristics (e.g., type checking), not just ngrams. See the
-            preorder mask for more details.
+        # Let
+        #     p be a program
+        #     g be a bigram context (i.e. parent +, in position 2)
+        #     s be a symbol
+        #     d be the "denominator" (which is the set of *possible* symbols s'
+        #         that could have appeared in this context g).
+        # The ngram ``g`` is really the context that ``s`` appears in. So for example
+        #     ``(+ (- 1 2) 3)`` if we're thinking about the symbol s=``-`` its bigram g=``(+, 0)``
+        #     indicating it's the first argument of a "+". This is the bigram notion from
+        #     DreamCoder where it's not just the parent (analogous to "previous token" in NLP)
+        #     but also includes which child of the parent we are. In general, we also filter
+        #     on other characteristics (e.g., type checking), not just ngrams. See the
+        #     preorder mask for more details.
 
-        In this particular example, ``d`` would be the set of symbols that *could* have
-            appeared in that same position ``g``, for example ``1`` or ``+`` or ``-`` or anything
-            else that type checks. This is called the denominator because the
-            probability of choosing ``s`` among ``(s' in d)`` is going to be
-                P(s)/sum_{s' in d} P(s')
-            These probabilities will depend on the parameters ``theta`` of the bigram model
-            (and of course, specifically the unigram it assigns to the context ``g``).
+        # In this particular example, ``d`` would be the set of symbols that *could* have
+        #     appeared in that same position ``g``, for example ``1`` or ``+`` or ``-`` or anything
+        #     else that type checks. This is called the denominator because the
+        #     probability of choosing ``s`` among ``(s' in d)`` is going to be
+        #         P(s)/sum_{s' in d} P(s')
+        #     These probabilities will depend on the parameters ``theta`` of the bigram model
+        #     (and of course, specifically the unigram it assigns to the context ``g``).
 
-        (See also math below) Our goal is to compute the loglikelihood of the actual
-            program P under the bigram parameters theta. Which, for a bigram is the sum
-            of the logprob over all subtrees of the symbol ``s`` context ``g`` and denominator ``d`` for
-            that subtree. We can factor this overall sum into two parts: a numerator based on
-            sthe actual symbol ``s`` and a denominator based on the alternative symbols in ``d``
-            for that context ``g``.
+        # (See also math below) Our goal is to compute the loglikelihood of the actual
+        #     program P under the bigram parameters theta. Which, for a bigram is the sum
+        #     of the logprob over all subtrees of the symbol ``s`` context ``g`` and denominator ``d`` for
+        #     that subtree. We can factor this overall sum into two parts: a numerator based on
+        #     sthe actual symbol ``s`` and a denominator based on the alternative symbols in ``d``
+        #     for that context ``g``.
 
-        sum_p log P(p | theta)
-            = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
-            = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
-            = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
-            = [sum_p sum_{(g, s, d) in p} theta_{g, s}]
-                - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
-            = [numer] - [denom]
+        # sum_p log P(p | theta)
+        #     = sum_p sum_{(g, s, d) in p} log P(s | g, theta, d)
+        #     = sum_p sum_{(g, s, d) in p} log (exp(theta_{g, s}) / sum_{s' in d} exp(theta_{g, s'}))
+        #     = sum_p sum_{(g, s, d) in p} (theta_{g, s} - log sum_{s' in d} exp(theta_{g, s'}))
+        #     = [sum_p sum_{(g, s, d) in p} theta_{g, s}]
+        #         - [sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})]
+        #     = [numer] - [denom]
 
-        For each (g,s) instance in the corpus the numerator is the same, and for each (g,d)
-            instance the denominator is the same, so we can instead come up with counts for
-            each of these (calling them ``numcount`` and ``dencount``) and rewrite our sum as a
-            sum over the unique (g,s) and (g,d) instances:
+        # For each (g,s) instance in the corpus the numerator is the same, and for each (g,d)
+        #     instance the denominator is the same, so we can instead come up with counts for
+        #     each of these (calling them ``numcount`` and ``dencount``) and rewrite our sum as a
+        #     sum over the unique (g,s) and (g,d) instances:
 
-        numer
-            = sum_p sum_{(g, s, d) in p} theta_{g, s}
-            = sum_g sum_s numcount_{g, s} theta_{g, s}
-            = (numcount * theta).sum()
+        # numer
+        #     = sum_p sum_{(g, s, d) in p} theta_{g, s}
+        #     = sum_g sum_s numcount_{g, s} theta_{g, s}
+        #     = (numcount * theta).sum()
 
-        denom
-            = sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})
-            = sum_g sum_d dencount_{g, d} log sum_{s' in d} exp(theta_{g, s'})
+        # denom
+        #     = sum_p sum_{(g, s, d) in p} log sum_{s' in d} exp(theta_{g, s'})
+        #     = sum_g sum_d dencount_{g, d} log sum_{s' in d} exp(theta_{g, s'})
 
-        theta_by_denom(g, s', d) = theta_{g, s'} if s' in d, else -inf
+        # theta_by_denom(g, s', d) = theta_{g, s'} if s' in d, else -inf
 
-        denom
-            = sum_g sum_d dencount_{g, d} log sum_{s'} exp(theta_by_denom{g, s', d})
+        # denom
+        #     = sum_g sum_d dencount_{g, d} log sum_{s'} exp(theta_by_denom{g, s', d})
 
-        agg_theta_by_denom(g, d) = logsumexp(theta_by_denom(g, *, d))
+        # agg_theta_by_denom(g, d) = logsumexp(theta_by_denom(g, *, d))
 
-        denom
-            = sum_g sum_d dencount_{g, d} agg_theta_by_denom(g, d)
-            = (dencount * agg_theta_by_denom).sum()
-
-        """
+        # denom
+        #     = sum_g sum_d dencount_{g, d} agg_theta_by_denom(g, d)
+        #     = (dencount * agg_theta_by_denom).sum()
 
         assert parameters.shape[1:] == self.parameters_shape()
         assert len(parameters.shape) == 4
@@ -438,6 +436,12 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         return -(numer - denom)
 
     def uniform(self):
+        """
+        A PCFG which is "uniform" in the sense that given a parent and a position
+        in the parent, all symbols are equally likely. This distribution is not
+        necessarily a proper probability distribution, as many paths suggested
+        by this distribution will be invalid. However, it can be enumerated.
+        """
         return BigramProgramDistribution(
             self, _counts_to_probabilities(self._valid_mask)
         )
@@ -465,11 +469,11 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             1,
             dist,
             list(zip(self._symbols, self._arities)),
-            self.compute_preorder_mask,
+            self._compute_preorder_mask,
             self._node_ordering,
         )
 
-    def compute_preorder_mask(self, tree_dist):
+    def _compute_preorder_mask(self, tree_dist):
         masks = []
         if self._include_type_preorder_mask:
             masks.append(TypePreorderMask(tree_dist, self._dsl))
@@ -477,10 +481,14 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             masks.append(mask(tree_dist, self._dsl))
         return ConjunctionPreorderMask.of(tree_dist, masks)
 
+    @internal_only
     def mask_invalid(self, distribution):
         return distribution * self._valid_mask
 
-    def symbols(self):
+    def symbols(self) -> List[str]:
+        """
+        Get the symbols this distribution is over.
+        """
         return self._symbols
 
 

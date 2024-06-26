@@ -1,6 +1,8 @@
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
+from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     Production,
+    FunctionLikeProduction,
     ConcreteProduction,
     LambdaProduction,
     VariableProduction,

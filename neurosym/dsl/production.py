@@ -95,19 +95,21 @@ class Production(ABC):
 
 
 class FunctionLikeProduction(Production):
+    """
+    Production that acts like a function, i.e., evaluates each of its children
+    as values and then applies a function to them.
+    """
     @abstractmethod
     def evaluate(self, dsl, state, inputs):
         """
         Return the resulting pytorch expression of computing this function on the inputs
-            Takes in the state of the production, which is the result of initialize().
+        Takes in the state of the production, which is the result of
+        :py:meth:`neurosym.DSL.initialize`
 
         Effectively a form of denotation semantics.
         """
 
     def apply(self, dsl, state, children):
-        """
-        Apply this production to the given children.
-        """
         return self.evaluate(dsl, state, [dsl.compute(x) for x in children])
 
 

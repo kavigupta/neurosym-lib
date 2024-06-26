@@ -3,11 +3,15 @@ DSLs
 
 .. autoclass:: neurosym.DSLFactory
     :members:
+.. autoclass:: neurosym.DSL
+    :members:
 
 Productions
 -------------------------------------------
 
 .. autoclass:: neurosym.Production
+    :members:
+.. autoclass:: neurosym.FunctionLikeProduction
     :members:
 .. autoclass:: neurosym.ConcreteProduction
 .. autoclass:: neurosym.ParameterizedProduction
