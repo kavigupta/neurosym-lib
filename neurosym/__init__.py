@@ -10,12 +10,12 @@ from neurosym.dsl.abstraction import (
 )
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
-    Production,
-    FunctionLikeProduction,
     ConcreteProduction,
+    FunctionLikeProduction,
     LambdaProduction,
-    VariableProduction,
     ParameterizedProduction,
+    Production,
+    VariableProduction,
 )
 from neurosym.examples.near.search_graph import FilterUnexpandableNodes
 from neurosym.program_dist.distribution import ProgramDistributionFamily
@@ -109,10 +109,10 @@ from .types.type import (
     UnificationError,
 )
 from .types.type_signature import (
-    TypeSignature,
     FunctionTypeSignature,
-    VariableTypeSignature,
     LambdaTypeSignature,
+    TypeSignature,
+    VariableTypeSignature,
     bottom_up_enumerate_types,
     type_expansions,
 )
