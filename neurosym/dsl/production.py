@@ -176,6 +176,12 @@ class LambdaProduction(Production):
 
 @dataclass
 class VariableProduction(Production):
+    """
+    A production that represents a de Bruijn variable. This is added automatically
+    to the DSL by the :py:class:`neurosym.DSLFactory` when
+    :py:meth:`neurosym.DSLFactory.lambdas` is called.
+    """
+
     _unique_id: int
     _type_signature: VariableTypeSignature
 

@@ -184,7 +184,14 @@ class LambdaTypeSignature(TypeSignature):
 @dataclass
 class VariableTypeSignature(TypeSignature):
     """
-    Represents the type signature of variable production.
+    Represents the type signature of a variable production.
+
+    This is a type signature where the return type is known, but the
+    environment must contain the given type at the given index in
+    order to be valid.
+
+    :param variable_type: The type of the variable.
+    :param index_in_env: The index of the variable in the environment.
     """
 
     variable_type: Type
