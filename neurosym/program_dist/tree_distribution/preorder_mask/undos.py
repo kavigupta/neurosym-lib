@@ -15,9 +15,10 @@ def chain_undos(undos: List[Callable[[], NoneType]]) -> Callable[[], NoneType]:
     return undo
 
 
-def remove_last_n_elements(lst, n):
+def remove_last_n_elements(lst: list, n: int) -> Callable[[], NoneType]:
     """
-    Remove the last n elements from a list.
+    Returns an undo function for an operation that appends n elements to a list.
+    This function will remove the last n elements from the list.
     """
 
     def run():

@@ -9,6 +9,13 @@ from .base_trainer import BaseTrainer, BaseTrainerConfig
 
 
 def classification_mse_loss(predictions, targets):
+    """
+    Loss function that computes the mean squared error between the predictions
+    and the targets.
+
+    :param predictions: The predictions from the model. Shape: ``(..., num_classes)``
+    :param targets: The target labels, as integers. Shape: ``(..., 1)``
+    """
     # pylint: disable=not-callable
     targets = torch.nn.functional.one_hot(
         targets.squeeze(-1), num_classes=predictions.shape[-1]
@@ -33,7 +40,7 @@ class NEARTrainerConfig(BaseTrainerConfig):
     :param sav_dir: Directory to save checkpoints to (default: "data/shapeworldonly_checkpoints")
     :param optimizer: Optimizer to use (default: torch.optim.Adam)
     :param max_seq_len: Maximum sequence length for the model (default: 100)
-    :param loss_callback: Loss function to use (default: ``classification_mse_loss``)
+    :param loss_callback: Loss function to use (default: :py:func:`neurosym.examples.near.classification_mse_loss`)
     """
 
     max_seq_len: int = 100

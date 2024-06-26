@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Iterator, List
 
 from ..types.type_with_environment import TypeWithEnvironment
 from .s_expression import SExpression
@@ -7,16 +7,32 @@ from .s_expression import SExpression
 
 @dataclass(eq=True, frozen=True)
 class Hole:
-    @classmethod
-    def of(cls, twe: TypeWithEnvironment) -> "Hole":
-        assert isinstance(twe, TypeWithEnvironment)
-        cls._id = getattr(cls, "_id", 0) + 1
-        return cls(id=cls._id, twe=twe)
+    """
+    Represents a hole in a program. A hole is a placeholder for a subexpression that is not yet known.
+
+    :param id: The unique id of the hole.
+    :param twe: The type and environment of the hole.
+    """
 
     id: int
     twe: TypeWithEnvironment
 
+    @classmethod
+    def of(cls, twe: TypeWithEnvironment) -> "Hole":
+        """
+        Create a hole with the given type and environment.
+
+        Automatically assigns a unique id to the hole.
+        """
+        assert isinstance(twe, TypeWithEnvironment)
+        cls._id = getattr(cls, "_id", 0) + 1
+        return cls(id=cls._id, twe=twe)
+
     def __to_pair__(self, for_stitch: bool) -> str:
+        """
+        Convert the hole to a string representation. Used in
+        the rendering of SExpressions as strings.
+        """
         from neurosym.types.type_string_repr import render_type
 
         del for_stitch
@@ -51,7 +67,7 @@ def _replace_holes(
     )
 
 
-def _all_holes(program: SExpression) -> List[Hole]:
+def _all_holes(program: SExpression) -> Iterator[Hole]:
     """
     Yield all holes in the given SExpression.
 

@@ -114,6 +114,11 @@ class TreeDistribution:
 
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
+    """
+    Represents a family of program distributions that can be represented as trees.
+    Uses the various methods of ``TreeDistribution`` to compute likelihoods, samples, etc.
+    """
+
     @abstractmethod
     def compute_tree_distribution(
         self, distribution: Union[ProgramDistribution, NoneType]
@@ -122,9 +127,9 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         Returns a tree distribution representing the given program distribution.
 
         If ``distribution`` is ``None``, returns a tree distribution with all fields
-            initialized, but the probabilities are not guaranteed to have any properties.
-            This is useful for tasks where you want the skeleton of the tree distribution,
-            but don't need the actual distribution.
+        initialized, but the probabilities are not guaranteed to have any properties.
+        This is useful for tasks where you want the skeleton of the tree distribution,
+        but don't need the actual distribution.
         """
 
     def tree_distribution(self, distribution: ProgramDistribution) -> TreeDistribution:
@@ -172,9 +177,6 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         program: SExpression,
         tracker: Union[NoneType, Callable[[SExpression, float], NoneType]] = None,
     ) -> float:
-        """
-        Compute the likelihood of a program under a distribution.
-        """
         # pylint: disable=cyclic-import
         from .tree_dist_likelihood_computer import compute_likelihood
 
@@ -189,7 +191,11 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         program: SExpression,
     ) -> Dict[SExpression, float]:
         """
-        Compute the likelihood of a program under a distribution.
+        Compute the likelihood of each node in the program, given the program distribution.
+
+        :param dist: The program distribution.
+        :param program: The program to compute the likelihoods for.
+        :return: A dictionary mapping nodes to their contributions to the likelihood.
         """
         likelihoods = []
 
