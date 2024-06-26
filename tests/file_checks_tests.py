@@ -153,14 +153,14 @@ def read_obj_inv():
 
 
 def get_objects():
-    objects = [
+    objs = [
         obj
         for module in (ns, near)
         for obj in all_functions_in_module(module)
         if not getattr(obj, "__internal_only__", False)
     ]
     unique_objects = []
-    for obj in objects:
+    for obj in objs:
         if obj not in unique_objects:
             unique_objects.append(obj)
     return unique_objects
