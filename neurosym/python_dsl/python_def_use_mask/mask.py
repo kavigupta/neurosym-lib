@@ -44,6 +44,9 @@ class DefUseMaskConfiguration:
         defined_production_idxs: List[int],
         handler_fn=default_handler,
     ):
+        """
+        See :py:func:`neurosym.python_def_use_mask.HandlerPuller.pull_handler` for more information.
+        """
         hook = self._get_hook(symbol)
         if hook is None:
             return None

@@ -12,6 +12,11 @@ pl = import_pytorch_lightning()
 
 @dataclass
 class BaseTrainerConfig:
+    """
+    Base configuration for a trainer. See :py:class:`neurosym.examples.near.NEARTrainerConfig`
+    for more details.
+    """
+
     lr: float = 1e-4
     weight_decay: float = 0.0
     n_epochs: int = 10
@@ -29,7 +34,8 @@ class BaseTrainer(pl.LightningModule):
     """
     An abstract class that defines the supporting code to
     train a neural module. We use pytorch-lightning as the
-    base framework.
+    base framework. This class exists primarily as the base
+    class for :py:class:`neurosym.examples.near.NEARTrainer`.
     """
 
     @classmethod

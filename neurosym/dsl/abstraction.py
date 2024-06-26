@@ -18,7 +18,7 @@ class AbstractionIndexParameter:
 
     def apply(self, inputs):
         """
-        Map the parameter to a value.
+        Map the parameter to a value from the inputs.
         """
         return AbstractionParameter(inputs[self.index])
 

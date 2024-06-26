@@ -9,7 +9,9 @@ from .names import GLOBAL_REGEX
 class SpecialCaseSymbolPredicate(ABC):
     """
     Handles a special case symbol matching predicate, i.e., a predicate that applies only in
-        special cases.
+    special cases.
+
+    :param tree_dist: The ``TreeDistribution`` that the predicate is applied to.
     """
 
     def __init__(self, tree_dist: TreeDistribution):
@@ -19,18 +21,26 @@ class SpecialCaseSymbolPredicate(ABC):
     def applies(self, symbol: int) -> bool:
         """
         Whether or not the predicate applies to the symbol.
+
+        :param symbol: The symbol to check.
         """
 
     @abstractmethod
     def compute(self, symbol: int, names: List[str]) -> bool:
         """
         Compute the mask for the given symbol.
+
+        :param symbol: The symbol to compute the mask for.
+        :param names: The names available in the current context
         """
 
 
 class NameEPredicate(SpecialCaseSymbolPredicate):
     """
-    Predicate that applies to the name_e symbol.
+    Predicate that checks for the ``Name~E`` symbol and allows it only if
+    there are global names available or at least one name is present.
+
+    :param tree_dist: The ``TreeDistribution`` that the predicate is applied to.
     """
 
     def __init__(self, tree_dist: TreeDistribution):

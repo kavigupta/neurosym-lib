@@ -19,8 +19,11 @@ from neurosym.utils.logging import log
 pl = import_pytorch_lightning()
 
 
-# callback that updates a progress bar once per epoch
 class _ProgressBar(pl.callbacks.Callback):
+    """
+    callback that updates a progress bar once per epoch
+    """
+
     def __init__(self, num_epochs, progress_bar):
         self.num_epochs = num_epochs
         self.progress_bar = progress_bar
