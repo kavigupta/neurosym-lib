@@ -79,7 +79,7 @@ class ValidationCost:
 
         :returns: The validation loss as a `float`.
         """
-        trainer, pbar = self.get_trainer_and_pbar(
+        trainer, pbar = self._get_trainer_and_pbar(
             label=render_s_expression(node.program)
         )
         try:
