@@ -86,6 +86,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             self.ordering = np.arange(len(self.inputs))
 
     def get_io_dims(self, is_regression=False):
+        """
+        Get the input/output dimensions of the dataset.
+        """
         out = self.outputs.shape[-1] if is_regression else len(np.unique(self.outputs))
         return self.inputs.shape[-1], out
 

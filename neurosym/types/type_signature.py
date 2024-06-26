@@ -133,7 +133,7 @@ class FunctionTypeSignature(TypeSignature):
     def astype(self) -> Type:
         """
         Convert this type signature to an arrow type, which is the
-            type of the function that this signature represents.
+        type of the function that this signature represents.
         """
         return ArrowType(tuple(self.arguments), self.return_type)
 

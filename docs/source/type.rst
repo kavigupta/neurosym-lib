@@ -31,6 +31,7 @@ Type Signatures
 .. autoclass:: neurosym.TypeSignature
     :members:
 .. autoclass:: neurosym.FunctionTypeSignature
+    :members: astype
 .. autoclass:: neurosym.VariableTypeSignature
 .. autoclass:: neurosym.LambdaTypeSignature
     :members: function_arity
