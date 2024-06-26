@@ -20,7 +20,7 @@ pl = import_pytorch_lightning()
 
 
 # callback that updates a progress bar once per epoch
-class ProgressBar(pl.callbacks.Callback):
+class _ProgressBar(pl.callbacks.Callback):
     def __init__(self, num_epochs, progress_bar):
         self.num_epochs = num_epochs
         self.progress_bar = progress_bar
@@ -67,7 +67,7 @@ class ValidationCost:
         self.callbacks = list(callbacks)
 
     def __call__(self, node: DSLSearchNode) -> float:
-        trainer, pbar = self.get_trainer_and_pbar(
+        trainer, pbar = self._get_trainer_and_pbar(
             label=render_s_expression(node.program)
         )
         try:
@@ -79,11 +79,11 @@ class ValidationCost:
         if not isinstance(model, torch.nn.Module):
             del initialized_p
             model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
-        self.fit_trainer(trainer, model, pbar)
+        self._fit_trainer(trainer, model, pbar)
         return trainer.callback_metrics["val_loss"].item()
 
     @staticmethod
-    def duplicate(callbacks):
+    def _duplicate(callbacks):
         """
         Reinitialize all callbacks to avoid sharing state between different validation runs.
         """
@@ -100,13 +100,13 @@ class ValidationCost:
             )
         return out
 
-    def get_trainer_and_pbar(self, label=None):
+    def _get_trainer_and_pbar(self, label=None):
         callbacks = list(self.callbacks)
-        callbacks = self.duplicate(self.callbacks)
+        callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
             log(f"Training {label}")
             pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
-            callbacks.append(ProgressBar(self.trainer_cfg.n_epochs, pbar))
+            callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:
             pbar = None
 
@@ -121,7 +121,7 @@ class ValidationCost:
         )
         return trainer, pbar
 
-    def fit_trainer(self, trainer, model, pbar):
+    def _fit_trainer(self, trainer, model, pbar):
         pl_model = NEARTrainer(model, config=self.trainer_cfg)
         trainer.fit(
             pl_model,

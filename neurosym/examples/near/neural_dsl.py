@@ -122,8 +122,8 @@ class NeuralDSL(DSL):
         return symbols_for_program(program) - self.original_symbols == set()
 
 
-def create_module_for_type(module_factory, t):
-    shape = compute_io_shape(t)
+def _create_module_for_type(module_factory, t):
+    shape = _compute_io_shape(t)
     return lambda: module_factory(*shape)
 
 
@@ -135,10 +135,10 @@ def create_modules(tag: str, types: List[Type], module_factory):
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return {t: (tag, create_module_for_type(module_factory, t)) for t in types}
+    return {t: (tag, _create_module_for_type(module_factory, t)) for t in types}
 
 
-def compute_io_shape(t):
+def _compute_io_shape(t):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)

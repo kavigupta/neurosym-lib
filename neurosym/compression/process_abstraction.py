@@ -15,7 +15,7 @@ from ..programs.s_expression_render import (
 from ..types.type_signature import FunctionTypeSignature
 
 
-def compute_abstraction_production(
+def _compute_abstraction_production(
     dsl,
     s_expression_using: SExpression,
     abstr_name: str,
@@ -31,7 +31,7 @@ def compute_abstraction_production(
 
     Returns an AbstractionProduction corresponding to the abstraction.
     """
-    abstr_body = inject_parameters(abstr_body)
+    abstr_body = _inject_parameters(abstr_body)
     usage = next(x for x in s_expression_using.postorder if x.symbol == abstr_name)
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
@@ -47,7 +47,7 @@ def compute_abstraction_production(
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
 
 
-def inject_parameters(s_expression: Union[SExpression, str]):
+def _inject_parameters(s_expression: Union[SExpression, str]):
     """
     Inject parameters into an SExpression, replacing leaves of the form #N with
     AbstractionIndexParameter(N).
@@ -57,11 +57,11 @@ def inject_parameters(s_expression: Union[SExpression, str]):
         return AbstractionIndexParameter(int(s_expression[1:]))
     return SExpression(
         s_expression.symbol,
-        tuple(inject_parameters(x) for x in s_expression.children),
+        tuple(_inject_parameters(x) for x in s_expression.children),
     )
 
 
-def next_symbol(dsl):
+def _next_symbol(dsl):
     """
     Next free symbol of the form __N0 in the DSL.
 
@@ -75,7 +75,7 @@ def next_symbol(dsl):
     return f"__{number}"
 
 
-def multi_lambda_to_single_lambda(dsl):
+def _multi_lambda_to_single_lambda(dsl):
     lams = [x for x in dsl.productions if x.base_symbol() == "lam"]
     if not lams:
         return 0, {}
@@ -95,7 +95,7 @@ def multi_lambda_to_single_lambda(dsl):
     return zero_arg_lambda, multi_to_single
 
 
-class StitchLambdaRewriter:
+class _StitchLambdaRewriter:
     """
     Rewrites a DSL to use only single-argument lambdas.
 
@@ -109,8 +109,8 @@ class StitchLambdaRewriter:
         (
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
-        ) = multi_lambda_to_single_lambda(dsl)
-        self.zero_arg_lambda_symbol = next_symbol(dsl)
+        ) = _multi_lambda_to_single_lambda(dsl)
+        self.zero_arg_lambda_symbol = _next_symbol(dsl)
 
         self.first_single_to_multi = {
             single[0]: multi for multi, single in self.multi_to_single.items()
@@ -185,7 +185,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         rewritten to use the new abstractions.
     """
     programs_orig = programs
-    rewriter = StitchLambdaRewriter(dsl)
+    rewriter = _StitchLambdaRewriter(dsl)
     programs = [rewriter.to_stitch(prog) for prog in programs]
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
     res = stitch_core.compress(
@@ -194,7 +194,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         no_curried_bodies=True,
         no_curried_metavars=True,
         fused_lambda_tags=rewriter.fused_lambda_tags,
-        abstraction_prefix=next_symbol(dsl),
+        abstraction_prefix=_next_symbol(dsl),
     )
     if not res.abstractions:
         return dsl, programs_orig
@@ -209,7 +209,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
     abstr_body = rewriter.from_stitch(
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
     )
-    prod = compute_abstraction_production(dsl, user, abstr.name, abstr_body)
+    prod = _compute_abstraction_production(dsl, user, abstr.name, abstr_body)
     dsl2 = dsl.add_production(prod)
     return dsl2, rewritten
 

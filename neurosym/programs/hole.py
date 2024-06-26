@@ -26,7 +26,7 @@ class Hole:
         return f"??::<{render_type(self.twe.typ)}{env_short}>"
 
 
-def replace_holes(
+def _replace_holes(
     program: SExpression, holes: List[Hole], hole_replacements: List[SExpression]
 ) -> SExpression:
     """
@@ -45,12 +45,13 @@ def replace_holes(
     return SExpression(
         program.symbol,
         tuple(
-            replace_holes(child, holes, hole_replacements) for child in program.children
+            _replace_holes(child, holes, hole_replacements)
+            for child in program.children
         ),
     )
 
 
-def all_holes(program: SExpression) -> List[Hole]:
+def _all_holes(program: SExpression) -> List[Hole]:
     """
     Yield all holes in the given SExpression.
 
@@ -60,4 +61,4 @@ def all_holes(program: SExpression) -> List[Hole]:
         yield program
     else:
         for child in program.children:
-            yield from all_holes(child)
+            yield from _all_holes(child)
