@@ -47,6 +47,11 @@ class PythonSymbol:
             return cls(x[2:], None)
         return None
 
+    def render_symbol(self):
+        if self.scope is None:
+            return f"g_{self.name}"
+        return f"&{self.name}:{self.scope}"
+
 
 @internal_only
 def create_descoper(code):
