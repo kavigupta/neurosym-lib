@@ -1,9 +1,7 @@
-from typing import Callable
-
 from .load_data import DatasetWrapper, numpy_dataset_from_github
 
 
-def near_data_example(train_seed) -> Callable[[int], DatasetWrapper]:
+def near_data_example(train_seed) -> DatasetWrapper:
     """
     Data example from the Near library. Imported from Github.
     Takes a seed and returns a DatasetWrapper object containing the data.
