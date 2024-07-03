@@ -52,7 +52,7 @@ def enumerate_tree_dist(
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
-        for program, likelihood in _enumerate_tree_dist_dfs(
+        for program, likelihood in _enumerate_tree_dist_dfs_uncached(
             tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
         ):
             if (
