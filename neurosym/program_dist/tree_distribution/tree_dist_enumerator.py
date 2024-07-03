@@ -15,7 +15,7 @@ Likelihood is defined as the log probability of the program.
 
 import bisect
 import itertools
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 from torch import NoneType
