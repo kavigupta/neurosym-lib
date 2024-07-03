@@ -205,3 +205,32 @@ class TreeDistributionTest(unittest.TestCase):
             fam_with_ordering_231, fam_with_ordering_231.uniform(), min_likelihood=-6
         )
         self.assertEqual(result, {("(+ (2) (3) (1))", Fraction(1))})
+
+
+class FiniteDistributionTest(unittest.TestCase):
+    def setUp(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("1", "() -> i", lambda: 1)
+        dslf.concrete("+", "(i, i) -> ii", lambda x, y: x + y)
+        dslf.concrete("-", "(i, i) -> ii", lambda x, y: x - y)
+        dslf.concrete("*", "(ii, ii) -> iii", lambda x, y: x * y)
+        dslf.concrete("/", "(ii, ii) -> iii", lambda x, y: x // y)
+        dslf.prune_to("iii")
+        dsl = dslf.finalize()
+        self.family = ns.BigramProgramDistributionFamily(dsl)
+        self.dist = self.family.uniform()
+
+    def test_finite_distribution(self):
+        self.assertEqual(
+            enumerate_dsl(self.family, self.dist, min_likelihood=-1000000),
+            {
+                ("(* (+ (1) (1)) (+ (1) (1)))", Fraction(1, 8)),
+                ("(* (+ (1) (1)) (- (1) (1)))", Fraction(1, 8)),
+                ("(* (- (1) (1)) (+ (1) (1)))", Fraction(1, 8)),
+                ("(* (- (1) (1)) (- (1) (1)))", Fraction(1, 8)),
+                ("(/ (+ (1) (1)) (+ (1) (1)))", Fraction(1, 8)),
+                ("(/ (+ (1) (1)) (- (1) (1)))", Fraction(1, 8)),
+                ("(/ (- (1) (1)) (+ (1) (1)))", Fraction(1, 8)),
+                ("(/ (- (1) (1)) (- (1) (1)))", Fraction(1, 8)),
+            },
+        )
