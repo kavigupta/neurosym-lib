@@ -52,10 +52,15 @@ def enumerate_tree_dist(
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
-        generator, skipped_something = _enumerate_tree_dist_dfs(
-            tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
-        )
-        for program, likelihood in generator:
+        skipped_something = _HasSkippedSomething()
+        for program, likelihood in _enumerate_tree_dist_dfs(
+            tree_dist,
+            likelihood_bound,
+            ((0, 0),),
+            preorder_mask,
+            cache,
+            skipped_something,
+        ):
             if (
                 max(likelihood_bound, min_likelihood)
                 < likelihood
@@ -86,22 +91,12 @@ class _HasSkippedSomething:
 
     def __init__(self):
         self._skipped_something = False
-        self._valid = False
 
     def notify_skip(self):
         self._skipped_something = True
 
-    def done_iterating(self):
-        self._valid = True
-
-    def check_valid(self):
-        assert (
-            self._valid
-        ), "You must call done_iterating before accessing this property."
-
     @property
     def skipped_something(self):
-        self.check_valid()
         return self._skipped_something
 
 
@@ -111,45 +106,40 @@ def _enumerate_tree_dist_dfs(
     parents: Tuple[Tuple[int, int], ...],
     preorder_mask: PreorderMask,
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+    skipped_something: _HasSkippedSomething,
 ):
     if cache is not None:
         key = preorder_mask.cache_key(parents), parents
         if key in cache:
-            old_results, old_min_likelihood, skipped_something = cache[key]
+            old_results, old_min_likelihood, have_skipped_something = cache[key]
             if old_min_likelihood <= min_likelihood:
-                return (
-                    _remove_below_threshold(old_results, min_likelihood),
-                    skipped_something,
-                )
-    skipped_something = _HasSkippedSomething()
+                if have_skipped_something:
+                    skipped_something.notify_skip()
+                return _remove_below_threshold(old_results, min_likelihood)
 
-    generator = _enumerate_tree_dist_dfs_uncached_wrapper(
-        tree_dist, min_likelihood, parents, preorder_mask, cache, skipped_something
-    )
     if cache is not None:
-        generator = sorted(generator, key=lambda x: x[1])
-        skipped_something.check_valid()
-        cache[key] = generator, min_likelihood, skipped_something
-    return generator, skipped_something
+        skipped_something_child = _HasSkippedSomething()
+    else:
+        skipped_something_child = skipped_something
 
-
-def _enumerate_tree_dist_dfs_uncached_wrapper(
-    tree_dist: TreeDistribution,
-    min_likelihood: float,
-    parents: Tuple[Tuple[int, int], ...],
-    preorder_mask: PreorderMask,
-    cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
-    skipped_something: _HasSkippedSomething,
-):
-    yield from _enumerate_tree_dist_dfs_uncached(
+    generator = _enumerate_tree_dist_dfs_uncached(
         tree_dist,
         min_likelihood,
         parents,
         preorder_mask,
         cache,
-        skipped_something,
+        skipped_something_child,
     )
-    skipped_something.done_iterating()
+    if cache is not None:
+        generator = sorted(generator, key=lambda x: x[1])
+        cache[key] = (
+            generator,
+            min_likelihood,
+            skipped_something_child.skipped_something,
+        )
+        if skipped_something_child.skipped_something:
+            skipped_something.notify_skip()
+    return generator
 
 
 def _enumerate_tree_dist_dfs_uncached(
@@ -234,7 +224,7 @@ def _enumerate_children_and_likelihoods_dfs(
     new_parents = parents + ((most_recent_parent, order[starting_index]),)
     new_parents = new_parents[-tree_dist.limit :]
 
-    for first_child, first_likelihood in _enumerate_tree_dist_dfs_uncached(
+    for first_child, first_likelihood in _enumerate_tree_dist_dfs(
         tree_dist, min_likelihood, new_parents, preorder_mask, cache, skipped_something
     ):
         for (
