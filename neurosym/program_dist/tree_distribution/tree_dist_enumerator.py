@@ -15,7 +15,7 @@ Likelihood is defined as the log probability of the program.
 
 import bisect
 import itertools
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
 from torch import NoneType
@@ -52,15 +52,18 @@ def enumerate_tree_dist(
         preorder_mask = tree_dist.mask_constructor(tree_dist)
         cache = {} if use_cache and preorder_mask.can_cache else None
         preorder_mask.on_entry(0, 0)
-        for program, likelihood in _enumerate_tree_dist_dfs(
+        generator, skipped_something = _enumerate_tree_dist_dfs(
             tree_dist, likelihood_bound, ((0, 0),), preorder_mask, cache
-        ):
+        )
+        for program, likelihood in generator:
             if (
                 max(likelihood_bound, min_likelihood)
                 < likelihood
                 <= likelihood_bound + chunk_size
             ):
                 yield program, likelihood
+        if not skipped_something.skipped_something:
+            return
         if likelihood_bound <= min_likelihood:
             return
 
@@ -76,6 +79,32 @@ def _remove_below_threshold(
     return results[index:]
 
 
+class _HasSkippedSomething:
+    """
+    Tracks whether we have skipped something.
+    """
+
+    def __init__(self):
+        self._skipped_something = False
+        self._valid = False
+
+    def notify_skip(self):
+        self._skipped_something = True
+
+    def done_iterating(self):
+        self._valid = True
+
+    def check_valid(self):
+        assert (
+            self._valid
+        ), "You must call done_iterating before accessing this property."
+
+    @property
+    def skipped_something(self):
+        self.check_valid()
+        return self._skipped_something
+
+
 def _enumerate_tree_dist_dfs(
     tree_dist: TreeDistribution,
     min_likelihood: float,
@@ -86,16 +115,41 @@ def _enumerate_tree_dist_dfs(
     if cache is not None:
         key = preorder_mask.cache_key(parents), parents
         if key in cache:
-            old_results, old_min_likelihood = cache[key]
+            old_results, old_min_likelihood, skipped_something = cache[key]
             if old_min_likelihood <= min_likelihood:
-                return _remove_below_threshold(old_results, min_likelihood)
-    generator = _enumerate_tree_dist_dfs_uncached(
-        tree_dist, min_likelihood, parents, preorder_mask, cache
+                return (
+                    _remove_below_threshold(old_results, min_likelihood),
+                    skipped_something,
+                )
+    skipped_something = _HasSkippedSomething()
+
+    generator = _enumerate_tree_dist_dfs_uncached_wrapper(
+        tree_dist, min_likelihood, parents, preorder_mask, cache, skipped_something
     )
     if cache is not None:
         generator = sorted(generator, key=lambda x: x[1])
-        cache[key] = generator, min_likelihood
-    return generator
+        skipped_something.check_valid()
+        cache[key] = generator, min_likelihood, skipped_something
+    return generator, skipped_something
+
+
+def _enumerate_tree_dist_dfs_uncached_wrapper(
+    tree_dist: TreeDistribution,
+    min_likelihood: float,
+    parents: Tuple[Tuple[int, int], ...],
+    preorder_mask: PreorderMask,
+    cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+    skipped_something: _HasSkippedSomething,
+):
+    yield from _enumerate_tree_dist_dfs_uncached(
+        tree_dist,
+        min_likelihood,
+        parents,
+        preorder_mask,
+        cache,
+        skipped_something,
+    )
+    skipped_something.done_iterating()
 
 
 def _enumerate_tree_dist_dfs_uncached(
@@ -104,6 +158,7 @@ def _enumerate_tree_dist_dfs_uncached(
     parents: Tuple[Tuple[int, int], ...],
     preorder_mask: PreorderMask,
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+    skipped_something: _HasSkippedSomething,
 ):
     """
     Enumerate all programs that are within the likelihood range, with the given parents.
@@ -139,8 +194,10 @@ def _enumerate_tree_dist_dfs_uncached(
             order=tree_dist.ordering.order(node, arity),
             preorder_mask=preorder_mask,
             cache=cache,
+            skipped_something=skipped_something,
         ):
             if child_likelihood + likelihood < min_likelihood:
+                skipped_something.notify_skip()
                 continue
             undo_exit = preorder_mask.on_exit(position, node)
             yield SExpression(
@@ -160,6 +217,7 @@ def _enumerate_children_and_likelihoods_dfs(
     order: List[int],
     preorder_mask: PreorderMask,
     cache: Union[NoneType, Dict[Any, List[Tuple[SExpression, float]]]],
+    skipped_something: _HasSkippedSomething,
 ):
     """
     Enumerate all children and their likelihoods.
@@ -167,6 +225,7 @@ def _enumerate_children_and_likelihoods_dfs(
 
     if min_likelihood > 0:
         # We can stop searching deeper.
+        skipped_something.notify_skip()
         return
 
     if starting_index == num_children:
@@ -175,8 +234,8 @@ def _enumerate_children_and_likelihoods_dfs(
     new_parents = parents + ((most_recent_parent, order[starting_index]),)
     new_parents = new_parents[-tree_dist.limit :]
 
-    for first_child, first_likelihood in _enumerate_tree_dist_dfs(
-        tree_dist, min_likelihood, new_parents, preorder_mask, cache
+    for first_child, first_likelihood in _enumerate_tree_dist_dfs_uncached(
+        tree_dist, min_likelihood, new_parents, preorder_mask, cache, skipped_something
     ):
         for (
             rest_children,
@@ -191,6 +250,7 @@ def _enumerate_children_and_likelihoods_dfs(
             order,
             preorder_mask,
             cache=cache,
+            skipped_something=skipped_something,
         ):
             rest_children[order[starting_index]] = first_child
             yield rest_children, first_likelihood + rest_likelihood
