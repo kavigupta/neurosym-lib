@@ -1,5 +1,3 @@
-from typing import Callable
-
 from .load_data import DatasetWrapper, numpy_dataset_from_github
 
 
