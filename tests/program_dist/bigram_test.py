@@ -1013,6 +1013,61 @@ class BigramEnumerationTest(unittest.TestCase):
             ],
         )
 
+    def test_enumeration_more_complex_get_even_more_even_more(self):
+        dist = fam_more_complex.uniform()
+        large_set = sorted(
+            enumerate_dsl(fam_more_complex, dist, -17, max_denominator=10**8),
+            key=lambda x: (-x[1], x[0]),
+        )
+        self.assertEqual(len(large_set), 103_258)
+        print(large_set[::10000])
+        self.assertEqual(
+            large_set[::10000],
+            [
+                ("(lam ($0_0))", Fraction(1, 4)),
+                (
+                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0_0) (sqrt (+ (0) (0)))) (sqrt (0))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (* (* ($0_0) (sqrt (0))) (* (sqrt (+ (0) (+ (0) (+ (0) (0))))) ($0_0))))",
+                    Fraction(17, 71303171),
+                ),
+                (
+                    "(lam (* ($0_0) (* (sqrt (0)) (* ($0_0) (ite (< (0) (0)) (sqrt (0)) ($0_0))))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (ite (< (+ (+ (0) (+ (0) (+ (0) (0)))) (0)) (0)) (sqrt (+ (+ (0) (0)) (0))) (sqrt (0))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (+ (+ (0) (0)) (+ (+ (0) (+ (0) (0))) (0))) (+ (0) (+ (0) (0)))) (0)) (0))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (0) (0)) (+ (+ (0) (+ (+ (+ (0) (+ (0) (0))) (0)) (+ (0) (0)))) (+ (0) (0))))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (* (* ($0_0) (sqrt (0))) (ite (< (+ (+ (0) (0)) (0)) (+ (0) (0))) ($0_0) ($0_0))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (* (sqrt (+ (0) (+ (0) (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))) (sqrt (+ (0) (+ (0) (0))))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (ite (< (+ (0) (0)) (0)) ($0_0) (ite (> (sqrt (0)) ($0_0)) (sqrt (+ (0) (0))) ($0_0))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (ite (> (* (* ($0_0) ($0_0)) (sqrt (0))) ($0_0)) (sqrt (+ (0) (0))) (sqrt (0))))",
+                    Fraction(4, 67108867),
+                ),
+            ],
+        )
+
 
 class BigramMixTest(unittest.TestCase):
     def fit_family_to_programs(self, family, programs):
