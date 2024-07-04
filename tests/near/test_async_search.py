@@ -56,6 +56,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
                 ),
             },
         )
+        max_depth = 3
 
         g = near.near_graph(
             neural_dsl,
@@ -64,6 +65,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=neural_dsl.program_has_no_holes,
+            max_depth=max_depth,
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
@@ -75,9 +77,8 @@ class TestNEARAsyncSearch(unittest.TestCase):
                     trainer_cfg=trainer_cfg,
                     datamodule=datamodule,
                 ),
-                max_depth=3,
+                max_depth=max_depth,
                 max_workers=4,
-                depth_computer=near.ProbableDepthComputer(),
             )
             while True:
                 print("iteration: ", n_iter)

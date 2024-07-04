@@ -94,7 +94,6 @@ from .programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
-from .search_graph.depth_computer import DepthComputer, UniformDepthComputer
 from .search_graph.dsl_search_graph import DSLSearchGraph, SearchGraph
 from .search_graph.hole_set_chooser import ChooseAll, ChooseFirst, HoleSetChooser
 from .search_graph.metadata_computer import MetadataComputer, NoMetadataComputer

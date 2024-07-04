@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.search_graph.depth_computer import DepthComputer, UniformDepthComputer
 from neurosym.search_graph.search_graph import SearchGraph
 
 
@@ -11,7 +10,6 @@ def bounded_astar(
     g: SearchGraph,
     cost_plus_heuristic: Callable[[SExpression], float],
     max_depth: int,
-    depth_computer: DepthComputer = UniformDepthComputer(),
 ):
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
@@ -30,22 +28,17 @@ def bounded_astar(
     def add_to_fringe(node, depth):
         fringe.put(BoundedAStarNode(cost_plus_heuristic(node), node, depth))
 
-    add_to_fringe(g.initial_node(), depth_computer.initialize())
+    add_to_fringe(g.initial_node(), 0)
     while not fringe.empty():
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
-        if (
-            node.program in visited
-            or depth_computer.probable_depth(node.program, current_depth=depth)
-            > max_depth
-        ):
+        if node.program in visited or depth > max_depth:
             continue
         visited.add(node.program)
         if g.is_goal_node(node):
             yield node
         for child in g.expand_node(node):
-            new_depth = depth_computer.increment(child.program, current_depth=depth)
-            add_to_fringe(child, new_depth)
+            add_to_fringe(child, depth + 1)
 
 
 @dataclass(order=True)

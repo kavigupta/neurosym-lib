@@ -81,7 +81,10 @@ class TestNEARSimpleDSL(unittest.TestCase):
                 return torch.all(torch.eq(xx, fours))
             return False
 
-        g = near.near_graph(dsl, ns.parse_type("{f, 10}"), is_goal=checker)
+        max_depth = 7
+        g = near.near_graph(
+            dsl, ns.parse_type("{f, 10}"), max_depth=max_depth, is_goal=checker
+        )
 
         def cost(x):
             if isinstance(x.program, ns.SExpression) and x.program.children:
@@ -92,7 +95,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             ns.search.bounded_astar(
                 g,
                 cost,
-                max_depth=7,
+                max_depth=max_depth,
             )
         ).program
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
