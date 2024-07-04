@@ -1,6 +1,6 @@
 import io
-from multiprocessing import get_context
 import os
+from multiprocessing import get_context
 from typing import Callable
 
 import numpy as np
@@ -129,9 +129,9 @@ class DatasetWrapper(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=(self.num_workers > 0),
-            multiprocessing_context=get_context("loky")
-            if (self.num_workers > 0)
-            else None,
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
     def val_dataloader(self):
@@ -140,9 +140,9 @@ class DatasetWrapper(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=(self.num_workers > 0),
-            multiprocessing_context=get_context("loky")
-            if (self.num_workers > 0)
-            else None,
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
     def test_dataloader(self):
@@ -151,9 +151,9 @@ class DatasetWrapper(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=(self.num_workers > 0),
-            multiprocessing_context=get_context("loky")
-            if (self.num_workers > 0)
-            else None,
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
 
@@ -187,5 +187,5 @@ def numpy_dataset_from_github(
             _get_raw_url(github_url, test_output_path),
             None,
         ),
-        **kwargs
+        **kwargs,
     )
