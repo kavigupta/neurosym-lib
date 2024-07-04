@@ -88,7 +88,13 @@ class TestNEARSimpleDSL(unittest.TestCase):
                 return len(str(x.program.children[0]))
             return 0
 
-        node = next(ns.search.bounded_astar(g, cost, max_depth=7)).program
+        node = next(
+            ns.search.bounded_astar(
+                g,
+                cost,
+                max_depth=7,
+            )
+        ).program
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):

@@ -1,5 +1,6 @@
 import io
 import os
+from multiprocessing import get_context
 from typing import Callable
 
 import numpy as np
@@ -114,20 +115,46 @@ class DatasetWrapper(pl.LightningDataModule):
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
         batch_size: int = 32,
+        num_workers: int = 0,
     ):
         super().__init__()
         self.train = train
         self.test = test
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
+        )
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
+        )
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
+        )
 
 
 def numpy_dataset_from_github(
@@ -136,6 +163,7 @@ def numpy_dataset_from_github(
     train_output_path: str,
     test_input_path: str,
     test_output_path: str,
+    **kwargs,
 ) -> Callable[[int], DatasetWrapper]:
     """
     Load a dataset from a github url.
@@ -159,4 +187,5 @@ def numpy_dataset_from_github(
             _get_raw_url(github_url, test_output_path),
             None,
         ),
+        **kwargs,
     )

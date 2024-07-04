@@ -22,7 +22,9 @@ class TestNEARAsyncSearch(unittest.TestCase):
         This tests an async version of bounded_astar search.
         """
         # pylint: disable=duplicate-code
-        datamodule = ns.datasets.near_data_example(train_seed=0)
+        datamodule = ns.datasets.near_data_example(
+            train_seed=0, batch_size=32, num_workers=0
+        )
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.example_rnn_dsl(input_dim, output_dim)
         trainer_cfg = near.NEARTrainerConfig(
@@ -75,6 +77,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
                 ),
                 max_depth=3,
                 max_workers=4,
+                depth_computer=near.ProbableDepthComputer(),
             )
             while True:
                 print("iteration: ", n_iter)
