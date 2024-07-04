@@ -35,7 +35,7 @@ class UniformDepthComputer(DepthComputer):
         return 0
 
     def probable_depth(self, node, current_depth):
-        return current_depth + 1
+        return current_depth
 
     def increment(self, node, current_depth):
         return current_depth + 1
