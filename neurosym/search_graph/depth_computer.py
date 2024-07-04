@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 
-
 class DepthComputer(ABC):
     """
     Represents a way to compute depth for a node in a search graph.

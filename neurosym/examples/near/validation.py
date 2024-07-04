@@ -81,7 +81,7 @@ class ValidationCost:
         """
         Recursively calculates the structural cost of a program.
         Approximated as the total number of Holes.
-        
+
         :param program: The program to compute the structural cost for.
 
         :returns: An integer structural cost of the program.

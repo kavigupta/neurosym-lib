@@ -94,7 +94,9 @@ def bounded_astar_async(
                 if g.is_goal_node(node):
                     yield node
                 for child in g.expand_node(node):
-                    new_depth = depth_computer.increment(child.program, current_depth=depth)
+                    new_depth = depth_computer.increment(
+                        child.program, current_depth=depth
+                    )
                     add_to_fringe(child, new_depth)
             except queue.Empty:
                 pass

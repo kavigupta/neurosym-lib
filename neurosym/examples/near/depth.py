@@ -16,7 +16,7 @@ class ProbableDepthComputer(DepthComputer):
         """
         Calculates a lower bound estimate of the depth2go. For a partial program,
         this is approximated by the minimum number of replacement nodes needed for
-        each type of hole. 
+        each type of hole.
 
         :param node: The node to estimate depth2go for.
         :returns height: The minimum possible height of the node if partial programs

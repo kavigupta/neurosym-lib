@@ -36,7 +36,8 @@ def bounded_astar(
         node, depth = fringe_var.node, fringe_var.depth
         if (
             node.program in visited
-            or depth_computer.probable_depth(node.program, current_depth=depth) > max_depth
+            or depth_computer.probable_depth(node.program, current_depth=depth)
+            > max_depth
         ):
             continue
         visited.add(node.program)
