@@ -4,9 +4,11 @@ from typing import Callable, Dict, Iterator, List, Tuple, Union
 
 import numpy as np
 
-from neurosym.types.type_with_environment import (Environment,
-                                                  PermissiveEnvironmment,
-                                                  TypeWithEnvironment)
+from neurosym.types.type_with_environment import (
+    Environment,
+    PermissiveEnvironmment,
+    TypeWithEnvironment,
+)
 from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole

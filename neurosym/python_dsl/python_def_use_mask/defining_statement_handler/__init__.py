@@ -9,9 +9,14 @@ def defining_statement_handlers():
     # pylint: disable=cyclic-import
     from .chained_definitions_handler import chained_definition_handlers
     from .defining_construct_handler import defining_construct_handler
-    from .defining_statement_handler import (AnnAssignHandler, AssignHandler,
-                                             ForHandler, ImportFromHandler,
-                                             ImportHandler, LambdaHandler)
+    from .defining_statement_handler import (
+        AnnAssignHandler,
+        AssignHandler,
+        ForHandler,
+        ImportFromHandler,
+        ImportHandler,
+        LambdaHandler,
+    )
     from .except_handler_handler import ExceptHandlerHandler
 
     return {

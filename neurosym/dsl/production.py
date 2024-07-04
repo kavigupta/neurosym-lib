@@ -4,8 +4,11 @@ from typing import Callable, Dict, Union
 
 from torch import NoneType
 
-from ..types.type_signature import (LambdaTypeSignature, TypeSignature,
-                                    VariableTypeSignature)
+from ..types.type_signature import (
+    LambdaTypeSignature,
+    TypeSignature,
+    VariableTypeSignature,
+)
 
 
 class Production(ABC):

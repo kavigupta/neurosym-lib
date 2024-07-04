@@ -3,8 +3,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.search_graph.depth_computer import (DepthComputer,
-                                                  UniformDepthComputer)
+from neurosym.search_graph.depth_computer import DepthComputer, UniformDepthComputer
 from neurosym.search_graph.search_graph import SearchGraph
 
 

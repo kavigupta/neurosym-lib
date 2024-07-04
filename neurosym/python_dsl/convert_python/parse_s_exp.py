@@ -11,8 +11,16 @@ from neurosym.python_dsl import python_ast_tools
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 from neurosym.utils.documentation import internal_only
 
-from .python_ast import (LeafAST, ListAST, NodeAST, PythonAST, SequenceAST,
-                         SliceElementAST, SpliceAST, StarrableElementAST)
+from .python_ast import (
+    LeafAST,
+    ListAST,
+    NodeAST,
+    PythonAST,
+    SequenceAST,
+    SliceElementAST,
+    SpliceAST,
+    StarrableElementAST,
+)
 from .symbol import PythonSymbol
 
 

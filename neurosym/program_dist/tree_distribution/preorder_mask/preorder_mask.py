@@ -4,8 +4,7 @@ from typing import Any, Callable, List, Tuple
 
 import numpy as np
 
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import \
-    chain_undos
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
 
 
 class PreorderMask(ABC):

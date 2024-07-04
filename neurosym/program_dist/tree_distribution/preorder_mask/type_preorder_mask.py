@@ -1,8 +1,7 @@
 from typing import Callable, List
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
-from neurosym.types.type_with_environment import (Environment,
-                                                  TypeWithEnvironment)
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
 

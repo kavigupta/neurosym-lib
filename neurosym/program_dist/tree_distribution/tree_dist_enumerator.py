@@ -21,10 +21,10 @@ import numpy as np
 from torch import NoneType
 
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
-from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import \
-    PreorderMask
-from neurosym.program_dist.tree_distribution.tree_distribution import \
-    TreeDistribution
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 from neurosym.programs.s_expression import SExpression
 
 
