@@ -1,11 +1,7 @@
 import ast
 
-from neurosym.python_dsl.convert_python.python_ast import (
-    LeafAST,
-    ListAST,
-    NodeAST,
-    PythonAST,
-)
+from neurosym.python_dsl.convert_python.python_ast import (LeafAST, ListAST,
+                                                           NodeAST, PythonAST)
 from neurosym.python_dsl.convert_python.symbol import PythonSymbol
 
 

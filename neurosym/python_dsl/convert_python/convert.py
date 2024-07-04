@@ -5,13 +5,11 @@ from frozendict import frozendict
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.python_dsl.convert_python.parse_python import python_to_python_ast
+from neurosym.python_dsl.convert_python.parse_python import \
+    python_to_python_ast
 from neurosym.python_dsl.convert_python.parse_s_exp import s_exp_to_python_ast
-from neurosym.python_dsl.convert_python.python_ast import (
-    NodeAST,
-    PythonAST,
-    SequenceAST,
-)
+from neurosym.python_dsl.convert_python.python_ast import (NodeAST, PythonAST,
+                                                           SequenceAST)
 from neurosym.python_dsl.dfa import python_dfa
 from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags
 

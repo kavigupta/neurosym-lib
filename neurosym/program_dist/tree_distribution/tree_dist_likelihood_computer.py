@@ -3,10 +3,10 @@ from typing import Callable, Tuple, Union
 
 import numpy as np
 
-from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
-    PreorderMask,
-)
-from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import \
+    PreorderMask
+from neurosym.program_dist.tree_distribution.tree_distribution import \
+    TreeDistribution
 from neurosym.programs.s_expression import SExpression
 
 

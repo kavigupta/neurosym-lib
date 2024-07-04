@@ -1,4 +1,5 @@
-from neurosym.program_dist.tree_distribution.ordering import DictionaryNodeOrdering
+from neurosym.program_dist.tree_distribution.ordering import \
+    DictionaryNodeOrdering
 from neurosym.python_dsl.python_ast_tools import fields_for_node
 
 

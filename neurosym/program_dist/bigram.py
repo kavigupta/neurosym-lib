@@ -7,15 +7,14 @@ import numpy as np
 import torch
 
 from neurosym.dsl.dsl import DSL, ROOT_SYMBOL
-from neurosym.program_dist.tree_distribution.ordering import DefaultNodeOrdering
+from neurosym.program_dist.tree_distribution.ordering import \
+    DefaultNodeOrdering
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
-    ConjunctionPreorderMask,
-    PreorderMask,
-)
-from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import (
-    TypePreorderMask,
-)
-from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
+    ConjunctionPreorderMask, PreorderMask)
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask import \
+    TypePreorderMask
+from neurosym.program_dist.tree_distribution.tree_distribution import \
+    TreeDistribution
 from neurosym.programs.s_expression import SExpression
 from neurosym.types.type import Type
 from neurosym.utils.documentation import internal_only

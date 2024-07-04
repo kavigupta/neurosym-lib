@@ -4,23 +4,15 @@ from typing import Callable, Dict, List, Tuple
 import numpy as np
 
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable
-from ..types.type_signature import (
-    FunctionTypeSignature,
-    LambdaTypeSignature,
-    VariableTypeSignature,
-    _signature_expansions,
-    _type_universe,
-    type_expansions,
-)
+from ..types.type_signature import (FunctionTypeSignature, LambdaTypeSignature,
+                                    VariableTypeSignature,
+                                    _signature_expansions, _type_universe,
+                                    type_expansions)
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
-from .production import (
-    ConcreteProduction,
-    LambdaProduction,
-    ParameterizedProduction,
-    Production,
-    VariableProduction,
-)
+from .production import (ConcreteProduction, LambdaProduction,
+                         ParameterizedProduction, Production,
+                         VariableProduction)
 
 
 class DSLFactory:

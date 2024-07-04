@@ -6,7 +6,8 @@ import numpy as np
 
 import neurosym as ns
 
-from .bigram_test import fam, fam_with_ordering, fam_with_ordering_231, fam_with_vars
+from .bigram_test import (fam, fam_with_ordering, fam_with_ordering_231,
+                          fam_with_vars)
 from .utils import enumerate_dsl
 
 arith_dist = ns.TreeDistribution(

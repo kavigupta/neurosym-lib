@@ -1,9 +1,7 @@
 from typing import Callable, Tuple
 
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
-    chain_undos,
-    remove_last_n_elements,
-)
+    chain_undos, remove_last_n_elements)
 from neurosym.utils.documentation import internal_only
 
 from ..handler import ConstructHandler, Handler

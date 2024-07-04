@@ -3,10 +3,8 @@ from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.search_graph.search_graph import SearchGraph
-from neurosym.search_graph.search_graph_transformer import (
-    FilterEdgesGraph,
-    LimitEdgesGraph,
-)
+from neurosym.search_graph.search_graph_transformer import (FilterEdgesGraph,
+                                                            LimitEdgesGraph)
 from neurosym.types.type import Type
 
 

@@ -7,15 +7,12 @@ from typing import Callable, Dict, List, Tuple, Union
 import numpy as np
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
-from neurosym.program_dist.distribution import (
-    ProgramDistribution,
-    ProgramDistributionFamily,
-)
+from neurosym.program_dist.distribution import (ProgramDistribution,
+                                                ProgramDistributionFamily)
 from neurosym.program_dist.enumeration_chunk_size import DEFAULT_CHUNK_SIZE
 from neurosym.program_dist.tree_distribution.ordering import NodeOrdering
-from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
-    PreorderMask,
-)
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import \
+    PreorderMask
 from neurosym.programs.s_expression import SExpression
 
 
@@ -161,9 +158,8 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
         chunk_size: float = DEFAULT_CHUNK_SIZE,
     ):
         # pylint: disable=cyclic-import
-        from neurosym.program_dist.tree_distribution.tree_dist_enumerator import (
-            enumerate_tree_dist,
-        )
+        from neurosym.program_dist.tree_distribution.tree_dist_enumerator import \
+            enumerate_tree_dist
 
         tree_dist = self.tree_distribution(dist)
 
@@ -215,9 +211,8 @@ class TreeProgramDistributionFamily(ProgramDistributionFamily):
     ) -> SExpression:
         # pylint: disable=cyclic-import
 
-        from neurosym.program_dist.tree_distribution.tree_dist_sampler import (
-            sample_tree_dist,
-        )
+        from neurosym.program_dist.tree_distribution.tree_dist_sampler import \
+            sample_tree_dist
 
         tree_dist = self.tree_distribution(dist)
         element = sample_tree_dist(tree_dist, rng, depth_limit=depth_limit)

@@ -13,14 +13,10 @@ import numpy as np
 from frozendict import frozendict
 from torch import NoneType
 
-from neurosym.types.type import (
-    ArrowType,
-    ListType,
-    Type,
-    TypeVariable,
-    UnificationError,
-)
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type import (ArrowType, ListType, Type, TypeVariable,
+                                 UnificationError)
+from neurosym.types.type_with_environment import (Environment,
+                                                  TypeWithEnvironment)
 
 
 class TypeSignature(ABC):

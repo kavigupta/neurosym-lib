@@ -5,8 +5,9 @@ from pathos.multiprocessing import ProcessingPool as Pool
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import BoundedAStarNode
+from neurosym.search_graph.depth_computer import (DepthComputer,
+                                                  UniformDepthComputer)
 from neurosym.search_graph.search_graph import SearchGraph
-from neurosym.search_graph.depth_computer import DepthComputer, UniformDepthComputer
 
 
 class FuturePriorityQueue(queue.PriorityQueue):

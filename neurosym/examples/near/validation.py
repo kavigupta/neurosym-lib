@@ -6,10 +6,9 @@ import tqdm.auto as tqdm
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
-    NEARTrainerConfig,
-)
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+    NEARTrainer, NEARTrainerConfig)
+from neurosym.examples.near.models.torch_program_module import \
+    TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
