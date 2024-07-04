@@ -1,6 +1,7 @@
 from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
 from neurosym.examples.near.validation import ValidationCost
 
+from .depth import ProbableDepthComputer
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .methods.near_example_trainer import (

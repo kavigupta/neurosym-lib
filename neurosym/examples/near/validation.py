@@ -11,6 +11,8 @@ from neurosym.examples.near.methods.near_example_trainer import (
 )
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
+from neurosym.programs.hole import Hole
+from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
@@ -59,6 +61,7 @@ class ValidationCost:
         datamodule: DatasetWrapper,
         error_loss=10000,
         progress_by_epoch=False,
+        structural_cost_weight=0.5,
         callbacks: List[pl.callbacks.Callback] = (),
         **kwargs,
     ):
@@ -66,9 +69,19 @@ class ValidationCost:
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.error_loss = error_loss
+        self.structural_cost_weight = structural_cost_weight
         self.kwargs = kwargs
         self.progress_by_epoch = progress_by_epoch
         self.callbacks = list(callbacks)
+
+    def structural_cost(self, program: SExpression):
+        cost = 0
+        if isinstance(program, Hole):
+            cost += 1
+            return cost
+        for child in program.children:
+            cost += self.structural_cost(child)
+        return cost
 
     def __call__(self, node: DSLSearchNode) -> float:
         """
@@ -85,6 +98,11 @@ class ValidationCost:
         try:
             initialized_p = self.neural_dsl.initialize(node.program)
         except PartialProgramNotFoundError:
+            print(
+                "Partial Program not found for {p}".format(
+                    p=render_s_expression(node.program)
+                )
+            )
             return self.error_loss
 
         model = self.neural_dsl.compute(initialized_p)
@@ -92,7 +110,11 @@ class ValidationCost:
             del initialized_p
             model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
         self._fit_trainer(trainer, model, pbar)
-        return trainer.callback_metrics["val_loss"].item()
+        return (1 - self.structural_cost_weight) * trainer.callback_metrics[
+            "val_loss"
+        ].item() + self.structural_cost_weight * self.structural_cost(
+            program=node.program
+        )
 
     @staticmethod
     def _duplicate(callbacks):
@@ -117,20 +139,22 @@ class ValidationCost:
         callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
             log(f"Training {label}")
-            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
+            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training", disable=True)
             callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:
             pbar = None
 
-        trainer = pl.Trainer(
-            max_epochs=self.trainer_cfg.n_epochs,
-            devices="auto",
-            accelerator="cpu",
-            enable_checkpointing=False,
-            logger=False,
-            **self.kwargs,
-            callbacks=callbacks,
+        self.kwargs["max_epochs"] = self.kwargs.get(
+            "max_epochs", self.trainer_cfg.n_epochs
         )
+        self.kwargs["devices"] = self.kwargs.get("devices", "auto")
+        self.kwargs["accelerator"] = self.kwargs.get("accelerator", "cpu")
+        self.kwargs["enable_checkpointing"] = self.kwargs.get(
+            "enable_checkpointing", False
+        )
+        self.kwargs["logger"] = self.kwargs.get("logger", False)
+        self.kwargs["callbacks"] = callbacks
+        trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
     def _fit_trainer(self, trainer, model, pbar):
