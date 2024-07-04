@@ -14,6 +14,9 @@ Search Graph
 .. autofunction:: neurosym.search.astar
 .. autofunction:: neurosym.search.bounded_astar
 .. autofunction:: neurosym.search.bounded_astar_async
+.. autoclass:: neurosym.DepthComputer
+    :members:
+.. autoclass:: neurosym.UniformDepthComputer
 .. autoclass:: neurosym.MetadataComputer
     :members:
 .. autoclass:: neurosym.NoMetadataComputer

@@ -49,6 +49,9 @@ class ValidationCost:
     :param datamodule: The data module to use.
     :param error_loss: The loss to return if the program is invalid.
     :param progress_by_epoch: Whether to display progress by epoch.
+    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
+        The scale of the validation cost (float) and structural_cost (int) can
+        vary so it's important to tune this for each new problem.
     :param callbacks: Callbacks to use during training.
     :param kwargs: Additional arguments to pass to the trainer.
     """
@@ -74,7 +77,15 @@ class ValidationCost:
         self.progress_by_epoch = progress_by_epoch
         self.callbacks = list(callbacks)
 
-    def structural_cost(self, program: SExpression):
+    def structural_cost(self, program: SExpression) -> int:
+        """
+        Recursively calculates the structural cost of a program.
+        Approximated as the total number of Holes.
+        
+        :param program: The program to compute the structural cost for.
+
+        :returns: An integer structural cost of the program.
+        """
         cost = 0
         if isinstance(program, Hole):
             cost += 1
@@ -98,11 +109,7 @@ class ValidationCost:
         try:
             initialized_p = self.neural_dsl.initialize(node.program)
         except PartialProgramNotFoundError:
-            print(
-                "Partial Program not found for {p}".format(
-                    p=render_s_expression(node.program)
-                )
-            )
+            log(f"Partial Program not found for {render_s_expression(node.program)}")
             return self.error_loss
 
         model = self.neural_dsl.compute(initialized_p)
@@ -139,7 +146,9 @@ class ValidationCost:
         callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
             log(f"Training {label}")
-            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training", disable=True)
+            pbar = tqdm.tqdm(
+                total=self.trainer_cfg.n_epochs, desc="Training", disable=True
+            )
             callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:
             pbar = None
