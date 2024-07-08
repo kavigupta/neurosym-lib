@@ -53,6 +53,6 @@ class TestNEARInterface(unittest.TestCase):
         with pytest.raises(StopIteration):
             interface.fit(
                 datamodule=datamodule,
-                root_type="([{f, $L}]) -> [{f, $O}]",
+                program_signature="([{f, $L}]) -> [{f, $O}]",
                 n_programs=1,
             )

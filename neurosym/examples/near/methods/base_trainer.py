@@ -26,7 +26,7 @@ class BaseTrainerConfig:
     evaluate: bool = True
     resume: str = ""
     scheduler: str = "cosine"
-    sav_dir: str = "data/shapeworldonly_checkpoints"
+    sav_dir: str = "data/checkpoints"
     _filter_param_list: Tuple[str] = ()
     optimizer: str = torch.optim.Adam
 

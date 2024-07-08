@@ -116,6 +116,9 @@ class ValidationCost:
         if not isinstance(model, torch.nn.Module):
             del initialized_p
             model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
+            if len(list(model.parameters())) == 0:
+                log(f"No parameters in program {render_s_expression(node.program)}")
+                return self.error_loss
         self._fit_trainer(trainer, model, pbar)
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
