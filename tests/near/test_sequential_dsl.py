@@ -81,7 +81,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
                     datamodule=datamodule,
                 ),
                 max_depth=3,
-                depth_computer=near.ProbableDepthComputer(),
             )
             while True:
                 print("iteration: ", n_iter)

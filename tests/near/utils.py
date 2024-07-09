@@ -13,7 +13,7 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
         dsl.compute(dsl.initialize(x))
         return True
 
-    g = near.near_graph(dsl, t(out_t), is_goal=checker)
+    g = near.near_graph(dsl, t(out_t), max_depth=max_depth, is_goal=checker)
 
     def cost(x):
         if isinstance(x.program, ns.SExpression) and x.program.children:

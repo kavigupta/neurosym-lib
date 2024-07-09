@@ -13,6 +13,11 @@
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 
+NEAR Interface
+--------------------------------------------
+.. autoclass:: neurosym.examples.near.interface.NEAR
+    :members:
+
 NEAR Operations
 --------------------------------------------
 
