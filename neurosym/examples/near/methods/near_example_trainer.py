@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
 import torch
 from sklearn.metrics import f1_score, hamming_loss
 from torch import nn
@@ -106,22 +107,33 @@ class NEARTrainer(BaseTrainer):
         predictions = self.model(inputs)
         losses = dict(loss=self.loss(predictions, outputs))
 
-        if validation and self.logger is not None and self.current_epoch % 2 == 0:
-            self._log_program_accuracy(predictions, outputs, inputs)
+        if validation and self.current_epoch % 2 == 0:
+            measures = self._measure_program_accuracy(predictions, outputs, inputs)
+            for km, vm in measures.items():
+                if isinstance(vm, np.ndarray):
+                    continue
+                losses[km] = torch.tensor(vm)
 
         return losses
 
-    def _log_program_accuracy(self, predictions, outputs, inputs):
+    def _measure_program_accuracy(self, predictions, outputs, inputs):
         del inputs
-        if self.config.num_labels > 1:
-            predictions = torch.argmax(predictions, dim=-1)
-        else:
-            predictions = torch.round(torch.sigmoid(predictions))
-        targets = outputs
+        if len(predictions.shape) == 2 and predictions.shape[-1] == self.config.num_labels:
+            if self.config.num_labels > 1:
+                predictions = torch.argmax(predictions, dim=-1)
+            else:
+                predictions = torch.round(torch.sigmoid(predictions))
+        if len(outputs.shape) == 2 and outputs.shape[-1] == self.config.num_labels:
+            if self.config.num_labels > 1:
+                outputs = torch.argmax(outputs, dim=-1)
+            
         correctness = NEARTrainer.label_correctness(
-            predictions, targets, self.config.num_labels
+            predictions, outputs, self.config.num_labels
         )
-        self.logger.log_metrics(correctness, step=self.global_step)
+        if self.logger is not None:
+            self.logger.log_metrics(correctness, step=self.global_step)
+        
+        return correctness
 
 
 def _main():

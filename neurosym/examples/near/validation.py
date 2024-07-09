@@ -66,12 +66,14 @@ class ValidationCost:
         progress_by_epoch=False,
         structural_cost_weight=0.5,
         callbacks: List[pl.callbacks.Callback] = (),
+        val_metric: str = "val_loss",
         **kwargs,
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.error_loss = error_loss
+        self.val_metric = val_metric
         self.structural_cost_weight = structural_cost_weight
         self.kwargs = kwargs
         self.progress_by_epoch = progress_by_epoch
@@ -121,7 +123,7 @@ class ValidationCost:
                 return self.error_loss
         self._fit_trainer(trainer, model, pbar)
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
-            "val_loss"
+            self.val_metric
         ].item() + self.structural_cost_weight * self.structural_cost(
             program=node.program
         )

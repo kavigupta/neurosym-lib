@@ -13,6 +13,7 @@ def import_pytorch_lightning():
     warnings.filterwarnings("default", category=DeprecationWarning)
     warnings.filterwarnings("ignore", ".*does not have many workers.*")
     warnings.filterwarnings("ignore", ".*GPU available but not used.*")
+    warnings.filterwarnings("ignore", ".*removed from hparams.*")
     logger = logging.getLogger("pytorch_lightning.utilities.rank_zero")
     logger.setLevel(logging.WARNING)
     logger = logging.getLogger("pytorch_lightning.accelerators.cuda")

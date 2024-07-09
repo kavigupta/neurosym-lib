@@ -158,6 +158,7 @@ def ecg_dsl(input_size, output_size, max_overall_depth=6):
 
 
 def main(args):
+    hidden_size = 16
     logging.basicConfig(level=logging.INFO)
     filter_multilabel("train", args.data_dir)
     filter_multilabel("test", args.data_dir)
@@ -180,7 +181,7 @@ def main(args):
                     dsl_type_env("($fInp) -> $fFeat"),
                     dsl_type_env("($fInp) -> {f, 1}"),
                 ],
-                near.mlp_factory(hidden_size=10),
+                near.mlp_factory(hidden_size=hidden_size),
             ),
             **near.create_modules(
                 "constant_int",
@@ -192,16 +193,16 @@ def main(args):
     )
 
     def cross_entropy_callback(predictions, targets):
-        return torch.nn.functional.cross_entropy(predictions, targets)
+        return torch.nn.functional.cross_entropy(predictions, targets, label_smoothing=1e-2)
 
     trainer_cfg = near.NEARTrainerConfig(
-        lr=1e-2,
+        lr=1e-3,
         max_seq_len=300,
-        n_epochs=30,
+        n_epochs=100,
         num_labels=output_size,
         train_steps=len(datamodule.train),
         loss_callback=cross_entropy_callback,
-        scheduler="cosine",
+        scheduler="none",
         optimizer=torch.optim.Adam,
     )
     torch.set_num_threads(2)
@@ -215,14 +216,16 @@ def main(args):
             pl.callbacks.EarlyStopping(
                 monitor="val_loss",
                 min_delta=1e-2,
-                patience=5,
+                patience=1,
                 mode="min",
+                # verbose=True,
             )
         ],
         enable_progress_bar=False,
         enable_model_summary=False,
         progress_by_epoch=True,
         structural_cost_weight=0.01,
+        val_metric="val_weighted_avg_f1"
     )
 
     g = near.near_graph(
@@ -233,15 +236,17 @@ def main(args):
         is_goal=neural_dsl.program_has_no_holes,
     )
 
-    # iterator = ns.search.bounded_astar(
-    #     g, validation_cost, max_depth=16
-    # )
-    iterator = ns.search.bounded_astar_async(
-        g,
-        validation_cost,
-        max_depth=16,
-        max_workers=5,
-    )
+    if args.max_workers == 0:
+        iterator = ns.search.bounded_astar(
+            g, validation_cost, max_depth=16
+        )
+    else:
+        iterator = ns.search.bounded_astar_async(
+            g,
+            validation_cost,
+            max_depth=16,
+            max_workers=args.max_workers,
+        )
     best_program_nodes = []
     while len(best_program_nodes) < args.num_programs:
         try:
@@ -275,6 +280,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--num_programs", type=int, required=True, help="Number of programs to store."
+    )
+    parser.add_argument(
+        "--max_workers", type=int, required=False, default=0, help="Number of concurrent beams to explore."
     )
     args = parser.parse_args()
 
