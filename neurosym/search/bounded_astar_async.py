@@ -6,7 +6,6 @@ from pathos.multiprocessing import ProcessingPool as Pool
 from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import BoundedAStarNode
 from neurosym.search_graph.search_graph import SearchGraph
-from neurosym.search_graph.depth_computer import DepthComputer, UniformDepthComputer
 
 
 class FuturePriorityQueue(queue.PriorityQueue):
@@ -46,7 +45,6 @@ def bounded_astar_async(
     cost_plus_heuristic: Callable[[SExpression], float],
     max_depth: int,
     max_workers: int,
-    depth_computer: DepthComputer = UniformDepthComputer(),
 ):
     """
     Performs a bounded a-star search on the given search graph, yielding each node in
@@ -78,23 +76,18 @@ def bounded_astar_async(
                 future_fn=lambda ret: BoundedAStarNode(ret, node, depth),
             )
 
-        add_to_fringe(g.initial_node(), depth_computer.initialize())
+        add_to_fringe(g.initial_node(), 0)
         while not fringe.empty():
             try:
                 fringe_var = fringe.getitem()
                 # pylint: disable=duplicate-code
                 node, depth = fringe_var.node, fringe_var.depth
-                if (
-                    node.program in visited
-                    or depth_computer.probable_depth(node.program, current_depth=depth)
-                    > max_depth
-                ):
+                if node.program in visited or depth > max_depth:
                     continue
                 visited.add(node.program)
                 if g.is_goal_node(node):
                     yield node
                 for child in g.expand_node(node):
-                    new_depth = depth_computer.increment(child.program, current_depth=depth)
-                    add_to_fringe(child, new_depth)
+                    add_to_fringe(child, depth + 1)
             except queue.Empty:
                 pass

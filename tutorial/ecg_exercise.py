@@ -9,11 +9,7 @@ import torch
 import torch.nn as nn
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples import near
-from neurosym.examples.near.depth import ProbableDepthComputer
-from neurosym.examples.near.operations.basic import ite_torch
-from neurosym.types.type import ArrowType, AtomicType
 
 pl = ns.import_pytorch_lightning()
 
@@ -77,7 +73,7 @@ def subset_selector_all_feat(x, channel, typ):
 
 def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     feature_dim = 6
-    dslf = DSLFactory(
+    dslf = ns.DSLFactory(
         I=input_dim, O=output_dim, F=feature_dim, max_overall_depth=max_overall_depth
     )
     dslf.typedef("fInp", "{f, $I}")
@@ -120,14 +116,14 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
 
     def filter_constants(x):
         match x:
-            case ArrowType(a, b):
+            case ns.ArrowType(a, b):
                 return filter_constants(a) and filter_constants(b)
-            case AtomicType(a):
+            case ns.AtomicType(a):
                 return a not in ["channel", "feature"]
             case _:
                 return True
 
-    dslf.filtered_type_variable("num", lambda x: filter_constants(x))
+    dslf.filtered_type_variable("num", filter_constants)
     dslf.concrete(
         "add",
         "(%num, %num) -> %num",
@@ -155,7 +151,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        near.ite_torch,
     )
     dslf.prune_to("($fInp) -> $fOut")
     return dslf.finalize(), dslf.t
@@ -238,14 +234,13 @@ def main(args):
     )
 
     # iterator = ns.search.bounded_astar(
-    #     g, validation_cost, max_depth=16, depth_computer=ProbableDepthComputer()
+    #     g, validation_cost, max_depth=16
     # )
     iterator = ns.search.bounded_astar_async(
         g,
         validation_cost,
         max_depth=16,
         max_workers=5,
-        depth_computer=ProbableDepthComputer(),
     )
     best_program_nodes = []
     while len(best_program_nodes) < args.num_programs:
@@ -267,9 +262,8 @@ def main(args):
         )
 
     # Save programs
-    with open(f"{args.data_dir}/best_programs.pkl", 'wb') as fp:
+    with open(f"{args.data_dir}/best_programs.pkl", "wb") as fp:
         pickle.dump(best_program_nodes, fp)
-
 
 
 if __name__ == "__main__":

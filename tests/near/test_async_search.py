@@ -79,7 +79,6 @@ class TestNEARAsyncSearch(unittest.TestCase):
                 ),
                 max_depth=max_depth,
                 max_workers=4,
-                depth_computer=near.ProbableDepthComputer()
             )
             while True:
                 print("iteration: ", n_iter)

@@ -8,8 +8,6 @@
 .. autoclass:: neurosym.examples.near.NEARTrainer
 .. autoclass:: neurosym.examples.near.ValidationCost
     :members:
-.. autoclass:: neurosym.examples.near.ProbableDepthComputer
-    :members:
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 
@@ -32,6 +30,9 @@ NEAR Factory Functions
 .. autofunction:: neurosym.examples.near.mlp_factory
 .. autoclass:: neurosym.examples.near.MLPConfig
 .. autoclass:: neurosym.examples.near.MLP
+.. autofunction:: neurosym.examples.near.selector_factory
+.. autoclass:: neurosym.examples.near.SelectorConfig
+.. autoclass:: neurosym.examples.near.Selector
 .. autofunction:: neurosym.examples.near.rnn_factory_seq2seq
 .. autofunction:: neurosym.examples.near.rnn_factory_seq2class
 .. autoclass:: neurosym.examples.near.RNNConfig
