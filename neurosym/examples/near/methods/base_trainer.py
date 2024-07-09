@@ -64,7 +64,7 @@ class BaseTrainer(pl.LightningModule):
         # pylint: disable=arguments-differ
         del batch_idx
         losses = self._step(validation=False, **train_batch)
-        train_loss = losses['loss']
+        train_loss = losses["loss"]
         for key, value in losses.items():
             self.log(f"train_{key}", value.item(), prog_bar=True, sync_dist=True)
 
@@ -75,7 +75,7 @@ class BaseTrainer(pl.LightningModule):
         # pylint: disable=arguments-differ
         del batch_idx
         losses = self._step(validation=True, **evaluation_batch)
-        evaluation_loss = losses['loss']
+        evaluation_loss = losses["loss"]
         for key, value in losses.items():
             self.log(f"{split}_{key}", value.item(), prog_bar=True, sync_dist=True)
 

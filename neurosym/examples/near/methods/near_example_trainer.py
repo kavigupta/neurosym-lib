@@ -118,21 +118,29 @@ class NEARTrainer(BaseTrainer):
 
     def _measure_program_accuracy(self, predictions, outputs, inputs):
         del inputs
-        if len(predictions.shape) == 2 and predictions.shape[-1] == self.config.num_labels:
+
+        def flatten_if_needed(tensor):
+            return tensor.flatten() if tensor.ndim > 1 else tensor
+
+        if predictions.shape[-1] == self.config.num_labels:
             if self.config.num_labels > 1:
                 predictions = torch.argmax(predictions, dim=-1)
             else:
                 predictions = torch.round(torch.sigmoid(predictions))
-        if len(outputs.shape) == 2 and outputs.shape[-1] == self.config.num_labels:
-            if self.config.num_labels > 1:
-                outputs = torch.argmax(outputs, dim=-1)
-            
+
+        if outputs.shape[-1] == self.config.num_labels and self.config.num_labels > 1:
+            outputs = torch.argmax(outputs, dim=-1)
+
+        predictions = flatten_if_needed(predictions)
+        outputs = flatten_if_needed(outputs)
+
         correctness = NEARTrainer.label_correctness(
             predictions, outputs, self.config.num_labels
         )
-        if self.logger is not None:
+
+        if self.logger:
             self.logger.log_metrics(correctness, step=self.global_step)
-        
+
         return correctness
 
 

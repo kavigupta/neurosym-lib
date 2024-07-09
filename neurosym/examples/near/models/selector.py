@@ -27,6 +27,7 @@ class Selector(nn.Module):
     Allows instantiating an selector module with a given input and output size.
     :param config: Configuration for the selection module.
     """
+
     def __init__(self, config: SelectorConfig):
         super().__init__()
         self.config = config
@@ -37,14 +38,15 @@ class Selector(nn.Module):
         masked_logits = torch.nn.functional.gumbel_softmax(logits, tau=1, hard=True)
         return masked_logits
 
+
 def selector_factory(**kwargs):
     """
     Allows instantiating an selector module with a given input and output size.
 
     :param input_size: The size of the input.
     """
-    input_size = kwargs['input_size']
-    kwargs.pop('input_size')
+    input_size = kwargs["input_size"]
+    kwargs.pop("input_size")
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
         assert len(input_shape) == 0
