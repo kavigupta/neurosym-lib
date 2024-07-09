@@ -1,6 +1,7 @@
 from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
 from neurosym.examples.near.validation import ValidationCost
 
+from .depth import ProbableDepthComputer
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .interface import NEAR
@@ -17,6 +18,7 @@ from .models.rnn import (
     rnn_factory_seq2class,
     rnn_factory_seq2seq,
 )
+from .models.selector import Selector, SelectorConfig, selector_factory
 from .models.torch_program_module import TorchProgramModule
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph
