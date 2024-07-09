@@ -98,16 +98,16 @@ class NEAR:
     def fit(
         self,
         datamodule: pl.LightningDataModule,
-        root_type: str,
+        program_signature: str,
         n_programs: int = 1,  # type: ignore
     ):
         """
         Fits the NEAR model to the provided data.
 
         :param datamodule: Data module containing the training and validation data.
-        :param root_type: Root type of the program to be synthesized.
+        :param program_signature: Type signature of the program to be synthesized.
         :param n_programs: Number of programs to synthesize.
-        :return: Self.
+        :return: A list of `n_programs` number of trained estimators.
         """
         if not self._is_registered:
             raise NameError(
@@ -128,14 +128,15 @@ class NEAR:
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
             enable_model_summary=False,
-            enable_progress_bar=True,
+            # enable_progress_bar=False,
+            progress_by_epoch=True,
             accelerator=self.accelerator,
         )
 
         g = near_graph(
             self.neural_dsl,
             parse_type(
-                s=root_type,
+                s=program_signature,
                 env=self.type_env,
             ),
             is_goal=self.neural_dsl.program_has_no_holes,
@@ -159,14 +160,14 @@ class NEAR:
                 ) from exc
 
         sexprs = sorted(sexprs, key=lambda x: x[1])
-        for i, (node, cost) in enumerate(sexprs):
-            log(f"({i}) Cost: {cost:.4f}, {render_s_expression(node.program)}")
+        for i, (sexpr, cost) in enumerate(sexprs):
+            log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
 
         self.programs = [
             self.train_program(sexpr, datamodule) for (sexpr, cost) in sexprs
         ]
 
-        return self
+        return self.programs
 
     def train_program(
         self,
