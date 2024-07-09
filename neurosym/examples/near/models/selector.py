@@ -9,13 +9,24 @@ from .base import BaseConfig
 
 @dataclass
 class SelectorConfig(BaseConfig):
+    """
+    Represents the configuration of a gumbel softmax selector.
+
+    :param input_size: The size of the input.
+    :param output_size: The size of the output.
+    """
+
     input_size: int
     output_size: int
 
 
 class Selector(nn.Module):
-    """Simple Selector module."""
+    """
+    Gumbel Softmax based learnable selection module.
 
+    Allows instantiating an selector module with a given input and output size.
+    :param config: Configuration for the selection module.
+    """
     def __init__(self, config: SelectorConfig):
         super().__init__()
         self.config = config
@@ -29,15 +40,17 @@ class Selector(nn.Module):
 def selector_factory(**kwargs):
     """
     Allows instantiating an selector module with a given input and output size.
+
+    :param input_size: The size of the input.
     """
-    input_dim = kwargs['input_dim']
-    kwargs.pop('input_dim')
+    input_size = kwargs['input_size']
+    kwargs.pop('input_size')
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
         assert len(input_shape) == 0
         cfg = SelectorConfig(
-            model_name="Selector",
-            input_size=input_dim,
+            model_name="selector",
+            input_size=input_size,
             output_size=output_shape[-1],
             **kwargs,
         )
