@@ -8,8 +8,6 @@
 .. autoclass:: neurosym.examples.near.NEARTrainer
 .. autoclass:: neurosym.examples.near.ValidationCost
     :members:
-.. autoclass:: neurosym.examples.near.ProbableDepthComputer
-    :members:
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 
