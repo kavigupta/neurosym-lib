@@ -71,10 +71,10 @@ def subset_selector_all_feat(x, channel, typ):
     return masked_x[torch.arange(x.shape[0]), :, typ_idx]
 
 
-def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
+def ecg_dsl(input_size, output_size, max_overall_depth=6):
     feature_dim = 6
     dslf = ns.DSLFactory(
-        I=input_dim, O=output_dim, F=feature_dim, max_overall_depth=max_overall_depth
+        I=input_size, O=output_size, F=feature_dim, max_overall_depth=max_overall_depth
     )
     dslf.typedef("fInp", "{f, $I}")
     dslf.typedef("fOut", "{f, $O}")
@@ -145,13 +145,13 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         "output",
         "(($fInp) -> $fFeat) -> $fInp -> $fOut",
         lambda f, lin: lambda x: lin(f(x)),
-        dict(lin=lambda: nn.Linear(feature_dim, output_dim)),
+        dict(lin=lambda: nn.Linear(feature_dim, output_size)),
     )
 
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        near.ite_torch,
+        near.operations.ite_torch,
     )
     dslf.prune_to("($fInp) -> $fOut")
     return dslf.finalize(), dslf.t
@@ -162,12 +162,12 @@ def main(args):
     filter_multilabel("train", args.data_dir)
     filter_multilabel("test", args.data_dir)
 
-    input_dim, output_dim = 144, 9
-    dsl, dsl_type_env = ecg_dsl(input_dim=input_dim, output_dim=output_dim)
+    input_size, output_size = 144, 9
+    dsl, dsl_type_env = ecg_dsl(input_size=input_size, output_size=output_size)
 
     datamodule = dataset_factory(args.data_dir, 42)
 
-    t = ns.TypeDefiner(L=input_dim, O=output_dim)
+    t = ns.TypeDefiner(L=input_size, O=output_size)
     t.typedef("fL", "{f, $L}")
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=dsl,
@@ -185,7 +185,7 @@ def main(args):
             **near.create_modules(
                 "constant_int",
                 [dsl_type_env("() -> channel")],
-                near.selector_factory(input_dim=input_dim),
+                near.selector_factory(input_size=input_size),
                 known_atom_shapes=dict(channel=(12,), feature=(6,)),
             ),
         },
@@ -198,7 +198,7 @@ def main(args):
         lr=1e-2,
         max_seq_len=300,
         n_epochs=30,
-        num_labels=output_dim,
+        num_labels=output_size,
         train_steps=len(datamodule.train),
         loss_callback=cross_entropy_callback,
         scheduler="cosine",
@@ -228,7 +228,7 @@ def main(args):
     g = near.near_graph(
         neural_dsl,
         ns.parse_type(
-            s="({f, $L}) -> {f, $O}", env=ns.TypeDefiner(L=input_dim, O=output_dim)
+            s="({f, $L}) -> {f, $O}", env=ns.TypeDefiner(L=input_size, O=output_size)
         ),
         is_goal=neural_dsl.program_has_no_holes,
     )
