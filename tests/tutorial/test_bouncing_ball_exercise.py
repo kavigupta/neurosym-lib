@@ -12,18 +12,14 @@ def validate(t):
     [bounce_loc] = np.where((vy[1:] > 0) & (vy[:-1] < 0))
     if not bounce_loc.size:
         return "no ground bounces"
-    # if not (np.abs(vy[bounce_loc]) / np.abs(vy).max() > 0.25).mean() > 0.5:
-        # return "ground bounces not at max velocity"
-    # if not (np.sign(vx[bounce_loc]) == np.sign(vx[bounce_loc + 1])).mean() > 0.5:
-        # return "ground bounces don't mantain vx"
+    if not (np.abs(vy[bounce_loc]) / np.abs(vy).max() > 0.25).mean() > 0.5:
+        return "ground bounces not at max velocity"
+    if not (np.sign(vx[bounce_loc]) == np.sign(vx[bounce_loc + 1])).mean() > 0.5:
+        return "ground bounces don't mantain vx"
     return "success"
 
-
-validation = validate(trajectory)
-if validation != "success":
-    validation = validate(trajectoryb)
 print("*" * 80)
-print(validation)
+print([validate(trajectory) for trajectory in trajectories])
 """
 
 
@@ -36,7 +32,7 @@ class TestBouncingBallExercise(unittest.TestCase):
         )
         *_, stars, validation, _ = result.split("\n")
         self.assertEqual(stars, "*" * 80)
-        self.assertEqual(validation, "success")
+        self.assertIn("success", validation)
 
     def test_bouncing_ball_exercise_skeleton(self):
         self.maxDiff = None
