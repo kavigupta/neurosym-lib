@@ -1,6 +1,5 @@
 from typing import List
 
-import torch
 import tqdm.auto as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
