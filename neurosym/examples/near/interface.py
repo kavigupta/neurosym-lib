@@ -1,8 +1,8 @@
 from typing import Callable
 
-from frozendict import frozendict
 import numpy as np
 import torch
+from frozendict import frozendict
 from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
