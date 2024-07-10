@@ -123,8 +123,7 @@ class NEAR:
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
             enable_model_summary=False,
-            # enable_progress_bar=False,
-            progress_by_epoch=True,
+            progress_by_epoch=False,
             accelerator=self.accelerator,
         )
         validation_params.update(self.validation_params)
