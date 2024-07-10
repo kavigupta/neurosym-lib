@@ -171,6 +171,7 @@ class NEAR:
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
+        **kwargs,
     ):
         """
         Trains a program on the provided data.
@@ -182,16 +183,18 @@ class NEAR:
         log(f"Validating {render_s_expression(program)}")
         module = TorchProgramModule(dsl=self.neural_dsl, program=program)
         pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
-        trainer = pl.Trainer(
+        trainer_params = dict(
             max_epochs=2000,
             devices="auto",
             accelerator=self.accelerator,
             enable_checkpointing=False,
             enable_model_summary=False,
-            enable_progress_bar=True,
+            enable_progress_bar=False,
             logger=False,
             deterministic=True,
         )
+        trainer_params.update(**kwargs)
+        trainer = pl.Trainer(**trainer_params)
 
         trainer.fit(
             pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
