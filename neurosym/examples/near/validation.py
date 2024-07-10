@@ -105,17 +105,12 @@ class ValidationCost:
         trainer, pbar = self._get_trainer_and_pbar(
             label=render_s_expression(node.program)
         )
+
         try:
-            model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
-        except PartialProgramNotFoundError:
-            log(f"Partial Program not found for {render_s_expression(node.program)}")
+            self._fit_trainer(trainer, node.program, pbar)
+        except UninitializableProgramError as e:
+            log(e.message)
             return self.error_loss
-
-        if len(list(model.parameters())) == 0:
-            log(f"No parameters in program {render_s_expression(node.program)}")
-            return self.error_loss
-
-        self._fit_trainer(trainer, model, pbar)
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
         ].item() + self.structural_cost_weight * self.structural_cost(
@@ -165,7 +160,19 @@ class ValidationCost:
         trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
-    def _fit_trainer(self, trainer, model, pbar):
+    def _fit_trainer(self, trainer, program, pbar):
+        try:
+            model = TorchProgramModule(dsl=self.neural_dsl, program=program)
+        except PartialProgramNotFoundError as e:
+            raise UninitializableProgramError(
+                f"Partial Program not found for {render_s_expression(program)}"
+            ) from e
+
+        if len(list(model.parameters())) == 0:
+            raise UninitializableProgramError(
+                f"No parameters in program {render_s_expression(program)}"
+            )
+
         pl_model = NEARTrainer(model, config=self.trainer_cfg)
         trainer.fit(
             pl_model,
@@ -174,3 +181,9 @@ class ValidationCost:
         )
         if self.progress_by_epoch:
             pbar.close()
+
+
+class UninitializableProgramError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
