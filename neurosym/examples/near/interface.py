@@ -113,22 +113,21 @@ class NEAR:
         :param n_programs: Number of programs to synthesize.
         :return: A list of `n_programs` number of trained estimators.
         """
+        sexprs = self._search(datamodule, program_signature, n_programs)
+
+        self.programs = [
+            self.train_program(sexpr, datamodule) for (sexpr, cost) in sexprs
+        ]
+
+        return self.programs
+
+    def _search(self, datamodule, program_signature, n_programs):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
-        )
-        validation_params.update(self.validation_params)
-
-        validation_cost = ValidationCost(**validation_params)
+        validation_cost = self._get_validator(datamodule, **self.validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -159,18 +158,27 @@ class NEAR:
         sexprs = sorted(sexprs, key=lambda x: x[1])
         for i, (sexpr, cost) in enumerate(sexprs):
             log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
+        return sexprs
 
-        self.programs = [
-            self.train_program(sexpr, datamodule) for (sexpr, cost) in sexprs
-        ]
+    def _get_validator(self, datamodule, **kwargs):
+        validation_params = dict(
+            trainer_cfg=self._trainer_config(datamodule),
+            neural_dsl=self.neural_dsl,
+            datamodule=datamodule,
+            enable_model_summary=False,
+            progress_by_epoch=False,
+            accelerator=self.accelerator,
+        )
+        validation_params.update(**kwargs)
 
-        return self.programs
+        validation_cost = ValidationCost(**validation_params)
+        return validation_cost
 
     def train_program(
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
-        **kwargs,
+        max_epochs=2000,
     ):
         """
         Trains a program on the provided data.
@@ -179,25 +187,29 @@ class NEAR:
         :param datamodule: Data module containing the training and validation data.
         :return: Trained TorchProgramModule.
         """
-        log(f"Validating {render_s_expression(program)}")
-        module = TorchProgramModule(dsl=self.neural_dsl, program=program)
-        pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
-        trainer_params = dict(
-            max_epochs=2000,
-            devices="auto",
-            accelerator=self.accelerator,
-            enable_checkpointing=False,
-            enable_model_summary=False,
-            enable_progress_bar=False,
-            logger=False,
-            deterministic=True,
-        )
-        trainer_params.update(**kwargs)
-        trainer = pl.Trainer(**trainer_params)
+        params = dict(self.validation_params.items())
+        params["max_epochs"] = max_epochs
+        module, _ = self._get_validator(datamodule, **params).run_training(program)
+        # log(f"Validating {render_s_expression(program)}")
+        # module = TorchProgramModule(dsl=self.neural_dsl, program=program)
+        # pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
+        # trainer_params = dict(
+        #     max_epochs=2000,
+        #     devices="auto",
+        #     accelerator=self.accelerator,
+        #     enable_checkpointing=False,
+        #     enable_model_summary=False,
+        #     enable_progress_bar=False,
+        #     logger=False,
+        #     deterministic=True,
+        # )
+        # trainer_params.update(**kwargs)
+        # print({k: v for k, v in sorted(trainer_params.items())})
+        # trainer = pl.Trainer(**trainer_params)
 
-        trainer.fit(
-            pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
-        )
+        # trainer.fit(
+        #     pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
+        # )
         return module
 
     def predict(self, X: np.ndarray):
