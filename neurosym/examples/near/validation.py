@@ -1,6 +1,5 @@
 from typing import List
 
-import torch
 import tqdm.auto as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
@@ -107,18 +106,15 @@ class ValidationCost:
             label=render_s_expression(node.program)
         )
         try:
-            initialized_p = self.neural_dsl.initialize(node.program)
+            model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
         except PartialProgramNotFoundError:
             log(f"Partial Program not found for {render_s_expression(node.program)}")
             return self.error_loss
 
-        model = self.neural_dsl.compute(initialized_p)
-        if not isinstance(model, torch.nn.Module):
-            del initialized_p
-            model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
-            if len(list(model.parameters())) == 0:
-                log(f"No parameters in program {render_s_expression(node.program)}")
-                return self.error_loss
+        if len(list(model.parameters())) == 0:
+            log(f"No parameters in program {render_s_expression(node.program)}")
+            return self.error_loss
+
         self._fit_trainer(trainer, model, pbar)
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
