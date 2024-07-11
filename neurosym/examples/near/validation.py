@@ -105,7 +105,6 @@ class ValidationCost:
         trainer, pbar = self._get_trainer_and_pbar(
             label=render_s_expression(node.program)
         )
-
         try:
             self._fit_trainer(trainer, node.program, pbar)
         except UninitializableProgramError as e:
@@ -184,6 +183,12 @@ class ValidationCost:
 
 
 class UninitializableProgramError(Exception):
+    """
+    UninitializableProgramError is raised when a program cannot be
+    initialized due to either an inability to fill a hole in a partial program
+    or when a program has no parameters.
+    """
+
     def __init__(self, message):
         super().__init__(message)
         self.message = message
