@@ -7,11 +7,9 @@ from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
     NEARTrainerConfig,
     classification_mse_loss,
 )
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.examples.near.validation import ValidationCost
@@ -191,23 +189,10 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        module = TorchProgramModule(dsl=self.neural_dsl, program=program)
-        pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
-        trainer_params = dict(
-            max_epochs=max_epochs,
-            devices="auto",
-            accelerator=self.accelerator,
-            enable_checkpointing=False,
-            enable_model_summary=False,
-            enable_progress_bar=False,
-            logger=False,
-            deterministic=True,
-        )
-        trainer_params.update(**kwargs)
-        trainer = pl.Trainer(**trainer_params)
-
-        trainer.fit(
-            pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
+        trainer_params = dict(self.validation_params.items())
+        trainer_params.update(**kwargs, max_epochs=max_epochs)
+        module, _ = self._get_validator(datamodule, **trainer_params).validate_model(
+            program
         )
         return module
 
