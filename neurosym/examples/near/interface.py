@@ -137,7 +137,7 @@ class NEAR:
         )
         validation_params.update(self.validation_params)
 
-        validation_cost = self._get_validator(datamodule, **validation_params)
+        validation_cost = self._get_validator(**validation_params)
 
         g = near_graph(
             self.neural_dsl,
