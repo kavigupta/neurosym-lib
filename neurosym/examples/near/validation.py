@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import tqdm.auto as tqdm
 
@@ -102,19 +102,24 @@ class ValidationCost:
 
         :returns: The validation loss as a `float`.
         """
-        trainer, pbar = self._get_trainer_and_pbar(
-            label=render_s_expression(node.program)
-        )
         try:
-            self._fit_trainer(trainer, node.program, pbar)
+            _, trainer = self.run_training(program=node.program)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
+
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
         ].item() + self.structural_cost_weight * self.structural_cost(
             program=node.program
         )
+
+    def run_training(
+        self, program: SExpression
+    ) -> Tuple[TorchProgramModule, pl.Trainer]:
+        trainer, pbar = self._get_trainer_and_pbar(label=render_s_expression(program))
+        module = self._fit_trainer(trainer, program, pbar)
+        return module, trainer
 
     @staticmethod
     def _duplicate(callbacks):
