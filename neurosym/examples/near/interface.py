@@ -128,17 +128,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
-        )
-        validation_params.update(self.validation_params)
-
-        validation_cost = self._get_validator(**validation_params)
+        validation_cost = self._get_validator(datamodule, **self.validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -201,7 +191,7 @@ class NEAR:
         """
         log(f"Validating {render_s_expression(program)}")
         trainer_params = dict(self.validation_params.items())
-        trainer_params.update(**kwargs)
+        trainer_params.update(**kwargs, max_epochs=max_epochs)
         module, _ = self._get_validator(datamodule, **trainer_params).run_training(program)
         # log(f"Validating {render_s_expression(program)}")
         # module = TorchProgramModule(dsl=self.neural_dsl, program=program)
