@@ -169,6 +169,7 @@ class ValidationCost:
         )
         self.kwargs["logger"] = self.kwargs.get("logger", False)
         self.kwargs["callbacks"] = callbacks
+        self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
         trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
@@ -193,6 +194,8 @@ class ValidationCost:
         )
         if self.progress_by_epoch:
             pbar.close()
+
+        return model
 
 
 class UninitializableProgramError(Exception):
