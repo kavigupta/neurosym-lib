@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 
 import tqdm.auto as tqdm
 
@@ -102,23 +102,25 @@ class ValidationCost:
 
         :returns: The validation loss as a `float`.
         """
+        trainer, pbar = self._get_trainer_and_pbar(
+            label=render_s_expression(node.program)
+        )
         try:
-            _, trainer = self.run_training(program=node.program)
-        except UninitializableProgramError as e:
-            log(e.message)
+            model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
+        except PartialProgramNotFoundError:
+            log(f"Partial Program not found for {render_s_expression(node.program)}")
             return self.error_loss
+
+        if len(list(model.parameters())) == 0:
+            log(f"No parameters in program {render_s_expression(node.program)}")
+            return self.error_loss
+
+        self._fit_trainer(trainer, model, pbar)
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
         ].item() + self.structural_cost_weight * self.structural_cost(
             program=node.program
         )
-
-    def run_training(
-        self, program: SExpression
-    ) -> Tuple[TorchProgramModule, pl.Trainer]:
-        trainer, pbar = self._get_trainer_and_pbar(label=render_s_expression(program))
-        module = self._fit_trainer(trainer, program, pbar)
-        return module, trainer
 
     @staticmethod
     def _duplicate(callbacks):
@@ -160,23 +162,10 @@ class ValidationCost:
         )
         self.kwargs["logger"] = self.kwargs.get("logger", False)
         self.kwargs["callbacks"] = callbacks
-        self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
         trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
-    def _fit_trainer(self, trainer, program, pbar):
-        try:
-            model = TorchProgramModule(dsl=self.neural_dsl, program=program)
-        except PartialProgramNotFoundError as e:
-            raise UninitializableProgramError(
-                f"Partial Program not found for {render_s_expression(program)}"
-            ) from e
-
-        if len(list(model.parameters())) == 0:
-            raise UninitializableProgramError(
-                f"No parameters in program {render_s_expression(program)}"
-            )
-
+    def _fit_trainer(self, trainer, model, pbar):
         pl_model = NEARTrainer(model, config=self.trainer_cfg)
         trainer.fit(
             pl_model,
@@ -185,11 +174,3 @@ class ValidationCost:
         )
         if self.progress_by_epoch:
             pbar.close()
-
-        return model
-
-
-class UninitializableProgramError(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message

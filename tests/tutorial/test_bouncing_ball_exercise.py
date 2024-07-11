@@ -6,7 +6,6 @@ from tutorial.process_tutorial import create_skeleton
 from .utils import execute_notebook
 
 validate = """
-from permacache import stable_hash
 def validate(t):
     vy = t[:, -1]
     vx = t[:, -2]
@@ -20,7 +19,7 @@ def validate(t):
     return "success"
 
 print("*" * 80)
-print([validate(trajectory) for trajectory in trajectories], stable_hash(trajectories))
+print([validate(trajectory) for trajectory in trajectories])
 """
 
 
@@ -34,11 +33,6 @@ class TestBouncingBallExercise(unittest.TestCase):
         *_, stars, validation, _ = result.split("\n")
         self.assertEqual(stars, "*" * 80)
         self.assertIn("success", validation)
-        # determinism. For some reason this only works locally, so I'm commenting it out
-        # self.assertIn(
-        #     "508766982a85233fef5b04ee296e7cb64db494232901e4c5a8516b0482392e79",
-        #     validation,
-        # )
 
     def test_bouncing_ball_exercise_skeleton(self):
         self.maxDiff = None
