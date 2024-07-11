@@ -162,7 +162,8 @@ class NEAR:
             log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
 
         self.programs = [
-            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs) for (sexpr, cost) in sexprs
+            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
+            for (sexpr, cost) in sexprs
         ]
 
         return self.programs
