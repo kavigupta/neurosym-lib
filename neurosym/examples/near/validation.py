@@ -103,7 +103,7 @@ class ValidationCost:
         :returns: The validation loss as a `float`.
         """
         try:
-            _, trainer = self.run_training(program=node.program)
+            _, trainer = self.validate_model(program=node.program)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
@@ -114,9 +114,17 @@ class ValidationCost:
             program=node.program
         )
 
-    def run_training(
+    def validate_model(
         self, program: SExpression
     ) -> Tuple[TorchProgramModule, pl.Trainer]:
+        """
+        Initializes a TorchProgramModule and trains it using a pl.Trainer. Returns the trained module,
+        and the trainer object.
+
+        :param program: The program to validate.
+
+        :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
+        """
         trainer, pbar = self._get_trainer_and_pbar(label=render_s_expression(program))
         module = self._fit_trainer(trainer, program, pbar)
         return module, trainer
