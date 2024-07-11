@@ -114,22 +114,22 @@ class NEAR:
         :param n_programs: Number of programs to synthesize.
         :return: A list of `n_programs` number of trained estimators.
         """
+        sexprs = self._search(datamodule, program_signature, n_programs)
+
+        self.programs = [
+            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
+            for (sexpr, cost) in sexprs
+        ]
+
+        return self.programs
+
+    def _search(self, datamodule, program_signature, n_programs):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
-        )
-        validation_params.update(self.validation_params)
-
-        validation_cost = ValidationCost(**validation_params)
+        validation_cost = self._get_validator(datamodule, **self.validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -160,13 +160,21 @@ class NEAR:
         sexprs = sorted(sexprs, key=lambda x: x[1])
         for i, (sexpr, cost) in enumerate(sexprs):
             log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
+        return sexprs
 
-        self.programs = [
-            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
-            for (sexpr, cost) in sexprs
-        ]
+    def _get_validator(self, datamodule, **kwargs):
+        validation_params = dict(
+            trainer_cfg=self._trainer_config(datamodule),
+            neural_dsl=self.neural_dsl,
+            datamodule=datamodule,
+            enable_model_summary=False,
+            progress_by_epoch=False,
+            accelerator=self.accelerator,
+        )
+        validation_params.update(**kwargs)
 
-        return self.programs
+        validation_cost = ValidationCost(**validation_params)
+        return validation_cost
 
     def train_program(
         self,

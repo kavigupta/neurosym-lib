@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import tqdm.auto as tqdm
 
@@ -102,19 +102,32 @@ class ValidationCost:
 
         :returns: The validation loss as a `float`.
         """
-        trainer, pbar = self._get_trainer_and_pbar(
-            label=render_s_expression(node.program)
-        )
         try:
-            self._fit_trainer(trainer, node.program, pbar)
+            _, trainer = self.validate_model(program=node.program)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
+
         return (1 - self.structural_cost_weight) * trainer.callback_metrics[
             "val_loss"
         ].item() + self.structural_cost_weight * self.structural_cost(
             program=node.program
         )
+
+    def validate_model(
+        self, program: SExpression
+    ) -> Tuple[TorchProgramModule, pl.Trainer]:
+        """
+        Initializes a TorchProgramModule and trains it using a pl.Trainer. Returns the trained module,
+        and the trainer object.
+
+        :param program: The program to validate.
+
+        :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
+        """
+        trainer, pbar = self._get_trainer_and_pbar(label=render_s_expression(program))
+        module = self._fit_trainer(trainer, program, pbar)
+        return module, trainer
 
     @staticmethod
     def _duplicate(callbacks):
@@ -156,6 +169,7 @@ class ValidationCost:
         )
         self.kwargs["logger"] = self.kwargs.get("logger", False)
         self.kwargs["callbacks"] = callbacks
+        self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
         trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
@@ -180,6 +194,8 @@ class ValidationCost:
         )
         if self.progress_by_epoch:
             pbar.close()
+
+        return model
 
 
 class UninitializableProgramError(Exception):
