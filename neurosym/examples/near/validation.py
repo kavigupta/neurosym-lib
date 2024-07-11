@@ -103,6 +103,7 @@ class ValidationCost:
         :returns: The validation loss as a `float`.
         """
         try:
+            log(f"Training {render_s_expression(node.program)}")
             _, trainer = self.validate_model(program=node.program)
         except UninitializableProgramError as e:
             log(e.message)
@@ -125,7 +126,7 @@ class ValidationCost:
 
         :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
         """
-        trainer, pbar = self._get_trainer_and_pbar(label=render_s_expression(program))
+        trainer, pbar = self._get_trainer_and_pbar()
         module = self._fit_trainer(trainer, program, pbar)
         return module, trainer
 
@@ -147,11 +148,10 @@ class ValidationCost:
             )
         return out
 
-    def _get_trainer_and_pbar(self, label=None):
+    def _get_trainer_and_pbar(self):
         callbacks = list(self.callbacks)
         callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
-            log(f"Training {label}")
             pbar = tqdm.tqdm(
                 total=self.trainer_cfg.n_epochs, desc="Training", disable=True
             )
