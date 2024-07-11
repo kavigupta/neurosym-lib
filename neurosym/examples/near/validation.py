@@ -170,7 +170,6 @@ class ValidationCost:
         self.kwargs["logger"] = self.kwargs.get("logger", False)
         self.kwargs["callbacks"] = callbacks
         self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
-        print({k: v for k, v in sorted(self.kwargs.items())})
         trainer = pl.Trainer(**self.kwargs)
         return trainer, pbar
 
