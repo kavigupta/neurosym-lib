@@ -185,20 +185,6 @@ class NEAR:
         validation_cost = ValidationCost(**validation_params)
         return validation_cost
 
-    def _get_validator(self, datamodule, **kwargs):
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
-        )
-        validation_params.update(**kwargs)
-
-        validation_cost = ValidationCost(**validation_params)
-        return validation_cost
-
     def train_program(
         self,
         program: SExpression,
