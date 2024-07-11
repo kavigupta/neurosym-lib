@@ -119,17 +119,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
-        )
-        validation_params.update(self.validation_params)
-
-        validation_cost = ValidationCost(**validation_params)
+        validation_cost = self._get_validator(datamodule, **self.validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -167,6 +157,20 @@ class NEAR:
         ]
 
         return self.programs
+
+    def _get_validator(self, datamodule, **kwargs):
+        validation_params = dict(
+            trainer_cfg=self._trainer_config(datamodule),
+            neural_dsl=self.neural_dsl,
+            datamodule=datamodule,
+            enable_model_summary=False,
+            progress_by_epoch=False,
+            accelerator=self.accelerator,
+        )
+        validation_params.update(**kwargs)
+
+        validation_cost = ValidationCost(**validation_params)
+        return validation_cost
 
     def train_program(
         self,
