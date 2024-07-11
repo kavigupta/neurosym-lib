@@ -127,7 +127,17 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule, **self.validation_params)
+        validation_params = dict(
+            trainer_cfg=self._trainer_config(datamodule),
+            neural_dsl=self.neural_dsl,
+            datamodule=datamodule,
+            enable_model_summary=False,
+            progress_by_epoch=False,
+            accelerator=self.accelerator,
+        )
+        validation_params.update(self.validation_params)
+
+        validation_cost = self._get_validator(datamodule, **validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -178,7 +188,7 @@ class NEAR:
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
-        max_epochs=2000,
+        **kwargs,
     ):
         """
         Trains a program on the provided data.
@@ -187,9 +197,10 @@ class NEAR:
         :param datamodule: Data module containing the training and validation data.
         :return: Trained TorchProgramModule.
         """
-        params = dict(self.validation_params.items())
-        params["max_epochs"] = max_epochs
-        module, _ = self._get_validator(datamodule, **params).run_training(program)
+        log(f"Validating {render_s_expression(program)}")
+        trainer_params = dict(self.validation_params.items())
+        trainer_params.update(**kwargs)
+        module, _ = self._get_validator(datamodule, **trainer_params).run_training(program)
         # log(f"Validating {render_s_expression(program)}")
         # module = TorchProgramModule(dsl=self.neural_dsl, program=program)
         # pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
