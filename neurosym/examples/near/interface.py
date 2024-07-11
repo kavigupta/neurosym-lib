@@ -104,6 +104,7 @@ class NEAR:
         datamodule: pl.LightningDataModule,
         program_signature: str,
         n_programs: int = 1,  # type: ignore
+        validation_max_epochs: int = 2000,
     ):
         """
         Fits the NEAR model to the provided data.
@@ -161,7 +162,8 @@ class NEAR:
             log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
 
         self.programs = [
-            self.train_program(sexpr, datamodule) for (sexpr, cost) in sexprs
+            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
+            for (sexpr, cost) in sexprs
         ]
 
         return self.programs
@@ -170,6 +172,7 @@ class NEAR:
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
+        max_epochs: int,
         **kwargs,
     ):
         """
@@ -183,7 +186,7 @@ class NEAR:
         module = TorchProgramModule(dsl=self.neural_dsl, program=program)
         pl_model = NEARTrainer(module, config=self._trainer_config(datamodule))
         trainer_params = dict(
-            max_epochs=2000,
+            max_epochs=max_epochs,
             devices="auto",
             accelerator=self.accelerator,
             enable_checkpointing=False,
