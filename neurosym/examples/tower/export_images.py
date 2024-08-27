@@ -7,10 +7,9 @@ import os
 import imageio
 import numpy as np
 
-from neurosym.examples.tower.dsl import tower_dsl
+from neurosym.examples.tower.dsl import execute_tower
 from neurosym.examples.tower.examples import dreamcoder_tower_tasks
 from neurosym.examples.tower.renderer import render_plan
-from neurosym.examples.tower.state import TowerState
 
 
 def _make_nice_array(l, columns=None):
@@ -47,14 +46,9 @@ def _write_image(f, a):
     imageio.imwrite(f, (a * 255).astype(np.uint8))
 
 
-def _execute_tower(program):
-    state, plan = tower_dsl().compute(tower_dsl().initialize(program))(TowerState())
-    return state.hand, plan
-
-
 def export_tower_image(program, f, draw_hand=False):
 
-    hand, plan = _execute_tower(program)
+    hand, plan = execute_tower(program)
 
     a = render_plan(
         plan,
@@ -70,10 +64,10 @@ def export_tower_images(programs, f, draw_hand=False):
     a = _montage(
         [
             render_plan(
-                _execute_tower(p)[1],
+                execute_tower(p)[1],
                 pretty=True,
                 Lego=True,
-                drawHand=_execute_tower(p)[0] if draw_hand else None,
+                drawHand=execute_tower(p)[0] if draw_hand else None,
                 resolution=256,
             )
             for p in programs

@@ -1,7 +1,7 @@
 from functools import lru_cache
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.tower.state import TowerAction
+from neurosym.examples.tower.state import TowerAction, TowerState
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import parse_s_expression
 
@@ -77,3 +77,8 @@ def parse_sugared(s):
         return s
 
     return expand_seq(s)
+
+
+def execute_tower(program):
+    state, plan = tower_dsl().compute(tower_dsl().initialize(program))(TowerState())
+    return state.hand, tuple(plan)
