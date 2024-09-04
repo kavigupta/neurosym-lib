@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import torch
 from torch import nn
@@ -62,6 +61,7 @@ class MLP(nn.Sequential):
         self.apply(init_weights)
 
     def forward(self, input, *, environment):
+        # pylint: disable=arguments-differ
         del environment
         return super().forward(input)
 
