@@ -61,7 +61,7 @@ class MLP(nn.Sequential):
         self.apply(init_weights)
 
     def forward(self, x, *, environment):
-        # pylint: disable=arguments-differ
+        # pylint: disable=arguments-differ,arguments-renamed
         del environment
         return super().forward(x)
 
