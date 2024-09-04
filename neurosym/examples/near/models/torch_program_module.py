@@ -19,5 +19,5 @@ class TorchProgramModule(nn.Module):
             list(self.initalized_program.all_state_values())
         )
 
-    def forward(self, *args):
-        return self.dsl.compute(self.initalized_program)(*args)
+    def forward(self, *args, environment):
+        return self.dsl.compute(self.initalized_program, environment)(*args)

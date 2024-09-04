@@ -137,14 +137,16 @@ class DSL:
             prod.initialize(self),
         )
 
-    def compute(self, program: InitializedSExpression):
+    def compute(self, program: InitializedSExpression, environment: Tuple[object] = ()):
         """
         Compute the value of the given program.
         """
         if hasattr(program, "__compute_value__"):
             return program.__compute_value__(self)
         prod = self.get_production(program.symbol)
-        return prod.apply(self, program.state, program.children)
+        return prod.apply(
+            self, program.state, program.children, environment=environment
+        )
 
     def all_rules(
         self, care_about_variables, valid_root_types=None

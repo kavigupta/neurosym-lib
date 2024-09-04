@@ -73,9 +73,11 @@ class AbstractionProduction(FunctionLikeProduction):
             body=dsl.initialize(self._body),
         )
 
-    def evaluate(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs, environment):
         initialized_body = state["body"]
-        return dsl.compute(_with_index_parameters(initialized_body, inputs))
+        return dsl.compute(
+            _with_index_parameters(initialized_body, inputs), environment
+        )
 
     def _render_as_lambda(self):
         body = render_s_expression(self._body)
