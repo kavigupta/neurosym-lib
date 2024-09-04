@@ -242,7 +242,7 @@ class VariableProduction(Production):
 
     def apply(self, dsl, state, children, environment):
         del dsl, state, children
-        return environment[self._type_signature.index_in_env]
+        return environment[self._type_signature.index_in_env].object_value
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
