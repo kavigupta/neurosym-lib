@@ -5,6 +5,9 @@ from typing import List, Tuple
 import torch
 from torch import nn
 
+from neurosym.examples.near.neural_dsl import compute_io_shape
+from neurosym.types.type import Type
+
 from .base import BaseConfig
 
 
@@ -62,6 +65,7 @@ class MLP(nn.Sequential):
         del environment
         return super().forward(input)
 
+
 def mlp_factory(
     hidden_size: int,
     dropout: float = 0.0,
@@ -79,7 +83,8 @@ def mlp_factory(
     :param loss: Loss function to use for training the model.
     """
 
-    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+    def construct_model(typ: Type):
+        input_shape, output_shape = compute_io_shape(typ)
         assert len(input_shape) == 1, "MLP takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]

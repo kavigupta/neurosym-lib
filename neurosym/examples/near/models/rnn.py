@@ -4,6 +4,9 @@ from typing import List, Tuple
 import torch
 from torch import nn
 
+from neurosym.examples.near.neural_dsl import compute_io_shape
+from neurosym.types.type import Type
+
 from .base import BaseConfig
 
 
@@ -104,7 +107,8 @@ def rnn_factory_seq2seq(hidden_size: int):
     :param hidden_size: Size of the hidden layer in the RNN.
     """
 
-    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+    def construct_model(typ: Type):
+        input_shape, output_shape = compute_io_shape(typ)
         assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
@@ -126,7 +130,8 @@ def rnn_factory_seq2class(hidden_size: int):
     :param hidden_size: Size of the hidden layer in the RNN.
     """
 
-    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+    def construct_model(typ: Type):
+        input_shape, output_shape = compute_io_shape(typ)
         assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
