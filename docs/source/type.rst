@@ -38,8 +38,9 @@ Type Signatures
 .. autoclass:: neurosym.LambdaTypeSignature
     :members: function_arity
 
-Other helpful functions
+Other helpful functions/classes
 ------------------------------------------
 .. autofunction:: neurosym.lex_type
 .. autofunction:: neurosym.type_expansions
 .. autofunction:: neurosym.bottom_up_enumerate_types
+.. autoclass:: neurosym.TypeAnnotatedObject
