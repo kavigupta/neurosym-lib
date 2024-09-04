@@ -2,15 +2,14 @@ from typing import Callable
 
 import numpy as np
 import torch
+from frozendict import frozendict
 from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
     NEARTrainerConfig,
     classification_mse_loss,
 )
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.examples.near.validation import ValidationCost
@@ -67,6 +66,7 @@ class NEAR:
         self._is_fitted = False
         self._is_registered = False
         self.programs = None
+        self.validation_params = None
 
     def register_search_params(
         self,
@@ -77,6 +77,7 @@ class NEAR:
         loss_callback: Callable[
             [torch.Tensor, torch.Tensor], torch.Tensor
         ] = classification_mse_loss,
+        validation_params: dict = frozendict(),
     ):
         """
         Registers the parameters for the program search.
@@ -94,12 +95,14 @@ class NEAR:
         self.search_strategy = search_strategy
         self.loss_callback = loss_callback
         self._is_registered = True
+        self.validation_params = validation_params
 
     def fit(
         self,
         datamodule: pl.LightningDataModule,
         program_signature: str,
         n_programs: int = 1,  # type: ignore
+        validation_max_epochs: int = 2000,
     ):
         """
         Fits the NEAR model to the provided data.
@@ -109,29 +112,22 @@ class NEAR:
         :param n_programs: Number of programs to synthesize.
         :return: A list of `n_programs` number of trained estimators.
         """
+        sexprs = self._search(datamodule, program_signature, n_programs)
+
+        self.programs = [
+            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
+            for (sexpr, cost) in sexprs
+        ]
+
+        return self.programs
+
+    def _search(self, datamodule, program_signature, n_programs):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        trainer_cfg = NEARTrainerConfig(
-            lr=self.lr,
-            max_seq_len=self.max_seq_len,
-            n_epochs=self.n_epochs,
-            num_labels=self.output_dim,
-            train_steps=len(datamodule.train),
-            loss_callback=self.loss_callback,
-        )
-
-        validation_cost = ValidationCost(
-            trainer_cfg=trainer_cfg,
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            enable_model_summary=False,
-            # enable_progress_bar=False,
-            progress_by_epoch=True,
-            accelerator=self.accelerator,
-        )
+        validation_cost = self._get_validator(datamodule, **self.validation_params)
 
         g = near_graph(
             self.neural_dsl,
@@ -162,17 +158,28 @@ class NEAR:
         sexprs = sorted(sexprs, key=lambda x: x[1])
         for i, (sexpr, cost) in enumerate(sexprs):
             log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
+        return sexprs
 
-        self.programs = [
-            self.train_program(sexpr, datamodule) for (sexpr, cost) in sexprs
-        ]
+    def _get_validator(self, datamodule, **kwargs):
+        validation_params = dict(
+            trainer_cfg=self._trainer_config(datamodule),
+            neural_dsl=self.neural_dsl,
+            datamodule=datamodule,
+            enable_model_summary=False,
+            progress_by_epoch=False,
+            accelerator=self.accelerator,
+        )
+        validation_params.update(**kwargs)
 
-        return self.programs
+        validation_cost = ValidationCost(**validation_params)
+        return validation_cost
 
     def train_program(
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
+        max_epochs: int,
+        **kwargs,
     ):
         """
         Trains a program on the provided data.
@@ -182,29 +189,10 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        training_cfg = NEARTrainerConfig(
-            lr=self.lr,
-            max_seq_len=self.max_seq_len,
-            n_epochs=self.n_epochs,
-            num_labels=self.output_dim,
-            train_steps=len(datamodule.train),
-            loss_callback=self.loss_callback,
-        )
-        module = TorchProgramModule(dsl=self.neural_dsl, program=program)
-        pl_model = NEARTrainer(module, config=training_cfg)
-        trainer = pl.Trainer(
-            max_epochs=2000,
-            devices="auto",
-            accelerator=self.accelerator,
-            enable_checkpointing=False,
-            enable_model_summary=False,
-            enable_progress_bar=True,
-            logger=False,
-            deterministic=True,
-        )
-
-        trainer.fit(
-            pl_model, datamodule.train_dataloader(), datamodule.val_dataloader()
+        trainer_params = dict(self.validation_params.items())
+        trainer_params.update(**kwargs, max_epochs=max_epochs)
+        module, _ = self._get_validator(datamodule, **trainer_params).validate_model(
+            program
         )
         return module
 
@@ -223,3 +211,13 @@ class NEAR:
         with torch.no_grad():
             pred = [program(torch.tensor(X)).cpu().numpy() for program in self.programs]
         return pred
+
+    def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
+        return NEARTrainerConfig(
+            lr=self.lr,
+            max_seq_len=self.max_seq_len,
+            n_epochs=self.n_epochs,
+            num_labels=self.output_dim,
+            train_steps=len(datamodule.train),
+            loss_callback=self.loss_callback,
+        )

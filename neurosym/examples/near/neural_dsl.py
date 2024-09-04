@@ -6,6 +6,7 @@ from torch import nn
 from neurosym.programs.s_expression_render import symbols_for_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.types.type_signature import FunctionTypeSignature
+from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
 from ...dsl.production import ParameterizedProduction, Production
@@ -59,9 +60,12 @@ class NeuralDSL(DSL):
             module_c_prod = ParameterizedProduction(
                 identifier,
                 FunctionTypeSignature([], fn_type),
-                lambda initialized_module: initialized_module,
+                lambda initialized_module, environment: lambda *args, **kwargs: initialized_module(
+                    *args, **kwargs, environment=environment
+                ),
                 index=None,
                 initializers=dict(initialized_module=module_template),
+                provide_enviroment="environment",
             )
 
             partial_productions.append(module_c_prod)
@@ -123,8 +127,7 @@ class NeuralDSL(DSL):
 
 
 def _create_module_for_type(module_factory, t):
-    shape = _compute_io_shape(t)
-    return lambda: module_factory(*shape)
+    return lambda: module_factory(t)
 
 
 def create_modules(tag: str, types: List[Type], module_factory):
@@ -138,7 +141,8 @@ def create_modules(tag: str, types: List[Type], module_factory):
     return {t: (tag, _create_module_for_type(module_factory, t)) for t in types}
 
 
-def _compute_io_shape(t):
+@internal_only
+def compute_io_shape(t):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
