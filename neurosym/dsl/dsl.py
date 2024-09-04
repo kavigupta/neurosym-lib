@@ -138,7 +138,11 @@ class DSL:
             prod.initialize(self),
         )
 
-    def compute(self, program: InitializedSExpression, environment: Tuple[TypeAnnotatedObject] = ()):
+    def compute(
+        self,
+        program: InitializedSExpression,
+        environment: Tuple[TypeAnnotatedObject] = (),
+    ):
         """
         Compute the value of the given program.
         """
