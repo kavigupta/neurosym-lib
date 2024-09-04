@@ -60,10 +60,10 @@ class MLP(nn.Sequential):
 
         self.apply(init_weights)
 
-    def forward(self, input, *, environment):
+    def forward(self, x, *, environment):
         # pylint: disable=arguments-differ
         del environment
-        return super().forward(input)
+        return super().forward(x)
 
 
 def mlp_factory(
