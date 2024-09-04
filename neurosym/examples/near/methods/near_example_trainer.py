@@ -103,7 +103,7 @@ class NEARTrainer(BaseTrainer):
     def _step(self, inputs, outputs, validation=False, **kwargs):
         # pylint: disable=arguments-differ
         del kwargs
-        predictions = self.model(inputs)
+        predictions = self.model(inputs, environment=())
         losses = dict(loss=self.loss(predictions, outputs))
 
         if validation and self.logger is not None and self.current_epoch % 2 == 0:
