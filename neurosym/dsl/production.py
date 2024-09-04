@@ -73,9 +73,14 @@ class Production(ABC):
         """
 
     @abstractmethod
-    def apply(self, dsl, state, children):
+    def apply(self, dsl, state, children, environment):
         """
         Apply this production to the given children.
+
+        :param dsl: the DSL to apply relative to
+        :param state: the state dictionary for this production
+        :param children: the children of this production, as InitializedSExpression objects
+        :param environment: the current de-bruijn environment. environment[i] corresponds to variable i.
         """
 
     @abstractmethod
@@ -101,7 +106,7 @@ class FunctionLikeProduction(Production):
     """
 
     @abstractmethod
-    def evaluate(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs, environment):
         """
         Return the resulting pytorch expression of computing this function on the inputs
         Takes in the state of the production, which is the result of
@@ -110,8 +115,10 @@ class FunctionLikeProduction(Production):
         Effectively a form of denotation semantics.
         """
 
-    def apply(self, dsl, state, children):
-        return self.evaluate(dsl, state, [dsl.compute(x) for x in children])
+    def apply(self, dsl, state, children, environment):
+        return self.evaluate(
+            dsl, state, [dsl.compute(x, environment) for x in children], environment
+        )
 
 
 @dataclass
@@ -146,8 +153,8 @@ class ConcreteProduction(FunctionLikeProduction):
         del dsl
         return {}
 
-    def evaluate(self, dsl, state, inputs):
-        del dsl
+    def evaluate(self, dsl, state, inputs, environment):
+        del dsl, environment
         assert state == {}
         try:
             return self._compute(*inputs)
@@ -191,7 +198,7 @@ class LambdaProduction(Production):
         del dsl
         return {}
 
-    def apply(self, dsl, state, children):
+    def apply(self, dsl, state, children, environment):
         """
         Apply the lambda production to its child, creating
         a function with the child as the body.
@@ -200,7 +207,7 @@ class LambdaProduction(Production):
         from neurosym.dsl.lambdas import LambdaFunction
 
         [body] = children
-        return LambdaFunction.of(dsl, body, self._type_signature)
+        return LambdaFunction.of(dsl, body, self._type_signature, environment)
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -233,8 +240,9 @@ class VariableProduction(Production):
         del dsl
         return {}
 
-    def apply(self, dsl, state, children):
-        raise NotImplementedError
+    def apply(self, dsl, state, children, environment):
+        del dsl, state, children
+        return environment[self._type_signature.index_in_env].object_value
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -254,6 +262,7 @@ class ParameterizedProduction(ConcreteProduction):
     """
 
     initializers: Dict[str, Callable[[], object]]
+    provide_enviroment: Union[NoneType, str] = None
 
     def with_index(self, index):
         # pylint: disable=unexpected-keyword-arg
@@ -269,9 +278,12 @@ class ParameterizedProduction(ConcreteProduction):
         del dsl
         return {k: v() for k, v in self.initializers.items()}
 
-    def evaluate(self, dsl, state, inputs):
+    def evaluate(self, dsl, state, inputs, environment):
         del dsl
-        return self._compute(*inputs, **state)
+        kwargs = state.copy()
+        if self.provide_enviroment is not None:
+            kwargs[self.provide_enviroment] = environment
+        return self._compute(*inputs, **kwargs)
 
     def render(self):
         lhs = f"{self.symbol()}[{', '.join(self.initializers)}]"

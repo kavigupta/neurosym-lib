@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import torch
 from torch import nn
+
+from neurosym.examples.near.neural_dsl import compute_io_shape
+from neurosym.types.type import Type
 
 from .base import BaseConfig
 
@@ -71,7 +73,7 @@ class _RNN(nn.Module):
         out = self.fc(out.contiguous().view(b * s, -1)).view(b, s, -1)
         return out
 
-    def forward(self, inp, hidden: torch.Tensor = None):
+    def forward(self, inp, hidden: torch.Tensor = None, *, environment):
         pass
 
 
@@ -82,7 +84,7 @@ class Seq2SeqRNN(_RNN):
     :param config: Configuration for the RNN.
     """
 
-    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None, *, environment):
         return self._seq2seq(inp, hidden)
 
 
@@ -93,7 +95,7 @@ class Seq2ClassRNN(_RNN):
     :param config: Configuration for the RNN.
     """
 
-    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None, *, environment):
         return self._seq2class(inp, hidden)
 
 
@@ -104,7 +106,8 @@ def rnn_factory_seq2seq(hidden_size: int):
     :param hidden_size: Size of the hidden layer in the RNN.
     """
 
-    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+    def construct_model(typ: Type):
+        input_shape, output_shape = compute_io_shape(typ)
         assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
@@ -126,7 +129,8 @@ def rnn_factory_seq2class(hidden_size: int):
     :param hidden_size: Size of the hidden layer in the RNN.
     """
 
-    def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
+    def construct_model(typ: Type):
+        input_shape, output_shape = compute_io_shape(typ)
         assert len(input_shape) == 1, "RNN takes a single input only."
         input_size = input_shape[0][-1]
         output_size = output_shape[-1]
