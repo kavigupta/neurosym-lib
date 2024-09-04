@@ -3,6 +3,7 @@ from typing import List
 
 from neurosym.dsl.dsl import DSL
 from neurosym.programs.s_expression import InitializedSExpression
+from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_signature import LambdaTypeSignature
 
 
@@ -20,4 +21,10 @@ class LambdaFunction:
     def __call__(self, *args):
         assert len(args) == self.typ.function_arity()
         # Reverse the arguments because we want to number them from the right.
-        return self.dsl.compute(self.body, [*args[::-1], *self.parent_environment])
+        type_annotated_args = [
+            TypeAnnotatedObject(arg_type, arg)
+            for arg_type, arg in zip(self.typ.input_types, args)
+        ]
+        return self.dsl.compute(
+            self.body, [*type_annotated_args[::-1], *self.parent_environment]
+        )

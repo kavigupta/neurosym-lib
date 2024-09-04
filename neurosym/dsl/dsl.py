@@ -4,6 +4,7 @@ from typing import Callable, Dict, Iterator, List, Tuple, Union
 
 import numpy as np
 
+from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_with_environment import (
     Environment,
     PermissiveEnvironmment,
@@ -137,7 +138,7 @@ class DSL:
             prod.initialize(self),
         )
 
-    def compute(self, program: InitializedSExpression, environment: Tuple[object] = ()):
+    def compute(self, program: InitializedSExpression, environment: Tuple[TypeAnnotatedObject] = ()):
         """
         Compute the value of the given program.
         """
