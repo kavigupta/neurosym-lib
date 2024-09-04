@@ -71,7 +71,7 @@ class _RNN(nn.Module):
         out = self.fc(out.contiguous().view(b * s, -1)).view(b, s, -1)
         return out
 
-    def forward(self, inp, hidden: torch.Tensor = None):
+    def forward(self, inp, hidden: torch.Tensor = None, *, environment):
         pass
 
 
@@ -82,7 +82,7 @@ class Seq2SeqRNN(_RNN):
     :param config: Configuration for the RNN.
     """
 
-    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None, *, environment):
         return self._seq2seq(inp, hidden)
 
 
@@ -93,7 +93,7 @@ class Seq2ClassRNN(_RNN):
     :param config: Configuration for the RNN.
     """
 
-    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None):
+    def forward(self, inp: torch.Tensor, hidden: torch.Tensor = None, *, environment):
         return self._seq2class(inp, hidden)
 
 

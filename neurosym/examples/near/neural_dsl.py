@@ -59,9 +59,12 @@ class NeuralDSL(DSL):
             module_c_prod = ParameterizedProduction(
                 identifier,
                 FunctionTypeSignature([], fn_type),
-                lambda initialized_module: initialized_module,
+                lambda initialized_module, environment: lambda *args, **kwargs: initialized_module(
+                    *args, **kwargs, environment=environment
+                ),
                 index=None,
                 initializers=dict(initialized_module=module_template),
+                provide_enviroment="environment",
             )
 
             partial_productions.append(module_c_prod)

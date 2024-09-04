@@ -58,6 +58,9 @@ class MLP(nn.Sequential):
 
         self.apply(init_weights)
 
+    def forward(self, input, *, environment):
+        del environment
+        return super().forward(input)
 
 def mlp_factory(
     hidden_size: int,

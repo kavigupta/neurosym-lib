@@ -262,6 +262,7 @@ class ParameterizedProduction(ConcreteProduction):
     """
 
     initializers: Dict[str, Callable[[], object]]
+    provide_enviroment: Union[NoneType, str] = None
 
     def with_index(self, index):
         # pylint: disable=unexpected-keyword-arg
@@ -278,8 +279,11 @@ class ParameterizedProduction(ConcreteProduction):
         return {k: v() for k, v in self.initializers.items()}
 
     def evaluate(self, dsl, state, inputs, environment):
-        del dsl, environment
-        return self._compute(*inputs, **state)
+        del dsl
+        kwargs = state.copy()
+        if self.provide_enviroment is not None:
+            kwargs[self.provide_enviroment] = environment
+        return self._compute(*inputs, **kwargs)
 
     def render(self):
         lhs = f"{self.symbol()}[{', '.join(self.initializers)}]"
