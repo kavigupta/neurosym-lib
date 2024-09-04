@@ -97,8 +97,10 @@ class Environment:
         """
         Produce a short representation of the environment.
         """
+        from neurosym.types.type_string_repr import render_type
+
         return ",".join(
-            f"{i}={self._elements[i].short_repr()}" for i in sorted(self._elements)
+            f"{i}={render_type(self._elements[i])}" for i in sorted(self._elements)
         )
 
     @cached_property

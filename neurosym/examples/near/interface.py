@@ -147,6 +147,8 @@ class NEAR:
                 node = next(iterator)
                 self._is_fitted = True
                 cost = validation_cost(node)
+                if cost == validation_cost.error_loss:
+                    continue
                 sexprs.append((node.program, cost))
 
         except StopIteration as exc:
