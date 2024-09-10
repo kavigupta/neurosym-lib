@@ -157,6 +157,7 @@ class PermissiveEnvironmment:
         """
         return "*"
 
+
 @dataclass(frozen=True, eq=True)
 class TypeWithEnvironment:
     """
