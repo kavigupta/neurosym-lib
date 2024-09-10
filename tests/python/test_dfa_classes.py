@@ -3,7 +3,6 @@ import re
 import unittest
 from textwrap import dedent
 
-from increase_recursionlimit import increase_recursionlimit
 from parameterized import parameterized
 
 import neurosym as ns
@@ -231,22 +230,21 @@ class DFATest(unittest.TestCase):
         self.fail(f"Unknown classification {tag_to_check} {state_to_check}")
 
     def classify_elements_in_code_with_config(self, code, **kwargs):
-        with increase_recursionlimit():
-            print("#" * 80)
-            print(code)
-            code = ns.python_to_python_ast(code).to_ns_s_exp(kwargs)
-            print(ns.render_s_expression(code))
-            classified = ns.run_dfa_on_program(dfa, code, "M")
-            result = sorted(
-                {
-                    (x.symbol, state)
-                    for (x, state) in classified
-                    if isinstance(x, ns.SExpression)
-                }
-            )
-            print(code)
-            for x, state in result:
-                self.check_reasonable_classification(x, state)
+        print("#" * 80)
+        print(code)
+        code = ns.python_to_python_ast(code).to_ns_s_exp(kwargs)
+        print(ns.render_s_expression(code))
+        classified = ns.run_dfa_on_program(dfa, code, "M")
+        result = sorted(
+            {
+                (x.symbol, state)
+                for (x, state) in classified
+                if isinstance(x, ns.SExpression)
+            }
+        )
+        print(code)
+        for x, state in result:
+            self.check_reasonable_classification(x, state)
 
     def classify_elements_in_code(self, code):
         self.classify_elements_in_code_with_config(code)
@@ -398,18 +396,15 @@ class DFATest(unittest.TestCase):
 
 class TestExprNodeValidity(unittest.TestCase):
     def e_nodes(self, code):
-        with increase_recursionlimit():
-            print("#" * 80)
-            print(code)
-            code = ns.python_to_python_ast(code)
-            e_nodes = [
-                ns.render_s_expression(x)
-                for x, state in ns.run_dfa_on_program(
-                    dfa, code.to_ns_s_exp(dict()), "M"
-                )
-                if state == "E" and isinstance(x, ns.SExpression)
-            ]
-            return e_nodes
+        print("#" * 80)
+        print(code)
+        code = ns.python_to_python_ast(code)
+        e_nodes = [
+            ns.render_s_expression(x)
+            for x, state in ns.run_dfa_on_program(dfa, code.to_ns_s_exp(dict()), "M")
+            if state == "E" and isinstance(x, ns.SExpression)
+        ]
+        return e_nodes
 
     def assertENodeReal(self, node):
         print(node)

@@ -3,7 +3,6 @@ import json
 import unittest
 from functools import lru_cache
 
-from increase_recursionlimit import increase_recursionlimit
 from parameterized import parameterized
 
 import neurosym as ns
@@ -30,8 +29,7 @@ class ParseUnparseInverseTest(unittest.TestCase):
         self.maxDiff = None
         parsed = ns.s_exp_to_python_ast(s_exp)
         print(parsed)
-        with increase_recursionlimit():
-            s_exp_update = ns.render_s_expression(ns.parse_s_expression(s_exp))
+        s_exp_update = ns.render_s_expression(ns.parse_s_expression(s_exp))
         self.assertEqual(
             s_exp_update,
             ns.render_s_expression(parsed.to_ns_s_exp(dict(no_leaves=no_leaves))),
@@ -42,8 +40,7 @@ class ParseUnparseInverseTest(unittest.TestCase):
         s_exp = ns.python_to_s_exp(
             test_code, renderer_kwargs=dict(columns=80), no_leaves=no_leaves
         )
-        with increase_recursionlimit():
-            self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
+        self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
         self.check_s_exp(s_exp, no_leaves=no_leaves)
         s_exp_parsed = ns.s_exp_to_python_ast(s_exp, {})
         print(repr(s_exp_parsed))

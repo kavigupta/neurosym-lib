@@ -2,8 +2,6 @@ import ast
 from types import NoneType
 from typing import List, Union
 
-from increase_recursionlimit import increase_recursionlimit
-
 from neurosym.python_dsl import python_ast_tools
 
 from .python_ast import (
@@ -86,11 +84,10 @@ def python_to_python_ast(
     :return: The parsed PythonAST.
     """
 
-    with increase_recursionlimit():
-        if isinstance(code, str):
-            code = ast.parse(code)
-        code = _python_ast_to_parsed_ast(
-            code,
-            descoper if descoper is not None else create_descoper(code),
-        )
-        return code
+    if isinstance(code, str):
+        code = ast.parse(code)
+    code = _python_ast_to_parsed_ast(
+        code,
+        descoper if descoper is not None else create_descoper(code),
+    )
+    return code
