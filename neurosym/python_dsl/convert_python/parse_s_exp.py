@@ -3,7 +3,6 @@ import base64
 from typing import Callable, Dict, List, Union
 
 from frozendict import frozendict
-from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import parse_s_expression
@@ -128,8 +127,7 @@ def s_exp_to_python_ast(
     :param code: The code to convert.
     :param node_hooks: A dictionary of node hooks to use.
     """
-    with increase_recursionlimit():
-        if isinstance(code, str):
-            code = parse_s_expression(code)
-        code = s_exp_to_parsed_ast(code, node_hooks)
-        return code
+    if isinstance(code, str):
+        code = parse_s_expression(code)
+    code = s_exp_to_parsed_ast(code, node_hooks)
+    return code

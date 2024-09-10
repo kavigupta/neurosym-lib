@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import List
 
 from frozendict import frozendict
-from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression
 
@@ -32,11 +31,10 @@ class PythonAST(ABC):
         """
         Convert this PythonAST into python code.
         """
-        with increase_recursionlimit():
-            code = self.to_python_ast()
-            if isinstance(code, Splice):
-                code = code.target
-            return ast.unparse(code)
+        code = self.to_python_ast()
+        if isinstance(code, Splice):
+            code = code.target
+        return ast.unparse(code)
 
     @abstractmethod
     def to_python_ast(self) -> ast.AST:
