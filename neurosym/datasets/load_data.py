@@ -49,6 +49,10 @@ def _load_npy(path_or_url):
     data : np.ndarray
         The data in the numpy file.
     """
+    if isinstance(path_or_url, np.ndarray):
+        return path_or_url
+    if not isinstance(path_or_url, str):
+        raise ValueError("path_or_url must be a string, if it is not an array.")
     # pylint: disable=missing-timeout
     if os.path.exists(path_or_url):
         # Load from local path
