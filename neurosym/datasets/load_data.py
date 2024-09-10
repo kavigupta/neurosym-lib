@@ -35,54 +35,54 @@ def _get_raw_url(github_folder, filename):
     return raw_url
 
 
-def _load_npy(path_or_url):
+def _load_npy(array_descriptor):
     """
     Load a numpy file from a path or url.
 
     Parameters
     ----------
-    path_or_url : str
-        The path or url of the numpy file.
+    array_descriptor : np.ndarray or str
+        Either a numpy array or the path or url of the numpy file.
 
     Returns
     -------
     data : np.ndarray
         The data in the numpy file.
     """
-    if isinstance(path_or_url, np.ndarray):
-        return path_or_url
-    if not isinstance(path_or_url, str):
+    if isinstance(array_descriptor, np.ndarray):
+        return array_descriptor
+    if not isinstance(array_descriptor, str):
         raise ValueError("path_or_url must be a string, if it is not an array.")
     # pylint: disable=missing-timeout
-    if os.path.exists(path_or_url):
+    if os.path.exists(array_descriptor):
         # Load from local path
-        data = np.load(path_or_url)
+        data = np.load(array_descriptor)
     else:
-        data = requests.get(path_or_url).content
+        data = requests.get(array_descriptor).content
         data = np.load(io.BytesIO(data))
     return data
 
 
 class DatasetFromNpy(torch.utils.data.Dataset):
     """
-    A dataset from an array, loaded from a url or local path.
+    A dataset from an array, either passed in or loaded from a url/path.
 
-    :param input_url: the url of the numpy file containing the inputs.
-    :param output_url: the url of the numpy file containing the outputs.
+    :param input_descriptor: the descriptor of the inputs. This is either an array, a local path, or a url.
+    :param output_input_descriptor: the descriptor of the outputs.
     :param seed: the seed for the random permutation of the dataset.
     """
 
     # TODO test/val split
 
-    def __init__(self, input_url, output_url, seed):
+    def __init__(self, inut_descriptor, output_descriptor, seed):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
-        self.inputs = _load_npy(input_url)
-        self.outputs = _load_npy(output_url)
+        self.inputs = _load_npy(inut_descriptor)
+        self.outputs = _load_npy(output_descriptor)
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(
