@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-import tqdm.auto as tqdm
+import tqdm as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
@@ -153,7 +153,7 @@ class ValidationCost:
         callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
             pbar = tqdm.tqdm(
-                total=self.trainer_cfg.n_epochs, desc="Training", disable=True
+                total=self.trainer_cfg.n_epochs, desc="Training"
             )
             callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:
