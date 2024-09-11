@@ -1,5 +1,6 @@
 import math
 from typing import Tuple
+
 import torch
 import torch.nn as nn
 
@@ -37,9 +38,13 @@ class NearTransformer(nn.Module):
             [x.object_value.shape for x in inputs],
             output_typ,
         )
-        inp = self.pe(type_shape, [self.proj_in(x.object_value[...,None]) for x in inputs])
+        inp = self.pe(
+            type_shape, [self.proj_in(x.object_value[..., None]) for x in inputs]
+        )
         device = next(self.parameters()).device
-        targ = self.pe(type_shape, [torch.zeros((*output_shape, self.hidden_size), device=device)])
+        targ = self.pe(
+            type_shape, [torch.zeros((*output_shape, self.hidden_size), device=device)]
+        )
         out = self.transformer(inp, targ)
         out = self.proj_out(out)
         out = out.view(*output_shape)
@@ -118,9 +123,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         Assumes the batch axes have already been flattened.
         """
         # print([x.shape for x in input_tensors])
-        input_tensors = [
-            self.positionally_encode_single(x) for x in input_tensors
-        ]
+        input_tensors = [self.positionally_encode_single(x) for x in input_tensors]
         # print([x.shape for x in input_tensors])
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
         # print([x.shape for x in input_tensors])

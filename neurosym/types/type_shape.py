@@ -1,5 +1,5 @@
-from typing import Tuple, Union
 from dataclasses import dataclass
+from typing import Tuple, Union
 
 from .type import AtomicType, ListType, TensorType, Type
 

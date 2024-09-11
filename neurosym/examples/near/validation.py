@@ -152,9 +152,7 @@ class ValidationCost:
         callbacks = list(self.callbacks)
         callbacks = self._duplicate(self.callbacks)
         if self.progress_by_epoch:
-            pbar = tqdm.tqdm(
-                total=self.trainer_cfg.n_epochs, desc="Training"
-            )
+            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
             callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
         else:
             pbar = None
