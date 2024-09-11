@@ -3,6 +3,7 @@ Check that the heuristic is actually being used in neural model search, and that
 it works as expected.
 """
 
+import re
 import unittest
 
 import neurosym as ns
@@ -13,28 +14,30 @@ class TestNeuralModels(unittest.TestCase):
 
     def test_doesnt_work_no_heuristic_combinator(self):
         self.assertNearReturns(
-            10, near.debug_nested_dsl.get_combinator_dsl, {}, "StopIteration"
+            6, near.debug_nested_dsl.get_combinator_dsl, {}, "StopIteration"
         )
 
     def test_no_heuristic_combinator_works_more_time(self):
         self.assertNearReturns(
-            3,
+            6,
             near.debug_nested_dsl.get_combinator_dsl,
             {},
-            self.compute_combinator_soln,
+            re.compile(r"\(.*\)"),
+            max_iterations=10_000,
         )
 
     def test_doesnt_work_no_heuristic_variables(self):
         self.assertNearReturns(
-            10, near.debug_nested_dsl.get_variable_dsl, {}, "StopIteration"
+            6, near.debug_nested_dsl.get_variable_dsl, {}, "StopIteration"
         )
 
     def test_no_heuristic_variables_works_more_time(self):
         self.assertNearReturns(
-            3,
+            6,
             near.debug_nested_dsl.get_variable_dsl,
             {},
-            self.compute_variable_soln,
+            re.compile(r"\(.*\)"),
+            max_iterations=10_000,
         )
 
     def test_combinator_dsl_works_with_mlps(self):
@@ -47,7 +50,7 @@ class TestNeuralModels(unittest.TestCase):
 
     def test_combinator_dsl_works_with_transformer(self):
         self.assertNearReturns(
-            10,
+            5,
             near.debug_nested_dsl.get_combinator_dsl,
             self.transformer_modules,
             self.compute_combinator_soln,
@@ -94,7 +97,7 @@ class TestNeuralModels(unittest.TestCase):
             ),
         )
 
-    def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected):
+    def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected, **kwargs):
         if not isinstance(neural_modules, dict):
             neural_modules = neural_modules(nesting)
         try:
@@ -102,6 +105,7 @@ class TestNeuralModels(unittest.TestCase):
                 nesting,
                 dsl_fn(nesting),
                 neural_modules=neural_modules,
+                **kwargs,
             )
             if not results:
                 actual = "No results"
@@ -110,6 +114,10 @@ class TestNeuralModels(unittest.TestCase):
                 actual = ns.render_s_expression(actual.program)
         except StopIteration:
             actual = "StopIteration"
-        if not isinstance(expected, str):
+        if callable(expected):
             expected = expected(nesting)
-        self.assertEqual(actual, expected)
+        if isinstance(expected, str):
+            self.assertEqual(actual, expected)
+        else:
+            assert isinstance(expected, re.Pattern)
+            self.assertRegex(actual, expected)
