@@ -12,86 +12,53 @@ from neurosym.examples import near
 class TestNeuralModels(unittest.TestCase):
 
     def test_doesnt_work_no_heuristic_combinator(self):
-        nesting = 10
-        with self.assertRaises(StopIteration):
-            near.debug_nested_dsl.run_near_on_dsl(
-                nesting,
-                near.debug_nested_dsl.get_combinator_dsl(nesting),
-                neural_modules={},
-            )
+        self.assertNearReturns(
+            10, near.debug_nested_dsl.get_combinator_dsl, {}, "StopIteration"
+        )
 
     def test_no_heuristic_combinator_works_more_time(self):
-        nesting = 3
-        [result] = near.debug_nested_dsl.run_near_on_dsl(
-            nesting,
-            near.debug_nested_dsl.get_combinator_dsl(nesting),
-            neural_modules={},
-        )
-        self.assertEqual(
-            ns.render_s_expression(result.program),
-            self.compute_combinator_soln(nesting),
+        self.assertNearReturns(
+            3,
+            near.debug_nested_dsl.get_combinator_dsl,
+            {},
+            self.compute_combinator_soln,
         )
 
     def test_doesnt_work_no_heuristic_variables(self):
-        nesting = 10
-        with self.assertRaises(StopIteration):
-            near.debug_nested_dsl.run_near_on_dsl(
-                nesting,
-                near.debug_nested_dsl.get_variable_dsl(nesting),
-                neural_modules={},
-            )
+        self.assertNearReturns(
+            10, near.debug_nested_dsl.get_variable_dsl, {}, "StopIteration"
+        )
 
     def test_no_heuristic_variables_works_more_time(self):
-        nesting = 3
-        [result] = near.debug_nested_dsl.run_near_on_dsl(
-            nesting,
-            near.debug_nested_dsl.get_variable_dsl(nesting),
-            neural_modules={},
-        )
-        self.assertEqual(
-            ns.render_s_expression(result.program),
-            self.compute_variable_soln(nesting),
+        self.assertNearReturns(
+            3,
+            near.debug_nested_dsl.get_variable_dsl,
+            {},
+            self.compute_variable_soln,
         )
 
     def test_combinator_dsl_works_with_mlps(self):
-        nesting = 10
-        t = ns.TypeDefiner()
-        neural_modules = {
-            **near.create_modules(
-                "mlp",
-                [t("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
-                near.mlp_factory(hidden_size=10),
-            ),
-        }
-        [result] = near.debug_nested_dsl.run_near_on_dsl(
-            nesting, near.debug_nested_dsl.get_combinator_dsl(nesting), neural_modules
+        self.assertNearReturns(
+            10,
+            near.debug_nested_dsl.get_combinator_dsl,
+            self.mlp_modules,
+            self.compute_combinator_soln,
         )
-        self.assertEqual(
-            ns.render_s_expression(result.program),
-            self.compute_combinator_soln(nesting),
+
+    def test_combinator_dsl_works_with_transformer(self):
+        self.assertNearReturns(
+            10,
+            near.debug_nested_dsl.get_combinator_dsl,
+            self.transformer_modules,
+            self.compute_combinator_soln,
         )
 
     def test_variable_dsl_works_with_transformer(self):
-        nesting = 10
-        t = ns.TypeDefiner()
-        neural_modules = {
-            **near.create_modules(
-                "transformer",
-                [t("{f, %s}" % i) for i in range(1, 2 + nesting)],
-                near.transformer_factory(
-                    hidden_size=16,
-                    num_decoder_layers=1,
-                    num_encoder_layers=1,
-                    num_head=4,
-                ),
-            ),
-        }
-        [result] = near.debug_nested_dsl.run_near_on_dsl(
-            nesting, near.debug_nested_dsl.get_variable_dsl(nesting), neural_modules
-        )
-        self.assertEqual(
-            ns.render_s_expression(result.program),
-            self.compute_variable_soln(nesting),
+        self.assertNearReturns(
+            10,
+            near.debug_nested_dsl.get_variable_dsl,
+            self.transformer_modules,
+            self.compute_variable_soln,
         )
 
     def compute_combinator_soln(self, nesting):
@@ -106,3 +73,43 @@ class TestNeuralModels(unittest.TestCase):
             expected = ns.SExpression(f"correct_{i}", (expected,))
         expected = ns.SExpression("lam", (expected,))
         return ns.render_s_expression(expected)
+
+    def mlp_modules(self, nesting):
+        return near.create_modules(
+            "mlp",
+            [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
+            near.mlp_factory(hidden_size=10),
+        )
+
+    def transformer_modules(self, nesting):
+        return near.create_modules(
+            "transformer",
+            [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
+            + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
+            near.transformer_factory(
+                hidden_size=16,
+                num_decoder_layers=1,
+                num_encoder_layers=1,
+                num_head=4,
+            ),
+        )
+
+    def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected):
+        if not isinstance(neural_modules, dict):
+            neural_modules = neural_modules(nesting)
+        try:
+            results = near.debug_nested_dsl.run_near_on_dsl(
+                nesting,
+                dsl_fn(nesting),
+                neural_modules=neural_modules,
+            )
+            if not results:
+                actual = "No results"
+            else:
+                [actual] = results
+                actual = ns.render_s_expression(actual.program)
+        except StopIteration:
+            actual = "StopIteration"
+        if not isinstance(expected, str):
+            expected = expected(nesting)
+        self.assertEqual(actual, expected)

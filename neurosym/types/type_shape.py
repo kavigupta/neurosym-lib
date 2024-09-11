@@ -99,6 +99,7 @@ def dimension_summary(typ: Type) -> Tuple[Union[int, str]]:
 
     :return: The dimensions of the type.
     """
+    assert isinstance(typ, Type), f"Expected Type, but received {type(typ)}"
     dimensions = []
     while True:
         if isinstance(typ, TensorType):

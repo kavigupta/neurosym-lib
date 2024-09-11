@@ -29,10 +29,10 @@ class NearTransformer(nn.Module):
 
     def output_of_typ(
         self,
-        output_typ,
+        output_typ: Type,
         *inputs: Tuple[TypeAnnotatedObject, ...],
     ):
-
+        assert isinstance(output_typ, Type), f"Expected Type, but received {type(output_typ)}"
         type_shape, output_shape = infer_output_shape(
             [x.object_type for x in inputs],
             [x.object_value.shape for x in inputs],
@@ -60,7 +60,7 @@ class NearTransformer(nn.Module):
             assert len(args) == len(self.typ.input_type)
             return self.output_of_typ(
                 self.typ.output_type,
-                *[TypeAnnotatedObject(x, t) for x, t in zip(args, self.typ.input_type)],
+                *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
                 *environment,
             )
         else:
