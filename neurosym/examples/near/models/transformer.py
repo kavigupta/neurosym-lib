@@ -127,7 +127,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         # print([x.shape for x in input_tensors])
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
         # print([x.shape for x in input_tensors])
-        pe_each = self.pe[: len(input_tensors)]
+        pe_each = list(self.pe[: len(input_tensors)])
         input_tensors = [x + pe_each[i] for i, x in enumerate(input_tensors)]
         # print([x.shape for x in input_tensors])
         return torch.cat(input_tensors, dim=1)
