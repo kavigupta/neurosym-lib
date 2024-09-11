@@ -151,6 +151,12 @@ class PermissiveEnvironmment:
         """
         return 0
 
+    def short_repr(self):
+        """
+        Produce a short representation of the environment.
+        """
+        return "*"
+
 
 @dataclass(frozen=True, eq=True)
 class TypeWithEnvironment:

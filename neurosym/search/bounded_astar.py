@@ -1,6 +1,7 @@
 import queue
 from dataclasses import dataclass, field
-from typing import Callable
+from types import NoneType
+from typing import Callable, Union
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
@@ -10,6 +11,7 @@ def bounded_astar(
     g: SearchGraph,
     cost_plus_heuristic: Callable[[SExpression], float],
     max_depth: int,
+    max_iterations: Union[int, NoneType] = None,
 ):
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
@@ -29,6 +31,7 @@ def bounded_astar(
         fringe.put(BoundedAStarNode(cost_plus_heuristic(node), node, depth))
 
     add_to_fringe(g.initial_node(), 0)
+    iterations = 0
     while not fringe.empty():
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
@@ -39,6 +42,9 @@ def bounded_astar(
             yield node
         for child in g.expand_node(node):
             add_to_fringe(child, depth + 1)
+        iterations += 1
+        if max_iterations is not None and iterations >= max_iterations:
+            break
 
 
 @dataclass(order=True)

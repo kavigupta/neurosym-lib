@@ -1,4 +1,5 @@
-from typing import Callable
+from types import NoneType
+from typing import Callable, Union
 
 import numpy as np
 import torch
@@ -103,6 +104,7 @@ class NEAR:
         program_signature: str,
         n_programs: int = 1,  # type: ignore
         validation_max_epochs: int = 2000,
+        max_iterations: Union[int, NoneType] = None,
     ):
         """
         Fits the NEAR model to the provided data.
@@ -110,9 +112,12 @@ class NEAR:
         :param datamodule: Data module containing the training and validation data.
         :param program_signature: Type signature of the program to be synthesized.
         :param n_programs: Number of programs to synthesize.
+        :param validation_max_epochs: Maximum number of epochs for validation.
+        :param max_iterations: Maximum number of iterations for the search.
+
         :return: A list of `n_programs` number of trained estimators.
         """
-        sexprs = self._search(datamodule, program_signature, n_programs)
+        sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
 
         self.programs = [
             self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
@@ -121,7 +126,13 @@ class NEAR:
 
         return self.programs
 
-    def _search(self, datamodule, program_signature, n_programs):
+    def _search(
+        self,
+        datamodule,
+        program_signature,
+        n_programs,
+        max_iterations: Union[int, NoneType] = None,
+    ):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
@@ -139,7 +150,9 @@ class NEAR:
             max_depth=self.max_depth,
         )
 
-        iterator = self.search_strategy(g, validation_cost, max_depth=self.max_depth)
+        iterator = self.search_strategy(
+            g, validation_cost, max_depth=self.max_depth, max_iterations=max_iterations
+        )
 
         sexprs = []
         try:
