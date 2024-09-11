@@ -78,7 +78,12 @@ class TestNeuralModels(unittest.TestCase):
             **near.create_modules(
                 "transformer",
                 [t("{f, %s}" % i) for i in range(1, 2 + nesting)],
-                near.transformer_factory(hidden_size=32),
+                near.transformer_factory(
+                    hidden_size=16,
+                    num_decoder_layers=1,
+                    num_encoder_layers=1,
+                    num_head=4,
+                ),
             ),
         }
         [result] = near.debug_nested_dsl.run_near_on_dsl(
@@ -86,7 +91,7 @@ class TestNeuralModels(unittest.TestCase):
         )
         self.assertEqual(
             ns.render_s_expression(result.program),
-            self.compute_combinator_soln(nesting),
+            self.compute_variable_soln(nesting),
         )
 
     def compute_combinator_soln(self, nesting):
