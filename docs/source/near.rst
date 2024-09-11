@@ -48,3 +48,10 @@ Utilites
 .. autoclass:: neurosym.examples.near.BaseTrainerConfig
 .. autoclass:: neurosym.examples.near.BaseTrainer
 .. autoclass:: neurosym.examples.near.UninitializableProgramError
+
+For testing and demonstration purposes
+--------------------------------------------
+.. autofunction:: neurosym.examples.near.debug_nested_dsl.get_combinator_dsl
+.. autofunction:: neurosym.examples.near.debug_nested_dsl.get_variable_dsl
+.. autofunction:: neurosym.examples.near.debug_nested_dsl.get_dataset
+.. autofunction:: neurosym.examples.near.debug_nested_dsl.run_near_on_dsl
