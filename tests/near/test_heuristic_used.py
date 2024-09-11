@@ -71,6 +71,24 @@ class TestNeuralModels(unittest.TestCase):
             self.compute_combinator_soln(nesting),
         )
 
+    def test_variable_dsl_works_with_transformer(self):
+        nesting = 10
+        t = ns.TypeDefiner()
+        neural_modules = {
+            **near.create_modules(
+                "transformer",
+                [t("{f, %s}" % i) for i in range(1, 2 + nesting)],
+                near.transformer_factory(hidden_size=32),
+            ),
+        }
+        [result] = near.debug_nested_dsl.run_near_on_dsl(
+            nesting, near.debug_nested_dsl.get_variable_dsl(nesting), neural_modules
+        )
+        self.assertEqual(
+            ns.render_s_expression(result.program),
+            self.compute_combinator_soln(nesting),
+        )
+
     def compute_combinator_soln(self, nesting):
         expected = ns.SExpression("terminal", ())
         for i in range(2, nesting + 1):
@@ -83,22 +101,3 @@ class TestNeuralModels(unittest.TestCase):
             expected = ns.SExpression(f"correct_{i}", (expected,))
         expected = ns.SExpression("lam", (expected,))
         return ns.render_s_expression(expected)
-
-    # def test_variable_dsl_works_with_transformer(self):
-    #     t = ns.TypeDefiner()
-    #     neural_modules = {
-    #         **near.create_modules(
-    #             "transformer",
-    #             [t("{f, %s}" % i) for i in range(1, 2 + nesting)],
-    #             near.transformer_factory(hidden_size=32),
-    #         ),
-    #     }
-    #     [result] = near.debug_nested_dsl.run_near_on_dsl(
-    #         nesting, variable_dsl, neural_modules
-    #     )
-    #     expected = ns.SExpression("terminal", ())
-    #     for i in range(2, nesting + 1):
-    #         expected = ns.SExpression(f"correct_{i}", (expected,))
-    #     self.assertEqual(
-    #         ns.render_s_expression(result.program), ns.render_s_expression(expected)
-    #     )
