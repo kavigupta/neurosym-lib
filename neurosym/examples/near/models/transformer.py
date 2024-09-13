@@ -6,10 +6,14 @@ import torch.nn as nn
 
 from neurosym.types.type import ArrowType, Type
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
-from neurosym.types.type_shape import TypeShape, compute_type_shape, infer_output_shape
+from neurosym.types.type_shape import infer_output_shape
 
 
 class NearTransformer(nn.Module):
+    """
+    A transformer that works on any types. Will deduce the structure of
+    the computation from the context. Also takes into account the environment.
+    """
     def __init__(
         self, typ, hidden_size, num_head, num_encoder_layers, num_decoder_layers
     ):
@@ -32,7 +36,9 @@ class NearTransformer(nn.Module):
         output_typ: Type,
         *inputs: Tuple[TypeAnnotatedObject, ...],
     ):
-        assert isinstance(output_typ, Type), f"Expected Type, but received {type(output_typ)}"
+        assert isinstance(
+            output_typ, Type
+        ), f"Expected Type, but received {type(output_typ)}"
         type_shape, output_shape = infer_output_shape(
             [x.object_type for x in inputs],
             [x.object_value.shape for x in inputs],
@@ -69,6 +75,21 @@ class NearTransformer(nn.Module):
 
 
 class BasicMultiDimensionalPositionalEncoding(nn.Module):
+    """
+    Positional encoding that works for multiple dimensions. The idea is that
+    the overall positional encoding at a given location is the sum of the
+    positional encodings for each dimension. The positional encoding for each
+    dimension is computed by taking the base positional encoding and multiplying
+    by an orthonormal matrix raised to the power of which dimension it is.
+
+    This is a basic idea and can almost certainly be improved.
+
+    For `forward` this takes a `TypeShape` and a list of tensors, and returns
+    a single tensor that is the positional encoding of all the input tensors
+    (with the positional encoding added to each input tensor). This is provided
+    as a single tensor for ease of use in the transformer.
+    """
+
     def __init__(self, d_model, max_len=10_000):
         super().__init__()
         self.d_model = d_model
@@ -89,17 +110,17 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
         return nn.Parameter(pe, requires_grad=False)
 
-    def flatten_batch_axes(self, type_shape, x):
+    def _flatten_batch_axes(self, type_shape, x):
         assert x.shape[: len(type_shape.batch_size)] == type_shape.batch_size
         x = x.view(-1, *x.shape[len(type_shape.batch_size) :])
         return x
 
-    def positionally_encode_single(self, x):
+    def _positionally_encode_single(self, x):
         """
         Assumes the input has shape (batch_size, *sequence_lengths, d_model).
 
         Output will have shape (batch_size, sequence_lengths, d_model)
-            and have the semantic property output[batch, loc] = x[batch, loc] + sum_{i < len(loc)} ortho^(i + 1) * pe[loc[i]]
+        and have the semantic property output[batch, loc] = x[batch, loc] + sum_{i < len(loc)} ortho^(i + 1) * pe[loc[i]]
         """
         assert x.shape[-1] == self.d_model
         if len(x.shape) == 2:
@@ -114,7 +135,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         pe_accum = pe_accum.squeeze(-2)
         return x + pe_accum
 
-    def positionally_encode_all_inputs(self, input_tensors):
+    def _positionally_encode_all_inputs(self, input_tensors):
         """
         Encode all the input tensors positionally. Encodes each individually, and then
         flattens each, adding a non-orthonormal-multiplied position encooding to each
@@ -123,7 +144,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         Assumes the batch axes have already been flattened.
         """
         # print([x.shape for x in input_tensors])
-        input_tensors = [self.positionally_encode_single(x) for x in input_tensors]
+        input_tensors = [self._positionally_encode_single(x) for x in input_tensors]
         # print([x.shape for x in input_tensors])
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
         # print([x.shape for x in input_tensors])
@@ -133,8 +154,8 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         return torch.cat(input_tensors, dim=1)
 
     def forward(self, type_shape, input_tensors):
-        input_tensors = [self.flatten_batch_axes(type_shape, x) for x in input_tensors]
-        inp = self.positionally_encode_all_inputs(input_tensors)
+        input_tensors = [self._flatten_batch_axes(type_shape, x) for x in input_tensors]
+        inp = self._positionally_encode_all_inputs(input_tensors)
         return inp
 
 

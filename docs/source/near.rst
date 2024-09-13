@@ -36,6 +36,12 @@ NEAR Factory Functions
 .. autoclass:: neurosym.examples.near.Seq2SeqRNN
 .. autoclass:: neurosym.examples.near.Seq2ClassRNN
 
+NEAR Transformer
+
+.. autoclass:: neurosym.examples.near.NEARTransformer
+.. autoclass:: neurosym.examples.near.BasicMultiDimensionalPositionalEncoding
+
+
 Example Datasets/DSLs
 --------------------------------------------
 .. autofunction:: neurosym.datasets.near_data_example
