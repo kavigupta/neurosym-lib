@@ -66,7 +66,7 @@ def get_variable_dsl(nesting):
     dslf.parameterized(
         "terminal",
         "{f, 1} -> {f, 2}",
-        lambda lin: lin,
+        lambda x, *, lin: lin(x),
         dict(lin=lambda: nn.Linear(1, 2)),
     )
 
@@ -103,13 +103,14 @@ def get_dataset(nesting, *, scale=100, train_size=1000, test_size=50):
     )
 
 
-def run_near_on_dsl(nesting, dsl, neural_modules):
+def run_near_on_dsl(nesting, dsl, neural_modules, max_iterations=None):
     """
     Run NEAR on the given DSL, with the given neural modules.
 
     :param nesting: The nesting level of the DSL.
     :param dsl: The DSL to use.
     :param neural_modules: The neural modules to use.
+    :param max_iterations: The maximum number of iterations to run for.
     """
     interface = NEAR(
         input_dim=1,
@@ -129,7 +130,7 @@ def run_near_on_dsl(nesting, dsl, neural_modules):
         validation_params=dict(
             enable_progress_bar=False,
             enable_model_summary=False,
-            progress_by_epoch=True,
+            progress_by_epoch=False,
         ),
     )
     return interface.fit(
@@ -137,7 +138,7 @@ def run_near_on_dsl(nesting, dsl, neural_modules):
         program_signature="{f, 1} -> {f, %s}" % (nesting + 1),
         n_programs=1,
         validation_max_epochs=100,
-        max_iterations=nesting * 4,
+        max_iterations=nesting * 4 if max_iterations is None else max_iterations,
     )
 
 
