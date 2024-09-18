@@ -38,6 +38,15 @@ Type Signatures
 .. autoclass:: neurosym.LambdaTypeSignature
     :members: function_arity
 
+Utilities for handling tensor shapes
+------------------------------------------
+
+.. autoclass:: neurosym.TypeShape
+    :members:
+.. autofunction:: neurosym.compute_type_shape
+.. autofunction:: neurosym.infer_output_shape
+.. autofunction:: neurosym.TypeShapeException
+
 Other helpful functions/classes
 ------------------------------------------
 .. autofunction:: neurosym.lex_type
