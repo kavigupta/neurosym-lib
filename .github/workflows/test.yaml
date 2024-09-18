@@ -3,21 +3,23 @@ name: Python package
 on: [push]
 
 jobs:
-  # list-tests:
-  #     runs-on: ubuntu-22.04
-  #     outputs:
-  #       matrix: ${{ steps.set-matrix.outputs.matrix }}
-  #     steps:
-  #       - uses: actions/checkout@v4
-  #       - id: set-matrix
-  #         run: echo "matrix=$(echo tests/**/test*.py tests/**/*test.py)" >> $GITHUB_OUTPUT
-  #         working-directory: react/test
-  build:
+  list-tests:
+      runs-on: ubuntu-22.04
+      outputs:
+        matrix: ${{ steps.set-matrix.outputs.matrix }}
+      steps:
+        - uses: actions/checkout@v4
+        - id: set-matrix
+          run: echo "matrix=$(echo tests/**/test*.py tests/**/*test.py)" >> $GITHUB_OUTPUT
+
+  test:
 
     runs-on: ubuntu-latest
+    needs: [list-tests]
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
+        test-file: ${{ fromJson(needs.list-tests.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +33,7 @@ jobs:
           pip install -r requirements.txt
       - name: Test with pytest
         run: |
-          pytest tests
+          pytest ${{ matrix.test-file }}
 
   lint:
     runs-on: ubuntu-latest
