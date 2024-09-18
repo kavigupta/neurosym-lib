@@ -2,7 +2,7 @@ import math
 from typing import Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from neurosym.types.type import ArrowType, Type
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
@@ -61,18 +61,17 @@ class NearTransformer(nn.Module):
 
         assert (
             not kwargs
-        ), f"No keyword arguments are allowed, but received {' '.join(repr(x) for x in kwargs.keys())}"
+        ), f"No keyword arguments are allowed, but received {' '.join(repr(x) for x in kwargs)}"
 
-        if isinstance(self.typ, ArrowType):
-            assert len(args) == len(self.typ.input_type)
-            return self._output_of_typ(
-                self.typ.output_type,
-                *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
-                *environment,
-            )
-        else:
+        if not isinstance(self.typ, ArrowType):
             assert len(args) == 0
             return self._output_of_typ(self.typ, *environment)
+        assert len(args) == len(self.typ.input_type)
+        return self._output_of_typ(
+            self.typ.output_type,
+            *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
+            *environment,
+        )
 
 
 class BasicMultiDimensionalPositionalEncoding(nn.Module):

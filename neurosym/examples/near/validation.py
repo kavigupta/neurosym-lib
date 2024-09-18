@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-import tqdm as tqdm
+import tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
