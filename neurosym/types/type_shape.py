@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import itertools
+from dataclasses import dataclass
 from typing import Tuple, Union
 
 from neurosym.types.type_string_repr import render_type
@@ -44,7 +44,9 @@ class TypeShape:
             sequence_lengths[0] == sequence_length
             for sequence_length in sequence_lengths
         ):
-            raise TypeShapeException(f"Inconsistent sequence lengths: {sequence_lengths}")
+            raise TypeShapeException(
+                f"Inconsistent sequence lengths: {sequence_lengths}"
+            )
 
         return TypeShape(
             batch_size=batch_sizes[0], sequence_lengths=sequence_lengths[0]

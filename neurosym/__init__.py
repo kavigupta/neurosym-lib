@@ -72,8 +72,8 @@ from neurosym.search_graph.search_graph_transformer import (
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_shape import (
     TypeShape,
-    compute_type_shape,
     TypeShapeException,
+    compute_type_shape,
     infer_output_shape,
 )
 from neurosym.utils.imports import import_pytorch_lightning
