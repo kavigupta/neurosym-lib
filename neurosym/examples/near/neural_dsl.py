@@ -50,9 +50,6 @@ class NeuralDSL(DSL):
 
         count_by_tag = {}
         for fn_type, (tag, module_template) in modules.items():
-            assert isinstance(
-                fn_type, ArrowType
-            ), f"Type of partial NN module must be an ArrowType, got {fn_type}"
             count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
             identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
@@ -60,9 +57,7 @@ class NeuralDSL(DSL):
             module_c_prod = ParameterizedProduction(
                 identifier,
                 FunctionTypeSignature([], fn_type),
-                lambda initialized_module, environment: lambda *args, **kwargs: initialized_module(
-                    *args, **kwargs, environment=environment
-                ),
+                _inject_environment_argument(fn_type),
                 index=None,
                 initializers=dict(initialized_module=module_template),
                 provide_enviroment="environment",
@@ -128,6 +123,16 @@ class NeuralDSL(DSL):
 
 def _create_module_for_type(module_factory, t):
     return lambda: module_factory(t)
+
+
+def _inject_environment_argument(t):
+    if isinstance(t, ArrowType):
+        return lambda initialized_module, environment: lambda *args, **kwargs: initialized_module(
+            *args, **kwargs, environment=environment
+        )
+    return lambda initialized_module, environment: initialized_module(
+        environment=environment
+    )
 
 
 def create_modules(tag: str, types: List[Type], module_factory):
