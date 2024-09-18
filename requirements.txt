@@ -8,8 +8,6 @@ matplotlib # needed for tutorial test
 
 # Lint
 pylint
-black==24.4.2
-isort==5.13.2
 
 # Documentation
 -r docs/requirements.txt

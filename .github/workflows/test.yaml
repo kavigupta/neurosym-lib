@@ -3,6 +3,15 @@ name: Python package
 on: [push]
 
 jobs:
+  # list-tests:
+  #     runs-on: ubuntu-22.04
+  #     outputs:
+  #       matrix: ${{ steps.set-matrix.outputs.matrix }}
+  #     steps:
+  #       - uses: actions/checkout@v4
+  #       - id: set-matrix
+  #         run: echo "matrix=$(echo tests/**/test*.py tests/**/*test.py)" >> $GITHUB_OUTPUT
+  #         working-directory: react/test
   build:
 
     runs-on: ubuntu-latest
@@ -23,12 +32,30 @@ jobs:
       - name: Test with pytest
         run: |
           pytest tests
-      - name: Lint with pylint
-        run: |
-          pylint neurosym setup.py tests
       - name: Check for sorted imports and black code style
         run: |
-          isort neurosym tests; black neurosym tests; bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
       - name: Check that the docs build
         run: |
           cd docs && make html
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt pylint black==24.4.2 isort==5.13.2
+      - name: Lint with pylint
+        run: |
+          pylint neurosym setup.py tests
+          isort neurosym tests
+          black neurosym tests
+          bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
