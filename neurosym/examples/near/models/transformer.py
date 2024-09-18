@@ -14,6 +14,7 @@ class NearTransformer(nn.Module):
     A transformer that works on any types. Will deduce the structure of
     the computation from the context. Also takes into account the environment.
     """
+
     def __init__(
         self, typ, hidden_size, num_head, num_encoder_layers, num_decoder_layers
     ):

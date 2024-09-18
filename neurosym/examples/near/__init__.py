@@ -22,6 +22,10 @@ from .models.rnn import (
     rnn_factory_seq2seq,
 )
 from .models.torch_program_module import TorchProgramModule
-from .models.transformer import BasicMultiDimensionalPositionalEncoding, NearTransformer, transformer_factory
+from .models.transformer import (
+    BasicMultiDimensionalPositionalEncoding,
+    NearTransformer,
+    transformer_factory,
+)
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph
