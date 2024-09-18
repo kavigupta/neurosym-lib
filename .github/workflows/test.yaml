@@ -10,7 +10,7 @@ jobs:
       steps:
         - uses: actions/checkout@v4
         - id: set-matrix
-          run: echo "matrix=$(echo tests/**/test*.py tests/**/*test.py)" >> $GITHUB_OUTPUT
+          run: echo "matrix=$(echo $(find tests -name '*_test.py'; find tests -name 'test_*.py') | xargs echo)" >> $GITHUB_OUTPUT
 
   test:
 
