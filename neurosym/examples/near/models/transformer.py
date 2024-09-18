@@ -31,7 +31,7 @@ class NearTransformer(nn.Module):
         self.proj_in = nn.Linear(1, hidden_size)
         self.proj_out = nn.Linear(hidden_size, 1)
 
-    def output_of_typ(
+    def _output_of_typ(
         self,
         output_typ: Type,
         *inputs: Tuple[TypeAnnotatedObject, ...],
@@ -64,14 +64,14 @@ class NearTransformer(nn.Module):
 
         if isinstance(self.typ, ArrowType):
             assert len(args) == len(self.typ.input_type)
-            return self.output_of_typ(
+            return self._output_of_typ(
                 self.typ.output_type,
                 *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
                 *environment,
             )
         else:
             assert len(args) == 0
-            return self.output_of_typ(self.typ, *environment)
+            return self._output_of_typ(self.typ, *environment)
 
 
 class BasicMultiDimensionalPositionalEncoding(nn.Module):
@@ -96,7 +96,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         self.max_len = max_len
         self.pe = self._get_positional_encoding(max_len, d_model)
         self.orthonormal = nn.Parameter(
-            sample_orthonormal_matrix(d_model), requires_grad=False
+            _sample_orthonormal_matrix(d_model), requires_grad=False
         )
 
     def _get_positional_encoding(self, max_len, d_model):
@@ -159,7 +159,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         return inp
 
 
-def sample_orthonormal_matrix(d_model):
+def _sample_orthonormal_matrix(d_model):
     """
     Sample an orthonormal matrix of size d_model.
     """
@@ -173,9 +173,15 @@ def transformer_factory(
     num_decoder_layers: int = 6,
 ):
     """
-    Allows instantiating a RNN module for sequence-to-class tasks, with a given hidden size.
+    Allows instantiating a transformer with a given hidden size, number of heads,
 
-    :param hidden_size: Size of the hidden layer in the RNN.
+    This transformer should work on any types, and will deduce the structure of
+    the computation from the context. Also takes into account the environment.
+
+    :param hidden_size: The hidden size of the transformer (d_model).
+    :param num_head: The number of heads in the transformer.
+    :param num_encoder_layers: The number of encoder layers in the transformer.
+    :param num_decoder_layers: The number of decoder layers in the transformer.
     """
 
     def construct_model(typ):
