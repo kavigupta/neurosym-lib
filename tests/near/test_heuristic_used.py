@@ -48,6 +48,22 @@ class TestNeuralModels(unittest.TestCase):
             self.compute_combinator_soln,
         )
 
+    def test_combinator_dsl_works_with_transformer(self):
+        self.assertNearReturns(
+            5,
+            near.debug_nested_dsl.get_combinator_dsl,
+            self.transformer_modules,
+            self.compute_combinator_soln,
+        )
+
+    def test_variable_dsl_works_with_transformer(self):
+        self.assertNearReturns(
+            10,
+            near.debug_nested_dsl.get_variable_dsl,
+            self.transformer_modules,
+            self.compute_variable_soln,
+        )
+
     def compute_combinator_soln(self, nesting):
         expected = ns.SExpression("terminal", ())
         for i in range(2, nesting + 1):
@@ -66,6 +82,19 @@ class TestNeuralModels(unittest.TestCase):
             "mlp",
             [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
             near.mlp_factory(hidden_size=10),
+        )
+
+    def transformer_modules(self, nesting):
+        return near.create_modules(
+            "transformer",
+            [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
+            + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
+            near.transformer_factory(
+                hidden_size=16,
+                num_decoder_layers=1,
+                num_encoder_layers=1,
+                num_head=4,
+            ),
         )
 
     def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected, **kwargs):
