@@ -32,9 +32,6 @@ jobs:
       - name: Test with pytest
         run: |
           pytest tests
-      - name: Check that the docs build
-        run: |
-          cd docs && make html
 
   lint:
     runs-on: ubuntu-latest
@@ -57,3 +54,14 @@ jobs:
           isort neurosym tests
           black neurosym tests
           bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
+ 
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Check that the docs build
+        run: |
+          cd docs && make html
