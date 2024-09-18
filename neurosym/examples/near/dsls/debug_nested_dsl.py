@@ -115,10 +115,12 @@ def run_near_on_dsl(nesting, dsl, neural_modules, max_iterations=None):
     interface = NEAR(
         input_dim=1,
         output_dim=nesting,
-        max_depth=nesting * 2,
-        lr=5e-3,
+        max_depth=nesting * 10000,
+        # lr hilariously high and n_epochs hilariously low but it's fine
+        # for what we're investigating since the wrong_i simply do not work
+        lr=0.05,
         max_seq_len=300,
-        n_epochs=100,
+        n_epochs=10,
         accelerator="cpu",
     )
     interface.register_search_params(
