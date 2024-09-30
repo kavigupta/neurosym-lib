@@ -15,3 +15,8 @@ class TypeAnnotatedObject:
 
     object_type: Type
     object_value: object
+
+    def __post_init__(self):
+        assert isinstance(
+            self.object_type, Type
+        ), f"Expected Type, but received {type(self.object_type)}"

@@ -4,6 +4,7 @@ from neurosym.examples.near.validation import (
     ValidationCost,
 )
 
+from .dsls import debug_nested_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .interface import NEAR
@@ -21,6 +22,10 @@ from .models.rnn import (
     rnn_factory_seq2seq,
 )
 from .models.torch_program_module import TorchProgramModule
-from .models.transformer import transformer_factory
+from .models.transformer import (
+    BasicMultiDimensionalPositionalEncoding,
+    NearTransformer,
+    transformer_factory,
+)
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph

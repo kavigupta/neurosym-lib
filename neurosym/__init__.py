@@ -70,6 +70,12 @@ from neurosym.search_graph.search_graph_transformer import (
     LimitEdgesGraph,
 )
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
+from neurosym.types.type_shape import (
+    TypeShape,
+    TypeShapeException,
+    compute_type_shape,
+    infer_output_shape,
+)
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.tree_trie import TreeTrie
 
