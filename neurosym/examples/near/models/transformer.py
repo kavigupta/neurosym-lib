@@ -1,12 +1,13 @@
 import math
 from typing import Tuple
 
+import numpy as np
 import torch
 from torch import nn
 
 from neurosym.types.type import ArrowType, Type
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
-from neurosym.types.type_shape import infer_output_shape
+from neurosym.types.type_shape import infer_output_shape, tensor_dimensions
 
 
 class NearTransformer(nn.Module):
@@ -16,10 +17,17 @@ class NearTransformer(nn.Module):
     """
 
     def __init__(
-        self, typ, hidden_size, num_head, num_encoder_layers, num_decoder_layers
+        self,
+        typ,
+        max_tensor_size,
+        hidden_size,
+        num_head,
+        num_encoder_layers,
+        num_decoder_layers,
     ):
         super().__init__()
         self.typ = typ
+        self.max_tensor_size = max_tensor_size
         self.hidden_size = hidden_size
         self.transformer = nn.Transformer(
             d_model=hidden_size,
@@ -29,8 +37,34 @@ class NearTransformer(nn.Module):
             batch_first=True,
         )
         self.pe = BasicMultiDimensionalPositionalEncoding(hidden_size)
-        self.proj_in = nn.Linear(1, hidden_size)
-        self.proj_out = nn.Linear(hidden_size, 1)
+        self.proj_in = nn.Linear(max_tensor_size, hidden_size)
+        self.proj_out = nn.Linear(
+            hidden_size, int(np.prod(tensor_dimensions(self.output_typ)))
+        )
+
+    def _flatten_tensor_axes(self, type_shape, x):
+        x = x.view(*x.shape[: type_shape.num_batch_and_sequence_axes], -1)
+        return x
+
+    def _project_input(self, type_shape, x):
+        x = self._flatten_tensor_axes(type_shape, x)
+        # add more axes if necessary
+        assert (
+            x.shape[-1] <= self.max_tensor_size
+        ), f"Input tensor too large: {x.shape[-1]} > {self.max_tensor_size}"
+        x = torch.cat(
+            [
+                x,
+                torch.zeros(
+                    x.shape[:-1] + (self.max_tensor_size - x.shape[-1],),
+                    device=x.device,
+                    dtype=x.dtype,
+                ),
+            ],
+            dim=-1,
+        )
+        x = self.proj_in(x)
+        return x
 
     def _output_of_typ(
         self,
@@ -45,12 +79,20 @@ class NearTransformer(nn.Module):
             [x.object_value.shape for x in inputs],
             output_typ,
         )
-        inp = self.pe(
-            type_shape, [self.proj_in(x.object_value[..., None]) for x in inputs]
-        )
+        inputs = [self._project_input(type_shape, x.object_value) for x in inputs]
+        inp = self.pe(type_shape, inputs)
         device = next(self.parameters()).device
         targ = self.pe(
-            type_shape, [torch.zeros((*output_shape, self.hidden_size), device=device)]
+            type_shape,
+            [
+                torch.zeros(
+                    (
+                        *output_shape[: type_shape.num_batch_and_sequence_axes],
+                        self.hidden_size,
+                    ),
+                    device=device,
+                )
+            ],
         )
         out = self.transformer(inp, targ)
         out = self.proj_out(out)
@@ -72,6 +114,10 @@ class NearTransformer(nn.Module):
             *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
             *environment,
         )
+
+    @property
+    def output_typ(self):
+        return self.typ.output_type if isinstance(self.typ, ArrowType) else self.typ
 
 
 class BasicMultiDimensionalPositionalEncoding(nn.Module):
@@ -142,12 +188,10 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
 
         Assumes the batch axes have already been flattened.
         """
-        # print([x.shape for x in input_tensors])
         input_tensors = [self._positionally_encode_single(x) for x in input_tensors]
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
         pe_each = list(self.pe[: len(input_tensors)])
         input_tensors = [x + pe_each[i] for i, x in enumerate(input_tensors)]
-        # print([x.shape for x in input_tensors])
         return torch.cat(input_tensors, dim=1)
 
     def forward(self, type_shape, input_tensors):
@@ -164,6 +208,7 @@ def _sample_orthonormal_matrix(d_model):
 
 
 def transformer_factory(
+    max_tensor_size: int,
     hidden_size: int,
     num_head: int = 8,
     num_encoder_layers: int = 6,
@@ -183,6 +228,7 @@ def transformer_factory(
 
     def construct_model(typ):
         return NearTransformer(
+            max_tensor_size=max_tensor_size,
             hidden_size=hidden_size,
             num_head=num_head,
             num_encoder_layers=num_encoder_layers,
