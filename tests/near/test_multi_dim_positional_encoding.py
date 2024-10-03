@@ -3,29 +3,27 @@ import unittest
 import numpy as np
 import torch
 
-from neurosym.examples.near.models.transformer import (
-    BasicMultiDimensionalPositionalEncoding,
-)
-from neurosym.types.type_shape import TypeShape
+import neurosym as ns
+from neurosym.examples import near
 
 
 class TestMultiDimPositionalEncoding(unittest.TestCase):
     def test_no_sequential_axes(self):
-        pe = BasicMultiDimensionalPositionalEncoding(6)
+        pe = near.BasicMultiDimensionalPositionalEncoding(6)
         # batch axis = 3, sequence axes absent, tensor size = 6
         x1, x2, x3 = torch.randn(7, 6), torch.randn(7, 6), torch.randn(7, 6)
-        xenc = pe(TypeShape((7,), ()), [x1, x2, x3])
+        xenc = pe(ns.TypeShape((7,), ()), [x1, x2, x3])
         self.assertEqual(xenc.shape, (7, 3, 6))
         self.assertTrue(torch.allclose(xenc[:, 0], x1 + pe.pe[0]))
         self.assertTrue(torch.allclose(xenc[:, 1], x2 + pe.pe[1]))
         self.assertTrue(torch.allclose(xenc[:, 2], x3 + pe.pe[2]))
 
     def test_single_sequential_axis(self):
-        pe = BasicMultiDimensionalPositionalEncoding(6)
+        pe = near.BasicMultiDimensionalPositionalEncoding(6)
         # batch axis = 3, sequence axis = 2, tensor size = 6
         x1 = torch.randn(7, 2, 6)
 
-        xenc = pe(TypeShape((7,), (2,)), [x1])
+        xenc = pe(ns.TypeShape((7,), (2,)), [x1])
 
         self.assertEqual(xenc.shape, (7, 2, 6))
 
@@ -37,11 +35,11 @@ class TestMultiDimPositionalEncoding(unittest.TestCase):
         )
 
     def test_multiple_sequential_axis(self):
-        pe = BasicMultiDimensionalPositionalEncoding(6)
+        pe = near.BasicMultiDimensionalPositionalEncoding(6)
         # batch axis = 3, sequence axes = [2, 3, 5], then 9, tensor size = 6
         x1 = torch.randn(7, 2, 3, 5, 6)
         x2 = torch.randn(7, 9, 6)
-        xenc = pe(TypeShape((7,), (2, 3, 5)), [x1, x2])
+        xenc = pe(ns.TypeShape((7,), (2, 3, 5)), [x1, x2])
         self.assertEqual(xenc.shape, (7, 2 * 3 * 5 + 9, 6))
         idxs = np.arange(2 * 3 * 5).reshape(2, 3, 5)
         for i in range(2):
