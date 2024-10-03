@@ -79,11 +79,8 @@ class NearTransformer(nn.Module):
             [x.object_value.shape for x in inputs],
             output_typ,
         )
-        # print([x.object_value.shape for x in inputs])
         inputs = [self._project_input(type_shape, x.object_value) for x in inputs]
-        # print([x.shape for x in inputs])
         inp = self.pe(type_shape, inputs)
-        # print("inp shape", inp.shape)
         device = next(self.parameters()).device
         targ = self.pe(
             type_shape,
@@ -97,7 +94,6 @@ class NearTransformer(nn.Module):
                 )
             ],
         )
-        # print("targ shape", targ.shape)
         out = self.transformer(inp, targ)
         out = self.proj_out(out)
         out = out.view(*output_shape)
@@ -192,12 +188,10 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
 
         Assumes the batch axes have already been flattened.
         """
-        # print([x.shape for x in input_tensors])
         input_tensors = [self._positionally_encode_single(x) for x in input_tensors]
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
         pe_each = list(self.pe[: len(input_tensors)])
         input_tensors = [x + pe_each[i] for i, x in enumerate(input_tensors)]
-        # print([x.shape for x in input_tensors])
         return torch.cat(input_tensors, dim=1)
 
     def forward(self, type_shape, input_tensors):
