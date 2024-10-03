@@ -119,20 +119,19 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         """
         Assumes the input has shape (batch_size, *sequence_lengths, d_model).
 
-        Output will have shape (batch_size, sequence_lengths, d_model)
+        Output will have shape (batch_size, *sequence_lengths, d_model)
         and have the semantic property output[batch, loc] = x[batch, loc] + sum_{i < len(loc)} ortho^(i + 1) * pe[loc[i]]
         """
         assert x.shape[-1] == self.d_model
-        if len(x.shape) == 2:
-            x = x.unsqueeze(-1)
         pe_accum = 0
         ortho = self.orthonormal
-        for i in range(len(x.shape) - 2):
+        n_seq_axes = len(x.shape) - 2
+        for i in range(n_seq_axes):
             pe_this = self.pe[: x.shape[i + 1]] @ ortho
             pe_accum = pe_accum + pe_this
-            pe_accum = pe_accum[..., None, :]
-            ortho = ortho @ self.orthonormal
-        pe_accum = pe_accum.squeeze(-2)
+            if i != n_seq_axes - 1:
+                pe_accum = pe_accum[..., None, :]
+                ortho = ortho @ self.orthonormal
         return x + pe_accum
 
     def _positionally_encode_all_inputs(self, input_tensors):
@@ -145,9 +144,7 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         """
         # print([x.shape for x in input_tensors])
         input_tensors = [self._positionally_encode_single(x) for x in input_tensors]
-        # print([x.shape for x in input_tensors])
         input_tensors = [x.view(x.shape[0], -1, x.shape[-1]) for x in input_tensors]
-        # print([x.shape for x in input_tensors])
         pe_each = list(self.pe[: len(input_tensors)])
         input_tensors = [x + pe_each[i] for i, x in enumerate(input_tensors)]
         # print([x.shape for x in input_tensors])
