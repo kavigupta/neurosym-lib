@@ -75,6 +75,7 @@ from neurosym.types.type_shape import (
     TypeShapeException,
     compute_type_shape,
     infer_output_shape,
+    tensor_dimensions,
 )
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.tree_trie import TreeTrie
