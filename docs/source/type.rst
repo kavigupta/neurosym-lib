@@ -45,6 +45,7 @@ Utilities for handling tensor shapes
     :members:
 .. autofunction:: neurosym.compute_type_shape
 .. autofunction:: neurosym.infer_output_shape
+.. autofunction:: neurosym.tensor_dimensions
 .. autofunction:: neurosym.TypeShapeException
 
 Other helpful functions/classes

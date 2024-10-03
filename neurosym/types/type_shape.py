@@ -83,6 +83,15 @@ class TypeShape:
         assert not sequence_lengths_to_use
         return tuple(shape)
 
+    @property
+    def num_batch_and_sequence_axes(self) -> int:
+        """
+        Get the number of batch and sequence axes in the TypeShape.
+
+        :return: The number of batch and sequence axes.
+        """
+        return len(self.batch_size) + len(self.sequence_lengths)
+
 
 def compute_type_shape(typ: Type, shape: Tuple[int, ...]) -> TypeShape:
     """
@@ -170,6 +179,17 @@ def infer_output_shape(
         *[compute_type_shape(t, s) for t, s in zip(input_types, input_shapes)]
     )
     return dimensions, dimensions.apply(output_type)
+
+
+def tensor_dimensions(typ: Type) -> Tuple[int, ...]:
+    """
+    Compute the tensor dimensions of a given type
+
+    :param typ: The type to compute the tensor dimensions of, e.g., ``[[{f, 10, 20}]]``.
+    :return: The tensor dimensions of the type, e.g., ``(10, 20)``.
+    """
+    dims = _dimension_summary(typ)
+    return tuple(dim for dim in dims if dim != "sequence")
 
 
 class TypeShapeException(Exception):
