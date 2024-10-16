@@ -75,7 +75,9 @@ class NeuralDSL(DSL):
         """
         if isinstance(program, Hole):
             try:
-                initialized = {k: v() for k, v in self.initializers[program.twe.typ].items()}
+                initialized = {
+                    k: v() for k, v in self.initializers[program.twe.typ].items()
+                }
                 return _NeuralHole(initialized, self.semantics[program.twe.typ])
 
             except KeyError as e:
