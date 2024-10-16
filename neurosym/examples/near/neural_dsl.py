@@ -88,7 +88,7 @@ class NeuralDSL(DSL):
                 sym = self.type_to_symbol[program.twe.typ]
                 production = self.get_production(sym)
                 initialized = {k: v() for k, v in production.initializers.items()}
-                return InitializedSExpression(sym, (), initialized)
+                return NeuralHole(initialized, production)
 
             except KeyError as e:
                 raise PartialProgramNotFoundError(
@@ -106,14 +106,21 @@ class NeuralDSL(DSL):
         return symbols_for_program(program) - self.original_symbols == set()
 
 
-class NeuralHole(Hole):
+class NeuralHole:
     """
     A hole that can be filled with a neural module.
     """
 
-    def __init__(self, twe: ArrowType, semantic: Callable):
-        super().__init__(twe)
-        self.semantic = semantic
+    def __init__(self, initialized, production):
+        self.initialized = initialized
+        self.production = production
+
+    def __compute_value__(self, dsl, environment):
+        # return self.production.evaluate(dsl, self.initialized, [], environment)
+        return self.production.apply(dsl, self.initialized, (), environment=environment)
+
+    def all_state_values(self):
+        return self.initialized.values()
 
 
 def _create_module_for_type(module_factory, t):
