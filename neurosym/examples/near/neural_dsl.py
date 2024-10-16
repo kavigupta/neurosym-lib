@@ -76,15 +76,6 @@ class NeuralDSL(DSL):
             original_symbols=set(dsl.symbols()),
         )
 
-    def get_partial_program(self, hole: Hole) -> Production:
-        """
-        Returns a production that can be used to fill the given hole.
-        """
-        return SExpression(
-            self.type_to_symbol[hole.twe.typ],
-            [],
-        )
-
     def initialize(self, program: SExpression) -> InitializedSExpression:
         """
         Initializes all the productions in the given program.
@@ -94,7 +85,11 @@ class NeuralDSL(DSL):
         """
         if isinstance(program, Hole):
             try:
-                program = self.get_partial_program(program)
+                sym = self.type_to_symbol[program.twe.typ]
+                production = self.get_production(sym)
+                initialized = {k: v() for k, v in production.initializers.items()}
+                return InitializedSExpression(sym, (), initialized)
+
             except KeyError as e:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
@@ -109,6 +104,16 @@ class NeuralDSL(DSL):
             program = program.program
         assert isinstance(program, SExpression)
         return symbols_for_program(program) - self.original_symbols == set()
+
+
+class NeuralHole(Hole):
+    """
+    A hole that can be filled with a neural module.
+    """
+
+    def __init__(self, twe: ArrowType, semantic: Callable):
+        super().__init__(twe)
+        self.semantic = semantic
 
 
 def _create_module_for_type(module_factory, t):
