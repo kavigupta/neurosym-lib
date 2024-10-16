@@ -5,11 +5,9 @@ from torch import nn
 
 from neurosym.programs.s_expression_render import symbols_for_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
-from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
-from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
@@ -106,6 +104,7 @@ class _NeuralHole:
         self.semantic = semantic
 
     def __compute_value__(self, dsl, environment):
+        del dsl
         return self.semantic(**self.initialized, environment=environment)
 
     def all_state_values(self):
