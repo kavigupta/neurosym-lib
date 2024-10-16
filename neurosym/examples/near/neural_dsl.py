@@ -47,31 +47,15 @@ class NeuralDSL(DSL):
         :param modules: A dictionary mapping types to tags and functions that
             are used to initialize the modules for that type.
         """
-        partial_productions = []
         type_to_symbol = {}
 
         semantics = {}
         initializers = {}
-        count_by_tag = {}
-        for fn_type, (tag, module_template) in modules.items():
+        for fn_type, (_, module_template) in modules.items():
             semantics[fn_type] = _inject_environment_argument(fn_type)
             initializers[fn_type] = dict(initialized_module=module_template)
-            count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
-            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
-            type_to_symbol[fn_type] = identifier
-            # pylint: disable=unexpected-keyword-arg
-            module_c_prod = ParameterizedProduction(
-                identifier,
-                FunctionTypeSignature([], fn_type),
-                _inject_environment_argument(fn_type),
-                index=None,
-                initializers=dict(initialized_module=module_template),
-                provide_enviroment="environment",
-            )
 
-            partial_productions.append(module_c_prod)
-
-        productions = dsl.productions + partial_productions
+        productions = dsl.productions
 
         return cls(
             productions=productions,
@@ -94,7 +78,7 @@ class NeuralDSL(DSL):
         if isinstance(program, Hole):
             try:
                 initialized = {k: v() for k, v in self.initializers[program.twe.typ].items()}
-                return NeuralHole(initialized, self.semantics[program.twe.typ])
+                return _NeuralHole(initialized, self.semantics[program.twe.typ])
 
             except KeyError as e:
                 raise PartialProgramNotFoundError(
@@ -112,7 +96,7 @@ class NeuralDSL(DSL):
         return symbols_for_program(program) - self.original_symbols == set()
 
 
-class NeuralHole:
+class _NeuralHole:
     """
     A hole that can be filled with a neural module.
     """
