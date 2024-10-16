@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Set, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from torch import nn
 
-from neurosym.programs.s_expression_render import symbols_for_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.documentation import internal_only
 
