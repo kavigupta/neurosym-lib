@@ -94,22 +94,12 @@ class NeuralDSL(DSL):
         """
         if isinstance(program, Hole):
             try:
-                prog = self.get_partial_program(program)
+                program = self.get_partial_program(program)
             except KeyError as e:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
                 ) from e
-        else:
-            prog = program
-
-        if hasattr(prog, "__initialize__"):
-            return prog.__initialize__(self)
-        prod = self.get_production(prog.symbol)
-        return InitializedSExpression(
-            prog.symbol,
-            tuple(self.initialize(child) for child in prog.children),
-            prod.initialize(self),
-        )
+        return super().initialize(program)
 
     def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
         """
