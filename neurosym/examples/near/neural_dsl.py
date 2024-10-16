@@ -116,8 +116,7 @@ class NeuralHole:
         self.production = production
 
     def __compute_value__(self, dsl, environment):
-        # return self.production.evaluate(dsl, self.initialized, [], environment)
-        return self.production.apply(dsl, self.initialized, (), environment=environment)
+        return self.production.evaluate(dsl, self.initialized, [], environment)
 
     def all_state_values(self):
         return self.initialized.values()
