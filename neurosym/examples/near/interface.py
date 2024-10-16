@@ -92,7 +92,8 @@ class NEAR:
         """
         self.dsl = dsl
         self.type_env = type_env
-        self.neural_dsl = NeuralDSL.from_dsl(dsl=self.dsl, modules=neural_modules)
+        self.neural_dsl = dsl
+        # self.neural_dsl = NeuralDSL.from_dsl(dsl=self.dsl, modules=neural_modules)
         self.search_strategy = search_strategy
         self.loss_callback = loss_callback
         self._is_registered = True
