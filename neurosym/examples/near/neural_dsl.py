@@ -31,6 +31,8 @@ class NeuralDSL(DSL):
     # partial_programs: Dict[Type, SExpression]
     type_to_symbol: Dict[Type, str]
     original_symbols: Set[str]
+    semantics: Dict[Type, Callable]
+    initializers: Dict[str, Callable[[], nn.Module]]
 
     @classmethod
     def from_dsl(
@@ -48,8 +50,12 @@ class NeuralDSL(DSL):
         partial_productions = []
         type_to_symbol = {}
 
+        semantics = {}
+        initializers = {}
         count_by_tag = {}
         for fn_type, (tag, module_template) in modules.items():
+            semantics[fn_type] = _inject_environment_argument(fn_type)
+            initializers[fn_type] = dict(initialized_module=module_template)
             count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
             identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
             type_to_symbol[fn_type] = identifier
@@ -74,6 +80,8 @@ class NeuralDSL(DSL):
             max_env_depth=dsl.max_env_depth,
             type_to_symbol=type_to_symbol,
             original_symbols=set(dsl.symbols()),
+            semantics=semantics,
+            initializers=initializers,
         )
 
     def initialize(self, program: SExpression) -> InitializedSExpression:
@@ -85,10 +93,8 @@ class NeuralDSL(DSL):
         """
         if isinstance(program, Hole):
             try:
-                sym = self.type_to_symbol[program.twe.typ]
-                production = self.get_production(sym)
-                initialized = {k: v() for k, v in production.initializers.items()}
-                return NeuralHole(initialized, production)
+                initialized = {k: v() for k, v in self.initializers[program.twe.typ].items()}
+                return NeuralHole(initialized, self.semantics[program.twe.typ])
 
             except KeyError as e:
                 raise PartialProgramNotFoundError(
@@ -111,12 +117,12 @@ class NeuralHole:
     A hole that can be filled with a neural module.
     """
 
-    def __init__(self, initialized, production):
+    def __init__(self, initialized, semantic):
         self.initialized = initialized
-        self.production = production
+        self.semantic = semantic
 
     def __compute_value__(self, dsl, environment):
-        return self.production.evaluate(dsl, self.initialized, [], environment)
+        return self.semantic(**self.initialized, environment=environment)
 
     def all_state_values(self):
         return self.initialized.values()
