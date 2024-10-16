@@ -26,11 +26,9 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     """
 
-    # partial_programs: Dict[Type, SExpression]
-    type_to_symbol: Dict[Type, str]
-    original_symbols: Set[str]
-    semantics: Dict[Type, Callable]
-    initializers: Dict[str, Callable[[], nn.Module]]
+    # semantics: Dict[Type, Callable]
+    # initializers: Dict[str, Callable[[], nn.Module]]
+    modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
 
     @classmethod
     def from_dsl(
@@ -45,25 +43,13 @@ class NeuralDSL(DSL):
         :param modules: A dictionary mapping types to tags and functions that
             are used to initialize the modules for that type.
         """
-        type_to_symbol = {}
-
-        semantics = {}
-        initializers = {}
-        for fn_type, (_, module_template) in modules.items():
-            semantics[fn_type] = _inject_environment_argument(fn_type)
-            initializers[fn_type] = dict(initialized_module=module_template)
-
-        productions = dsl.productions
 
         return cls(
-            productions=productions,
+            productions=dsl.productions,
             valid_root_types=dsl.valid_root_types,
             max_type_depth=dsl.max_type_depth,
             max_env_depth=dsl.max_env_depth,
-            type_to_symbol=type_to_symbol,
-            original_symbols=set(dsl.symbols()),
-            semantics=semantics,
-            initializers=initializers,
+            modules=modules,
         )
 
     def initialize(self, program: SExpression) -> InitializedSExpression:
@@ -74,16 +60,16 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            try:
-                initialized = {
-                    k: v() for k, v in self.initializers[program.twe.typ].items()
-                }
-                return _NeuralHole(initialized, self.semantics[program.twe.typ])
-
-            except KeyError as e:
+            if program.twe.typ not in self.modules:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
-                ) from e
+                )
+            _, module_template = self.modules[program.twe.typ]
+            initialized = {"initialized_module": module_template()}
+            return _NeuralHole(
+                initialized, _inject_environment_argument(program.twe.typ)
+            )
+
         return super().initialize(program)
 
     def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
@@ -93,7 +79,7 @@ class NeuralDSL(DSL):
         if isinstance(program, DSLSearchNode):
             program = program.program
         assert isinstance(program, SExpression)
-        return symbols_for_program(program) - self.original_symbols == set()
+        return True
 
 
 class _NeuralHole:
