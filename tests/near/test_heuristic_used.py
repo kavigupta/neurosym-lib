@@ -79,14 +79,12 @@ class TestNeuralModels(unittest.TestCase):
 
     def mlp_modules(self, nesting):
         return near.create_modules(
-            "mlp",
             [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
             near.mlp_factory(hidden_size=10),
         )
 
     def transformer_modules(self, nesting):
         return near.create_modules(
-            "transformer",
             [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
             + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
             near.transformer_factory(

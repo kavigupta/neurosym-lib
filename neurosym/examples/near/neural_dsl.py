@@ -25,14 +25,10 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     """
 
-    # semantics: Dict[Type, Callable]
-    # initializers: Dict[str, Callable[[], nn.Module]]
-    modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
+    modules: Dict[Type, Callable[[], nn.Module]]
 
     @classmethod
-    def from_dsl(
-        cls, dsl: DSL, modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
-    ):
+    def from_dsl(cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
 
@@ -63,7 +59,7 @@ class NeuralDSL(DSL):
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
                 )
-            _, module_template = self.modules[program.twe.typ]
+            module_template = self.modules[program.twe.typ]
             initialized = {"initialized_module": module_template()}
             return _NeuralHole(
                 initialized, _inject_environment_argument(program.twe.typ)
@@ -112,15 +108,14 @@ def _inject_environment_argument(t):
     )
 
 
-def create_modules(tag: str, types: List[Type], module_factory):
+def create_modules(types: List[Type], module_factory):
     """
     Create a dictionary of modules for a set of types, given the module factory.
 
-    :param tag: Tag to use for the modules.
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return {t: (tag, _create_module_for_type(module_factory, t)) for t in types}
+    return {t: _create_module_for_type(module_factory, t) for t in types}
 
 
 @internal_only
