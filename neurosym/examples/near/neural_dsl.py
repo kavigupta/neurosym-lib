@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Union
 
 from torch import nn
 
