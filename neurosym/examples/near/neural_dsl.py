@@ -1,15 +1,12 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Set, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from torch import nn
 
-from neurosym.programs.s_expression_render import symbols_for_program
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
-from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
-from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
@@ -28,9 +25,9 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     """
 
-    # partial_programs: Dict[Type, SExpression]
-    type_to_symbol: Dict[Type, str]
-    original_symbols: Set[str]
+    # semantics: Dict[Type, Callable]
+    # initializers: Dict[str, Callable[[], nn.Module]]
+    modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
 
     @classmethod
     def from_dsl(
@@ -45,44 +42,13 @@ class NeuralDSL(DSL):
         :param modules: A dictionary mapping types to tags and functions that
             are used to initialize the modules for that type.
         """
-        partial_productions = []
-        type_to_symbol = {}
-
-        count_by_tag = {}
-        for fn_type, (tag, module_template) in modules.items():
-            count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
-            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
-            type_to_symbol[fn_type] = identifier
-            # pylint: disable=unexpected-keyword-arg
-            module_c_prod = ParameterizedProduction(
-                identifier,
-                FunctionTypeSignature([], fn_type),
-                _inject_environment_argument(fn_type),
-                index=None,
-                initializers=dict(initialized_module=module_template),
-                provide_enviroment="environment",
-            )
-
-            partial_productions.append(module_c_prod)
-
-        productions = dsl.productions + partial_productions
 
         return cls(
-            productions=productions,
+            productions=dsl.productions,
             valid_root_types=dsl.valid_root_types,
             max_type_depth=dsl.max_type_depth,
             max_env_depth=dsl.max_env_depth,
-            type_to_symbol=type_to_symbol,
-            original_symbols=set(dsl.symbols()),
-        )
-
-    def get_partial_program(self, hole: Hole) -> Production:
-        """
-        Returns a production that can be used to fill the given hole.
-        """
-        return SExpression(
-            self.type_to_symbol[hole.twe.typ],
-            [],
+            modules=modules,
         )
 
     def initialize(self, program: SExpression) -> InitializedSExpression:
@@ -93,12 +59,16 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            try:
-                program = self.get_partial_program(program)
-            except KeyError as e:
+            if program.twe.typ not in self.modules:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
-                ) from e
+                )
+            _, module_template = self.modules[program.twe.typ]
+            initialized = {"initialized_module": module_template()}
+            return _NeuralHole(
+                initialized, _inject_environment_argument(program.twe.typ)
+            )
+
         return super().initialize(program)
 
     def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
@@ -108,7 +78,24 @@ class NeuralDSL(DSL):
         if isinstance(program, DSLSearchNode):
             program = program.program
         assert isinstance(program, SExpression)
-        return symbols_for_program(program) - self.original_symbols == set()
+        return True
+
+
+class _NeuralHole:
+    """
+    A hole that can be filled with a neural module.
+    """
+
+    def __init__(self, initialized, semantic):
+        self.initialized = initialized
+        self.semantic = semantic
+
+    def __compute_value__(self, dsl, environment):
+        del dsl
+        return self.semantic(**self.initialized, environment=environment)
+
+    def all_state_values(self):
+        return self.initialized.values()
 
 
 def _create_module_for_type(module_factory, t):
