@@ -67,15 +67,6 @@ class NeuralDSL(DSL):
 
         return super().initialize(program)
 
-    def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
-        """
-        Returns True if the given program has no holes.
-        """
-        if isinstance(program, DSLSearchNode):
-            program = program.program
-        assert isinstance(program, SExpression)
-        return True
-
 
 class _NeuralHole:
     """
