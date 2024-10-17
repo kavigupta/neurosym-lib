@@ -65,7 +65,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 s="([{f, $L}]) -> [{f, $O}]",
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
-            is_goal=neural_dsl.program_has_no_holes,
+            is_goal=lambda _: True,
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):

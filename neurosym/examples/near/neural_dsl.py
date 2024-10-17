@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List
 
 from torch import nn
 
-from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
@@ -66,15 +65,6 @@ class NeuralDSL(DSL):
             )
 
         return super().initialize(program)
-
-    def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
-        """
-        Returns True if the given program has no holes.
-        """
-        if isinstance(program, DSLSearchNode):
-            program = program.program
-        assert isinstance(program, SExpression)
-        return True
 
 
 class _NeuralHole:

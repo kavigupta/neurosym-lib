@@ -146,7 +146,7 @@ class NEAR:
                 s=program_signature,
                 env=self.type_env,
             ),
-            is_goal=self.neural_dsl.program_has_no_holes,
+            is_goal=lambda _: True,
             max_depth=self.max_depth,
         )
 
