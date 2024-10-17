@@ -45,17 +45,14 @@ class TestNEARSequentialDSL(unittest.TestCase):
             dsl=original_dsl,
             modules={
                 **near.create_modules(
-                    "mlp",
                     [t("($fL) -> $fL"), t("($fL) -> $fO")],
                     near.mlp_factory(hidden_size=10),
                 ),
                 **near.create_modules(
-                    "rnn_seq2seq",
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
                     near.rnn_factory_seq2seq(hidden_size=10),
                 ),
                 **near.create_modules(
-                    "rnn_seq2class",
                     [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
                     near.rnn_factory_seq2class(hidden_size=10),
                 ),
