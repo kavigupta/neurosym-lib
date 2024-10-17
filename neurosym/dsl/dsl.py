@@ -147,7 +147,7 @@ class DSL:
         Compute the value of the given program.
         """
         if hasattr(program, "__compute_value__"):
-            return program.__compute_value__(self)
+            return program.__compute_value__(self, environment)
         prod = self.get_production(program.symbol)
         return prod.apply(
             self, program.state, program.children, environment=environment
