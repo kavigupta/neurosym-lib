@@ -29,7 +29,7 @@ from .models.transformer import (
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .neural_hole_filler import (
-    DictionaryHoleFiller,
+    DictionaryNeuralHoleFiller,
     DoNothingNeuralHoleFiller,
     NeuralHoleFiller,
     UnionNeuralHoleFiller,

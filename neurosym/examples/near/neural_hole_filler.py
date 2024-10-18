@@ -33,7 +33,7 @@ class DoNothingNeuralHoleFiller(NeuralHoleFiller):
         return None
 
 
-class DictionaryHoleFiller(NeuralHoleFiller):
+class DictionaryNeuralHoleFiller(NeuralHoleFiller):
     """
     A hole filler that uses a dictionary to map types to neural modules.
     """

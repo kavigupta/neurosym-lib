@@ -7,7 +7,7 @@ from ...dsl.dsl import DSL
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
-from .neural_hole_filler import DictionaryHoleFiller, NeuralHoleFiller
+from .neural_hole_filler import DictionaryNeuralHoleFiller, NeuralHoleFiller
 
 
 class PartialProgramNotFoundError(Exception):
@@ -104,7 +104,7 @@ def create_modules(types: List[Type], module_factory):
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return DictionaryHoleFiller(
+    return DictionaryNeuralHoleFiller(
         {t: _create_module_for_type(module_factory, t) for t in types}
     )
 
