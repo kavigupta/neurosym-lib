@@ -28,4 +28,10 @@ from .models.transformer import (
     transformer_factory,
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
+from .neural_hole_filler import (
+    DictionaryNeuralHoleFiller,
+    DoNothingNeuralHoleFiller,
+    NeuralHoleFiller,
+    UnionNeuralHoleFiller,
+)
 from .search_graph import near_graph

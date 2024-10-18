@@ -43,20 +43,20 @@ class TestNEARSequentialDSL(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            modules={
-                **near.create_modules(
+            neural_hole_filler=near.UnionNeuralHoleFiller(
+                near.create_modules(
                     [t("($fL) -> $fL"), t("($fL) -> $fO")],
                     near.mlp_factory(hidden_size=10),
                 ),
-                **near.create_modules(
+                near.create_modules(
                     [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
                     near.rnn_factory_seq2seq(hidden_size=10),
                 ),
-                **near.create_modules(
+                near.create_modules(
                     [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
                     near.rnn_factory_seq2class(hidden_size=10),
                 ),
-            },
+            ),
         )
 
         g = near.near_graph(

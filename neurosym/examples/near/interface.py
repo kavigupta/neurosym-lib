@@ -12,6 +12,7 @@ from neurosym.examples.near.methods.near_example_trainer import (
     classification_mse_loss,
 )
 from neurosym.examples.near.neural_dsl import NeuralDSL
+from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import SExpression
@@ -73,7 +74,7 @@ class NEAR:
         self,
         dsl: DSL,
         type_env: TypeDefiner,
-        neural_modules: dict,
+        neural_hole_filler: NeuralHoleFiller,
         search_strategy: Callable,
         loss_callback: Callable[
             [torch.Tensor, torch.Tensor], torch.Tensor
@@ -85,14 +86,16 @@ class NEAR:
 
         :param dsl: The domain-specific language.
         :param type_env: Type environment.
-        :param neural_modules: Neural modules to fill holes in partial programs.
+        :param neural_hole_filler: Neural modules to fill holes in partial programs.
         :param search_strategy: A search strategy supported in `neurosym.search`
         :param loss_callback: Callable for the loss function used during training.
             Defaults to classification MSE loss.
         """
         self.dsl = dsl
         self.type_env = type_env
-        self.neural_dsl = NeuralDSL.from_dsl(dsl=self.dsl, modules=neural_modules)
+        self.neural_dsl = NeuralDSL.from_dsl(
+            dsl=self.dsl, neural_hole_filler=neural_hole_filler
+        )
         self.search_strategy = search_strategy
         self.loss_callback = loss_callback
         self._is_registered = True
