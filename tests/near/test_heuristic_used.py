@@ -14,28 +14,34 @@ class TestNeuralModels(unittest.TestCase):
 
     def test_doesnt_work_no_heuristic_combinator(self):
         self.assertNearReturns(
-            6, near.debug_nested_dsl.get_combinator_dsl, {}, "StopIteration"
+            6,
+            near.debug_nested_dsl.get_combinator_dsl,
+            near.DoNothingNeuralHoleFiller(),
+            "StopIteration",
         )
 
     def test_no_heuristic_combinator_works_more_time(self):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            {},
+            near.DoNothingNeuralHoleFiller(),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
 
     def test_doesnt_work_no_heuristic_variables(self):
         self.assertNearReturns(
-            6, near.debug_nested_dsl.get_variable_dsl, {}, "StopIteration"
+            6,
+            near.debug_nested_dsl.get_variable_dsl,
+            near.DoNothingNeuralHoleFiller(),
+            "StopIteration",
         )
 
     def test_no_heuristic_variables_works_more_time(self):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            {},
+            near.DoNothingNeuralHoleFiller(),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
@@ -96,14 +102,16 @@ class TestNeuralModels(unittest.TestCase):
             ),
         )
 
-    def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected, **kwargs):
-        if not isinstance(neural_modules, dict):
-            neural_modules = neural_modules(nesting)
+    def assertNearReturns(
+        self, nesting, dsl_fn, neural_hole_filler, expected, **kwargs
+    ):
+        if not isinstance(neural_hole_filler, near.NeuralHoleFiller):
+            neural_hole_filler = neural_hole_filler(nesting)
         try:
             results = near.debug_nested_dsl.run_near_on_dsl(
                 nesting,
                 dsl_fn(nesting),
-                neural_modules=neural_modules,
+                neural_hole_filler=neural_hole_filler,
                 **kwargs,
             )
             if not results:
