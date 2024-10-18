@@ -104,7 +104,9 @@ def create_modules(types: List[Type], module_factory):
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return DictionaryHoleFiller({t: _create_module_for_type(module_factory, t) for t in types})
+    return DictionaryHoleFiller(
+        {t: _create_module_for_type(module_factory, t) for t in types}
+    )
 
 
 @internal_only
