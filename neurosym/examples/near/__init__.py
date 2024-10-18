@@ -29,3 +29,4 @@ from .models.transformer import (
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .search_graph import near_graph
+from .neural_hole_filler import DictionaryHoleFiller, NeuralHoleFiller

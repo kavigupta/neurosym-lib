@@ -38,7 +38,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            neural_hole_filler=ns.DictionaryHoleFiller(
+            neural_hole_filler=near.DictionaryHoleFiller(
                 {
                     **near.create_modules(
                         [t("($fL) -> $fL"), t("($fL) -> $fO")],

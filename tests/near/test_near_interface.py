@@ -31,7 +31,7 @@ class TestNEARInterface(unittest.TestCase):
         interface.register_search_params(
             dsl=original_dsl,
             type_env=t,
-            neural_hole_filler=ns.DictionaryHoleFiller(
+            neural_hole_filler=near.DictionaryHoleFiller(
                 {
                     **near.create_modules(
                         [t("($fL) -> $fL"), t("($fL) -> $fO")],

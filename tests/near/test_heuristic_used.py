@@ -16,7 +16,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            ns.DictionaryHoleFiller({}),
+            near.DictionaryHoleFiller({}),
             "StopIteration",
         )
 
@@ -24,7 +24,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            ns.DictionaryHoleFiller({}),
+            near.DictionaryHoleFiller({}),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
@@ -33,7 +33,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            ns.DictionaryHoleFiller({}),
+            near.DictionaryHoleFiller({}),
             "StopIteration",
         )
 
@@ -41,7 +41,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            ns.DictionaryHoleFiller({}),
+            near.DictionaryHoleFiller({}),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
@@ -84,7 +84,7 @@ class TestNeuralModels(unittest.TestCase):
         return ns.render_s_expression(expected)
 
     def mlp_modules(self, nesting):
-        return ns.DictionaryHoleFiller(
+        return near.DictionaryHoleFiller(
             near.create_modules(
                 [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
                 near.mlp_factory(hidden_size=10),
@@ -92,7 +92,7 @@ class TestNeuralModels(unittest.TestCase):
         )
 
     def transformer_modules(self, nesting):
-        return ns.DictionaryHoleFiller(
+        return near.DictionaryHoleFiller(
             near.create_modules(
                 [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
                 + [
@@ -112,7 +112,7 @@ class TestNeuralModels(unittest.TestCase):
     def assertNearReturns(
         self, nesting, dsl_fn, neural_hole_filler, expected, **kwargs
     ):
-        if not isinstance(neural_hole_filler, ns.NeuralHoleFiller):
+        if not isinstance(neural_hole_filler, near.NeuralHoleFiller):
             neural_hole_filler = neural_hole_filler(nesting)
         try:
             results = near.debug_nested_dsl.run_near_on_dsl(
