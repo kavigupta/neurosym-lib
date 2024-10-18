@@ -7,7 +7,6 @@ from ...dsl.dsl import DSL
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
-
 from .neural_hole_filler import NeuralHoleFiller
 
 
