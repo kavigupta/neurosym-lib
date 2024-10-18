@@ -28,5 +28,9 @@ from .models.transformer import (
     transformer_factory,
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
-from .neural_hole_filler import DictionaryHoleFiller, NeuralHoleFiller
+from .neural_hole_filler import (
+    DictionaryHoleFiller,
+    DoNothingNeuralHoleFiller,
+    NeuralHoleFiller,
+)
 from .search_graph import near_graph

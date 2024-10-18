@@ -16,7 +16,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            near.DictionaryHoleFiller({}),
+            near.DoNothingNeuralHoleFiller(),
             "StopIteration",
         )
 
@@ -24,7 +24,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            near.DictionaryHoleFiller({}),
+            near.DoNothingNeuralHoleFiller(),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
@@ -33,7 +33,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            near.DictionaryHoleFiller({}),
+            near.DoNothingNeuralHoleFiller(),
             "StopIteration",
         )
 
@@ -41,7 +41,7 @@ class TestNeuralModels(unittest.TestCase):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            near.DictionaryHoleFiller({}),
+            near.DoNothingNeuralHoleFiller(),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )

@@ -22,6 +22,17 @@ class NeuralHoleFiller(ABC):
         """
 
 
+class DoNothingNeuralHoleFiller(NeuralHoleFiller):
+    """
+    A hole filler that does not fill any holes.
+    """
+
+    def initialize_module(
+        self, type_with_environment: TypeWithEnvironment
+    ) -> Union[nn.Module, NoneType]:
+        return None
+
+
 class DictionaryHoleFiller(NeuralHoleFiller):
     """
     A hole filler that uses a dictionary to map types to neural modules.
