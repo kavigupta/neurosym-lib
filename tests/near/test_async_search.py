@@ -8,7 +8,6 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.neural_hole_filler import DictionaryHoleFiller
 
 
 class TestNEARAsyncSearch(unittest.TestCase):
@@ -39,7 +38,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            neural_hole_filler=DictionaryHoleFiller(
+            neural_hole_filler=ns.DictionaryHoleFiller(
                 {
                     **near.create_modules(
                         [t("($fL) -> $fL"), t("($fL) -> $fO")],

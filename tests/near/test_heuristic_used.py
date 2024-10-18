@@ -14,28 +14,34 @@ class TestNeuralModels(unittest.TestCase):
 
     def test_doesnt_work_no_heuristic_combinator(self):
         self.assertNearReturns(
-            6, near.debug_nested_dsl.get_combinator_dsl, {}, "StopIteration"
+            6,
+            near.debug_nested_dsl.get_combinator_dsl,
+            ns.DictionaryHoleFiller({}),
+            "StopIteration",
         )
 
     def test_no_heuristic_combinator_works_more_time(self):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_combinator_dsl,
-            {},
+            ns.DictionaryHoleFiller({}),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
 
     def test_doesnt_work_no_heuristic_variables(self):
         self.assertNearReturns(
-            6, near.debug_nested_dsl.get_variable_dsl, {}, "StopIteration"
+            6,
+            near.debug_nested_dsl.get_variable_dsl,
+            ns.DictionaryHoleFiller({}),
+            "StopIteration",
         )
 
     def test_no_heuristic_variables_works_more_time(self):
         self.assertNearReturns(
             6,
             near.debug_nested_dsl.get_variable_dsl,
-            {},
+            ns.DictionaryHoleFiller({}),
             re.compile(r"\(.*\)"),
             max_iterations=10_000,
         )
@@ -78,32 +84,41 @@ class TestNeuralModels(unittest.TestCase):
         return ns.render_s_expression(expected)
 
     def mlp_modules(self, nesting):
-        return near.create_modules(
-            [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
-            near.mlp_factory(hidden_size=10),
+        return ns.DictionaryHoleFiller(
+            near.create_modules(
+                [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
+                near.mlp_factory(hidden_size=10),
+            )
         )
 
     def transformer_modules(self, nesting):
-        return near.create_modules(
-            [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
-            + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
-            near.transformer_factory(
-                max_tensor_size=10,
-                hidden_size=16,
-                num_decoder_layers=1,
-                num_encoder_layers=1,
-                num_head=4,
-            ),
+        return ns.DictionaryHoleFiller(
+            near.create_modules(
+                [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
+                + [
+                    ns.parse_type("{f, 1} -> {f, %s}" % i)
+                    for i in range(2, 2 + nesting)
+                ],
+                near.transformer_factory(
+                    max_tensor_size=10,
+                    hidden_size=16,
+                    num_decoder_layers=1,
+                    num_encoder_layers=1,
+                    num_head=4,
+                ),
+            )
         )
 
-    def assertNearReturns(self, nesting, dsl_fn, neural_modules, expected, **kwargs):
-        if not isinstance(neural_modules, dict):
-            neural_modules = neural_modules(nesting)
+    def assertNearReturns(
+        self, nesting, dsl_fn, neural_hole_filler, expected, **kwargs
+    ):
+        if not isinstance(neural_hole_filler, ns.NeuralHoleFiller):
+            neural_hole_filler = neural_hole_filler(nesting)
         try:
             results = near.debug_nested_dsl.run_near_on_dsl(
                 nesting,
                 dsl_fn(nesting),
-                neural_modules=neural_modules,
+                neural_hole_filler=neural_hole_filler,
                 **kwargs,
             )
             if not results:

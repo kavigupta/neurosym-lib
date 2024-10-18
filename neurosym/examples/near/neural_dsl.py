@@ -38,8 +38,6 @@ class NeuralDSL(DSL):
         maps types to neural modules.
         """
 
-        # FIXME update caller
-
         return cls(
             productions=dsl.productions,
             valid_root_types=dsl.valid_root_types,

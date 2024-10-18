@@ -17,7 +17,7 @@ from neurosym.dsl.production import (
     Production,
     VariableProduction,
 )
-from neurosym.examples.near.neural_hole_filler import DictionaryHoleFiller
+from neurosym.examples.near.neural_hole_filler import DictionaryHoleFiller, NeuralHoleFiller
 from neurosym.examples.near.search_graph import FilterUnexpandableNodes
 from neurosym.program_dist.distribution import ProgramDistributionFamily
 from neurosym.program_dist.tree_distribution.ordering import (

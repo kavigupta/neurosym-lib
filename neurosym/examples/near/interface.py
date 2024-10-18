@@ -81,7 +81,6 @@ class NEAR:
         ] = classification_mse_loss,
         validation_params: dict = frozendict(),
     ):
-        # FIXME update caller
         """
         Registers the parameters for the program search.
 

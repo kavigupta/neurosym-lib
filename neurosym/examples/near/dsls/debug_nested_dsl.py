@@ -112,8 +112,6 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
     :param neural_hole_filler: The neural modules to use.
     :param max_iterations: The maximum number of iterations to run for.
     """
-    # FIXME update caller
-
     interface = NEAR(
         input_dim=1,
         output_dim=nesting,
