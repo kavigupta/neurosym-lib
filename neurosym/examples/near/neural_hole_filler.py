@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from types import NoneType
 from typing import Callable, Dict, Union
 
-import torch.nn as nn
+from torch import nn
 
 from neurosym.types.type import Type
 from neurosym.types.type_with_environment import TypeWithEnvironment
