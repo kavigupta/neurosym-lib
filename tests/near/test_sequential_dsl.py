@@ -16,6 +16,7 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.neural_hole_filler import DictionaryHoleFiller
 
 from .utils import assertDSLEnumerable
 
@@ -43,20 +44,22 @@ class TestNEARSequentialDSL(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            modules={
-                **near.create_modules(
-                    [t("($fL) -> $fL"), t("($fL) -> $fO")],
-                    near.mlp_factory(hidden_size=10),
-                ),
-                **near.create_modules(
-                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                    near.rnn_factory_seq2seq(hidden_size=10),
-                ),
-                **near.create_modules(
-                    [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
-                    near.rnn_factory_seq2class(hidden_size=10),
-                ),
-            },
+            neural_hole_filler=DictionaryHoleFiller(
+                {
+                    **near.create_modules(
+                        [t("($fL) -> $fL"), t("($fL) -> $fO")],
+                        near.mlp_factory(hidden_size=10),
+                    ),
+                    **near.create_modules(
+                        [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
+                        near.rnn_factory_seq2seq(hidden_size=10),
+                    ),
+                    **near.create_modules(
+                        [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
+                        near.rnn_factory_seq2class(hidden_size=10),
+                    ),
+                }
+            ),
         )
 
         g = near.near_graph(

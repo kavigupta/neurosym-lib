@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List
-
-from torch import nn
+from typing import List
 
 from neurosym.utils.documentation import internal_only
 
@@ -9,6 +7,8 @@ from ...dsl.dsl import DSL
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
+
+from .neural_hole_filler import NeuralHoleFiller
 
 
 class PartialProgramNotFoundError(Exception):
@@ -24,26 +24,28 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     """
 
-    modules: Dict[Type, Callable[[], nn.Module]]
+    neural_hole_filler: NeuralHoleFiller
 
     @classmethod
-    def from_dsl(cls, dsl: DSL, modules: Dict[Type, Callable[[], nn.Module]]):
+    def from_dsl(cls, dsl: DSL, neural_hole_filler: NeuralHoleFiller):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
 
         The type specific modules are used to fill holes in partial programs.
 
         :param dsl: The DSL to extend.
-        :param modules: A dictionary mapping types to tags and functions that
-            are used to initialize the modules for that type.
+        :param neural_hole_filler: A ``NeuralHoleFiller`` object that
+        maps types to neural modules.
         """
+
+        # FIXME update caller
 
         return cls(
             productions=dsl.productions,
             valid_root_types=dsl.valid_root_types,
             max_type_depth=dsl.max_type_depth,
             max_env_depth=dsl.max_env_depth,
-            modules=modules,
+            neural_hole_filler=neural_hole_filler,
         )
 
     def initialize(self, program: SExpression) -> InitializedSExpression:
@@ -54,14 +56,14 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            if program.twe.typ not in self.modules:
+            module = self.neural_hole_filler.initialize_module(program.twe)
+            if module is None:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
                 )
-            module_template = self.modules[program.twe.typ]
-            initialized = {"initialized_module": module_template()}
             return _NeuralHole(
-                initialized, _inject_environment_argument(program.twe.typ)
+                {"initialized_module": module},
+                _inject_environment_argument(program.twe.typ),
             )
 
         return super().initialize(program)
