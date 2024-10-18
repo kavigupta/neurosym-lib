@@ -31,21 +31,19 @@ class TestNEARInterface(unittest.TestCase):
         interface.register_search_params(
             dsl=original_dsl,
             type_env=t,
-            neural_hole_filler=near.DictionaryHoleFiller(
-                {
-                    **near.create_modules(
-                        [t("($fL) -> $fL"), t("($fL) -> $fO")],
-                        near.mlp_factory(hidden_size=10),
-                    ),
-                    **near.create_modules(
-                        [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                        near.rnn_factory_seq2seq(hidden_size=10),
-                    ),
-                    **near.create_modules(
-                        [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
-                        near.rnn_factory_seq2class(hidden_size=10),
-                    ),
-                }
+            neural_hole_filler=near.UnionNeuralHoleFiller(
+                near.create_modules(
+                    [t("($fL) -> $fL"), t("($fL) -> $fO")],
+                    near.mlp_factory(hidden_size=10),
+                ),
+                near.create_modules(
+                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
+                    near.rnn_factory_seq2seq(hidden_size=10),
+                ),
+                near.create_modules(
+                    [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
+                    near.rnn_factory_seq2class(hidden_size=10),
+                ),
             ),
             search_strategy=partial(ns.search.bounded_astar, max_depth=3),
         )

@@ -84,29 +84,22 @@ class TestNeuralModels(unittest.TestCase):
         return ns.render_s_expression(expected)
 
     def mlp_modules(self, nesting):
-        return near.DictionaryHoleFiller(
-            near.create_modules(
-                [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
-                near.mlp_factory(hidden_size=10),
-            )
+        return near.create_modules(
+            [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(1, 2 + nesting)],
+            near.mlp_factory(hidden_size=10),
         )
 
     def transformer_modules(self, nesting):
-        return near.DictionaryHoleFiller(
-            near.create_modules(
-                [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
-                + [
-                    ns.parse_type("{f, 1} -> {f, %s}" % i)
-                    for i in range(2, 2 + nesting)
-                ],
-                near.transformer_factory(
-                    max_tensor_size=10,
-                    hidden_size=16,
-                    num_decoder_layers=1,
-                    num_encoder_layers=1,
-                    num_head=4,
-                ),
-            )
+        return near.create_modules(
+            [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
+            + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
+            near.transformer_factory(
+                max_tensor_size=10,
+                hidden_size=16,
+                num_decoder_layers=1,
+                num_encoder_layers=1,
+                num_head=4,
+            ),
         )
 
     def assertNearReturns(

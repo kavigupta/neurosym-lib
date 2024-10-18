@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from types import NoneType
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Tuple, Union
 
 from torch import nn
 
@@ -47,3 +47,21 @@ class DictionaryHoleFiller(NeuralHoleFiller):
         if type_with_environment.typ not in self.dictionary:
             return None
         return self.dictionary[type_with_environment.typ]()
+
+
+class UnionNeuralHoleFiller(NeuralHoleFiller):
+    """
+    A hole filler that uses a list of hole fillers to fill holes. It uses the first hole filler that can fill the hole.
+    """
+
+    def __init__(self, *fillers: Tuple[NeuralHoleFiller, ...]):
+        self.fillers = fillers
+
+    def initialize_module(
+        self, type_with_environment: TypeWithEnvironment
+    ) -> Union[nn.Module, NoneType]:
+        for filler in self.fillers:
+            module = filler.initialize_module(type_with_environment)
+            if module is not None:
+                return module
+        return None

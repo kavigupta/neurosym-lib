@@ -30,6 +30,7 @@ NEAR Factory Functions
     :members:
 .. autoclass:: neurosym.examples.near.DictionaryHoleFiller
 .. autoclass:: neurosym.examples.near.DoNothingNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.UnionNeuralHoleFiller
 .. autofunction:: neurosym.examples.near.create_modules
 .. autofunction:: neurosym.examples.near.mlp_factory
 .. autoclass:: neurosym.examples.near.MLPConfig

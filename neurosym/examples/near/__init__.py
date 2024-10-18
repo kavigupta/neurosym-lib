@@ -32,5 +32,6 @@ from .neural_hole_filler import (
     DictionaryHoleFiller,
     DoNothingNeuralHoleFiller,
     NeuralHoleFiller,
+    UnionNeuralHoleFiller,
 )
 from .search_graph import near_graph
