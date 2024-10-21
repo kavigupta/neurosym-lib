@@ -103,13 +103,13 @@ def get_dataset(nesting, *, scale=100, train_size=1000, test_size=50):
     )
 
 
-def run_near_on_dsl(nesting, dsl, neural_modules, max_iterations=None):
+def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
     """
     Run NEAR on the given DSL, with the given neural modules.
 
     :param nesting: The nesting level of the DSL.
     :param dsl: The DSL to use.
-    :param neural_modules: The neural modules to use.
+    :param neural_hole_filler: The neural modules to use.
     :param max_iterations: The maximum number of iterations to run for.
     """
     interface = NEAR(
@@ -126,7 +126,7 @@ def run_near_on_dsl(nesting, dsl, neural_modules, max_iterations=None):
     interface.register_search_params(
         dsl=dsl,
         type_env=TypeDefiner(),
-        neural_modules=neural_modules,
+        neural_hole_filler=neural_hole_filler,
         search_strategy=bounded_astar,
         loss_callback=torch.nn.functional.mse_loss,
         validation_params=dict(

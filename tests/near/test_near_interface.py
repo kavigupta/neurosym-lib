@@ -31,23 +31,7 @@ class TestNEARInterface(unittest.TestCase):
         interface.register_search_params(
             dsl=original_dsl,
             type_env=t,
-            neural_modules={
-                **near.create_modules(
-                    "mlp",
-                    [t("($fL) -> $fL"), t("($fL) -> $fO")],
-                    near.mlp_factory(hidden_size=10),
-                ),
-                **near.create_modules(
-                    "rnn_seq2seq",
-                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                    near.rnn_factory_seq2seq(hidden_size=10),
-                ),
-                **near.create_modules(
-                    "rnn_seq2class",
-                    [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
-                    near.rnn_factory_seq2class(hidden_size=10),
-                ),
-            },
+            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
             search_strategy=partial(ns.search.bounded_astar, max_depth=3),
         )
         with pytest.raises(StopIteration):

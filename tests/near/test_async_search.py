@@ -38,23 +38,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            modules={
-                **near.create_modules(
-                    "mlp",
-                    [t("($fL) -> $fL"), t("($fL) -> $fO")],
-                    near.mlp_factory(hidden_size=10),
-                ),
-                **near.create_modules(
-                    "rnn_seq2seq",
-                    [t("([$fL]) -> [$fL]"), t("([$fL]) -> [$fO]")],
-                    near.rnn_factory_seq2seq(hidden_size=10),
-                ),
-                **near.create_modules(
-                    "rnn_seq2class",
-                    [t("([$fL]) -> $fL"), t("([$fL]) -> $fO")],
-                    near.rnn_factory_seq2class(hidden_size=10),
-                ),
-            },
+            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
         )
         max_depth = 3
 
@@ -64,7 +48,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
                 s="([{f, $L}]) -> [{f, $O}]",
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
-            is_goal=neural_dsl.program_has_no_holes,
+            is_goal=lambda _: True,
             max_depth=max_depth,
         )
         # succeed if this raises StopIteration

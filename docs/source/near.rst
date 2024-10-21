@@ -26,6 +26,13 @@ NEAR Operations
 NEAR Factory Functions
 --------------------------------------------
 
+.. autoclass:: neurosym.examples.near.NeuralHoleFiller
+    :members:
+.. autoclass:: neurosym.examples.near.DictionaryNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.DoNothingNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.UnionNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.GenericMLPRNNNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.TransformerNeuralHoleFiller
 .. autofunction:: neurosym.examples.near.create_modules
 .. autofunction:: neurosym.examples.near.mlp_factory
 .. autoclass:: neurosym.examples.near.MLPConfig
@@ -35,7 +42,6 @@ NEAR Factory Functions
 .. autoclass:: neurosym.examples.near.RNNConfig
 .. autoclass:: neurosym.examples.near.Seq2SeqRNN
 .. autoclass:: neurosym.examples.near.Seq2ClassRNN
-.. autoclass:: neurosym.examples.near.transformer_factory
 
 NEAR Transformer
 --------------------------------------------
