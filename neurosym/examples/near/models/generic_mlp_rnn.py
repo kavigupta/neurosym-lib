@@ -77,7 +77,7 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
         ):
             # If the output is a sequence, but none of the inputs are sequences, return None.
             return None
-        return GenericMLPRNNModule(
+        return _GenericMLPRNNModule(
             hidden_size=self.hidden_size,
             input_types=input_types,
             output_type=typ,
@@ -86,7 +86,7 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
         )
 
 
-class GenericMLPRNNModule(nn.Module):
+class _GenericMLPRNNModule(nn.Module):
 
     def __init__(
         self,
