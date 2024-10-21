@@ -1,4 +1,5 @@
 from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
+from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,

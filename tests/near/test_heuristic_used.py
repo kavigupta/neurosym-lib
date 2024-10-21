@@ -8,7 +8,6 @@ import unittest
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 
 
 class TestNeuralModels(unittest.TestCase):
@@ -121,7 +120,7 @@ class TestNeuralModels(unittest.TestCase):
 
     def generic_rnn_mlp_modules(self, nesting):
         del nesting
-        return GenericMLPRNNNeuralHoleFiller(16)
+        return near.GenericMLPRNNNeuralHoleFiller(16)
 
     def assertNearReturns(
         self, nesting, dsl_fn, neural_hole_filler, expected, **kwargs
