@@ -8,6 +8,7 @@ import unittest
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 
 
 class TestNeuralModels(unittest.TestCase):
@@ -70,6 +71,22 @@ class TestNeuralModels(unittest.TestCase):
             self.compute_variable_soln,
         )
 
+    def test_combinator_dsl_works_with_generic(self):
+        self.assertNearReturns(
+            5,
+            near.debug_nested_dsl.get_combinator_dsl,
+            self.generic_rnn_mlp_modules,
+            self.compute_combinator_soln,
+        )
+
+    def test_variable_dsl_works_with_generic(self):
+        self.assertNearReturns(
+            10,
+            near.debug_nested_dsl.get_variable_dsl,
+            self.generic_rnn_mlp_modules,
+            self.compute_variable_soln,
+        )
+
     def compute_combinator_soln(self, nesting):
         expected = ns.SExpression("terminal", ())
         for i in range(2, nesting + 1):
@@ -101,6 +118,10 @@ class TestNeuralModels(unittest.TestCase):
                 num_head=4,
             ),
         )
+
+    def generic_rnn_mlp_modules(self, nesting):
+        del nesting
+        return GenericMLPRNNNeuralHoleFiller(16)
 
     def assertNearReturns(
         self, nesting, dsl_fn, neural_hole_filler, expected, **kwargs
