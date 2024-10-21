@@ -26,7 +26,7 @@ from .models.torch_program_module import TorchProgramModule
 from .models.transformer import (
     BasicMultiDimensionalPositionalEncoding,
     NearTransformer,
-    transformer_factory,
+    TransformerNeuralHoleFiller,
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
 from .neural_hole_filler import (
