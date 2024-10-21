@@ -1,6 +1,5 @@
 import itertools
 from dataclasses import dataclass
-from math import prod
 from typing import Tuple, Union
 
 from neurosym.types.type_string_repr import render_type

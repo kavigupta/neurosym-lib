@@ -1,7 +1,7 @@
 from math import prod
 from typing import Tuple
 
-import torch.nn as nn
+from torch import nn
 
 from neurosym.examples.near.models.mlp import MLP, MLPConfig
 from neurosym.examples.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
@@ -53,16 +53,7 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
 
 class GenericMLPRNNModule(nn.Module):
 
-    def __init__(
-        self,
-        hidden_size,
-        input_types,
-        output_type,
-        dropout: float = 0.0,
-        bias: bool = True,
-        nonlinearity: str = "LeakyReLU",
-        loss: str = "MSELoss",
-    ):
+    def __init__(self, hidden_size, input_types, output_type):
         super().__init__()
         self.hidden_size = hidden_size
 
@@ -80,7 +71,7 @@ class GenericMLPRNNModule(nn.Module):
             self.hidden_size, prod(self.output_classification[1])
         )
         self.internal_module_type, self.internal_module = _internal_module(
-            self, hidden_size, dropout, bias, nonlinearity, loss
+            self.input_classifications, self.output_classification, self.hidden_size
         )
 
     def forward(self, *inputs, environment: Tuple[TypeAnnotatedObject, ...]):
@@ -109,12 +100,12 @@ class GenericMLPRNNModule(nn.Module):
         return output
 
 
-def _internal_module(self, hidden_size, dropout, bias, nonlinearity, loss):
+def _internal_module(input_classifications, output_classification, hidden_size):
     input_seq = any(
         input_classification[0] == "sequence"
-        for input_classification in self.input_classifications
+        for input_classification in input_classifications
     )
-    output_seq = self.output_classification[0] == "sequence"
+    output_seq = output_classification[0] == "sequence"
 
     assert not (
         not input_seq and output_seq
@@ -134,9 +125,5 @@ def _internal_module(self, hidden_size, dropout, bias, nonlinearity, loss):
         input_size=hidden_size,
         output_size=hidden_size,
         hidden_size=hidden_size,
-        dropout=dropout,
-        bias=bias,
-        nonlinearity=nonlinearity,
-        loss=loss,
     )
     return "mlp", MLP(config)
