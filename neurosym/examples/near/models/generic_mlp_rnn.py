@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from math import prod
 from typing import Tuple
 
@@ -13,6 +14,16 @@ from neurosym.types.type_string_repr import render_type
 from neurosym.types.type_with_environment import TypeWithEnvironment
 
 
+@dataclass
+class _MLPRNNInput:
+    """
+    Represents the input to an MLP/RNN module.
+    """
+
+    is_sequence: bool
+    shape: Tuple[int]
+
+
 def _classify_type(typ):
     """
     Classifies a type as either a tensor or a sequence of tensors. These are the only types supported by the MLP/RNN.
@@ -21,15 +32,21 @@ def _classify_type(typ):
         assert isinstance(
             typ.element_type, TensorType
         ), f"Expected a list of tensors, but received {render_type(typ)}"
-        return "sequence", typ.element_type.shape
+        # return "sequence", typ.element_type.shape
+        return _MLPRNNInput(is_sequence=True, shape=typ.element_type.shape)
     if isinstance(typ, TensorType):
-        return "tensor", typ.shape
-    raise ValueError(
-        f"Expected a tensor or a list of tensors, but received {render_type(typ)}"
-    )
+        # return "tensor", typ.shape
+        return _MLPRNNInput(is_sequence=False, shape=typ.shape)
+    return None
 
 
 class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
+    """
+    Hole filler that attempts to use MLPs and RNNs to fill holes.
+
+    :param hidden_size: The size of the hidden layer in the MLP/RNN.
+    """
+
     def __init__(self, hidden_size):
         self.hidden_size = hidden_size
 
@@ -46,32 +63,54 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
         input_types += [
             type_with_environment.env[x] for x in range(len(type_with_environment.env))
         ]
+
+        input_classifications = [_classify_type(x) for x in input_types]
+        output_classification = _classify_type(typ)
+        if (
+            any(x is None for x in input_classifications)
+            or output_classification is None
+        ):
+            # If any of the types are not supported, return None.
+            return None
+        if output_classification.is_sequence and not any(
+            x.is_sequence for x in input_classifications
+        ):
+            # If the output is a sequence, but none of the inputs are sequences, return None.
+            return None
         return GenericMLPRNNModule(
-            hidden_size=self.hidden_size, input_types=input_types, output_type=typ
+            hidden_size=self.hidden_size,
+            input_types=input_types,
+            output_type=typ,
+            input_classifications=input_classifications,
+            output_classification=output_classification,
         )
 
 
 class GenericMLPRNNModule(nn.Module):
 
-    def __init__(self, hidden_size, input_types, output_type):
+    def __init__(
+        self,
+        hidden_size,
+        input_types,
+        output_type,
+        input_classifications,
+        output_classification,
+    ):
         super().__init__()
         self.hidden_size = hidden_size
 
         self.input_types = input_types
         self.output_type = output_type
 
-        self.input_classifications = [_classify_type(x) for x in input_types]
-        self.output_classification = _classify_type(output_type)
-
         input_projections = []
-        for _, shape in self.input_classifications:
-            input_projections.append(nn.Linear(prod(shape), self.hidden_size))
+        for inp in input_classifications:
+            input_projections.append(nn.Linear(prod(inp.shape), self.hidden_size))
         self.input_projections = nn.ModuleList(input_projections)
         self.output_projection = nn.Linear(
-            self.hidden_size, prod(self.output_classification[1])
+            self.hidden_size, prod(output_classification.shape)
         )
         self.internal_module_type, self.internal_module = _internal_module(
-            self.input_classifications, self.output_classification, self.hidden_size
+            input_classifications, output_classification, self.hidden_size
         )
 
     def forward(self, *inputs, environment: Tuple[TypeAnnotatedObject, ...]):
@@ -102,15 +141,9 @@ class GenericMLPRNNModule(nn.Module):
 
 def _internal_module(input_classifications, output_classification, hidden_size):
     input_seq = any(
-        input_classification[0] == "sequence"
+        input_classification.is_sequence
         for input_classification in input_classifications
     )
-    output_seq = output_classification[0] == "sequence"
-
-    assert not (
-        not input_seq and output_seq
-    ), "Cannot have sequence output without sequence input"
-
     if input_seq:
         config = RNNConfig(
             model_name="rnn",
@@ -118,7 +151,11 @@ def _internal_module(input_classifications, output_classification, hidden_size):
             output_size=hidden_size,
             hidden_size=hidden_size,
         )
-        return "rnn", Seq2SeqRNN(config) if output_seq else Seq2ClassRNN(config)
+        return "rnn", (
+            Seq2SeqRNN(config)
+            if output_classification.is_sequence
+            else Seq2ClassRNN(config)
+        )
 
     config = MLPConfig(
         model_name="mlp",
