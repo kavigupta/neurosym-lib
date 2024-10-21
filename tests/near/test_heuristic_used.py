@@ -106,16 +106,13 @@ class TestNeuralModels(unittest.TestCase):
         )
 
     def transformer_modules(self, nesting):
-        return near.create_modules(
-            [ns.parse_type("{f, %s}" % i) for i in range(1, 2 + nesting)]
-            + [ns.parse_type("{f, 1} -> {f, %s}" % i) for i in range(2, 2 + nesting)],
-            near.transformer_factory(
-                max_tensor_size=10,
-                hidden_size=16,
-                num_decoder_layers=1,
-                num_encoder_layers=1,
-                num_head=4,
-            ),
+        del nesting
+        return near.TransformerNeuralHoleFiller(
+            max_tensor_size=10,
+            hidden_size=16,
+            num_decoder_layers=1,
+            num_encoder_layers=1,
+            num_head=4,
         )
 
     def generic_rnn_mlp_modules(self, nesting):
