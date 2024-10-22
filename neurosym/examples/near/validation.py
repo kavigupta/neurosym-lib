@@ -105,6 +105,7 @@ class ValidationCost:
         try:
             log(f"Training {render_s_expression(node.program)}")
             _, trainer = self.validate_model(program=node.program)
+            log(f"Validation loss: {trainer.callback_metrics['val_loss']}")
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
