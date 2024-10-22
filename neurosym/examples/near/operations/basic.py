@@ -21,6 +21,7 @@ def ite_torch(condition, if_true, if_else):
 
     def _ite(*args):
         cond = torch.sigmoid(condition(*args))
+        print(cond)
         true_val = if_true(*args)
         false_val = if_else(*args)
         if len(cond.shape) == len(true_val.shape) - 1:

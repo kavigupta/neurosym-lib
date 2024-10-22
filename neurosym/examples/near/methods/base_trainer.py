@@ -69,7 +69,7 @@ class BaseTrainer(pl.LightningModule):
             self.log(f"train_{key}", value.item(), prog_bar=True, sync_dist=True)
 
         self.log("train_loss", train_loss, prog_bar=True, sync_dist=True)
-        return {"loss": train_loss}
+        return train_loss
 
     def _evaluation_step(self, evaluation_batch, batch_idx, split):
         # pylint: disable=arguments-differ
