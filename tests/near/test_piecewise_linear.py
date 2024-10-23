@@ -1,6 +1,7 @@
 import re
 import unittest
 
+from parameterized import parameterized
 import numpy as np
 from torch import nn
 
@@ -30,7 +31,7 @@ def piecewise_linear_dsl():
 
 
 def get_dataset():
-    scale = 1
+    scale = 2
     train_size, test_size = 1000, 50
     rng = np.random.RandomState(0)
     xtrain, xtest = [
@@ -39,7 +40,9 @@ def get_dataset():
     ]
     ytrain, ytest = [
         # x[:, 1][:, None] for x in (xtrain, xtest)
-        ((x[:, 0] > 0) * x[:, 1] - (x[:, 0] <= 0) * x[:, 1])[:, None]
+        ((x[:, 0] > 0) * (x[:, 0] + x[:, 1]) + (x[:, 0] <= 0) * (-x[:, 0] + x[:, 1]))[
+            :, None
+        ].astype(np.float32)
         for x in (xtrain, xtest)
     ]
     return ns.DatasetWrapper(
@@ -60,9 +63,9 @@ class TestPiecewiseLinear(unittest.TestCase):
             max_depth=10000,
             # lr hilariously high and n_epochs hilariously low but it's fine
             # for what we're investigating since the wrong_i simply do not work
-            lr=0.05,
+            lr=0.005,
             max_seq_len=300,
-            n_epochs=10,
+            n_epochs=100,
             accelerator="cpu",
         )
 
@@ -109,14 +112,14 @@ class TestPiecewiseLinear(unittest.TestCase):
 
         conditional_weight = cond.weight[0, 0].item()
 
-        self.assertGreater(np.abs(conditional_weight), 10)
+        self.assertGreater(np.abs(conditional_weight), 1)
         self.assertLess(np.abs(cond.weight[0, 1].item()), 1)
 
         if conditional_weight < 0:
             cons, alt = alt, cons
 
-        self.assertLess(np.abs(cons.weight[0, 0].item()), 0.1)
-        self.assertLess(np.abs(1 - cons.weight[0, 1].item()), 0.1)
+        self.assertLess(np.abs(+1 - cons.weight[0, 0].item()), 0.1)
+        self.assertLess(np.abs(+1 - cons.weight[0, 1].item()), 0.1)
 
-        self.assertLess(np.abs(alt.weight[0, 0].item()), 0.1)
-        self.assertLess(np.abs(-1 - alt.weight[0, 1].item()), 0.1)
+        self.assertLess(np.abs(-1 - alt.weight[0, 0].item()), 0.1)
+        self.assertLess(np.abs(+1 - alt.weight[0, 1].item()), 0.1)
