@@ -51,16 +51,12 @@ def get_dataset():
 
 
 class TestPiecewiseLinear(unittest.TestCase):
-    def test_basic(self):
-        dsl = piecewise_linear_dsl()
 
-        dataset = get_dataset()
+    def run_near(self, dsl, dataset):
         interface = near.NEAR(
             input_dim=2,
             output_dim=1,
             max_depth=10000,
-            # lr hilariously high and n_epochs hilariously low but it's fine
-            # for what we're investigating since the wrong_i simply do not work
             lr=0.005,
             max_seq_len=300,
             n_epochs=100,
@@ -87,6 +83,13 @@ class TestPiecewiseLinear(unittest.TestCase):
             validation_max_epochs=1000,
             max_iterations=10,
         )
+
+        return result
+
+    def test_with_linear(self):
+        dsl = piecewise_linear_dsl()
+        dataset = get_dataset()
+        result = self.run_near(dsl, dataset)
 
         programs = [ns.render_s_expression(p.program) for p in result]
 
