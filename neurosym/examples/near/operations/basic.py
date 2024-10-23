@@ -23,9 +23,6 @@ def ite_torch(condition, if_true, if_else):
         cond = torch.sigmoid(condition(*args))
         true_val = if_true(*args)
         false_val = if_else(*args)
-        # print(cond)
-        # print(true_val)
-        # print(false_val)
         if len(cond.shape) == len(true_val.shape) - 1:
             cond = cond.unsqueeze(1)
         cond = cond.expand_as(true_val)
