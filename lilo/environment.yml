@@ -4,7 +4,7 @@ channels:
   - pytorch
   - huggingface
 dependencies:
-  - python=3.7
+  - python=3.10
   - black
   - cairocffi
   - cffi
@@ -18,7 +18,7 @@ dependencies:
   - nltk
   - num2words
   - numpy
-  - openai
+  - openai=0.27.7
   - pandas
   - pathos
   - Pillow

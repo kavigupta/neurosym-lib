@@ -47,3 +47,4 @@ SHELL ["/bin/bash", "--login", "-c"]
 # One-off install of pregex
 # (Technically requires Python 3.9+ but in practice compatible with Python 3.7)
 RUN python3 -m pip install pregex==1.0.0 --ignore-requires-python
+RUN python3 -m pip install s-exp-parser plotly
