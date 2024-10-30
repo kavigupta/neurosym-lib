@@ -3,7 +3,6 @@ from typing import Callable
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import BoundedAStarNode
 from neurosym.search_graph.search_graph import SearchGraph
 
@@ -42,7 +41,6 @@ class FuturePriorityQueue(queue.PriorityQueue):
 
 def bounded_astar_async(
     g: SearchGraph,
-    cost_plus_heuristic: Callable[[SExpression], float],
     max_depth: int,
     max_workers: int,
 ):
@@ -53,9 +51,6 @@ def bounded_astar_async(
     graph.
 
     :param g: Search graph to search over
-    :param cost_plus_heuristic: Cost plus heuristic function to use for A*.
-        The heuristic function should be admissible, i.e. it should never overestimate
-        the cost to reach the goal.
     :param max_depth: Maximum depth to search to.
     :param max_workers: Maximum number of workers to use for evaluating
         the cost_plus_heuristic function.
@@ -70,7 +65,7 @@ def bounded_astar_async(
         fringe = FuturePriorityQueue()
 
         def add_to_fringe(node, depth):
-            future = executor.apipe(cost_plus_heuristic, node)
+            future = executor.apipe(g.cost, node)
             fringe.putitem(
                 future,
                 future_fn=lambda ret: BoundedAStarNode(ret, node, depth),

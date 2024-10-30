@@ -53,17 +53,17 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=lambda _: True,
+            cost=near.ValidationCost(
+                neural_dsl=neural_dsl,
+                trainer_cfg=trainer_cfg,
+                datamodule=datamodule,
+            ),
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
             iterator = ns.search.bounded_astar(
                 g,
-                near.ValidationCost(
-                    neural_dsl=neural_dsl,
-                    trainer_cfg=trainer_cfg,
-                    datamodule=datamodule,
-                ),
                 max_depth=3,
             )
             while True:

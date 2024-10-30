@@ -50,17 +50,17 @@ class TestNEARAsyncSearch(unittest.TestCase):
             ),
             is_goal=lambda _: True,
             max_depth=max_depth,
+            cost=near.ValidationCost(
+                neural_dsl=neural_dsl,
+                trainer_cfg=trainer_cfg,
+                datamodule=datamodule,
+            ),
         )
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
             iterator = ns.search.bounded_astar_async(
                 g,
-                near.ValidationCost(
-                    neural_dsl=neural_dsl,
-                    trainer_cfg=trainer_cfg,
-                    datamodule=datamodule,
-                ),
                 max_depth=max_depth,
                 max_workers=4,
             )
