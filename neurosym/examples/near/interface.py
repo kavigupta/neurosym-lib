@@ -133,7 +133,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule, **self.validation_params)
+        validation_cost = self._get_validator(datamodule, max_epochs=None)
 
         g = near_graph(
             self.neural_dsl,
@@ -153,17 +153,16 @@ class NEAR:
         sexprs = list(itertools.islice((prog.program for prog in iterator), n_programs))
         return sexprs
 
-    def _get_validator(self, datamodule, **kwargs):
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(),
+    def _get_validator(self, datamodule, max_epochs):
+
+        validation_cost = ValidationCost(
+            trainer_cfg=self._trainer_config(max_epochs),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
             progress_by_epoch=False,
             accelerator=self.accelerator,
+            **self.validation_params,
         )
-        validation_params.update(**kwargs)
-
-        validation_cost = ValidationCost(**validation_params)
         return validation_cost
 
     def train_program(
@@ -171,7 +170,6 @@ class NEAR:
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
         max_epochs: int,
-        **kwargs,
     ):
         """
         Trains a program on the provided data.
@@ -181,14 +179,16 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        trainer_params = dict(self.validation_params.items())
-        trainer_params.update(**kwargs, max_epochs=max_epochs)
-        module, _ = self._get_validator(datamodule, **trainer_params).validate_model(
-            program
-        )
+        module, _ = self._get_validator(
+            datamodule, max_epochs=max_epochs
+        ).validate_model(program)
         return module
 
-    def _trainer_config(self) -> NEARTrainerConfig:
+    def _trainer_config(self, max_epochs) -> NEARTrainerConfig:
         return NEARTrainerConfig(
-            lr=self.lr, n_epochs=self.n_epochs, loss_callback=self.loss_callback
+            lr=self.lr,
+            n_epochs=(
+                self.n_epochs if max_epochs is None else min(self.n_epochs, max_epochs)
+            ),
+            loss_callback=self.loss_callback,
         )

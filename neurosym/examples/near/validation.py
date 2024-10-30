@@ -46,7 +46,6 @@ class ValidationCost:
         error_loss=10000,
         progress_by_epoch=False,
         structural_cost_weight=0.5,
-        max_epochs=None,
         accelerator="cpu",
     ):
         self.neural_dsl = neural_dsl
@@ -54,7 +53,6 @@ class ValidationCost:
         self.datamodule = datamodule
         self.error_loss = error_loss
         self.structural_cost_weight = structural_cost_weight
-        self.max_epochs = max_epochs
         self.accelerator = accelerator
         self.progress_by_epoch = progress_by_epoch
 
@@ -127,7 +125,7 @@ class ValidationCost:
             accelerator=self.accelerator,
             lr=self.trainer_cfg.lr,
             weight_decay=self.trainer_cfg.weight_decay,
-            n_epochs=self.max_epochs if self.max_epochs else self.trainer_cfg.n_epochs,
+            n_epochs=self.trainer_cfg.n_epochs,
             seed=self.trainer_cfg.seed,
             scheduler_type=self.trainer_cfg.scheduler,
             optimizer_type=self.trainer_cfg.optimizer,
