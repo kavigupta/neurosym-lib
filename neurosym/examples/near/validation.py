@@ -21,24 +21,6 @@ from neurosym.utils.logging import log
 pl = import_pytorch_lightning()
 
 
-class _ProgressBar(pl.callbacks.Callback):
-    """
-    callback that updates a progress bar once per epoch
-    """
-
-    def __init__(self, num_epochs, progress_bar):
-        self.num_epochs = num_epochs
-        self.progress_bar = progress_bar
-
-    def on_train_epoch_end(self, trainer, pl_module):
-        self.progress_bar.update(1)
-        # set train and val loss in progress bar
-        self.progress_bar.set_postfix(
-            train_loss=trainer.callback_metrics["train_loss"].item(),
-            val_loss=trainer.callback_metrics["val_loss"].item(),
-        )
-
-
 class ValidationCost:
     """
     A class that computes the validation cost of a program using a neural DSL.
@@ -52,7 +34,6 @@ class ValidationCost:
     :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
         The scale of the validation cost (float) and structural_cost (int) can
         vary so it's important to tune this for each new problem.
-    :param callbacks: Callbacks to use during training.
     :param kwargs: Additional arguments to pass to the trainer.
     """
 
@@ -65,7 +46,6 @@ class ValidationCost:
         error_loss=10000,
         progress_by_epoch=False,
         structural_cost_weight=0.5,
-        callbacks: List[pl.callbacks.Callback] = (),
         max_epochs=None,
         accelerator="cpu",
     ):
@@ -77,7 +57,6 @@ class ValidationCost:
         self.max_epochs = max_epochs
         self.accelerator = accelerator
         self.progress_by_epoch = progress_by_epoch
-        self.callbacks = list(callbacks)
 
     def structural_cost(self, program: SExpression) -> int:
         """
@@ -131,24 +110,6 @@ class ValidationCost:
         """
         module, val_loss = self._fit_trainer(program)
         return module, val_loss
-
-    @staticmethod
-    def _duplicate(callbacks):
-        """
-        Reinitialize all callbacks to avoid sharing state between different validation runs.
-        """
-        out = []
-        for cb in callbacks:
-            out.append(
-                cb.__class__(
-                    **{
-                        k: getattr(cb, k)
-                        for k in cb.__init__.__code__.co_varnames
-                        if hasattr(cb, k)
-                    }
-                )
-            )
-        return out
 
     def _fit_trainer(self, program):
         try:
