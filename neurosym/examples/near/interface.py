@@ -1,10 +1,9 @@
+import itertools
 from types import NoneType
 from typing import Callable, Union
 
-import numpy as np
 import torch
 from frozendict import frozendict
-from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
@@ -66,7 +65,6 @@ class NEAR:
         self.search_strategy = None
 
         self._is_registered = False
-        self.programs = None
         self.validation_params = None
 
     def register_search_params(
@@ -121,12 +119,10 @@ class NEAR:
         """
         sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
 
-        self.programs = [
+        return [
             self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
             for sexpr in sexprs
         ]
-
-        return self.programs
 
     def _search(
         self,
@@ -157,18 +153,7 @@ class NEAR:
             g, max_depth=self.max_depth, max_iterations=max_iterations
         )
 
-        sexprs = []
-        try:
-            while len(sexprs) < n_programs:
-                node = next(iterator)
-                sexprs.append(node.program)
-
-        except StopIteration as exc:
-            if len(sexprs) == 0:
-                raise StopIteration(
-                    "No symbolic program found! Check logs and hyperparameters!"
-                ) from exc
-
+        sexprs = list(itertools.islice((prog.program for prog in iterator), n_programs))
         return sexprs
 
     def _get_validator(self, datamodule, **kwargs):
