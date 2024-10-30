@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, TypeVar
+from typing import Generic, Iterable, TypeVar
 
 N = TypeVar("N")
 
 
-class SearchGraph(ABC):
+class SearchGraph(ABC, Generic[N]):
     """
     Represents a search graph where nodes are objects and edges are expansions of those objects.
     """
