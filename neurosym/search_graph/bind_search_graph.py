@@ -1,6 +1,6 @@
+import uuid
 from dataclasses import dataclass, field
 from typing import Callable, Generic, Iterable, TypeVar, Union
-import uuid
 
 from neurosym.search_graph.search_graph import SearchGraph
 from neurosym.utils.documentation import internal_only
