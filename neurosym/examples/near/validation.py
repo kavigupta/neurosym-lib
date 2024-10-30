@@ -1,7 +1,6 @@
 from typing import List, Tuple
 
 import torch
-import tqdm.auto as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
@@ -67,14 +66,16 @@ class ValidationCost:
         progress_by_epoch=False,
         structural_cost_weight=0.5,
         callbacks: List[pl.callbacks.Callback] = (),
-        **kwargs,
+        max_epochs=None,
+        accelerator="cpu",
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.error_loss = error_loss
         self.structural_cost_weight = structural_cost_weight
-        self.kwargs = kwargs
+        self.max_epochs = max_epochs
+        self.accelerator = accelerator
         self.progress_by_epoch = progress_by_epoch
         self.callbacks = list(callbacks)
 
@@ -128,8 +129,7 @@ class ValidationCost:
 
         :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
         """
-        trainer, pbar = self._get_trainer_and_pbar()
-        module, val_loss = self._fit_trainer(trainer, program, pbar)
+        module, val_loss = self._fit_trainer(program)
         return module, val_loss
 
     @staticmethod
@@ -150,30 +150,7 @@ class ValidationCost:
             )
         return out
 
-    def _get_trainer_and_pbar(self):
-        callbacks = list(self.callbacks)
-        callbacks = self._duplicate(self.callbacks)
-        if self.progress_by_epoch:
-            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
-            callbacks.append(_ProgressBar(self.trainer_cfg.n_epochs, pbar))
-        else:
-            pbar = None
-
-        self.kwargs["max_epochs"] = self.kwargs.get(
-            "max_epochs", self.trainer_cfg.n_epochs
-        )
-        self.kwargs["devices"] = self.kwargs.get("devices", "auto")
-        self.kwargs["accelerator"] = self.kwargs.get("accelerator", "cpu")
-        self.kwargs["enable_checkpointing"] = self.kwargs.get(
-            "enable_checkpointing", False
-        )
-        self.kwargs["logger"] = self.kwargs.get("logger", False)
-        self.kwargs["callbacks"] = callbacks
-        self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
-        trainer = self.kwargs
-        return trainer, pbar
-
-    def _fit_trainer(self, trainer, program, pbar):
+    def _fit_trainer(self, program):
         try:
             model = TorchProgramModule(dsl=self.neural_dsl, program=program)
         except PartialProgramNotFoundError as e:
@@ -189,19 +166,15 @@ class ValidationCost:
         model, val_loss = _train_model(
             model,
             self.datamodule,
-            accelerator=trainer["accelerator"],
-            # lr=trainer["lr"],
+            accelerator=self.accelerator,
             lr=self.trainer_cfg.lr,
-            # weight_decay=trainer["weight_decay"],
             weight_decay=self.trainer_cfg.weight_decay,
-            n_epochs=trainer["max_epochs"],
+            n_epochs=self.max_epochs if self.max_epochs else self.trainer_cfg.n_epochs,
             seed=self.trainer_cfg.seed,
             scheduler_type=self.trainer_cfg.scheduler,
             optimizer_type=self.trainer_cfg.optimizer,
             loss_callback=self.trainer_cfg.loss_callback,
         )
-        if self.progress_by_epoch:
-            pbar.close()
 
         return model, val_loss
 
@@ -222,7 +195,7 @@ def _train_model(
     model,
     datamodule,
     *,
-    accelerator,
+    accelerator="cpu",
     lr,
     weight_decay=0,
     n_epochs,

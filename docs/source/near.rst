@@ -5,7 +5,6 @@
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
-.. autoclass:: neurosym.examples.near.NEARTrainer
 .. autoclass:: neurosym.examples.near.ValidationCost
     :members:
 .. autoclass:: neurosym.examples.near.TorchProgramModule
@@ -59,8 +58,6 @@ Example Datasets/DSLs
 Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
-.. autoclass:: neurosym.examples.near.BaseTrainerConfig
-.. autoclass:: neurosym.examples.near.BaseTrainer
 .. autofunction:: neurosym.examples.near.schedule_optimizer
 .. autoclass:: neurosym.examples.near.UninitializableProgramError
 

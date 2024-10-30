@@ -36,7 +36,6 @@ class NEAR:
         output_dim: int,
         max_depth: int,
         lr: float = 1e-4,
-        max_seq_len: int = 100,
         n_epochs: int = 10,
         accelerator: str = "cpu",
     ):
@@ -47,14 +46,12 @@ class NEAR:
         :param output_dim: Dimensionality of the output predictions.
         :param max_depth: Maximum depth of the search graph.
         :param lr: Learning rate.
-        :param max_seq_len: Maximum sequence length for modelling trajectories.
         :param n_epochs: Number of epochs for training.
         :param accelerator: Accelerator to use for training ('cpu' / 'cuda' / etc.).
         """
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.lr = lr
-        self.max_seq_len = max_seq_len
         self.n_epochs = n_epochs
         self.max_depth = max_depth
         self.accelerator = accelerator
@@ -158,10 +155,9 @@ class NEAR:
 
     def _get_validator(self, datamodule, **kwargs):
         validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
+            trainer_cfg=self._trainer_config(),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
-            enable_model_summary=False,
             progress_by_epoch=False,
             accelerator=self.accelerator,
         )
@@ -192,12 +188,7 @@ class NEAR:
         )
         return module
 
-    def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
+    def _trainer_config(self) -> NEARTrainerConfig:
         return NEARTrainerConfig(
-            lr=self.lr,
-            max_seq_len=self.max_seq_len,
-            n_epochs=self.n_epochs,
-            num_labels=self.output_dim,
-            train_steps=len(datamodule.train),
-            loss_callback=self.loss_callback,
+            lr=self.lr, n_epochs=self.n_epochs, loss_callback=self.loss_callback
         )

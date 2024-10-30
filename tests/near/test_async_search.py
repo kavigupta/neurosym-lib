@@ -27,12 +27,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         )
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.example_rnn_dsl(input_dim, output_dim)
-        trainer_cfg = near.NEARTrainerConfig(
-            max_seq_len=100,
-            n_epochs=10,
-            num_labels=output_dim,
-            train_steps=len(datamodule.train),
-        )
+        trainer_cfg = near.NEARTrainerConfig(n_epochs=10)
         t = ns.TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
         t.typedef("fO", "{f, $O}")
