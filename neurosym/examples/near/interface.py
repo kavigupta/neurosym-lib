@@ -159,7 +159,6 @@ class NEAR:
             trainer_cfg=self._trainer_config(n_epochs),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
-            accelerator=self.accelerator,
             **self.validation_params,
         )
         return validation_cost
@@ -188,4 +187,5 @@ class NEAR:
             lr=self.lr,
             n_epochs=(self.n_epochs if n_epochs is None else n_epochs),
             loss_callback=self.loss_callback,
+            accelerator=self.accelerator,
         )

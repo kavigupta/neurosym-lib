@@ -46,14 +46,12 @@ class ValidationCost:
         error_loss=10000,
         progress_by_epoch=False,
         structural_cost_weight=0.5,
-        accelerator="cpu",
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.error_loss = error_loss
         self.structural_cost_weight = structural_cost_weight
-        self.accelerator = accelerator
         self.progress_by_epoch = progress_by_epoch
 
     def structural_cost(self, program: SExpression) -> int:
@@ -122,7 +120,7 @@ class ValidationCost:
         model, val_loss = _train_model(
             model,
             self.datamodule,
-            accelerator=self.accelerator,
+            accelerator=self.trainer_cfg.accelerator,
             lr=self.trainer_cfg.lr,
             weight_decay=self.trainer_cfg.weight_decay,
             n_epochs=self.trainer_cfg.n_epochs,

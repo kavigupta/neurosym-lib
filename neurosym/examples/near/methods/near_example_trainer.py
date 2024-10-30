@@ -32,6 +32,7 @@ class NEARTrainerConfig:
     :param n_epochs: Number of epochs to train for (default: 10)
     :param seed: Random seed for reproducibility (default: 44)
     :param scheduler: Learning rate scheduler to use (default: "cosine")
+    :param accelerator: Accelerator to use for training (default: "cpu")
     :param optimizer: Optimizer to use (default: torch.optim.Adam)
     :param loss_callback: Loss function to use (default: :py:func:`neurosym.examples.near.classification_mse_loss`)
     """
@@ -41,6 +42,7 @@ class NEARTrainerConfig:
     n_epochs: int = 10
     seed: int = 44
     scheduler: str = "cosine"
+    accelerator: str = "cpu"
     # This is necessary for some unfathomable reason. I assume that torch.optim.Adam
     # is overwritten by pytorch-lightning, so we need to pass it as a lambda to avoid
     # passing the outdated version.
