@@ -206,6 +206,7 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
         # checks if the given object is a python lambda function
         return inspect.isfunction(obj) and obj.__name__ == "<lambda>"
 
+
 def get_class_that_defined_method(meth):
     if isinstance(meth, functools.partial):
         return get_class_that_defined_method(meth.func)
