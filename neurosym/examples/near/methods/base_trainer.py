@@ -1,4 +1,3 @@
-import warnings
 from dataclasses import dataclass
 from typing import Tuple
 
@@ -90,96 +89,85 @@ class BaseTrainer(pl.LightningModule):
         # pylint: disable=arguments-differ
         return self._evaluation_step(test_batch, batch_idx, "test")
 
-    @staticmethod
-    def _filter_parameters(named_parameters: dict, filter_param_list: list):
-        params = []
-        for name, param in named_parameters:
-            valid_name = not any(x in name for x in filter_param_list)
-            if param.requires_grad and valid_name:
-                params.append(param)
-            else:
-                warnings.warn(f"WARNING: Parameter {name} removed from optimizer")
-        return params
-
-    @staticmethod
-    def _warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
-        def f(step):
-            warmup_steps = warmup_steps_pct * total_steps
-            decay_steps = decay_steps_pct * total_steps
-            assert step < (
-                total_steps + 1
-            ), f"Step {step} is greater thantotal steps {total_steps}"
-            if step < warmup_steps:
-                factor = step / warmup_steps
-            else:
-                factor = 1
-            factor *= 0.5 ** (step / decay_steps)
-            return factor
-
-        return f
-
-    def _step_lr_scheduler(self, total_steps: int):
-        def f(step: int):
-            if step < total_steps * 0.3:
-                factor = 1
-            elif step < total_steps * 0.3:
-                factor = 0.1
-            else:
-                factor = 0.01
-            return factor
-
-        return f
-
     @internal_only  # not actually, it's just to silence the error that this isn't documented. It is an inherited method.
     def configure_optimizers(self):
         """
         A rather verbose function that instantiates the optimizer and scheduler.
         """
         # pylint: disable=protected-access
-        params = self._filter_parameters(
-            self.named_parameters(), self.config._filter_param_list
-        )
-        optimizer_fn = getattr(torch.optim, self.config.optimizer.__name__)
-        optimizer = optimizer_fn(
+        params = self.named_parameters()
+        optimizer = self.config.optimizer(
             params, lr=self.config.lr, weight_decay=self.config.weight_decay
         )
+        return schedule_optimizer(
+            optimizer,
+            self.config.scheduler,
+            self.config.train_steps,
+            self.config.n_epochs,
+        )
 
-        assert self.config.train_steps != -1, "Train steps not set"
-        total_steps = int(self.config.n_epochs * (self.config.train_steps))
 
-        match self.config.scheduler:
-            case "none":
-                return optimizer
-            case "cosine":
-                warmup_steps_pct = 0.02
-                decay_steps_pct = 0.2
-                scheduler = torch.optim.lr_scheduler.LambdaLR(
-                    optimizer=optimizer,
-                    lr_lambda=self._warm_and_decay_lr_scheduler(
-                        warmup_steps_pct, decay_steps_pct, total_steps
-                    ),
-                )
-                return (
-                    [optimizer],
-                    [
-                        {
-                            "scheduler": scheduler,
-                            "interval": "step",
-                        }
-                    ],
-                )
-            case "step":
-                scheduler = torch.optim.lr_scheduler.LambdaLR(
-                    optimizer=optimizer, lr_lambda=self._step_lr_scheduler(total_steps)
-                )
-                return (
-                    [optimizer],
-                    [
-                        {
-                            "scheduler": scheduler,
-                            "interval": "step",
-                        }
-                    ],
-                )
-            case _:
-                raise ValueError(f"Invalid scheduler {self.config.scheduler}")
+def schedule_optimizer(optimizer, scheduler_type, train_steps, n_epochs):
+    """
+    Schedules the optimizer based on the scheduler_type.
+
+    :param optimizer: The optimizer to schedule.
+    :param scheduler_type: The type of scheduler to use.
+    :param train_steps: The number of training steps.
+    :param n_epochs: The number of epochs to train for.
+
+    :return: The scheduled optimizer and a list of schedulers.
+    """
+    assert train_steps != -1, "Train steps not set"
+    total_steps = int(n_epochs * train_steps)
+
+    match scheduler_type:
+        case "none":
+            return optimizer, []
+        case "cosine":
+            warmup_steps_pct = 0.02
+            decay_steps_pct = 0.2
+            scheduler = torch.optim.lr_scheduler.LambdaLR(
+                optimizer=optimizer,
+                lr_lambda=_warm_and_decay_lr_scheduler(
+                    warmup_steps_pct, decay_steps_pct, total_steps
+                ),
+            )
+            return optimizer, [scheduler]
+        case "step":
+            scheduler = torch.optim.lr_scheduler.LambdaLR(
+                optimizer=optimizer, lr_lambda=_step_lr_scheduler(total_steps)
+            )
+            return optimizer, [scheduler]
+        case _:
+            raise ValueError(f"Invalid scheduler {scheduler_type}")
+
+
+def _warm_and_decay_lr_scheduler(warmup_steps_pct, decay_steps_pct, total_steps):
+    def f(step):
+        warmup_steps = warmup_steps_pct * total_steps
+        decay_steps = decay_steps_pct * total_steps
+        assert step < (
+            total_steps + 1
+        ), f"Step {step} is greater thantotal steps {total_steps}"
+        if step < warmup_steps:
+            factor = step / warmup_steps
+        else:
+            factor = 1
+        factor *= 0.5 ** (step / decay_steps)
+        return factor
+
+    return f
+
+
+def _step_lr_scheduler(total_steps: int):
+    def f(step: int):
+        if step < total_steps * 0.3:
+            factor = 1
+        elif step < total_steps * 0.3:
+            factor = 0.1
+        else:
+            factor = 0.01
+        return factor
+
+    return f

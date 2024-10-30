@@ -1,12 +1,14 @@
 from typing import List, Tuple
 
+import torch
 import tqdm.auto as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
     NEARTrainerConfig,
+    classification_mse_loss,
 )
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
@@ -104,14 +106,14 @@ class ValidationCost:
         """
         try:
             log(f"Training {render_s_expression(node.program)}")
-            _, trainer = self.validate_model(program=node.program)
+            _, val_loss = self.validate_model(program=node.program)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
 
-        return (1 - self.structural_cost_weight) * trainer.callback_metrics[
-            "val_loss"
-        ].item() + self.structural_cost_weight * self.structural_cost(
+        return (
+            1 - self.structural_cost_weight
+        ) * val_loss + self.structural_cost_weight * self.structural_cost(
             program=node.program
         )
 
@@ -127,8 +129,8 @@ class ValidationCost:
         :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
         """
         trainer, pbar = self._get_trainer_and_pbar()
-        module = self._fit_trainer(trainer, program, pbar)
-        return module, trainer
+        module, val_loss = self._fit_trainer(trainer, program, pbar)
+        return module, val_loss
 
     @staticmethod
     def _duplicate(callbacks):
@@ -168,7 +170,7 @@ class ValidationCost:
         self.kwargs["logger"] = self.kwargs.get("logger", False)
         self.kwargs["callbacks"] = callbacks
         self.kwargs["deterministic"] = self.kwargs.get("deterministic", True)
-        trainer = pl.Trainer(**self.kwargs)
+        trainer = self.kwargs
         return trainer, pbar
 
     def _fit_trainer(self, trainer, program, pbar):
@@ -184,16 +186,24 @@ class ValidationCost:
                 f"No parameters in program {render_s_expression(program)}"
             )
 
-        pl_model = NEARTrainer(model, config=self.trainer_cfg)
-        trainer.fit(
-            pl_model,
-            self.datamodule.train_dataloader(),
-            self.datamodule.val_dataloader(),
+        model, val_loss = _train_model(
+            model,
+            self.datamodule,
+            accelerator=trainer["accelerator"],
+            # lr=trainer["lr"],
+            lr=self.trainer_cfg.lr,
+            # weight_decay=trainer["weight_decay"],
+            weight_decay=self.trainer_cfg.weight_decay,
+            n_epochs=trainer["max_epochs"],
+            seed=self.trainer_cfg.seed,
+            scheduler_type=self.trainer_cfg.scheduler,
+            optimizer_type=self.trainer_cfg.optimizer,
+            loss_callback=self.trainer_cfg.loss_callback,
         )
         if self.progress_by_epoch:
             pbar.close()
 
-        return model
+        return model, val_loss
 
 
 class UninitializableProgramError(Exception):
@@ -206,3 +216,50 @@ class UninitializableProgramError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
+
+
+def _train_model(
+    model,
+    datamodule,
+    *,
+    accelerator,
+    lr,
+    weight_decay=0,
+    n_epochs,
+    seed=0,
+    scheduler_type="cosine",
+    optimizer_type=torch.optim.Adam,
+    loss_callback=classification_mse_loss,
+):
+    optimizer, schedulers = schedule_optimizer(
+        optimizer_type(model.parameters(), lr=lr, weight_decay=weight_decay),
+        scheduler_type,
+        len(datamodule.train),
+        n_epochs,
+    )
+    torch.manual_seed(seed)
+    model = model.train()
+    model = model.to(accelerator)
+    for _ in range(n_epochs):
+        for batch in datamodule.train_dataloader():
+            batch = {k: v.to(accelerator) for k, v in batch.items()}
+            x, y = batch["inputs"], batch["outputs"]
+            yp = model(x, environment=())
+            optimizer.zero_grad()
+            loss = loss_callback(y, yp)
+            loss.backward()
+            optimizer.step()
+            for scheduler in schedulers:
+                scheduler.step()
+
+    model = model.eval()
+    val_loss_sum = 0
+    val_loss_count = 0
+    for batch in datamodule.val_dataloader():
+        batch = {k: v.to(accelerator) for k, v in batch.items()}
+        x, y = batch["inputs"], batch["outputs"]
+        with torch.no_grad():
+            val_loss_sum += loss_callback(y, model(x, environment=())).item()
+        val_loss_count += 1
+    model = model.train().cpu()
+    return model, val_loss_sum / val_loss_count
