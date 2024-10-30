@@ -228,7 +228,7 @@ def _train_model(
     n_epochs,
     seed=0,
     scheduler_type="cosine",
-    optimizer_type=torch.optim.Adam,
+    optimizer_type,
     loss_callback=classification_mse_loss,
 ):
     optimizer, schedulers = schedule_optimizer(

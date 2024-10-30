@@ -27,7 +27,12 @@ class BaseTrainerConfig:
     scheduler: str = "cosine"
     sav_dir: str = "data/checkpoints"
     _filter_param_list: Tuple[str] = ()
-    optimizer: str = torch.optim.Adam
+    # This is necessary for some unfathomable reason. I assume that torch.optim.Adam
+    # is overwritten by pytorch-lightning, so we need to pass it as a lambda to avoid
+    # passing the outdated version.
+    #
+    # pylint: disable=unnecessary-lambda
+    optimizer: str = lambda *args, **kwargs: torch.optim.Adam(*args, **kwargs)
 
 
 class BaseTrainer(pl.LightningModule):
