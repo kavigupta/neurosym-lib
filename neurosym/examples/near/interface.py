@@ -159,7 +159,6 @@ class NEAR:
             trainer_cfg=self._trainer_config(max_epochs),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
-            progress_by_epoch=False,
             accelerator=self.accelerator,
             **self.validation_params,
         )
