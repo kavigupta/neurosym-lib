@@ -2,8 +2,6 @@
 import unittest
 from functools import partial
 
-import pytest
-
 import neurosym as ns
 from neurosym.examples import near
 
