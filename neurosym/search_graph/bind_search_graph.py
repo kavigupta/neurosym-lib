@@ -24,6 +24,9 @@ class BindSearchGraphNodeB(Generic[B]):
     # in the search graph as well as to hash them.
     graph_b_uuid: uuid.UUID = field(compare=True, hash=True)
 
+    def with_node(self, node: B) -> "BindSearchGraphNodeB[B]":
+        return BindSearchGraphNodeB(node, self.graph_b, self.graph_b_uuid)
+
 
 BindSearchGraphNode = Union[BindSearchGraphNodeA[A], BindSearchGraphNodeB[B]]
 
@@ -42,19 +45,19 @@ class BindSearchGraph(SearchGraph[BindSearchGraphNode[A, B]]):
         self, node: BindSearchGraphNode[A, B]
     ) -> Iterable[BindSearchGraphNode[A, B]]:
         if isinstance(node, BindSearchGraphNodeA):
-            for neighbor_a in self.graph_a.expand_node(node.node):
-                if self.graph_a.is_goal_node(neighbor_a):
-                    graph_b_uuid = uuid.uuid4()
-                    graph_b = self.create_graph_b(neighbor_a)
-                    yield BindSearchGraphNodeB(
-                        graph_b.initial_node(), graph_b, graph_b_uuid
-                    )
-                else:
+            if self.graph_a.is_goal_node(node.node):
+                graph_b_uuid = uuid.uuid4()
+                graph_b = self.create_graph_b(node.node)
+                yield BindSearchGraphNodeB(
+                    graph_b.initial_node(), graph_b, graph_b_uuid
+                )
+            else:
+                for neighbor_a in self.graph_a.expand_node(node.node):
                     yield BindSearchGraphNodeA(neighbor_a)
         else:
             graph_b = self.graph_b(node)
             for neighbor_b in graph_b.expand_node(node.node):
-                yield BindSearchGraphNodeB(neighbor_b, node.graph_b, node.graph_b_uuid)
+                yield node.with_node(neighbor_b)
 
     def is_goal_node(self, node: BindSearchGraphNode[A, B]) -> bool:
         if isinstance(node, BindSearchGraphNodeA):
