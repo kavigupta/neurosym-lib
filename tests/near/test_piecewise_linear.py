@@ -7,17 +7,37 @@ import neurosym as ns
 from neurosym.examples import near
 
 
-def piecewise_linear_dsl():
+def piecewise_linear_dsl(linear_layers=True):
     dslf = ns.DSLFactory()
     # dslf.parameterized(
     #     "linear", "() -> {f, 2} -> {f, 2}", lambda lin: lin, dict(lin=nn.Linear(2, 2))
     # )
-    dslf.parameterized(
-        "linear_bool",
-        "() -> {f, 2} -> {f, 1}",
-        lambda lin: lin,
-        dict(lin=lambda: nn.Linear(2, 1)),
-    )
+    if linear_layers:
+        dslf.parameterized(
+            "linear_bool",
+            "() -> {f, 2} -> {f, 1}",
+            lambda lin: lin,
+            dict(lin=lambda: nn.Linear(2, 1)),
+        )
+    else:
+        dslf.parameterized(
+            "aff_x",
+            "{f, 2} -> {f, 1}",
+            lambda x, aff: aff(x[:, 0][:, None]),
+            dict(aff=lambda: nn.Linear(1, 1)),
+        )
+        dslf.concrete(
+            "xplusy",
+            "{f, 2} -> {f, 1}",
+            lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
+        )
+        dslf.concrete(
+            "yminusx",
+            "{f, 2} -> {f, 1}",
+            lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
+        )
+        dslf.lambdas()
+
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
@@ -91,12 +111,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         dataset = get_dataset()
         result = self.run_near(dsl, dataset)
 
-        programs = [ns.render_s_expression(p.program) for p in result]
-
-        expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
-        self.assertIn(expected, programs)
-
-        result_relevant = result[programs.index(expected)]
+        result_relevant = self.grab_desired(result)
 
         [cond, cons, alt] = [
             x.state["lin"] for x in result_relevant.initalized_program.children
@@ -124,3 +139,20 @@ class TestPiecewiseLinear(unittest.TestCase):
 
         self.assertLess(np.abs(-1 - alt.weight[0, 0].item()), 0.1)
         self.assertLess(np.abs(+1 - alt.weight[0, 1].item()), 0.1)
+
+    def grab_desired(self, result):
+        programs = [ns.render_s_expression(p.program) for p in result]
+
+        expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
+        self.assertIn(expected, programs)
+
+        return result[programs.index(expected)]
+
+    def test_with_variables(self):
+        dsl = piecewise_linear_dsl()
+        dataset = get_dataset()
+        result = self.grab_desired(self.run_near(dsl, dataset))
+        return result
+
+
+# TestPiecewiseLinear().test_with_variables()
