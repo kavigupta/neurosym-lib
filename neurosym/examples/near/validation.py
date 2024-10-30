@@ -5,10 +5,7 @@ import torch
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
-from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainerConfig,
-    classification_mse_loss,
-)
+from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
@@ -118,16 +115,7 @@ class ValidationCost:
             )
 
         model, val_loss = _train_model(
-            model,
-            self.datamodule,
-            accelerator=self.trainer_cfg.accelerator,
-            lr=self.trainer_cfg.lr,
-            weight_decay=self.trainer_cfg.weight_decay,
-            n_epochs=self.trainer_cfg.n_epochs,
-            seed=self.trainer_cfg.seed,
-            scheduler_type=self.trainer_cfg.scheduler,
-            optimizer_type=self.trainer_cfg.optimizer,
-            loss_callback=self.trainer_cfg.loss_callback,
+            model, self.datamodule, trainer_cfg=self.trainer_cfg
         )
 
         return model, val_loss
@@ -145,34 +133,24 @@ class UninitializableProgramError(Exception):
         self.message = message
 
 
-def _train_model(
-    model,
-    datamodule,
-    *,
-    accelerator="cpu",
-    lr,
-    weight_decay=0,
-    n_epochs,
-    seed=0,
-    scheduler_type="cosine",
-    optimizer_type,
-    loss_callback=classification_mse_loss,
-):
+def _train_model(model, datamodule, *, trainer_cfg: NEARTrainerConfig):
     optimizer, schedulers = schedule_optimizer(
-        optimizer_type(model.parameters(), lr=lr, weight_decay=weight_decay),
-        scheduler_type,
+        trainer_cfg.optimizer_type(
+            model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
+        ),
+        trainer_cfg.scheduler_type,
         len(datamodule.train),
-        n_epochs,
+        trainer_cfg.n_epochs,
     )
-    torch.manual_seed(seed)
+    torch.manual_seed(trainer_cfg.seed)
     model = model.train()
-    model = model.to(accelerator)
-    for _ in range(n_epochs):
+    model = model.to(trainer_cfg.accelerator)
+    for _ in range(trainer_cfg.n_epochs):
         for batch in datamodule.train_dataloader():
-            batch = {k: v.to(accelerator) for k, v in batch.items()}
+            batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
             x, y = batch["inputs"], batch["outputs"]
             optimizer.zero_grad()
-            loss = loss_callback(model(x, environment=()), y)
+            loss = trainer_cfg.loss_callback(model(x, environment=()), y)
             loss.backward()
             optimizer.step()
             for scheduler in schedulers:
@@ -182,10 +160,12 @@ def _train_model(
     val_loss_sum = 0
     val_loss_count = 0
     for batch in datamodule.val_dataloader():
-        batch = {k: v.to(accelerator) for k, v in batch.items()}
+        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
         x, y = batch["inputs"], batch["outputs"]
         with torch.no_grad():
-            val_loss_sum += loss_callback(model(x, environment=()), y).item()
+            val_loss_sum += trainer_cfg.loss_callback(
+                model(x, environment=()), y
+            ).item()
         val_loss_count += 1
     model = model.train().cpu()
     return model, val_loss_sum / val_loss_count
