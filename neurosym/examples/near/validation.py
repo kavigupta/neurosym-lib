@@ -77,8 +77,7 @@ class ValidationCost:
 
     def __call__(self, node: DSLSearchNode) -> float:
         """
-        Initialize a pl.Trainer object and train on a partial program.
-        Returns validation cost after training.
+        Trains a partial program. Returns validation cost after training.
 
         :param node: The partial program DSLSearchNode to compute the score for.
 
@@ -97,16 +96,14 @@ class ValidationCost:
             program=node.program
         )
 
-    def validate_model(
-        self, program: SExpression
-    ) -> Tuple[TorchProgramModule, pl.Trainer]:
+    def validate_model(self, program: SExpression) -> Tuple[TorchProgramModule, float]:
         """
-        Initializes a TorchProgramModule and trains it using a pl.Trainer. Returns the trained module,
-        and the trainer object.
+        Initializes a TorchProgramModule and trains it. Returns the trained module, and the
+        validation loss.
 
         :param program: The program to validate.
 
-        :returns: A tuple containing the trained TorchProgramModule and the pl.Trainer object.
+        :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
         module, val_loss = self._fit_trainer(program)
         return module, val_loss

@@ -15,9 +15,9 @@ class TestNEARAsyncSearch(unittest.TestCase):
         """
         A minimal implementation of NEAR with a simple DSL.
         search = A-star
-        heuristic = validation score after training for N epochs. (pl.Trainer)
+        heuristic = validation score after training for N epochs.
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
-        test_predicate = score on testing set (pl.Trainer)
+        test_predicate = score on testing set
 
         This tests an async version of bounded_astar search.
         """

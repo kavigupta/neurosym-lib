@@ -25,9 +25,9 @@ class TestNEARSequentialDSL(unittest.TestCase):
         """
         A minimal implementation of NEAR with a simple DSL.
         search = A-star
-        heuristic = validation score after training for N epochs. (pl.Trainer)
+        heuristic = validation score after training for N epochs.
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
-        test_predicate = score on testing set (pl.Trainer)
+        test_predicate = score on testing set
         """
         datamodule = ns.datasets.near_data_example(train_seed=0)
         input_dim, output_dim = datamodule.train.get_io_dims()
