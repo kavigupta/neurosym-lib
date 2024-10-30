@@ -135,10 +135,10 @@ class UninitializableProgramError(Exception):
 
 def _train_model(model, datamodule, *, trainer_cfg: NEARTrainerConfig):
     optimizer, schedulers = schedule_optimizer(
-        trainer_cfg.optimizer_type(
+        trainer_cfg.optimizer(
             model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
         ),
-        trainer_cfg.scheduler_type,
+        trainer_cfg.scheduler,
         len(datamodule.train),
         trainer_cfg.n_epochs,
     )
