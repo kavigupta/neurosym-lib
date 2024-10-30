@@ -244,9 +244,8 @@ def _train_model(
         for batch in datamodule.train_dataloader():
             batch = {k: v.to(accelerator) for k, v in batch.items()}
             x, y = batch["inputs"], batch["outputs"]
-            yp = model(x, environment=())
             optimizer.zero_grad()
-            loss = loss_callback(y, yp)
+            loss = loss_callback(model(x, environment=()), y)
             loss.backward()
             optimizer.step()
             for scheduler in schedulers:
@@ -259,7 +258,7 @@ def _train_model(
         batch = {k: v.to(accelerator) for k, v in batch.items()}
         x, y = batch["inputs"], batch["outputs"]
         with torch.no_grad():
-            val_loss_sum += loss_callback(y, model(x, environment=())).item()
+            val_loss_sum += loss_callback(model(x, environment=()), y).item()
         val_loss_count += 1
     model = model.train().cpu()
     return model, val_loss_sum / val_loss_count
