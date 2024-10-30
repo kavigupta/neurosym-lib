@@ -120,7 +120,7 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         # for what we're investigating since the wrong_i simply do not work
         lr=0.05,
         max_seq_len=300,
-        n_epochs=10,
+        n_epochs=20,
         accelerator="cpu",
     )
     interface.register_search_params(
