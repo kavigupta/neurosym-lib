@@ -24,8 +24,20 @@ class StringContentsSearchGraph(ns.SearchGraph):
         )
 
     def expand_node(self, node):
+        self.check_types_same(node, self.start)
         for move in self.moves:
             yield node + move
+
+    def check_types_same(self, a, b):
+        if isinstance(a, str) or isinstance(b, str):
+            assert isinstance(a, str) and isinstance(b, str), (a, b)
+            return
+        assert isinstance(a, tuple) and isinstance(b, tuple), (a, b)
+        all_items = a + b
+        if not all_items:
+            return
+        for x in all_items:
+            self.check_types_same(x, all_items[0])
 
 
 class TestSearch(unittest.TestCase):
@@ -88,3 +100,31 @@ class TestSearch(unittest.TestCase):
         )
         node = next(ns.search.astar(g)).node
         self.assertEqual(node, ("22A22A", "2", "2", "2", "2"))
+
+    def test_bind_three_types(self):
+        g_1 = StringContentsSearchGraph(
+            start="",
+            moves=["1A", "1B", "22A", "2B"],
+            character_to_match="2",
+            desired_number=4,
+        )
+        g_2 = lambda x: StringContentsSearchGraph(
+            start=(x,),
+            moves=[("1",), ("2",)],
+            character_to_match="2",
+            desired_number=4,
+        )
+        g_3 = lambda x: StringContentsSearchGraph(
+            start=(x,),
+            moves=[(("1",),), (("2",),)],
+            character_to_match=("1",),
+            desired_number=4,
+        )
+        g = ns.BindSearchGraph(
+            ns.BindSearchGraph(g_1, g_2),
+            lambda node: g_3(node.node),
+        )
+        node = next(ns.search.astar(g)).node
+        self.assertEqual(
+            node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))
+        )
