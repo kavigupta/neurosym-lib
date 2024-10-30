@@ -2,8 +2,6 @@
 import unittest
 from functools import partial
 
-import pytest
-
 import neurosym as ns
 from neurosym.examples import near
 
@@ -34,9 +32,9 @@ class TestNEARInterface(unittest.TestCase):
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
             search_strategy=partial(ns.search.bounded_astar, max_depth=3),
         )
-        with pytest.raises(StopIteration):
-            interface.fit(
-                datamodule=datamodule,
-                program_signature="([{f, $L}]) -> [{f, $O}]",
-                n_programs=1,
-            )
+        results = interface.fit(
+            datamodule=datamodule,
+            program_signature="([{f, $L}]) -> [{f, $O}]",
+            n_programs=1,
+        )
+        self.assertEqual(results, [])
