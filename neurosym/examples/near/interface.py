@@ -65,7 +65,6 @@ class NEAR:
         self.loss_callback = None
         self.search_strategy = None
 
-        self._is_fitted = False
         self._is_registered = False
         self.programs = None
         self.validation_params = None
@@ -124,7 +123,7 @@ class NEAR:
 
         self.programs = [
             self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
-            for (sexpr, cost) in sexprs
+            for sexpr in sexprs
         ]
 
         return self.programs
@@ -162,19 +161,14 @@ class NEAR:
         try:
             while len(sexprs) < n_programs:
                 node = next(iterator)
-                self._is_fitted = True
-                cost = validation_cost(node)
-                sexprs.append((node.program, cost))
+                sexprs.append(node.program)
 
         except StopIteration as exc:
-            if (not self._is_fitted) or (len(sexprs) == 0):
+            if len(sexprs) == 0:
                 raise StopIteration(
                     "No symbolic program found! Check logs and hyperparameters!"
                 ) from exc
 
-        sexprs = sorted(sexprs, key=lambda x: x[1])
-        for i, (sexpr, cost) in enumerate(sexprs):
-            log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
         return sexprs
 
     def _get_validator(self, datamodule, **kwargs):
@@ -212,22 +206,6 @@ class NEAR:
             program
         )
         return module
-
-    def predict(self, X: np.ndarray):
-        """
-        Makes predictions using the fitted programs.
-
-        :param X: Input data as a NumPy array.
-        :return: List of predictions from each fitted program.
-        """
-        if not self._is_fitted:
-            raise NotFittedError(
-                "No fitted program found! Call 'fit' with appropriate arguments before using this program."
-            )
-
-        with torch.no_grad():
-            pred = [program(torch.tensor(X)).cpu().numpy() for program in self.programs]
-        return pred
 
     def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
         return NEARTrainerConfig(
