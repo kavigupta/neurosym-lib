@@ -3,7 +3,6 @@
 
 # Tests
 pytest
-pytest-retry
 parameterized
 matplotlib # needed for tutorial test
 
