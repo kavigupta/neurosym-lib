@@ -39,6 +39,7 @@ class TestListDSL(unittest.TestCase):
             dsl,
             ns.parse_type("[i] -> i"),
             is_goal=is_goal,
+            cost=lambda x: 0,
         )
         it = ns.search.bfs(g)
         node = next(it).program

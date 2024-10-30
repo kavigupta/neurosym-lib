@@ -151,10 +151,11 @@ class NEAR:
             ),
             is_goal=lambda _: True,
             max_depth=self.max_depth,
+            cost=validation_cost,
         )
 
         iterator = self.search_strategy(
-            g, validation_cost, max_depth=self.max_depth, max_iterations=max_iterations
+            g, max_depth=self.max_depth, max_iterations=max_iterations
         )
 
         sexprs = []

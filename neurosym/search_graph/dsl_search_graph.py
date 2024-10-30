@@ -1,4 +1,5 @@
 import itertools
+from types import NoneType
 from typing import Callable
 
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
@@ -23,6 +24,7 @@ class DSLSearchGraph(SearchGraph):
     :param hole_set_chooser: Chooser for sets of holes to expand
     :param test_predicate: Predicate for goal nodes
     :param metadata_computer: Computer for metadata for nodes
+    :param compute_cost: Function to compute the cost of a node
     """
 
     def __init__(
@@ -32,12 +34,14 @@ class DSLSearchGraph(SearchGraph):
         hole_set_chooser: HoleSetChooser,
         test_predicate: Callable[[SExpression], bool],
         metadata_computer: MetadataComputer,
+        compute_cost: Callable[[DSLSearchNode], float] | NoneType = None,
     ):
         self.dsl = dsl
         self.target_type = target_type
         self.hole_set_chooser = hole_set_chooser
         self.test_predicate = test_predicate
         self.metadata_computer = metadata_computer
+        self.compute_cost = compute_cost
 
     def initial_node(self):
         return DSLSearchNode(
@@ -70,3 +74,8 @@ class DSLSearchGraph(SearchGraph):
         if any(True for _ in _all_holes(node.program)):
             return False
         return self.test_predicate(node)
+
+    def cost(self, node) -> float:
+        if self.compute_cost is None:
+            raise NotImplementedError("Cost function not provided")
+        return self.compute_cost(node)
