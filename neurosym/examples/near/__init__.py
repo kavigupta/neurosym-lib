@@ -1,4 +1,5 @@
 from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
+from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,
@@ -25,7 +26,13 @@ from .models.torch_program_module import TorchProgramModule
 from .models.transformer import (
     BasicMultiDimensionalPositionalEncoding,
     NearTransformer,
-    transformer_factory,
+    TransformerNeuralHoleFiller,
 )
 from .neural_dsl import NeuralDSL, PartialProgramNotFoundError, create_modules
+from .neural_hole_filler import (
+    DictionaryNeuralHoleFiller,
+    DoNothingNeuralHoleFiller,
+    NeuralHoleFiller,
+    UnionNeuralHoleFiller,
+)
 from .search_graph import near_graph

@@ -27,6 +27,9 @@ class FilterEdgesGraph(SearchGraph):
     def is_goal_node(self, node):
         return self.graph.is_goal_node(node)
 
+    def cost(self, node):
+        return self.graph.cost(node)
+
 
 class LimitEdgesGraph(SearchGraph):
     """
@@ -49,3 +52,6 @@ class LimitEdgesGraph(SearchGraph):
 
     def is_goal_node(self, node):
         return self.graph.is_goal_node(node)
+
+    def cost(self, node):
+        return self.graph.cost(node)

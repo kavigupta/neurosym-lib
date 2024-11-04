@@ -184,6 +184,9 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
         if self.is_inherited_and_undocumented(obj):
             return
 
+        if self.is_lambda(obj):
+            return
+
         self.fail(f"Object {obj} not documented")
 
     def is_inherited_and_undocumented(self, obj):
@@ -198,6 +201,10 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
             if obj.__name__ in dir(base):
                 return True
         return False
+
+    def is_lambda(self, obj):
+        # checks if the given object is a python lambda function
+        return inspect.isfunction(obj) and obj.__name__ == "<lambda>"
 
 
 def get_class_that_defined_method(meth):

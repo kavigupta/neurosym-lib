@@ -1,10 +1,9 @@
+import itertools
 from types import NoneType
 from typing import Callable, Union
 
-import numpy as np
 import torch
 from frozendict import frozendict
-from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
@@ -12,6 +11,7 @@ from neurosym.examples.near.methods.near_example_trainer import (
     classification_mse_loss,
 )
 from neurosym.examples.near.neural_dsl import NeuralDSL
+from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import near_graph
 from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import SExpression
@@ -64,16 +64,14 @@ class NEAR:
         self.loss_callback = None
         self.search_strategy = None
 
-        self._is_fitted = False
         self._is_registered = False
-        self.programs = None
         self.validation_params = None
 
     def register_search_params(
         self,
         dsl: DSL,
         type_env: TypeDefiner,
-        neural_modules: dict,
+        neural_hole_filler: NeuralHoleFiller,
         search_strategy: Callable,
         loss_callback: Callable[
             [torch.Tensor, torch.Tensor], torch.Tensor
@@ -85,14 +83,16 @@ class NEAR:
 
         :param dsl: The domain-specific language.
         :param type_env: Type environment.
-        :param neural_modules: Neural modules to fill holes in partial programs.
+        :param neural_hole_filler: Neural modules to fill holes in partial programs.
         :param search_strategy: A search strategy supported in `neurosym.search`
         :param loss_callback: Callable for the loss function used during training.
             Defaults to classification MSE loss.
         """
         self.dsl = dsl
         self.type_env = type_env
-        self.neural_dsl = NeuralDSL.from_dsl(dsl=self.dsl, modules=neural_modules)
+        self.neural_dsl = NeuralDSL.from_dsl(
+            dsl=self.dsl, neural_hole_filler=neural_hole_filler
+        )
         self.search_strategy = search_strategy
         self.loss_callback = loss_callback
         self._is_registered = True
@@ -119,12 +119,10 @@ class NEAR:
         """
         sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
 
-        self.programs = [
+        return [
             self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
-            for (sexpr, cost) in sexprs
+            for sexpr in sexprs
         ]
-
-        return self.programs
 
     def _search(
         self,
@@ -146,31 +144,16 @@ class NEAR:
                 s=program_signature,
                 env=self.type_env,
             ),
-            is_goal=self.neural_dsl.program_has_no_holes,
+            is_goal=lambda _: True,
             max_depth=self.max_depth,
+            cost=validation_cost,
         )
 
         iterator = self.search_strategy(
-            g, validation_cost, max_depth=self.max_depth, max_iterations=max_iterations
+            g, max_depth=self.max_depth, max_iterations=max_iterations
         )
 
-        sexprs = []
-        try:
-            while len(sexprs) < n_programs:
-                node = next(iterator)
-                self._is_fitted = True
-                cost = validation_cost(node)
-                sexprs.append((node.program, cost))
-
-        except StopIteration as exc:
-            if (not self._is_fitted) or (len(sexprs) == 0):
-                raise StopIteration(
-                    "No symbolic program found! Check logs and hyperparameters!"
-                ) from exc
-
-        sexprs = sorted(sexprs, key=lambda x: x[1])
-        for i, (sexpr, cost) in enumerate(sexprs):
-            log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
+        sexprs = list(itertools.islice((prog.program for prog in iterator), n_programs))
         return sexprs
 
     def _get_validator(self, datamodule, **kwargs):
@@ -208,22 +191,6 @@ class NEAR:
             program
         )
         return module
-
-    def predict(self, X: np.ndarray):
-        """
-        Makes predictions using the fitted programs.
-
-        :param X: Input data as a NumPy array.
-        :return: List of predictions from each fitted program.
-        """
-        if not self._is_fitted:
-            raise NotFittedError(
-                "No fitted program found! Call 'fit' with appropriate arguments before using this program."
-            )
-
-        with torch.no_grad():
-            pred = [program(torch.tensor(X)).cpu().numpy() for program in self.programs]
-        return pred
 
     def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
         return NEARTrainerConfig(
