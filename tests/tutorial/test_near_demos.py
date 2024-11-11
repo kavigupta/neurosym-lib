@@ -1,5 +1,6 @@
 import json
 import unittest
+from parameterized import parameterized
 
 import numpy as np
 
@@ -27,13 +28,19 @@ class TestNearDemos(unittest.TestCase):
         self.assertGreaterEqual(ang, -100)
         self.assertLessEqual(ang, -80)
 
-    def test_near_demo_regression(self):
+    regression_notebooks = [
+        "tutorial/near_demo_regression_solutions.ipynb",
+        "tutorial/near_demo_regression_interface_solutions.ipynb",
+    ]
+
+    @parameterized.expand([(path,) for path in regression_notebooks])
+    def test_near_demo_regression(self, path):
         """
         Counts the number of modules in the solution. Should be more than 1 as a linear
         layer won't be able to approximate a non-linear function
         """
         result = execute_notebook(
-            "tutorial/near_demo_regression_solutions.ipynb",
+            path,
             suffix="import json; print('*' * 80); "
             + "print(json.dumps([len(module.contained_modules)]))",
         )
@@ -43,13 +50,11 @@ class TestNearDemos(unittest.TestCase):
         n_layers = json.loads(len_module)[0]
         self.assertGreaterEqual(n_layers, 1)
 
-    def test_discrete_exercise_skeleton(self):
-        with open("tutorial/near_demo_regression_solutions.ipynb") as f:
+    @parameterized.expand([(path,) for path in regression_notebooks])
+    def test_discrete_exercise_skeleton(self, path):
+        with open(path) as f:
             solutions = json.load(f)
-        with open("tutorial/near_demo_regression_skeleton.ipynb") as f:
+        with open(path.replace("solutions", "skeleton")) as f:
             notebook = json.load(f)
 
-        self.assertEqual(
-            create_skeleton(solutions, "near_demo_regression_solutions.ipynb"),
-            notebook,
-        )
+        self.assertEqual(create_skeleton(solutions, path), notebook)
