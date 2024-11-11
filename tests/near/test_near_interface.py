@@ -18,7 +18,6 @@ class TestNEARInterface(unittest.TestCase):
         interface = near.NEAR(
             input_dim=input_dim,
             output_dim=output_dim,
-            max_seq_len=100,
             n_epochs=10,
             max_depth=3,
         )
