@@ -79,3 +79,6 @@ class DSLSearchGraph(SearchGraph):
         if self.compute_cost is None:
             raise NotImplementedError("Cost function not provided")
         return self.compute_cost(node)
+    
+    def finalize(self, node):
+        return node.program

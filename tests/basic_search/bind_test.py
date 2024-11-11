@@ -39,6 +39,9 @@ class StringContentsSearchGraph(ns.SearchGraph):
         for x in all_items:
             self.check_types_same(x, all_items[0])
 
+    def finalize(self, node):
+        return node
+
 
 class TestSearch(unittest.TestCase):
 

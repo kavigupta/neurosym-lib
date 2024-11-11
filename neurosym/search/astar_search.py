@@ -27,7 +27,7 @@ def astar(g: SearchGraph):
             continue
         visited.add(node)
         if g.is_goal_node(node):
-            yield node
+            yield g.finalize(node)
         for child in g.expand_node(node):
             add_to_fringe(child)
 

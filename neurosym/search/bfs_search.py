@@ -20,6 +20,6 @@ def bfs(g: SearchGraph, iteration_limit=float("inf")):
             continue
         visited.add(node)
         if g.is_goal_node(node):
-            yield node
+            yield g.finalize(node)
         for child in g.expand_node(node):
             queue.append(child)

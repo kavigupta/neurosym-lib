@@ -30,6 +30,9 @@ class FilterEdgesGraph(SearchGraph):
     def cost(self, node):
         return self.graph.cost(node)
 
+    def finalize(self, node):
+        return self.graph.finalize(node)
+
 
 class LimitEdgesGraph(SearchGraph):
     """
@@ -55,3 +58,6 @@ class LimitEdgesGraph(SearchGraph):
 
     def cost(self, node):
         return self.graph.cost(node)
+
+    def finalize(self, node):
+        return self.graph.finalize(node)

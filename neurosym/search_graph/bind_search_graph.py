@@ -76,7 +76,7 @@ class BindSearchGraph(SearchGraph[BindSearchGraphNode[A, B]]):
         if isinstance(node, BindSearchGraphNodeA):
             if self.graph_a.is_goal_node(node.node):
                 graph_b_uuid = uuid.uuid4()
-                graph_b = self.create_graph_b(node.node)
+                graph_b = self.create_graph_b(self.graph_a.finalize(node.node))
                 yield BindSearchGraphNodeB(
                     graph_b.initial_node(), graph_b, graph_b_uuid
                 )

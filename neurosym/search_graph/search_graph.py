@@ -2,9 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Generic, Iterable, TypeVar
 
 N = TypeVar("N")
+X = TypeVar("X")
 
 
-class SearchGraph(ABC, Generic[N]):
+class SearchGraph(ABC, Generic[X]):
     """
     Represents a search graph where nodes are objects and edges are expansions of those objects.
     """
@@ -33,3 +34,10 @@ class SearchGraph(ABC, Generic[N]):
             (i.e., for A* search).
         """
         raise NotImplementedError(f"cost not implemented for {self.__class__.__name__}")
+
+    @abstractmethod
+    def finalize(self, node: N) -> X:
+        """
+        Finalize a goal node, returning the result of the search. This is useful for stripping
+        out search graph metadata from the node.
+        """
