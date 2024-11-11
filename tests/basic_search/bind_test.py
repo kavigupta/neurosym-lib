@@ -82,7 +82,7 @@ class TestSearch(unittest.TestCase):
                 desired_number=4,
             ),
         )
-        node = next(ns.search.astar(g)).node
+        node = next(ns.search.astar(g))
         # capable of backtracking slightly to find the optimal solution
         self.assertEqual(node, "2B2B2B2B")
 
@@ -101,7 +101,7 @@ class TestSearch(unittest.TestCase):
                 desired_number=4,
             ),
         )
-        node = next(ns.search.astar(g)).node
+        node = next(ns.search.astar(g))
         self.assertEqual(node, ("22A22A", "2", "2", "2", "2"))
 
     def test_bind_three_types(self):
@@ -125,9 +125,9 @@ class TestSearch(unittest.TestCase):
         )
         g = ns.BindSearchGraph(
             ns.BindSearchGraph(g_1, g_2),
-            lambda node: g_3(node.node),
+            g_3,
         )
-        node = next(ns.search.astar(g)).node
+        node = next(ns.search.astar(g))
         self.assertEqual(
             node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))
         )
