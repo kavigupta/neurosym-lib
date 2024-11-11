@@ -1,8 +1,8 @@
 import json
 import unittest
-from parameterized import parameterized
 
 import numpy as np
+from parameterized import parameterized
 
 from tutorial.process_tutorial import create_skeleton
 
