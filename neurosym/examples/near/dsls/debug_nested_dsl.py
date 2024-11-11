@@ -119,7 +119,6 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         # lr hilariously high and n_epochs hilariously low but it's fine
         # for what we're investigating since the wrong_i simply do not work
         lr=0.05,
-        max_seq_len=300,
         n_epochs=20,
         accelerator="cpu",
     )
@@ -129,11 +128,7 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         neural_hole_filler=neural_hole_filler,
         search_strategy=bounded_astar,
         loss_callback=torch.nn.functional.mse_loss,
-        validation_params=dict(
-            enable_progress_bar=False,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-        ),
+        validation_params=dict(progress_by_epoch=False),
     )
     return interface.fit(
         datamodule=get_dataset(nesting),

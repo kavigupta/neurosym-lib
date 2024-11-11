@@ -1,4 +1,4 @@
-from neurosym.examples.near.methods.base_trainer import BaseTrainer, BaseTrainerConfig
+from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
@@ -9,11 +9,7 @@ from .dsls import debug_nested_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .interface import NEAR
-from .methods.near_example_trainer import (
-    NEARTrainer,
-    NEARTrainerConfig,
-    classification_mse_loss,
-)
+from .methods.near_example_trainer import NEARTrainerConfig, classification_mse_loss
 from .models.mlp import MLP, MLPConfig, mlp_factory
 from .models.rnn import (
     RNNConfig,

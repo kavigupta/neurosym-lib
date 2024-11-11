@@ -36,7 +36,6 @@ class NEAR:
         output_dim: int,
         max_depth: int,
         lr: float = 1e-4,
-        max_seq_len: int = 100,
         n_epochs: int = 10,
         accelerator: str = "cpu",
     ):
@@ -47,14 +46,12 @@ class NEAR:
         :param output_dim: Dimensionality of the output predictions.
         :param max_depth: Maximum depth of the search graph.
         :param lr: Learning rate.
-        :param max_seq_len: Maximum sequence length for modelling trajectories.
         :param n_epochs: Number of epochs for training.
         :param accelerator: Accelerator to use for training ('cpu' / 'cuda' / etc.).
         """
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.lr = lr
-        self.max_seq_len = max_seq_len
         self.n_epochs = n_epochs
         self.max_depth = max_depth
         self.accelerator = accelerator
@@ -120,7 +117,7 @@ class NEAR:
         sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
 
         return [
-            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
+            self.train_program(sexpr, datamodule, n_epochs=validation_max_epochs)
             for sexpr in sexprs
         ]
 
@@ -136,7 +133,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule, **self.validation_params)
+        validation_cost = self._get_validator(datamodule, n_epochs=None)
 
         g = near_graph(
             self.neural_dsl,
@@ -156,26 +153,21 @@ class NEAR:
         sexprs = list(itertools.islice((prog.program for prog in iterator), n_programs))
         return sexprs
 
-    def _get_validator(self, datamodule, **kwargs):
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
+    def _get_validator(self, datamodule, n_epochs):
+
+        validation_cost = ValidationCost(
+            trainer_cfg=self._trainer_config(n_epochs),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
+            **self.validation_params,
         )
-        validation_params.update(**kwargs)
-
-        validation_cost = ValidationCost(**validation_params)
         return validation_cost
 
     def train_program(
         self,
         program: SExpression,
         datamodule: pl.LightningDataModule,  # type: ignore
-        max_epochs: int,
-        **kwargs,
+        n_epochs: int,
     ):
         """
         Trains a program on the provided data.
@@ -185,19 +177,15 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        trainer_params = dict(self.validation_params.items())
-        trainer_params.update(**kwargs, max_epochs=max_epochs)
-        module, _ = self._get_validator(datamodule, **trainer_params).validate_model(
+        module, _ = self._get_validator(datamodule, n_epochs=n_epochs).validate_model(
             program
         )
         return module
 
-    def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
+    def _trainer_config(self, n_epochs) -> NEARTrainerConfig:
         return NEARTrainerConfig(
             lr=self.lr,
-            max_seq_len=self.max_seq_len,
-            n_epochs=self.n_epochs,
-            num_labels=self.output_dim,
-            train_steps=len(datamodule.train),
+            n_epochs=(self.n_epochs if n_epochs is None else n_epochs),
             loss_callback=self.loss_callback,
+            accelerator=self.accelerator,
         )
