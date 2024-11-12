@@ -54,8 +54,6 @@ class TestPiecewiseLinear(unittest.TestCase):
 
     def run_near(self, dsl, dataset):
         interface = near.NEAR(
-            input_dim=2,
-            output_dim=1,
             max_depth=10000,
             lr=0.005,
             n_epochs=100,

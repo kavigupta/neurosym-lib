@@ -32,8 +32,6 @@ class NEAR:
 
     def __init__(
         self,
-        input_dim: int,
-        output_dim: int,
         max_depth: int,
         lr: float = 1e-4,
         n_epochs: int = 10,
@@ -49,8 +47,6 @@ class NEAR:
         :param n_epochs: Number of epochs for training.
         :param accelerator: Accelerator to use for training ('cpu' / 'cuda' / etc.).
         """
-        self.input_dim = input_dim
-        self.output_dim = output_dim
         self.lr = lr
         self.n_epochs = n_epochs
         self.max_depth = max_depth

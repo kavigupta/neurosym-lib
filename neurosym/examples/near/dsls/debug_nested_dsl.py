@@ -113,8 +113,6 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
     :param max_iterations: The maximum number of iterations to run for.
     """
     interface = NEAR(
-        input_dim=1,
-        output_dim=nesting,
         max_depth=nesting * 10000,
         # lr hilariously high and n_epochs hilariously low but it's fine
         # for what we're investigating since the wrong_i simply do not work
