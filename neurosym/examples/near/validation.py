@@ -68,7 +68,7 @@ class ValidationCost:
             cost += self.structural_cost(child)
         return cost
 
-    def __call__(self, node: DSLSearchNode) -> float:
+    def __call__(self, node: DSLSearchNode | SExpression) -> float:
         """
         Trains a partial program. Returns validation cost after training.
 
@@ -76,9 +76,13 @@ class ValidationCost:
 
         :returns: The validation loss as a `float`.
         """
+        if isinstance(node, DSLSearchNode):
+            program = node.program
+        else:
+            program = node
         try:
-            log(f"Training {render_s_expression(node.program)}")
-            _, val_loss = self.validate_model(program=node.program)
+            log(f"Training {render_s_expression(program)}")
+            _, val_loss = self.validate_model(program=program)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
@@ -86,7 +90,7 @@ class ValidationCost:
         return (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * self.structural_cost(
-            program=node.program
+            program=program
         )
 
     def validate_model(self, program: SExpression) -> Tuple[TorchProgramModule, float]:
