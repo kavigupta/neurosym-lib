@@ -133,7 +133,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule, n_epochs=None)
+        validation_cost = self._get_validator(datamodule)
 
         g = near_graph(
             self.neural_dsl,
@@ -153,10 +153,10 @@ class NEAR:
         sexprs = list(itertools.islice(iterator, n_programs))
         return sexprs
 
-    def _get_validator(self, datamodule, n_epochs):
+    def _get_validator(self, datamodule):
 
         validation_cost = ValidationCost(
-            trainer_cfg=self._trainer_config(n_epochs),
+            trainer_cfg=self._trainer_config(),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
             **self.validation_params,
@@ -177,15 +177,15 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        module, _ = self._get_validator(datamodule, n_epochs=n_epochs).validate_model(
-            program
+        module, _ = self._get_validator(datamodule).validate_model(
+            program, n_epochs=n_epochs
         )
         return module
 
-    def _trainer_config(self, n_epochs) -> NEARTrainerConfig:
+    def _trainer_config(self) -> NEARTrainerConfig:
         return NEARTrainerConfig(
             lr=self.lr,
-            n_epochs=(self.n_epochs if n_epochs is None else n_epochs),
+            n_epochs=self.n_epochs,
             loss_callback=self.loss_callback,
             accelerator=self.accelerator,
         )

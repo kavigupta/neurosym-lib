@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 
@@ -68,7 +68,9 @@ class ValidationCost:
             cost += self.structural_cost(child)
         return cost
 
-    def __call__(self, node: DSLSearchNode | SExpression) -> float:
+    def __call__(
+        self, node: DSLSearchNode | SExpression, n_epochs: int = None
+    ) -> float:
         """
         Trains a partial program. Returns validation cost after training.
 
@@ -82,7 +84,7 @@ class ValidationCost:
             program = node
         try:
             log(f"Training {render_s_expression(program)}")
-            _, val_loss = self.validate_model(program=program)
+            _, val_loss = self.validate_model(program=program, n_epochs=n_epochs)
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
@@ -93,7 +95,9 @@ class ValidationCost:
             program=program
         )
 
-    def validate_model(self, program: SExpression) -> Tuple[TorchProgramModule, float]:
+    def validate_model(
+        self, program: SExpression, n_epochs: Union[int, None] = None
+    ) -> Tuple[TorchProgramModule, float]:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
         validation loss.
@@ -102,10 +106,10 @@ class ValidationCost:
 
         :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
-        module, val_loss = self._fit_trainer(program)
+        module, val_loss = self._fit_trainer(program, n_epochs=n_epochs)
         return module, val_loss
 
-    def _fit_trainer(self, program):
+    def _fit_trainer(self, program, *, n_epochs):
         try:
             model = TorchProgramModule(dsl=self.neural_dsl, program=program)
         except PartialProgramNotFoundError as e:
@@ -119,7 +123,7 @@ class ValidationCost:
             )
 
         model, val_loss = _train_model(
-            model, self.datamodule, trainer_cfg=self.trainer_cfg
+            model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
         )
 
         return model, val_loss
@@ -137,19 +141,21 @@ class UninitializableProgramError(Exception):
         self.message = message
 
 
-def _train_model(model, datamodule, *, trainer_cfg: NEARTrainerConfig):
+def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
+    if n_epochs is None:
+        n_epochs = trainer_cfg.n_epochs
     optimizer, schedulers = schedule_optimizer(
         trainer_cfg.optimizer(
             model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
         ),
         trainer_cfg.scheduler,
         len(datamodule.train),
-        trainer_cfg.n_epochs,
+        n_epochs,
     )
     torch.manual_seed(trainer_cfg.seed)
     model = model.train()
     model = model.to(trainer_cfg.accelerator)
-    for _ in range(trainer_cfg.n_epochs):
+    for _ in range(n_epochs):
         for batch in datamodule.train_dataloader():
             batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
             x, y = batch["inputs"], batch["outputs"]
