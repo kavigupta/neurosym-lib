@@ -1,11 +1,13 @@
 import queue
 from dataclasses import dataclass, field
+from typing import Iterable, TypeVar
 
-from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
 
+X = TypeVar("X")
 
-def astar(g: SearchGraph):
+
+def astar(g: SearchGraph[X]) -> Iterable[X]:
     """
     Performs an A* search on the given search graph, yielding each goal node in the
     order it was visited. Requires that the search graph implement a cost method.
@@ -39,4 +41,4 @@ class _AStarNode:
     """
 
     cost: float
-    node: SExpression = field(compare=False)
+    node: X = field(compare=False)

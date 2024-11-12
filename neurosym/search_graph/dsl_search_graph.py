@@ -14,7 +14,7 @@ from .hole_set_chooser import HoleSetChooser
 from .search_graph import SearchGraph
 
 
-class DSLSearchGraph(SearchGraph):
+class DSLSearchGraph(SearchGraph[SExpression]):
     """
     Represents a search graph where nodes are ns.SExpression objects with holes
     in them, and edges are expansions of those holes.
@@ -80,5 +80,5 @@ class DSLSearchGraph(SearchGraph):
             raise NotImplementedError("Cost function not provided")
         return self.compute_cost(node)
 
-    def finalize(self, node):
+    def finalize(self, node) -> SExpression:
         return node.program

@@ -1,7 +1,11 @@
+from typing import Iterable, TypeVar
+
 from neurosym.search_graph.search_graph import SearchGraph
 
+X = TypeVar("X")
 
-def bfs(g: SearchGraph, iteration_limit=float("inf")):
+
+def bfs(g: SearchGraph[X], iteration_limit=float("inf")) -> Iterable[X]:
     """
     Performs a breadth-first search on the given search graph, yielding each goal node
     in the order it was visited.

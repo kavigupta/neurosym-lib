@@ -5,7 +5,10 @@ from typing import Callable, Generic, Iterable, TypeVar, Union
 from neurosym.search_graph.search_graph import SearchGraph
 from neurosym.utils.documentation import internal_only
 
-NA, XA, NB, XB = TypeVar("NA"), TypeVar("XA"), TypeVar("NB"), TypeVar("XB")
+NA = TypeVar("NA")
+A = TypeVar("A")
+NB = TypeVar("NB")
+B = TypeVar("B")
 
 
 @dataclass(frozen=True)
@@ -22,7 +25,7 @@ class BindSearchGraphNodeA(Generic[NA]):
 
 @dataclass(frozen=True, unsafe_hash=True)
 @internal_only
-class BindSearchGraphNodeB(Generic[NB, XB]):
+class BindSearchGraphNodeB(Generic[NB, B]):
     """
     Represents a node in the bound search graph (the second one).
 
@@ -36,7 +39,7 @@ class BindSearchGraphNodeB(Generic[NB, XB]):
     """
 
     node: NB = field(compare=True, hash=True)
-    graph_b: SearchGraph[XB] = field(compare=False, hash=False)
+    graph_b: SearchGraph[B] = field(compare=False, hash=False)
     graph_b_uuid: uuid.UUID = field(compare=True, hash=True)
 
     @internal_only
@@ -47,10 +50,10 @@ class BindSearchGraphNodeB(Generic[NB, XB]):
         return BindSearchGraphNodeB(node, self.graph_b, self.graph_b_uuid)
 
 
-BindSearchGraphNode = Union[BindSearchGraphNodeA[NA], BindSearchGraphNodeB[NB, XB]]
+BindSearchGraphNode = Union[BindSearchGraphNodeA[NA], BindSearchGraphNodeB[NB, B]]
 
 
-class BindSearchGraph(SearchGraph[XB]):
+class BindSearchGraph(SearchGraph[B]):
     """
     Combines two search graphs into one. The first search graph's nodes spawn the second search
     graph.
@@ -61,17 +64,17 @@ class BindSearchGraph(SearchGraph[XB]):
     """
 
     def __init__(
-        self, graph_a: SearchGraph[XA], create_graph_b: Callable[[XA], SearchGraph[XB]]
+        self, graph_a: SearchGraph[A], create_graph_b: Callable[[A], SearchGraph[B]]
     ):
         self.graph_a = graph_a
         self.create_graph_b = create_graph_b
 
-    def initial_node(self) -> BindSearchGraphNode[NA, NB, XB]:
+    def initial_node(self) -> BindSearchGraphNode[NA, NB, B]:
         return BindSearchGraphNodeA(self.graph_a.initial_node())
 
     def expand_node(
-        self, node: BindSearchGraphNode[NA, NB, XB]
-    ) -> Iterable[BindSearchGraphNode[NA, NB, XB]]:
+        self, node: BindSearchGraphNode[NA, NB, B]
+    ) -> Iterable[BindSearchGraphNode[NA, NB, B]]:
         if isinstance(node, BindSearchGraphNodeA):
             if self.graph_a.is_goal_node(node.node):
                 graph_b_uuid = uuid.uuid4()
@@ -86,17 +89,17 @@ class BindSearchGraph(SearchGraph[XB]):
             for neighbor_b in node.graph_b.expand_node(node.node):
                 yield node.with_node(neighbor_b)
 
-    def is_goal_node(self, node: BindSearchGraphNode[NA, NB, XB]) -> bool:
+    def is_goal_node(self, node: BindSearchGraphNode[NA, NB, B]) -> bool:
         if isinstance(node, BindSearchGraphNodeA):
             return False
         return node.graph_b.is_goal_node(node.node)
 
-    def cost(self, node: BindSearchGraphNode[NA, NB, XB]) -> float:
+    def cost(self, node: BindSearchGraphNode[NA, NB, B]) -> float:
         if isinstance(node, BindSearchGraphNodeA):
             return self.graph_a.cost(node.node)
         return node.graph_b.cost(node.node)
 
-    def finalize(self, node: BindSearchGraphNode[NA, NB, XB]) -> XB:
+    def finalize(self, node: BindSearchGraphNode[NA, NB, B]) -> B:
         if isinstance(node, BindSearchGraphNodeA):
             raise ValueError("Cannot finalize a node in the first search graph.")
         return node.graph_b.finalize(node.node)
