@@ -1,15 +1,18 @@
 import itertools
 from abc import abstractmethod
+from typing import TypeVar
 
 from .search_graph import SearchGraph
 
+X = TypeVar("X")
 
-class FilterEdgesGraph(SearchGraph):
+
+class FilterEdgesGraph(SearchGraph[X]):
     """
     Abstract class for graphs that filter edges based on some criterion.
     """
 
-    def __init__(self, graph: SearchGraph):
+    def __init__(self, graph: SearchGraph[X]):
         self.graph = graph
 
     @abstractmethod
@@ -30,8 +33,11 @@ class FilterEdgesGraph(SearchGraph):
     def cost(self, node):
         return self.graph.cost(node)
 
+    def finalize(self, node) -> X:
+        return self.graph.finalize(node)
 
-class LimitEdgesGraph(SearchGraph):
+
+class LimitEdgesGraph(SearchGraph[X]):
     """
     Limits the number of edges that can be expanded from a node, by only expanding the first
     ``limit`` edges.
@@ -40,7 +46,7 @@ class LimitEdgesGraph(SearchGraph):
     :param limit: The limit on the number of edges to expand.
     """
 
-    def __init__(self, graph: SearchGraph, limit: int):
+    def __init__(self, graph: SearchGraph[X], limit: int):
         self.graph = graph
         self.limit = limit
 
@@ -55,3 +61,6 @@ class LimitEdgesGraph(SearchGraph):
 
     def cost(self, node):
         return self.graph.cost(node)
+
+    def finalize(self, node) -> X:
+        return self.graph.finalize(node)

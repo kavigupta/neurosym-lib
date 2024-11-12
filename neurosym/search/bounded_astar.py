@@ -1,17 +1,17 @@
 import queue
 from dataclasses import dataclass, field
 from types import NoneType
-from typing import Union
+from typing import Iterable, TypeVar, Union
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
 
+X = TypeVar("X")
+
 
 def bounded_astar(
-    g: SearchGraph,
-    max_depth: int,
-    max_iterations: Union[int, NoneType] = None,
-):
+    g: SearchGraph[X], max_depth: int, max_iterations: Union[int, NoneType] = None
+) -> Iterable[X]:
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
     the order it was visited. See ``astar`` for more details.
@@ -38,7 +38,7 @@ def bounded_astar(
             continue
         visited.add(node.program)
         if g.is_goal_node(node):
-            yield node
+            yield g.finalize(node)
         for child in g.expand_node(node):
             add_to_fringe(child, depth + 1)
         iterations += 1

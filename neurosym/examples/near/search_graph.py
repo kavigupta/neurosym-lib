@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
 from neurosym.programs.hole import Hole
@@ -15,15 +15,17 @@ from neurosym.search_graph.search_graph_transformer import (
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, Type
 from neurosym.utils.logging import log
 
+X = TypeVar("X")
 
-class FilterUnexpandableNodes(FilterEdgesGraph):
+
+class FilterUnexpandableNodes(FilterEdgesGraph[X]):
     """
     Represents a search graph that removes nodes that cannot be expanded.
 
     Removes edges to partial programs that will be too deep.
     """
 
-    def __init__(self, graph: SearchGraph, max_depth: int):
+    def __init__(self, graph: SearchGraph[X], max_depth: int):
         super().__init__(graph=graph)
         self.max_depth = max_depth
 
@@ -78,7 +80,7 @@ def near_graph(
     max_num_edges=100,
     is_goal=lambda x: True,
     cost: Callable[[DSLSearchNode], float],
-) -> SearchGraph:
+) -> SearchGraph[SExpression]:
     """
     Creates a search graph for the NEAR DSL.
 

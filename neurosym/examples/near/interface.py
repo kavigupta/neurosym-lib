@@ -150,7 +150,7 @@ class NEAR:
             g, max_depth=self.max_depth, max_iterations=max_iterations
         )
 
-        sexprs = list(itertools.islice((prog.program for prog in iterator), n_programs))
+        sexprs = list(itertools.islice(iterator, n_programs))
         return sexprs
 
     def _get_validator(self, datamodule, n_epochs):

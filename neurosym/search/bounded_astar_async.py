@@ -1,10 +1,12 @@
 import queue
-from typing import Callable
+from typing import Callable, Iterable, TypeVar
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
 from neurosym.search.bounded_astar import BoundedAStarNode
 from neurosym.search_graph.search_graph import SearchGraph
+
+X = TypeVar("X")
 
 
 class FuturePriorityQueue(queue.PriorityQueue):
@@ -40,10 +42,8 @@ class FuturePriorityQueue(queue.PriorityQueue):
 
 
 def bounded_astar_async(
-    g: SearchGraph,
-    max_depth: int,
-    max_workers: int,
-):
+    g: SearchGraph[X], max_depth: int, max_workers: int
+) -> Iterable[X]:
     """
     Performs a bounded a-star search on the given search graph, yielding each node in
     the order it was visited. Evaluates the cost_plus_heuristic function asynchronously
@@ -81,7 +81,7 @@ def bounded_astar_async(
                     continue
                 visited.add(node.program)
                 if g.is_goal_node(node):
-                    yield node
+                    yield g.finalize(node)
                 for child in g.expand_node(node):
                     add_to_fringe(child, depth + 1)
             except queue.Empty:
