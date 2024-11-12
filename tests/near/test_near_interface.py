@@ -15,12 +15,7 @@ class TestNEARInterface(unittest.TestCase):
         input_dim, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.example_rnn_dsl(input_dim, output_dim)
 
-        interface = near.NEAR(
-            input_dim=input_dim,
-            output_dim=output_dim,
-            n_epochs=10,
-            max_depth=3,
-        )
+        interface = near.NEAR(n_epochs=10, max_depth=3)
 
         t = ns.TypeDefiner(L=input_dim, O=output_dim)
         t.typedef("fL", "{f, $L}")
