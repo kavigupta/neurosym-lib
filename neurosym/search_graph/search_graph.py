@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, TypeVar
+from typing import Generic, Iterable, TypeVar
 
 N = TypeVar("N")
+X = TypeVar("X")
 
 
-class SearchGraph(ABC):
+class SearchGraph(ABC, Generic[X]):
     """
     Represents a search graph where nodes are objects and edges are expansions of those objects.
     """
@@ -25,4 +26,18 @@ class SearchGraph(ABC):
     def is_goal_node(self, node: N) -> bool:
         """
         Return True iff the node is a goal node.
+        """
+
+    def cost(self, node: N) -> float:
+        """
+        The cost to reach the node from the initial node, plus a potential 'heuristic' cost
+            (i.e., for A* search).
+        """
+        raise NotImplementedError(f"cost not implemented for {self.__class__.__name__}")
+
+    @abstractmethod
+    def finalize(self, node: N) -> X:
+        """
+        Finalize a goal node, returning the result of the search. This is useful for stripping
+        out search graph metadata from the node.
         """

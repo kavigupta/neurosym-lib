@@ -1,7 +1,10 @@
+from typing import Callable, TypeVar
+
 from neurosym.dsl.dsl import DSL
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
+from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.search_graph.search_graph import SearchGraph
@@ -12,15 +15,17 @@ from neurosym.search_graph.search_graph_transformer import (
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, Type
 from neurosym.utils.logging import log
 
+X = TypeVar("X")
 
-class FilterUnexpandableNodes(FilterEdgesGraph):
+
+class FilterUnexpandableNodes(FilterEdgesGraph[X]):
     """
     Represents a search graph that removes nodes that cannot be expanded.
 
     Removes edges to partial programs that will be too deep.
     """
 
-    def __init__(self, graph: SearchGraph, max_depth: int):
+    def __init__(self, graph: SearchGraph[X], max_depth: int):
         super().__init__(graph=graph)
         self.max_depth = max_depth
 
@@ -74,7 +79,8 @@ def near_graph(
     max_depth=1000,
     max_num_edges=100,
     is_goal=lambda x: True,
-) -> SearchGraph:
+    cost: Callable[[DSLSearchNode], float],
+) -> SearchGraph[SExpression]:
     """
     Creates a search graph for the NEAR DSL.
 
@@ -84,6 +90,7 @@ def near_graph(
         Defaults to a really large number (1000).
     :param max_num_edges: Maximum number of edges for each node in the graph
     :param is_goal: Goal predicate
+    :param cost: Cost function for nodes
     """
     graph = DSLSearchGraph(
         dsl,
@@ -91,6 +98,7 @@ def near_graph(
         ChooseFirst(),
         is_goal,
         NoMetadataComputer(),
+        cost,
     )
     graph = FilterUnexpandableNodes(graph, max_depth=max_depth)
     graph = LimitEdgesGraph(graph, max_num_edges)

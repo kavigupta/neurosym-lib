@@ -1,28 +1,24 @@
 import queue
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Iterable, TypeVar
 
-from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
 
+X = TypeVar("X")
 
-def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
+
+def astar(g: SearchGraph[X]) -> Iterable[X]:
     """
     Performs an A* search on the given search graph, yielding each goal node in the
-    order it was visited.
+    order it was visited. Requires that the search graph implement a cost method.
 
     :param g: Search graph to search over
-    :param cost_plus_heuristic: Cost plus heuristic function to use for A*.
-        The heuristic function should be admissible, i.e. it should never overestimate
-        the cost to reach the goal. See Wikipedia_.
-
-    .. _Wikipedia: https://en.wikipedia.org/wiki/A*_search_algorithm
     """
     visited = set()
     fringe = queue.PriorityQueue()
 
     def add_to_fringe(node):
-        fringe.put(_AStarNode(cost_plus_heuristic(node), node))
+        fringe.put(_AStarNode(g.cost(node), node))
 
     add_to_fringe(g.initial_node())
     # this is similar to the BFS algorithm
@@ -33,7 +29,7 @@ def astar(g: SearchGraph, cost_plus_heuristic: Callable[[SExpression], float]):
             continue
         visited.add(node)
         if g.is_goal_node(node):
-            yield node
+            yield g.finalize(node)
         for child in g.expand_node(node):
             add_to_fringe(child)
 
@@ -45,4 +41,4 @@ class _AStarNode:
     """
 
     cost: float
-    node: SExpression = field(compare=False)
+    node: X = field(compare=False)
