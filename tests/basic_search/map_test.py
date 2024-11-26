@@ -9,18 +9,13 @@ class TestSearch(unittest.TestCase):
 
     def test_basic(self):
 
-        g = simple_test_graph
-
         seen = []
 
         def map_fn(x):
             seen.append(x)
             return [x] * 2
 
-        g = ns.MapSearchGraph(
-            underlying_graph=g,
-            map_fn=map_fn,
-        )
+        g = simple_test_graph.map(map_fn)
 
         iterable = ns.search.astar(g)
         self.assertEqual(next(iterable), ["22A22A"] * 2)
