@@ -43,16 +43,19 @@ class StringContentsSearchGraph(ns.SearchGraph):
         return node
 
 
+simple_test_graph = StringContentsSearchGraph(
+    start="",
+    moves=["1A", "1B", "22A", "2B"],
+    character_to_match="2",
+    desired_number=4,
+)
+
+
 class TestSearch(unittest.TestCase):
 
     def test_astar_basic_1(self):
 
-        g = StringContentsSearchGraph(
-            start="",
-            moves=["1A", "1B", "22A", "2B"],
-            character_to_match="2",
-            desired_number=4,
-        )
+        g = simple_test_graph
 
         node = next(ns.search.astar(g))
         self.assertEqual(node, "22A22A")

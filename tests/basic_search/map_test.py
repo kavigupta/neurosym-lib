@@ -2,19 +2,14 @@ import unittest
 
 import neurosym as ns
 
-from .bind_test import StringContentsSearchGraph
+from .bind_test import simple_test_graph
 
 
 class TestSearch(unittest.TestCase):
 
-    def test_astar_basic_1(self):
+    def test_basic(self):
 
-        g = StringContentsSearchGraph(
-            start="",
-            moves=["1A", "1B", "22A", "2B"],
-            character_to_match="2",
-            desired_number=4,
-        )
+        g = simple_test_graph
 
         seen = []
 
