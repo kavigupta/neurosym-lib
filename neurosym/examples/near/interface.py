@@ -112,23 +112,7 @@ class NEAR:
         :return: A list of `n_programs` number of trained estimators.
         """
         validation_cost = self._get_validator(datamodule)
-        return self._search(
-            validation_cost,
-            program_signature,
-            n_programs,
-            max_iterations=max_iterations,
-            validation_max_epochs=validation_max_epochs,
-        )
 
-    def _search(
-        self,
-        validation_cost,
-        program_signature,
-        n_programs,
-        *,
-        max_iterations: Union[int, NoneType] = None,
-        validation_max_epochs,
-    ):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
@@ -144,12 +128,15 @@ class NEAR:
             max_depth=self.max_depth,
             cost=validation_cost,
         )
-        g = MapSearchGraph(
-            underlying_graph=g,
-            map_fn=lambda sexpr: self.train_program(
-                sexpr, validation_cost, n_epochs=validation_max_epochs
-            ),
-        )
+
+        def train_program(sexpr: SExpression):
+            log(f"Validating {render_s_expression(sexpr)}")
+            module, _ = validation_cost.validate_model(
+                sexpr, n_epochs=validation_max_epochs
+            )
+            return module
+
+        g = MapSearchGraph(underlying_graph=g, map_fn=train_program)
 
         iterator = self.search_strategy(
             g, max_depth=self.max_depth, max_iterations=max_iterations
@@ -167,23 +154,6 @@ class NEAR:
             **self.validation_params,
         )
         return validation_cost
-
-    def train_program(
-        self,
-        program: SExpression,
-        validation_cost: ValidationCost,
-        n_epochs: int,
-    ):
-        """
-        Trains a program on the provided data.
-
-        :param program: The symbolic expression representing the program to train.
-        :param datamodule: Data module containing the training and validation data.
-        :return: Trained TorchProgramModule.
-        """
-        log(f"Validating {render_s_expression(program)}")
-        module, _ = validation_cost.validate_model(program, n_epochs=n_epochs)
-        return module
 
     def _trainer_config(self) -> NEARTrainerConfig:
         return NEARTrainerConfig(
