@@ -74,11 +74,8 @@ class TestPiecewiseLinear(unittest.TestCase):
 
     def run_near(self, dsl, dataset):
         interface = near.NEAR(
-            input_dim=2,
-            output_dim=1,
             max_depth=10000,
             lr=0.005,
-            max_seq_len=300,
             n_epochs=100,
             accelerator="cpu",
         )
@@ -89,11 +86,7 @@ class TestPiecewiseLinear(unittest.TestCase):
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
             search_strategy=ns.search.bounded_astar,
             loss_callback=nn.functional.mse_loss,
-            validation_params=dict(
-                enable_progress_bar=False,
-                enable_model_summary=False,
-                progress_by_epoch=False,
-            ),
+            validation_params=dict(progress_by_epoch=False),
         )
 
         result = interface.fit(
