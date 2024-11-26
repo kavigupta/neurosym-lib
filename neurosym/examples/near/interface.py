@@ -16,6 +16,7 @@ from neurosym.examples.near.search_graph import near_graph
 from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
+from neurosym.search_graph.map_search_graph import MapSearchGraph
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
@@ -110,26 +111,28 @@ class NEAR:
 
         :return: A list of `n_programs` number of trained estimators.
         """
-        sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
-
-        return [
-            self.train_program(sexpr, datamodule, n_epochs=validation_max_epochs)
-            for sexpr in sexprs
-        ]
+        validation_cost = self._get_validator(datamodule)
+        return self._search(
+            validation_cost,
+            program_signature,
+            n_programs,
+            max_iterations=max_iterations,
+            validation_max_epochs=validation_max_epochs,
+        )
 
     def _search(
         self,
-        datamodule,
+        validation_cost,
         program_signature,
         n_programs,
+        *,
         max_iterations: Union[int, NoneType] = None,
+        validation_max_epochs,
     ):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
-
-        validation_cost = self._get_validator(datamodule)
 
         g = near_graph(
             self.neural_dsl,
@@ -140,6 +143,12 @@ class NEAR:
             is_goal=lambda _: True,
             max_depth=self.max_depth,
             cost=validation_cost,
+        )
+        g = MapSearchGraph(
+            underlying_graph=g,
+            map_fn=lambda sexpr: self.train_program(
+                sexpr, validation_cost, n_epochs=validation_max_epochs
+            ),
         )
 
         iterator = self.search_strategy(
@@ -162,7 +171,7 @@ class NEAR:
     def train_program(
         self,
         program: SExpression,
-        datamodule: pl.LightningDataModule,  # type: ignore
+        validation_cost: ValidationCost,
         n_epochs: int,
     ):
         """
@@ -173,9 +182,7 @@ class NEAR:
         :return: Trained TorchProgramModule.
         """
         log(f"Validating {render_s_expression(program)}")
-        module, _ = self._get_validator(datamodule).validate_model(
-            program, n_epochs=n_epochs
-        )
+        module, _ = validation_cost.validate_model(program, n_epochs=n_epochs)
         return module
 
     def _trainer_config(self) -> NEARTrainerConfig:
