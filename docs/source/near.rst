@@ -2,6 +2,7 @@
 ===========================================
 
 .. autofunction:: neurosym.examples.near.near_graph
+.. autofunction:: neurosym.examples.near.validated_near_graph
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig

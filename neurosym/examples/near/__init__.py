@@ -31,4 +31,4 @@ from .neural_hole_filler import (
     NeuralHoleFiller,
     UnionNeuralHoleFiller,
 )
-from .search_graph import near_graph
+from .search_graph import near_graph, validated_near_graph
