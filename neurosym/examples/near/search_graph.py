@@ -146,4 +146,4 @@ def validated_near_graph(
         module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
         return module
 
-    return MapSearchGraph(underlying_graph=g, map_fn=validate_program)
+    return g.map(validate_program)
