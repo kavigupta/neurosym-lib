@@ -2,6 +2,7 @@ from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
@@ -115,7 +116,7 @@ def validated_near_graph(
     max_depth=1000,
     max_num_edges=100,
     is_goal=lambda x: True,
-    cost: Callable[[DSLSearchNode], float],
+    cost: ValidationCost,
     validation_epochs: int,
 ) -> SearchGraph[TorchProgramModule]:
     """
