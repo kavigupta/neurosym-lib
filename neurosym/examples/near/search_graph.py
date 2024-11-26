@@ -9,7 +9,6 @@ from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
-from neurosym.search_graph.map_search_graph import MapSearchGraph
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.search_graph.search_graph import SearchGraph
 from neurosym.search_graph.search_graph_transformer import (
@@ -146,4 +145,4 @@ def validated_near_graph(
         module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
         return module
 
-    return MapSearchGraph(underlying_graph=g, map_fn=validate_program)
+    return g.map(validate_program)
