@@ -12,14 +12,10 @@ from neurosym.examples.near.methods.near_example_trainer import (
 )
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
-from neurosym.examples.near.search_graph import near_graph
+from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.search_graph.map_search_graph import MapSearchGraph
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
-from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
@@ -118,7 +114,7 @@ class NEAR:
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        g = near_graph(
+        g = validated_near_graph(
             self.neural_dsl,
             parse_type(
                 s=program_signature,
@@ -127,16 +123,8 @@ class NEAR:
             is_goal=lambda _: True,
             max_depth=self.max_depth,
             cost=validation_cost,
+            validation_epochs=validation_max_epochs,
         )
-
-        def train_program(sexpr: SExpression):
-            log(f"Validating {render_s_expression(sexpr)}")
-            module, _ = validation_cost.validate_model(
-                sexpr, n_epochs=validation_max_epochs
-            )
-            return module
-
-        g = MapSearchGraph(underlying_graph=g, map_fn=train_program)
 
         iterator = self.search_strategy(
             g, max_depth=self.max_depth, max_iterations=max_iterations
