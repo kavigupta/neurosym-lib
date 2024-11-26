@@ -142,10 +142,10 @@ class TestPiecewiseLinear(unittest.TestCase):
         return result[programs.index(expected)]
 
     def test_with_variables(self):
-        dsl = piecewise_linear_dsl()
+        dsl = piecewise_linear_dsl(linear_layers=False)
         dataset = get_dataset()
-        result = self.grab_desired(self.run_near(dsl, dataset))
-        return result
+        result = self.run_near(dsl, dataset)
+        self.assertEqual(result, [])
 
 
 # TestPiecewiseLinear().test_with_variables()
