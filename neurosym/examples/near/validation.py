@@ -43,6 +43,7 @@ class ValidationCost:
         error_loss=10000,
         progress_by_epoch=False,
         structural_cost_weight=0.5,
+        embedding=lambda x: x,
     ):
         self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
@@ -50,6 +51,7 @@ class ValidationCost:
         self.error_loss = error_loss
         self.structural_cost_weight = structural_cost_weight
         self.progress_by_epoch = progress_by_epoch
+        self.embedding = embedding
 
     def structural_cost(self, program: SExpression) -> int:
         """
@@ -131,17 +133,19 @@ class ValidationCost:
             These should share weights, so that training the model also trains the program.
         """
         try:
-            model = TorchProgramModule(dsl=self.neural_dsl, program=program)
+            program_module = TorchProgramModule(dsl=self.neural_dsl, program=program)
         except PartialProgramNotFoundError as e:
             raise UninitializableProgramError(
                 f"Partial Program not found for {render_s_expression(program)}"
             ) from e
 
-        if len(list(model.parameters())) == 0:
+        model = self.embedding(program_module)
+
+        if len([x for x in model.parameters() if x.requires_grad]) == 0:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
-        return model, model
+        return program_module, model
 
 
 class UninitializableProgramError(Exception):

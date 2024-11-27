@@ -7,6 +7,29 @@ import neurosym as ns
 from neurosym.examples import near
 
 
+def linear_replacement_dsl():
+    dslf = ns.DSLFactory()
+    dslf.parameterized(
+        "aff_x",
+        "{f, 2} -> {f, 1}",
+        lambda x, aff: aff(x[:, 0][:, None]),
+        dict(aff=lambda: nn.Linear(1, 1)),
+    )
+    dslf.concrete(
+        "xplusy",
+        "{f, 2} -> {f, 1}",
+        lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
+    )
+    dslf.concrete(
+        "yminusx",
+        "{f, 2} -> {f, 1}",
+        lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
+    )
+    dslf.lambdas()
+    dslf.prune_to("{f, 2} -> {f, 1}")
+    return dslf.finalize()
+
+
 def piecewise_linear_dsl(linear_layers=True):
     dslf = ns.DSLFactory()
     # dslf.parameterized(
@@ -49,6 +72,16 @@ def piecewise_linear_dsl(linear_layers=True):
 
 
 def get_dataset():
+    """
+    Function in this dataset is a piecewise linear function
+
+    f(x, y) = x + y if x > 0
+    f(x, y) = -x + y if x <= 0
+
+    or in other words
+
+    f(x, y) = |x| + y
+    """
     scale = 2
     train_size, test_size = 1000, 50
     rng = np.random.RandomState(0)
@@ -72,7 +105,7 @@ def get_dataset():
 
 class TestPiecewiseLinear(unittest.TestCase):
 
-    def run_near(self, dsl, dataset):
+    def interface(self, dsl, validation_params={}):
         interface = near.NEAR(
             max_depth=10000,
             lr=0.005,
@@ -86,8 +119,12 @@ class TestPiecewiseLinear(unittest.TestCase):
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
             search_strategy=ns.search.bounded_astar,
             loss_callback=nn.functional.mse_loss,
-            validation_params=dict(progress_by_epoch=False),
+            validation_params=dict(progress_by_epoch=False, **validation_params),
         )
+        return interface
+
+    def run_near(self, dsl, dataset):
+        interface = self.interface(dsl)
 
         result = interface.fit(
             datamodule=dataset,
@@ -147,5 +184,14 @@ class TestPiecewiseLinear(unittest.TestCase):
         result = self.run_near(dsl, dataset)
         self.assertEqual(result, [])
 
+    def test_manual_refine(self):
+        dsl = piecewise_linear_dsl()
+        dataset = get_dataset()
+        result = self.run_near(dsl, dataset)
+
+        return self.grab_desired(result)
+
 
 # TestPiecewiseLinear().test_with_variables()
+
+# print(linear_replacement_dsl().render())
