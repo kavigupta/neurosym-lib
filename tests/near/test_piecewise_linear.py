@@ -84,7 +84,9 @@ class TestPiecewiseLinear(unittest.TestCase):
         dataset = get_dataset()
         result = self.run_near(dsl, dataset)
 
-        programs = [ns.render_s_expression(p.program) for p in result]
+        programs = [
+            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
+        ]
 
         expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
         self.assertIn(expected, programs)
