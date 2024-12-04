@@ -11,6 +11,7 @@ Search Graph
 .. autoclass:: neurosym.LimitEdgesGraph
 .. autoclass:: neurosym.FilterUnexpandableNodes
     :members: depth2go
+.. autoclass:: neurosym.MapSearchGraph
 .. autoclass:: neurosym.BindSearchGraph
     :members:
 .. autofunction:: neurosym.search.bfs

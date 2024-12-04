@@ -12,13 +12,10 @@ from neurosym.examples.near.methods.near_example_trainer import (
 )
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
-from neurosym.examples.near.search_graph import near_graph
+from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
-from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
@@ -110,28 +107,14 @@ class NEAR:
 
         :return: A list of `n_programs` number of trained estimators.
         """
-        sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
+        validation_cost = self._get_validator(datamodule)
 
-        return [
-            self.train_program(sexpr, datamodule, n_epochs=validation_max_epochs)
-            for sexpr in sexprs
-        ]
-
-    def _search(
-        self,
-        datamodule,
-        program_signature,
-        n_programs,
-        max_iterations: Union[int, NoneType] = None,
-    ):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule)
-
-        g = near_graph(
+        g = validated_near_graph(
             self.neural_dsl,
             parse_type(
                 s=program_signature,
@@ -140,6 +123,7 @@ class NEAR:
             is_goal=lambda _: True,
             max_depth=self.max_depth,
             cost=validation_cost,
+            validation_epochs=validation_max_epochs,
         )
 
         iterator = self.search_strategy(
@@ -158,25 +142,6 @@ class NEAR:
             **self.validation_params,
         )
         return validation_cost
-
-    def train_program(
-        self,
-        program: SExpression,
-        datamodule: pl.LightningDataModule,  # type: ignore
-        n_epochs: int,
-    ):
-        """
-        Trains a program on the provided data.
-
-        :param program: The symbolic expression representing the program to train.
-        :param datamodule: Data module containing the training and validation data.
-        :return: Trained TorchProgramModule.
-        """
-        log(f"Validating {render_s_expression(program)}")
-        module, _ = self._get_validator(datamodule).validate_model(
-            program, n_epochs=n_epochs
-        )
-        return module
 
     def _trainer_config(self) -> NEARTrainerConfig:
         return NEARTrainerConfig(

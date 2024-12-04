@@ -43,16 +43,19 @@ class StringContentsSearchGraph(ns.SearchGraph):
         return node
 
 
+simple_test_graph = StringContentsSearchGraph(
+    start="",
+    moves=["1A", "1B", "22A", "2B"],
+    character_to_match="2",
+    desired_number=4,
+)
+
+
 class TestSearch(unittest.TestCase):
 
     def test_astar_basic_1(self):
 
-        g = StringContentsSearchGraph(
-            start="",
-            moves=["1A", "1B", "22A", "2B"],
-            character_to_match="2",
-            desired_number=4,
-        )
+        g = simple_test_graph
 
         node = next(ns.search.astar(g))
         self.assertEqual(node, "22A22A")
@@ -68,64 +71,62 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(node, "1BB1BB")
 
     def test_bind(self):
-        g = ns.BindSearchGraph(
-            StringContentsSearchGraph(
-                start="",
-                moves=["1A", "1B", "22A", "2B"],
-                character_to_match="2",
-                desired_number=4,
-            ),
+        g = StringContentsSearchGraph(
+            start="",
+            moves=["1A", "1B", "22A", "2B"],
+            character_to_match="2",
+            desired_number=4,
+        ).bind(
             lambda x: StringContentsSearchGraph(
                 start=x,
                 moves=["1A", "1BB", "2A", "2B"],
                 character_to_match="B",
                 desired_number=4,
-            ),
+            )
         )
         node = next(ns.search.astar(g))
         # capable of backtracking slightly to find the optimal solution
         self.assertEqual(node, "2B2B2B2B")
 
     def test_bind_heterogenous_type(self):
-        g = ns.BindSearchGraph(
-            StringContentsSearchGraph(
-                start="",
-                moves=["1A", "1B", "22A", "2B"],
-                character_to_match="2",
-                desired_number=4,
-            ),
+        g = StringContentsSearchGraph(
+            start="",
+            moves=["1A", "1B", "22A", "2B"],
+            character_to_match="2",
+            desired_number=4,
+        ).bind(
             lambda x: StringContentsSearchGraph(
                 start=(x,),
                 moves=[("1",), ("2",)],
                 character_to_match="2",
                 desired_number=4,
-            ),
+            )
         )
         node = next(ns.search.astar(g))
         self.assertEqual(node, ("22A22A", "2", "2", "2", "2"))
 
     def test_bind_three_types(self):
-        g_1 = StringContentsSearchGraph(
+        g = StringContentsSearchGraph(
             start="",
             moves=["1A", "1B", "22A", "2B"],
             character_to_match="2",
             desired_number=4,
         )
-        g_2 = lambda x: StringContentsSearchGraph(
-            start=(x,),
-            moves=[("1",), ("2",)],
-            character_to_match="2",
-            desired_number=4,
+        g = g.bind(
+            lambda x: StringContentsSearchGraph(
+                start=(x,),
+                moves=[("1",), ("2",)],
+                character_to_match="2",
+                desired_number=4,
+            )
         )
-        g_3 = lambda x: StringContentsSearchGraph(
-            start=(x,),
-            moves=[(("1",),), (("2",),)],
-            character_to_match=("1",),
-            desired_number=4,
-        )
-        g = ns.BindSearchGraph(
-            ns.BindSearchGraph(g_1, g_2),
-            g_3,
+        g = g.bind(
+            lambda x: StringContentsSearchGraph(
+                start=(x,),
+                moves=[(("1",),), (("2",),)],
+                character_to_match=("1",),
+                desired_number=4,
+            )
         )
         node = next(ns.search.astar(g))
         self.assertEqual(

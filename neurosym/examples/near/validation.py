@@ -110,6 +110,26 @@ class ValidationCost:
         return module, val_loss
 
     def _fit_trainer(self, program, *, n_epochs):
+        program_module, model = self.program_to_module(program)
+
+        val_loss = _train_model(
+            model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
+        )
+
+        return program_module, val_loss
+
+    def program_to_module(
+        self, program: SExpression
+    ) -> Tuple[TorchProgramModule, torch.nn.Module]:
+        """
+        Convert a program to a TorchProgramModule, which can then be trained.
+        This can be overriden in subclasses to provide custom behavior, e.g.,
+        integrating the program module into a larger model.
+
+        :param program: The program to convert.
+        :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
+            These should share weights, so that training the model also trains the program.
+        """
         try:
             model = TorchProgramModule(dsl=self.neural_dsl, program=program)
         except PartialProgramNotFoundError as e:
@@ -121,12 +141,7 @@ class ValidationCost:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
-
-        model, val_loss = _train_model(
-            model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
-        )
-
-        return model, val_loss
+        return model, model
 
 
 class UninitializableProgramError(Exception):
@@ -178,4 +193,4 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
             ).item()
         val_loss_count += 1
     model = model.train().cpu()
-    return model, val_loss_sum / val_loss_count
+    return val_loss_sum / val_loss_count

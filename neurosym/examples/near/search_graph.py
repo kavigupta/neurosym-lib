@@ -1,8 +1,11 @@
 from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
@@ -103,3 +106,43 @@ def near_graph(
     graph = FilterUnexpandableNodes(graph, max_depth=max_depth)
     graph = LimitEdgesGraph(graph, max_num_edges)
     return graph
+
+
+def validated_near_graph(
+    dsl: DSL,
+    root_type: Type,
+    *,
+    max_depth=1000,
+    max_num_edges=100,
+    is_goal=lambda x: True,
+    cost: ValidationCost,
+    validation_epochs: int,
+) -> SearchGraph[TorchProgramModule]:
+    """
+    Like `near_graph`, but validates the programs using the cost function. This is useful
+    for when you want the actual programs, not just the S-expressions.
+
+    :param dsl: DSL to create the search graph for
+    :param root_type: Type of the root node
+    :param max_depth: Maximum depth for NEAR graph.
+        Defaults to a really large number (1000).
+    :param max_num_edges: Maximum number of edges for each node in the graph
+    :param is_goal: Goal predicate
+    :param cost: Cost function for nodes
+    :param validation_epochs: Number of epochs to validate the program for before returning it.
+    """
+    g = near_graph(
+        dsl=dsl,
+        root_type=root_type,
+        max_depth=max_depth,
+        max_num_edges=max_num_edges,
+        is_goal=is_goal,
+        cost=cost,
+    )
+
+    def validate_program(sexpr: SExpression) -> TorchProgramModule:
+        log(f"Validating {render_s_expression(sexpr)}")
+        module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
+        return module
+
+    return g.map(validate_program)
