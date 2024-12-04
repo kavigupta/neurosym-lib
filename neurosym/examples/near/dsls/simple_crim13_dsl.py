@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+import neurosym as ns
 from neurosym.dsl.dsl_factory import DSLFactory
 
 from ..operations.aggregation import running_agg_torch
@@ -82,39 +83,52 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
         "(#a -> #b, #a -> #b) -> #a -> #b",
         lambda f1, f2: lambda x: f1(x) * f2(x),
     )
+
+    def filter_tensor(x):
+        match x:
+            case ns.ArrowType(a, b):
+                return filter_tensor(a) or filter_tensor(b)
+            case ns.ListType(a):
+                return filter_tensor(a)
+            case ns.TensorType():
+                return True
+            case _:
+                return False
+
+    dslf.filtered_type_variable("tensor", filter_tensor)
     dslf.concrete(
         "running_avg_last5",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 4, lambda t: t),
     )
     dslf.concrete(
         "running_avg_last10",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 9, lambda t: t),
     )
 
     dslf.concrete(
         "running_avg_window5",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 2, lambda t: t + 2),
     )
     dslf.concrete(
         "running_avg_window11",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 5, lambda t: t + 5),
     )
 
     if hidden_dim != num_classes:
         dslf.parameterized(
             "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> $fO",
+            "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f, lin: lambda x: lin(f(x)).softmax(-1),
             dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
         )
     else:
         dslf.concrete(
             "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> $fO",
+            "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f: lambda x: f(x).softmax(-1),
         )
     dslf.concrete(
@@ -122,9 +136,9 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
-    dslf.concrete(
-        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
-    )
+    # dslf.concrete(
+    #     "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
+    # )
 
     dslf.prune_to("[$fI] -> $fO")
     return dslf.finalize()

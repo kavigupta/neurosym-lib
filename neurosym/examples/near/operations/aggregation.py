@@ -39,9 +39,9 @@ def running_agg_torch(seq, fn, window_start: callable, window_end: callable):
     seq_len = seq.shape[1]
     aggs = []
     for t in range(seq_len):
-        window_start = max(0, window_start(t))
-        window_end = min(seq_len, window_end(t))
-        window = seq[:, window_start:window_end]
+        start = max(0, window_start(t))
+        end = min(seq_len, window_end(t))
+        window = seq[:, start:end]
         running_agg = torch.mean(window, dim=1)
         aggs.append(fn(running_agg))
     out = torch.stack(aggs, dim=1)
