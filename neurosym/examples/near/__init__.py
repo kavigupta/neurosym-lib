@@ -8,6 +8,8 @@ from neurosym.examples.near.validation import (
 from .dsls import debug_nested_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
+from .dsls.simple_crim13_dsl import simple_crim13_dsl
+from .dsls.adaptive_mice_dsl import adaptive_crim13_dsl
 from .interface import NEAR
 from .methods.near_example_trainer import NEARTrainerConfig, classification_mse_loss
 from .models.mlp import MLP, MLPConfig, mlp_factory
