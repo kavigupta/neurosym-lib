@@ -1,3 +1,5 @@
+import copy
+import itertools
 import unittest
 
 import numpy as np
@@ -103,43 +105,54 @@ def get_dataset():
     )
 
 
-class TestPiecewiseLinear(unittest.TestCase):
+def get_neural_dsl(dsl):
+    return near.NeuralDSL.from_dsl(
+        dsl=dsl,
+        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
+    )
 
-    def interface(self, dsl, validation_params={}):
-        interface = near.NEAR(
-            max_depth=10000,
+
+def get_validation_cost(dsl, dataset, **validation_params):
+    neural_dsl = get_neural_dsl(dsl)
+    return near.ValidationCost(
+        trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
             n_epochs=100,
             accelerator="cpu",
-        )
-
-        interface.register_search_params(
-            dsl=dsl,
-            type_env=ns.TypeDefiner(),
-            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
-            search_strategy=ns.search.bounded_astar,
             loss_callback=nn.functional.mse_loss,
-            validation_params=dict(progress_by_epoch=False, **validation_params),
+        ),
+        neural_dsl=neural_dsl,
+        datamodule=dataset,
+        progress_by_epoch=False,
+        **validation_params,
+    )
+
+
+class TestPiecewiseLinear(unittest.TestCase):
+
+    def near_graph(self, neural_dsl, validation_cost):
+
+        return near.validated_near_graph(
+            neural_dsl,
+            ns.parse_type("{f, 2} -> {f, 1}"),
+            is_goal=lambda _: True,
+            max_depth=10000,
+            cost=validation_cost,
+            validation_epochs=1000,
         )
-        return interface
 
-    def run_near(self, dsl, dataset):
-        interface = self.interface(dsl)
+    def search(self, g, count=3):
 
-        result = interface.fit(
-            datamodule=dataset,
-            program_signature="{f, 2} -> {f, 1}",
-            n_programs=3,
-            validation_max_epochs=1000,
-            max_iterations=10,
-        )
+        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=10)
 
-        return result
+        return list(itertools.islice(iterator, count))
 
     def test_with_linear(self):
         dsl = piecewise_linear_dsl()
         dataset = get_dataset()
-        result = self.run_near(dsl, dataset)
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
 
         result_relevant = self.grab_desired(result)
 
@@ -181,16 +194,24 @@ class TestPiecewiseLinear(unittest.TestCase):
     def test_with_variables(self):
         dsl = piecewise_linear_dsl(linear_layers=False)
         dataset = get_dataset()
-        result = self.run_near(dsl, dataset)
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
         self.assertEqual(result, [])
 
     def test_manual_refine(self):
         dsl = piecewise_linear_dsl()
         dataset = get_dataset()
-        result = self.run_near(dsl, dataset)
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
 
-        return self.grab_desired(result)
-
+        result = self.grab_desired(result)
+        frozen = copy.deepcopy(result.initalized_program)
+        for state in frozen.all_state_values():
+            for p in state.parameters():
+                p.requires_grad = False
+        return frozen
 
 # TestPiecewiseLinear().test_with_variables()
 
