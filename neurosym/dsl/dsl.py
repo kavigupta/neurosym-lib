@@ -280,12 +280,16 @@ class DSL:
         """
         return "\n".join(production.render() for production in self.productions)
 
-    def add_production(self, prod):
+    def add_productions(self, *prods):
         """
         Add a production to the DSL.
         """
+        symbols = set(self._production_by_symbol.keys())
+        for prod in prods:
+            assert prod.symbol() not in symbols, f"Duplicate symbol {prod.symbol()}"
+            symbols.add(prod.symbol())
         return DSL(
-            self.productions + [prod],
+            self.productions + list(prods),
             self.valid_root_types,
             self.max_type_depth,
             self.max_env_depth,

@@ -1,3 +1,5 @@
+import copy
+import itertools
 import unittest
 
 import numpy as np
@@ -7,17 +9,60 @@ import neurosym as ns
 from neurosym.examples import near
 
 
-def piecewise_linear_dsl():
+def linear_replacement_dsl():
+    dslf = ns.DSLFactory()
+    dslf.parameterized(
+        "aff_x",
+        "{f, 2} -> {f, 1}",
+        lambda x, aff: aff(x[:, 0][:, None]),
+        dict(aff=lambda: nn.Linear(1, 1)),
+    )
+    dslf.concrete(
+        "xplusy",
+        "{f, 2} -> {f, 1}",
+        lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
+    )
+    dslf.concrete(
+        "yminusx",
+        "{f, 2} -> {f, 1}",
+        lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
+    )
+    dslf.lambdas()
+    dslf.prune_to("{f, 2} -> {f, 1}")
+    return dslf.finalize()
+
+
+def piecewise_linear_dsl(linear_layers=True):
     dslf = ns.DSLFactory()
     # dslf.parameterized(
     #     "linear", "() -> {f, 2} -> {f, 2}", lambda lin: lin, dict(lin=nn.Linear(2, 2))
     # )
-    dslf.parameterized(
-        "linear_bool",
-        "() -> {f, 2} -> {f, 1}",
-        lambda lin: lin,
-        dict(lin=lambda: nn.Linear(2, 1)),
-    )
+    if linear_layers:
+        dslf.parameterized(
+            "linear_bool",
+            "() -> {f, 2} -> {f, 1}",
+            lambda lin: lin,
+            dict(lin=lambda: nn.Linear(2, 1)),
+        )
+    else:
+        dslf.parameterized(
+            "aff_x",
+            "{f, 2} -> {f, 1}",
+            lambda x, aff: aff(x[:, 0][:, None]),
+            dict(aff=lambda: nn.Linear(1, 1)),
+        )
+        dslf.concrete(
+            "xplusy",
+            "{f, 2} -> {f, 1}",
+            lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
+        )
+        dslf.concrete(
+            "yminusx",
+            "{f, 2} -> {f, 1}",
+            lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
+        )
+        dslf.lambdas()
+
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
@@ -29,6 +74,16 @@ def piecewise_linear_dsl():
 
 
 def get_dataset():
+    """
+    Function in this dataset is a piecewise linear function
+
+    f(x, y) = x + y if x > 0
+    f(x, y) = -x + y if x <= 0
+
+    or in other words
+
+    f(x, y) = |x| + y
+    """
     scale = 2
     train_size, test_size = 1000, 50
     rng = np.random.RandomState(0)
@@ -50,39 +105,54 @@ def get_dataset():
     )
 
 
-class TestPiecewiseLinear(unittest.TestCase):
+def get_neural_dsl(dsl):
+    return near.NeuralDSL.from_dsl(
+        dsl=dsl,
+        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
+    )
 
-    def run_near(self, dsl, dataset):
-        interface = near.NEAR(
-            max_depth=10000,
+
+def get_validation_cost(dsl, dataset, **validation_params):
+    neural_dsl = get_neural_dsl(dsl)
+    return near.ValidationCost(
+        trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
             n_epochs=100,
             accelerator="cpu",
-        )
-
-        interface.register_search_params(
-            dsl=dsl,
-            type_env=ns.TypeDefiner(),
-            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
-            search_strategy=ns.search.bounded_astar,
             loss_callback=nn.functional.mse_loss,
-            validation_params=dict(progress_by_epoch=False),
+        ),
+        neural_dsl=neural_dsl,
+        datamodule=dataset,
+        progress_by_epoch=False,
+        **validation_params,
+    )
+
+
+class TestPiecewiseLinear(unittest.TestCase):
+
+    def near_graph(self, neural_dsl, validation_cost):
+
+        return near.validated_near_graph(
+            neural_dsl,
+            ns.parse_type("{f, 2} -> {f, 1}"),
+            is_goal=lambda _: True,
+            max_depth=10000,
+            cost=validation_cost,
+            validation_epochs=1000,
         )
 
-        result = interface.fit(
-            datamodule=dataset,
-            program_signature="{f, 2} -> {f, 1}",
-            n_programs=3,
-            validation_max_epochs=1000,
-            max_iterations=10,
-        )
+    def search(self, g, count=3):
 
-        return result
+        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=10)
+
+        return list(itertools.islice(iterator, count))
 
     def test_with_linear(self):
         dsl = piecewise_linear_dsl()
         dataset = get_dataset()
-        result = self.run_near(dsl, dataset)
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
 
         programs = [
             ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
@@ -119,3 +189,37 @@ class TestPiecewiseLinear(unittest.TestCase):
 
         self.assertLess(np.abs(-1 - alt.weight[0, 0].item()), 0.1)
         self.assertLess(np.abs(+1 - alt.weight[0, 1].item()), 0.1)
+
+    def grab_desired(self, result):
+        programs = [ns.render_s_expression(p.program) for p in result]
+
+        expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
+        self.assertIn(expected, programs)
+
+        return result[programs.index(expected)]
+
+    def test_with_variables(self):
+        dsl = piecewise_linear_dsl(linear_layers=False)
+        dataset = get_dataset()
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
+        self.assertEqual(result, [])
+
+    def test_manual_refine(self):
+        dsl = piecewise_linear_dsl()
+        dataset = get_dataset()
+        result = self.search(
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+        )
+
+        result = self.grab_desired(result)
+        frozen = copy.deepcopy(result.initalized_program)
+        for state in frozen.all_state_values():
+            for p in state.parameters():
+                p.requires_grad = False
+        return frozen
+
+# TestPiecewiseLinear().test_with_variables()
+
+# print(linear_replacement_dsl().render())

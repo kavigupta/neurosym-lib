@@ -210,7 +210,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
     )
     prod = _compute_abstraction_production(dsl, user, abstr.name, abstr_body)
-    dsl2 = dsl.add_production(prod)
+    dsl2 = dsl.add_productions(prod)
     return dsl2, rewritten
 
 
