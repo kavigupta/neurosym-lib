@@ -81,3 +81,15 @@ class InitializedSExpression:
         yield from self.state.values()
         for child in self.children:
             yield from child.all_state_values()
+
+    def uninitialize(self) -> SExpression:
+        """
+        Return the SExpression corresponding to this InitializedSExpression.
+
+        :return: The SExpression corresponding to this InitializedSExpression.
+        """
+
+        return SExpression(
+            self.symbol,
+            tuple(child.uninitialize() for child in self.children),
+        )
