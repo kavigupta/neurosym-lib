@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code,cyclic-import
 import torch
 from torch import nn
 
@@ -6,7 +7,6 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 from ..operations.aggregation import running_agg_torch
 from ..operations.basic import ite_torch
-from ..operations.lists import map_torch
 
 CRIM13_FEATURES = {
     "res_angle_head_body": torch.LongTensor(list(range(0, 2))),
@@ -134,27 +134,11 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
     dslf.concrete(
         "ite",
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        lambda cond, fx, fy: ite_torch(cond, fx, fy),  # pylint: disable=unnecessary-lambda
     )
     # dslf.concrete(
     #     "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     # )
 
-    dslf.prune_to("[$fI] -> $fO")
+    dslf.prune_to("([$fI]) -> $fO")
     return dslf.finalize()
-
-    # dslf.concrete("one", "() -> f", lambda: torch.tensor(1.0))
-    # dslf.concrete("ones", "() -> {f, $L}", lambda: torch.ones(length))
-    # dslf.concrete("int_int_add", "(f, f) -> f", lambda x, y: x + y)
-    # dslf.concrete("Tint_int_add", "({f, $L}, f) -> {f, $L}", lambda x, y: x + y)
-    # dslf.concrete("Tint_Tint_add", "({f, $L}, {f, $L}) -> {f, $L}", lambda x, y: x + y)
-    # dslf.concrete(
-    #     "app_Tint", "({f, $L} -> {f, $L}, {f, $L}) -> {f, $L}", lambda f, x: f(x)
-    # )
-    # dslf.parameterized(
-    #     "Linear_c",
-    #     "() -> {f, $L} -> {f, $L}",
-    #     lambda linear: linear,
-    #     dict(linear=lambda: nn.Linear(length, length)),
-    # )
-    # return dslf.finalize()

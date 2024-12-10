@@ -10,7 +10,7 @@ class SymmetricMorletFilter(torch.nn.Module):
     Refer to https://arxiv.org/pdf/2106.06114 for a detailed discussion.
     """
     def __init__(self, width=torch.pi):  # noqa: E741
-        super(SymmetricMorletFilter, self).__init__()
+        super().__init__()
         self.width = width
         self.w = torch.nn.Parameter(torch.tensor(0.5, requires_grad=True))
         self.s = torch.nn.Parameter(torch.tensor(0.5, requires_grad=True))
