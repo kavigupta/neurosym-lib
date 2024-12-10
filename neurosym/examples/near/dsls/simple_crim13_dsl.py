@@ -131,11 +131,15 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
             "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f: lambda x: f(x).softmax(-1),
         )
+    # pylint: disable=unnecessary-lambda
     dslf.concrete(
         "ite",
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),  # pylint: disable=unnecessary-lambda
+        lambda cond, fx, fy: ite_torch(
+            cond, fx, fy
+        ),
     )
+    # pylint: enable=unnecessary-lambda
     # dslf.concrete(
     #     "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     # )

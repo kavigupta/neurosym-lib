@@ -23,21 +23,18 @@ class TestNEARMiceDSL(unittest.TestCase):
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
         datamodule = ns.datasets.crim13_example(train_seed=0, batch_size=1024)
-        input_dim, output_dim = datamodule.train.get_io_dims()
+        _, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=10)
         trainer_cfg = near.NEARTrainerConfig(n_epochs=10)
-        t = ns.TypeDefiner(L=input_dim, O=output_dim)
-        t.typedef("fL", "{f, $L}")
-        t.typedef("fO", "{f, $O}")
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
         )
         validation_cost = near.ValidationCost(
-                neural_dsl=neural_dsl,
-                trainer_cfg=trainer_cfg,
-                datamodule=datamodule,
-            )
+            neural_dsl=neural_dsl,
+            trainer_cfg=trainer_cfg,
+            datamodule=datamodule,
+        )
 
         g = near.near_graph(
             neural_dsl,
@@ -57,12 +54,19 @@ class TestNEARMiceDSL(unittest.TestCase):
         feature_data = datamodule.test.inputs
         labels = datamodule.test.outputs.flatten()
         module, _ = validation_cost.validate_model(best_program, n_epochs=15)
-        predictions = module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
-        report = classification_report(labels, predictions, target_names=["not investigation", "investigation"], output_dict=True)
-        self.assertGreaterEqual(report['not investigation']['f1-score'], 0.76855895 * 0.9)
-        self.assertGreaterEqual(report['investigation']['f1-score'], 0.57237779 * 0.9)
-
-
+        predictions = (
+            module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
+        )
+        report = classification_report(
+            labels,
+            predictions,
+            target_names=["not investigation", "investigation"],
+            output_dict=True,
+        )
+        self.assertGreaterEqual(
+            report["not investigation"]["f1-score"], 0.76855895 * 0.9
+        )
+        self.assertGreaterEqual(report["investigation"]["f1-score"], 0.57237779 * 0.9)
 
     def test_mice_dsl_enumerate(self):
         """

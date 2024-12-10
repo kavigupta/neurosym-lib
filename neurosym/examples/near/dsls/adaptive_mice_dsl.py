@@ -114,11 +114,14 @@ def adaptive_crim13_dsl(
         ),
     )
 
+    # pylint: disable=unnecessary-lambda
     dslf.parameterized(
         "sym_morlet",
         "([#a] -> [#b]) -> [#a] -> #b",
         lambda f, filter: lambda x: filter(f(x)),
-        parameters=dict(filter=lambda: SymmetricMorletFilter()),    # pylint: disable=unnecessary-lambda
+        parameters=dict(
+            filter=lambda: SymmetricMorletFilter()
+        ),
     )
 
     if hidden_dim != num_classes:
@@ -137,8 +140,11 @@ def adaptive_crim13_dsl(
     dslf.concrete(
         "ite",
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),   # pylint: disable=unnecessary-lambda
+        lambda cond, fx, fy: ite_torch(
+            cond, fx, fy
+        ),
     )
+    # pylint: enable=unnecessary-lambda
     dslf.concrete(
         "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
     )
