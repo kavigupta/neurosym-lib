@@ -13,7 +13,6 @@ class TorchProgramModule(nn.Module):
     def __init__(self, dsl, program, initialized_program=None):
         super().__init__()
         self.dsl = dsl
-        self.program = program
         self.initalized_program = (
             dsl.initialize(program)
             if initialized_program is None
