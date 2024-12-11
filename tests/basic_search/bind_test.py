@@ -77,7 +77,7 @@ class TestSearch(unittest.TestCase):
             character_to_match="2",
             desired_number=4,
         ).bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=x,
                 moves=["1A", "1BB", "2A", "2B"],
                 character_to_match="B",
@@ -95,7 +95,7 @@ class TestSearch(unittest.TestCase):
             character_to_match="2",
             desired_number=4,
         ).bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[("1",), ("2",)],
                 character_to_match="2",
@@ -113,7 +113,7 @@ class TestSearch(unittest.TestCase):
             desired_number=4,
         )
         g = g.bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[("1",), ("2",)],
                 character_to_match="2",
@@ -121,7 +121,7 @@ class TestSearch(unittest.TestCase):
             )
         )
         g = g.bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[(("1",),), (("2",),)],
                 character_to_match=("1",),

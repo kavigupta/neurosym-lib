@@ -53,7 +53,7 @@ class SearchGraph(ABC, Generic[X]):
         if self.is_goal_node(node):
             yield self.finalize(node)
 
-    def bind(self, fn: Callable[[X], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
+    def bind(self, fn: Callable[[X, float], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
         """
         Bind this search graph to another search graph. The nodes of this search graph will spawn
         the nodes of the new search graph.

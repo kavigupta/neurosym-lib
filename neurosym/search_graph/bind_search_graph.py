@@ -64,7 +64,9 @@ class BindSearchGraph(SearchGraph[B]):
     """
 
     def __init__(
-        self, graph_a: SearchGraph[A], create_graph_b: Callable[[A], SearchGraph[B]]
+        self,
+        graph_a: SearchGraph[A],
+        create_graph_b: Callable[[A, float], SearchGraph[B]],
     ):
         self.graph_a = graph_a
         self.create_graph_b = create_graph_b
@@ -78,7 +80,10 @@ class BindSearchGraph(SearchGraph[B]):
         if isinstance(node, BindSearchGraphNodeA):
             if self.graph_a.is_goal_node(node.node):
                 graph_b_uuid = uuid.uuid4()
-                graph_b = self.create_graph_b(self.graph_a.finalize(node.node))
+                # TODO finalize should just return the node with a cost
+                graph_b = self.create_graph_b(
+                    self.graph_a.finalize(node.node), self.graph_a.cost(node.node)
+                )
                 yield BindSearchGraphNodeB(
                     graph_b.initial_node(), graph_b, graph_b_uuid
                 )
