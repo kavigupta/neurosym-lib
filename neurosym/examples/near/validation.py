@@ -143,7 +143,7 @@ class ValidationCost:
 
         model = self.embedding(program_module)
 
-        if len([x for x in model.parameters() if x.requires_grad]) == 0:
+        if len(list(model.parameters())) == 0:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
