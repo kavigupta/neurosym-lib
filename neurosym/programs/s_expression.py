@@ -1,6 +1,6 @@
+import uuid
 from dataclasses import dataclass, field
 from typing import Dict, Tuple, Union
-import uuid
 
 
 @dataclass(frozen=True, eq=True)
