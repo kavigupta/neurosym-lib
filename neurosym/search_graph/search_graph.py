@@ -46,6 +46,9 @@ class SearchGraph(ABC, Generic[X]):
     def yield_goal_node(self, node: N) -> Iterable[X]:
         """
         Yield the final result of the search graph, if the node is a goal node.
+
+        :param node: The node to check if it is a goal node.
+        :return: Iterable of the final result of the search graph.
         """
         if self.is_goal_node(node):
             yield self.finalize(node)
