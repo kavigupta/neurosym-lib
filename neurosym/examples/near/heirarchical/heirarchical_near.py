@@ -5,10 +5,11 @@ import torch.nn as nn
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.heirarchical.repeated_refine import refinement_graph
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+from neurosym.examples.near.neural_dsl import NeuralDSL
+from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
 from neurosym.types.type import Type
-from tests.near.test_piecewise_linear import get_neural_dsl
 
 
 def heirarchical_near_graph(
@@ -19,11 +20,12 @@ def heirarchical_near_graph(
     validation_cost_creator: Callable[
         [DSL, Callable[[TorchProgramModule], nn.Module]], ValidationCost
     ],
+    neural_hole_filler: NeuralHoleFiller,
     **near_params
 ):
     overall_dsl = high_level_dsl.add_productions(*refined_dsl.productions)
     g = validated_near_graph(
-        get_neural_dsl(high_level_dsl),
+        NeuralDSL.from_dsl(dsl=high_level_dsl, neural_hole_filler=neural_hole_filler),
         typ,
         cost=validation_cost_creator(high_level_dsl, lambda x: x),
         **near_params,
@@ -36,6 +38,7 @@ def heirarchical_near_graph(
             cost,
             symbol,
             lambda func: validation_cost_creator(refined_dsl, func),
+            neural_hole_filler,
             **near_params,
         )
     )

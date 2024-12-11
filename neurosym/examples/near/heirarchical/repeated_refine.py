@@ -6,12 +6,13 @@ from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.heirarchical.refine import RefinementEmbedding
 from neurosym.examples.near.heirarchical.utils import replace_first
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+from neurosym.examples.near.neural_dsl import NeuralDSL
+from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.return_search_graph import ReturnSearchGraph
-from tests.near.test_piecewise_linear import get_neural_dsl
 
 
 def refinement_graph(
@@ -23,6 +24,7 @@ def refinement_graph(
     validation_cost_creator: Callable[
         [Callable[[TorchProgramModule], nn.Module]], ValidationCost
     ],
+    neural_hole_filler: NeuralHoleFiller,
     **near_params,
 ):
     u = current_program.uninitialize()
@@ -30,7 +32,7 @@ def refinement_graph(
         return ReturnSearchGraph(current_program, cost)
 
     g = validated_near_graph(
-        get_neural_dsl(sub_dsl),
+        NeuralDSL.from_dsl(dsl=sub_dsl, neural_hole_filler=neural_hole_filler),
         overall_dsl.get_production(symbol_to_replace)
         .type_signature()
         .astype()
@@ -61,6 +63,7 @@ def refinement_graph(
             cost_result,
             symbol_to_replace,
             validation_cost_creator,
+            neural_hole_filler,
             **near_params,
         )
 

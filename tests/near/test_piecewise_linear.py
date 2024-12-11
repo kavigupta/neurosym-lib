@@ -1,12 +1,16 @@
-import copy
 import itertools
 import unittest
 
 import numpy as np
 from torch import nn
 
+from parameterized import parameterized
+
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.heirarchical.heirarchical_near import (
+    heirarchical_near_graph,
+)
 
 
 def linear_replacement_dsl():
@@ -106,11 +110,12 @@ def get_dataset():
         batch_size=100,
     )
 
+neural_hole_filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
 
 def get_neural_dsl(dsl):
     return near.NeuralDSL.from_dsl(
         dsl=dsl,
-        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
+        neural_hole_filler=neural_hole_filler,
     )
 
 
@@ -210,19 +215,34 @@ class TestPiecewiseLinear(unittest.TestCase):
         )
         self.assertEqual(result, [])
 
-    def test_manual_refine(self):
-        dsl = piecewise_linear_dsl()
-        dataset = get_dataset()
-        result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+    @parameterized.expand([() for _ in range(10)])
+    def test_heirarchical(self):
+        l_dsl = piecewise_linear_dsl()
+        lr_dsl = linear_replacement_dsl()
+        g = heirarchical_near_graph(
+            l_dsl,
+            "linear_bool",
+            lr_dsl,
+            ns.parse_type("{f, 2} -> {f, 1}"),
+            lambda dsl, embedding: get_validation_cost(
+                dsl, get_dataset(), embedding=embedding
+            ),
+            neural_hole_filler,
+            is_goal=lambda _: True,
+            max_depth=10000,
+            validation_epochs=1000,
         )
-
-        result = self.grab_desired(result)
-        frozen = copy.deepcopy(result.initalized_program)
-        for state in frozen.all_state_values():
-            for p in state.parameters():
-                p.requires_grad = False
-        return frozen
+        results = self.search(g, 1, 1000)
+        self.assertEqual(len(results), 1)
+        result = results[0]
+        program_str = ns.render_s_expression(result.uninitialize())
+        self.assertIn(
+            program_str,
+            [
+                "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))",
+                "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))",
+            ],
+        )
 
 
 # TestPiecewiseLinear().test_with_variables()
