@@ -26,6 +26,4 @@ class RefinementEmbedding:
             self.frozen, self.to_replace, program_module.initalized_program
         )
         assert replaced
-        return TorchProgramModule(
-            program=frozen_subst, initialized_program=frozen_subst, dsl=self.overall_dsl
-        )
+        return TorchProgramModule(self.overall_dsl, frozen_subst)

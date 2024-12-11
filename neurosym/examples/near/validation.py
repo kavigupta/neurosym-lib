@@ -133,7 +133,9 @@ class ValidationCost:
             These should share weights, so that training the model also trains the program.
         """
         try:
-            program_module = TorchProgramModule(dsl=self.neural_dsl, program=program)
+            program_module = TorchProgramModule(
+                self.neural_dsl, self.neural_dsl.initialize(program)
+            )
         except PartialProgramNotFoundError as e:
             raise UninitializableProgramError(
                 f"Partial Program not found for {render_s_expression(program)}"

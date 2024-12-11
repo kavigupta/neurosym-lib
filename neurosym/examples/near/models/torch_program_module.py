@@ -10,14 +10,10 @@ class TorchProgramModule(nn.Module):
     :param initialized_program: The initialized program to wrap.
     """
 
-    def __init__(self, dsl, program, initialized_program=None):
+    def __init__(self, dsl, initialized_program):
         super().__init__()
         self.dsl = dsl
-        self.initalized_program = (
-            dsl.initialize(program)
-            if initialized_program is None
-            else initialized_program
-        )
+        self.initalized_program = initialized_program
         self.contained_modules = nn.ModuleList(
             list(self.initalized_program.all_state_values())
         )
