@@ -1,3 +1,4 @@
+from neurosym.examples.near.heirarchical.refine import RefinementEmbedding
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
