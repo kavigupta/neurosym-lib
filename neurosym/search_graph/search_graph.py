@@ -43,7 +43,7 @@ class SearchGraph(ABC, Generic[X]):
         out search graph metadata from the node.
         """
 
-    def bind(self, fn: Callable[[X], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
+    def bind(self, fn: Callable[[X, float], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
         """
         Bind this search graph to another search graph. The nodes of this search graph will spawn
         the nodes of the new search graph.

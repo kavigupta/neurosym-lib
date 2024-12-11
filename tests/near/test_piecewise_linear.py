@@ -17,15 +17,17 @@ def linear_replacement_dsl():
         lambda x, aff: aff(x[:, 0][:, None]),
         dict(aff=lambda: nn.Linear(1, 1)),
     )
-    dslf.concrete(
-        "xplusy",
+    dslf.parameterized(
+        "aff_xplusy",
         "{f, 2} -> {f, 1}",
-        lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
+        lambda xy, aff: aff(xy[:, 0][:, None] + xy[:, 1][:, None]),
+        dict(aff=lambda: nn.Linear(1, 1)),
     )
-    dslf.concrete(
-        "yminusx",
+    dslf.parameterized(
+        "aff_yminusx",
         "{f, 2} -> {f, 1}",
-        lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
+        lambda xy, aff: aff(xy[:, 1][:, None] - xy[:, 0][:, None]),
+        dict(aff=lambda: nn.Linear(1, 1)),
     )
     dslf.lambdas()
     dslf.prune_to("{f, 2} -> {f, 1}")
@@ -141,9 +143,9 @@ class TestPiecewiseLinear(unittest.TestCase):
             validation_epochs=1000,
         )
 
-    def search(self, g, count=3):
+    def search(self, g, count=3, max_iters=10):
 
-        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=10)
+        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=max_iters)
 
         return list(itertools.islice(iterator, count))
 
@@ -191,7 +193,9 @@ class TestPiecewiseLinear(unittest.TestCase):
         self.assertLess(np.abs(+1 - alt.weight[0, 1].item()), 0.1)
 
     def grab_desired(self, result):
-        programs = [ns.render_s_expression(p.program) for p in result]
+        programs = [
+            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
+        ]
 
         expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
         self.assertIn(expected, programs)
@@ -219,6 +223,7 @@ class TestPiecewiseLinear(unittest.TestCase):
             for p in state.parameters():
                 p.requires_grad = False
         return frozen
+
 
 # TestPiecewiseLinear().test_with_variables()
 

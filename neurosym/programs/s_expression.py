@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Tuple, Union
+import uuid
 
 
 @dataclass(frozen=True, eq=True)
@@ -71,6 +72,7 @@ class InitializedSExpression:
     # state includes things related to the execution of the program,
     # e.g. weights of a neural network
     state: Dict[str, object]
+    ident: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def all_state_values(self):
         """
@@ -93,3 +95,6 @@ class InitializedSExpression:
             self.symbol,
             tuple(child.uninitialize() for child in self.children),
         )
+
+    def __hash__(self):
+        return hash(self.ident)
