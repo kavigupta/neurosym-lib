@@ -43,6 +43,13 @@ class SearchGraph(ABC, Generic[X]):
         out search graph metadata from the node.
         """
 
+    def yield_goal_node(self, node: N) -> Iterable[X]:
+        """
+        Yield the final result of the search graph, if the node is a goal node.
+        """
+        if self.is_goal_node(node):
+            yield self.finalize(node)
+
     def bind(self, fn: Callable[[X], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
         """
         Bind this search graph to another search graph. The nodes of this search graph will spawn
