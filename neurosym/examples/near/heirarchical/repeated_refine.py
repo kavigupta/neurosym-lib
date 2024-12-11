@@ -4,7 +4,6 @@ import torch.nn as nn
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.heirarchical.refine import RefinementEmbedding
-from neurosym.examples.near.heirarchical.utils import replace_first
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
@@ -46,7 +45,7 @@ def refinement_graph(
     def after_search(result, cost_result):
         result = result.initalized_program
         freeze(result)
-        replaced, worked = replace_first(current_program, symbol_to_replace, result)
+        replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
         print(
             "Refined",

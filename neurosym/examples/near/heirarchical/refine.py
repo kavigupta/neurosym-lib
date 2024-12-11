@@ -2,8 +2,6 @@ from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.programs.s_expression import InitializedSExpression
 
-from .utils import replace_first
-
 
 class RefinementEmbedding:
     """
@@ -22,8 +20,8 @@ class RefinementEmbedding:
         self.overall_dsl = overall_dsl
 
     def __call__(self, program_module):
-        frozen_subst, replaced = replace_first(
-            self.frozen, self.to_replace, program_module.initalized_program
+        frozen_subst, replaced = self.frozen.replace_first(
+            self.to_replace, program_module.initalized_program
         )
         assert replaced
         return TorchProgramModule(self.overall_dsl, frozen_subst)
