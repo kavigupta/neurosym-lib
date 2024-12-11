@@ -110,7 +110,9 @@ def get_dataset():
         batch_size=100,
     )
 
+
 neural_hole_filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
+
 
 def get_neural_dsl(dsl):
     return near.NeuralDSL.from_dsl(
@@ -236,15 +238,18 @@ class TestPiecewiseLinear(unittest.TestCase):
         self.assertEqual(len(results), 1)
         result = results[0]
         program_str = ns.render_s_expression(result.uninitialize())
-        self.assertIn(
-            program_str,
-            [
-                "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))",
-                "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))",
-            ],
-        )
+        negative = "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
+        positive = "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
+        self.assertIn(program_str, [negative, positive])
+        children = [s.children[0].state["aff"] for s in results[0].children]
+        cond, cons, alt = [(s.weight.item(), s.bias.item()) for s in children]
+        if program_str == negative:
+            cond = -cond[0], -cond[1]
 
+        self.assertGreater(cond[0], 1)
+        self.assertLess(np.abs(cond[1]), 0.25)
 
-# TestPiecewiseLinear().test_with_variables()
-
-# print(linear_replacement_dsl().render())
+        for branch in cons, alt:
+            print(branch)
+            self.assertLess(np.abs(+1 - branch[0]), 0.25)
+            self.assertLess(np.abs(branch[1]), 0.25)
