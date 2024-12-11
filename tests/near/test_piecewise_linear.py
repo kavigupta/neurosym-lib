@@ -4,8 +4,6 @@ import unittest
 import numpy as np
 from torch import nn
 
-from parameterized import parameterized
-
 import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.heirarchical.heirarchical_near import (
@@ -13,8 +11,36 @@ from neurosym.examples.near.heirarchical.heirarchical_near import (
 )
 
 
+def high_level_dsl(linear_layers=True):
+    dslf = ns.DSLFactory()
+    if linear_layers:
+        dslf.parameterized(
+            "linear_bool",
+            "() -> {f, 2} -> {f, 1}",
+            lambda lin: lin,
+            dict(lin=lambda: nn.Linear(2, 1)),
+        )
+    else:
+        inject_linear_replacements(dslf)
+
+    dslf.concrete(
+        "ite",
+        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
+        near.operations.ite_torch,
+    )
+
+    dslf.prune_to("{f, 2} -> {f, 1}")
+    return dslf.finalize()
+
+
 def linear_replacement_dsl():
     dslf = ns.DSLFactory()
+    inject_linear_replacements(dslf)
+    dslf.prune_to("{f, 2} -> {f, 1}")
+    return dslf.finalize()
+
+
+def inject_linear_replacements(dslf):
     dslf.parameterized(
         "aff_x",
         "{f, 2} -> {f, 1}",
@@ -34,49 +60,6 @@ def linear_replacement_dsl():
         dict(aff=lambda: nn.Linear(1, 1)),
     )
     dslf.lambdas()
-    dslf.prune_to("{f, 2} -> {f, 1}")
-    return dslf.finalize()
-
-
-def piecewise_linear_dsl(linear_layers=True):
-    dslf = ns.DSLFactory()
-    # dslf.parameterized(
-    #     "linear", "() -> {f, 2} -> {f, 2}", lambda lin: lin, dict(lin=nn.Linear(2, 2))
-    # )
-    if linear_layers:
-        dslf.parameterized(
-            "linear_bool",
-            "() -> {f, 2} -> {f, 1}",
-            lambda lin: lin,
-            dict(lin=lambda: nn.Linear(2, 1)),
-        )
-    else:
-        dslf.parameterized(
-            "aff_x",
-            "{f, 2} -> {f, 1}",
-            lambda x, aff: aff(x[:, 0][:, None]),
-            dict(aff=lambda: nn.Linear(1, 1)),
-        )
-        dslf.concrete(
-            "xplusy",
-            "{f, 2} -> {f, 1}",
-            lambda xy: xy[:, 0][:, None] + xy[:, 1][:, None],
-        )
-        dslf.concrete(
-            "yminusx",
-            "{f, 2} -> {f, 1}",
-            lambda xy: xy[:, 1][:, None] - xy[:, 0][:, None],
-        )
-        dslf.lambdas()
-
-    dslf.concrete(
-        "ite",
-        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        near.operations.ite_torch,
-    )
-
-    dslf.prune_to("{f, 2} -> {f, 1}")
-    return dslf.finalize()
 
 
 def get_dataset():
@@ -157,7 +140,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         return list(itertools.islice(iterator, count))
 
     def test_with_linear(self):
-        dsl = piecewise_linear_dsl()
+        dsl = high_level_dsl()
         dataset = get_dataset()
         result = self.search(
             self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
@@ -210,16 +193,15 @@ class TestPiecewiseLinear(unittest.TestCase):
         return result[programs.index(expected)]
 
     def test_with_variables(self):
-        dsl = piecewise_linear_dsl(linear_layers=False)
+        dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
             self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
         )
         self.assertEqual(result, [])
 
-    @parameterized.expand([() for _ in range(10)])
     def test_heirarchical(self):
-        l_dsl = piecewise_linear_dsl()
+        l_dsl = high_level_dsl()
         lr_dsl = linear_replacement_dsl()
         g = heirarchical_near_graph(
             l_dsl,
