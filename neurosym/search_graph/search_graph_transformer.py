@@ -30,6 +30,10 @@ class FilterEdgesGraph(SearchGraph[X]):
     def is_goal_node(self, node):
         return self.graph.is_goal_node(node)
 
+    def yield_gold_node(self, node):
+        if self.is_goal_node(node):
+            yield self.graph.finalize(node)
+
     def cost(self, node):
         return self.graph.cost(node)
 

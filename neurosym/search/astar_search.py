@@ -28,8 +28,7 @@ def astar(g: SearchGraph[X]) -> Iterable[X]:
         if node in visited:
             continue
         visited.add(node)
-        if g.is_goal_node(node):
-            yield g.finalize(node)
+        yield from g.yield_goal_node(node)
         for child in g.expand_node(node):
             add_to_fringe(child)
 
