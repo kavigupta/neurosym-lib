@@ -10,7 +10,6 @@ class ReturnSearchGraph(SearchGraph[X]):
     Search graph with exactly one goal node, which is passed in at initialization.
     """
 
-    # TODO either remove cost or find a principled way to handle it
     def __init__(self, result: X, cost: float):
         self.result = result
         self._cost = cost
