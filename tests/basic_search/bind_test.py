@@ -4,7 +4,6 @@ import numpy as np
 from parameterized import parameterized
 
 import neurosym as ns
-from neurosym.examples import near
 
 dsl = ns.examples.basic_arith_dsl()
 
@@ -147,7 +146,7 @@ class TestSearch(unittest.TestCase):
             desired_number=4,
         )
         if rng.rand() < 0.5:
-            g = g.bind(near.ReturnSearchGraph)
+            g = g.bind(ns.ReturnSearchGraph)
         g = g.bind(
             lambda x, _: StringContentsSearchGraph(
                 start=(x,),
@@ -157,7 +156,7 @@ class TestSearch(unittest.TestCase):
             )
         )
         if rng.rand() < 0.5:
-            g = g.bind(near.ReturnSearchGraph)
+            g = g.bind(ns.ReturnSearchGraph)
         g = g.bind(
             lambda x, _: StringContentsSearchGraph(
                 start=(x,),
@@ -167,7 +166,7 @@ class TestSearch(unittest.TestCase):
             )
         )
         if rng.rand() < 0.5:
-            g = g.bind(near.ReturnSearchGraph)
+            g = g.bind(ns.ReturnSearchGraph)
         node = next(ns.search.astar(g))
         self.assertEqual(
             node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))

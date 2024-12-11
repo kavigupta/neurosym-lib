@@ -14,6 +14,7 @@ Search Graph
 .. autoclass:: neurosym.MapSearchGraph
 .. autoclass:: neurosym.BindSearchGraph
     :members:
+.. autoclass:: neurosym.ReturnSearchGraph
 .. autofunction:: neurosym.search.bfs
 .. autofunction:: neurosym.search.astar
 .. autofunction:: neurosym.search.bounded_astar

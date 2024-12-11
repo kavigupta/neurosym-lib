@@ -4,7 +4,6 @@ from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,
 )
-from neurosym.search_graph.return_search_graph import ReturnSearchGraph
 
 from .dsls import debug_nested_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
