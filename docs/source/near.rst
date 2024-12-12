@@ -11,6 +11,10 @@
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 
+``NEAR`` Heirarchical Algorithm
+--------------------------------------------
+.. autofunction:: neurosym.examples.near.heirarchical_near_graph
+
 NEAR Interface
 --------------------------------------------
 .. autoclass:: neurosym.examples.near.interface.NEAR
