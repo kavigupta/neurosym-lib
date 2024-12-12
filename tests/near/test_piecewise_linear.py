@@ -95,8 +95,12 @@ def get_dataset():
 
 
 neural_hole_filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
-negative = "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
-positive = "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
+negative = (
+    "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
+)
+positive = (
+    "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
+)
 
 
 def get_neural_dsl(dsl):
@@ -196,7 +200,6 @@ class TestPiecewiseLinear(unittest.TestCase):
         print(s_exps)
         for s_exp in s_exps:
             self.assertNotIn(s_exp, [negative, positive])
-
 
     def test_heirarchical(self):
         l_dsl = high_level_dsl()
