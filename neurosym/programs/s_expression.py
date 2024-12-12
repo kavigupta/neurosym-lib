@@ -126,7 +126,10 @@ class InitializedSExpression:
             new_children.append(new_child)
         if not replaced:
             return self, False
-        return InitializedSExpression(self.symbol, new_children, self.state), replaced
+        return (
+            InitializedSExpression(self.symbol, tuple(new_children), self.state),
+            replaced,
+        )
 
     def __hash__(self):
         return hash(self.ident)
