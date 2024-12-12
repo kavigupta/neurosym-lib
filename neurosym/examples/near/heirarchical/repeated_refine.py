@@ -1,6 +1,6 @@
 from typing import Callable
 
-import torch.nn as nn
+from torch import nn
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule

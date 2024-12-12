@@ -1,6 +1,6 @@
 from typing import Callable
 
-import torch.nn as nn
+from torch import nn
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.heirarchical.repeated_refine import refinement_graph
@@ -23,7 +23,7 @@ def heirarchical_near_graph(
     neural_hole_filler: NeuralHoleFiller,
     **near_params
 ):
-    """
+    r"""
     Runs NEAR heirarchically. First finds a program using the high_level_dsl, then
     refines it using the refined_dsl, replacing any instances of symbol with a new
     search graph, using the `refined_dsl` as the language to replace the symbol with.
