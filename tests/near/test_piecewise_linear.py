@@ -95,6 +95,8 @@ def get_dataset():
 
 
 neural_hole_filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
+negative = "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
+positive = "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
 
 
 def get_neural_dsl(dsl):
@@ -133,9 +135,9 @@ class TestPiecewiseLinear(unittest.TestCase):
             validation_epochs=1000,
         )
 
-    def search(self, g, count=3, max_iters=10):
+    def search(self, g, count=3):
 
-        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=max_iters)
+        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=1000)
 
         return list(itertools.islice(iterator, count))
 
@@ -182,23 +184,19 @@ class TestPiecewiseLinear(unittest.TestCase):
         self.assertLess(np.abs(-1 - alt.weight[0, 0].item()), 0.1)
         self.assertLess(np.abs(+1 - alt.weight[0, 1].item()), 0.1)
 
-    def grab_desired(self, result):
-        programs = [
-            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
-        ]
-
-        expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
-        self.assertIn(expected, programs)
-
-        return result[programs.index(expected)]
-
     def test_with_variables(self):
         dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset)), 10
         )
-        self.assertEqual(result, [])
+        s_exps = [
+            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
+        ]
+        print(s_exps)
+        for s_exp in s_exps:
+            self.assertNotIn(s_exp, [negative, positive])
+
 
     def test_heirarchical(self):
         l_dsl = high_level_dsl()
@@ -216,12 +214,10 @@ class TestPiecewiseLinear(unittest.TestCase):
             max_depth=10000,
             validation_epochs=1000,
         )
-        results = self.search(g, 1, 1000)
+        results = self.search(g, 1)
         self.assertEqual(len(results), 1)
         result = results[0]
         program_str = ns.render_s_expression(result.uninitialize())
-        negative = "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
-        positive = "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
         self.assertIn(program_str, [negative, positive])
         children = [s.children[0].state["aff"] for s in results[0].children]
         cond, cons, alt = [(s.weight.item(), s.bias.item()) for s in children]
