@@ -3,7 +3,6 @@ from typing import Callable
 import torch.nn as nn
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.heirarchical.refine import RefinementEmbedding
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
@@ -37,14 +36,14 @@ def refinement_graph(
         .astype()
         .output_type,
         cost=validation_cost_creator(
-            RefinementEmbedding(symbol_to_replace, current_program, overall_dsl)
+            _RefinementEmbedding(symbol_to_replace, current_program, overall_dsl)
         ),
         **near_params,
     )
 
     def after_search(result, cost_result):
         result = result.initalized_program
-        freeze(result)
+        _freeze(result)
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
         print(
@@ -69,7 +68,31 @@ def refinement_graph(
     return g.bind(after_search)
 
 
-def freeze(program):
+def _freeze(program):
     for state in program.all_state_values():
         for p in state.parameters():
             p.requires_grad = False
+
+
+class _RefinementEmbedding:
+    """
+    Represents a refinement embedding that places the given program in some main
+    program, replacing a specified symbol.
+    """
+
+    def __init__(
+        self,
+        symbol_to_replace: str,
+        main_program: InitializedSExpression,
+        overall_dsl: DSL,
+    ):
+        self.to_replace = symbol_to_replace
+        self.frozen = main_program
+        self.overall_dsl = overall_dsl
+
+    def __call__(self, program_module):
+        frozen_subst, replaced = self.frozen.replace_first(
+            self.to_replace, program_module.initalized_program
+        )
+        assert replaced
+        return TorchProgramModule(self.overall_dsl, frozen_subst)
