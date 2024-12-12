@@ -6,9 +6,6 @@ from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.heirarchical.heirarchical_near import (
-    heirarchical_near_graph,
-)
 
 
 def high_level_dsl(linear_layers=True):
@@ -204,7 +201,7 @@ class TestPiecewiseLinear(unittest.TestCase):
     def test_heirarchical(self):
         l_dsl = high_level_dsl()
         lr_dsl = linear_replacement_dsl()
-        g = heirarchical_near_graph(
+        g = near.heirarchical_near_graph(
             l_dsl,
             "linear_bool",
             lr_dsl,
