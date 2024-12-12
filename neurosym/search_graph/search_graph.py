@@ -59,7 +59,7 @@ class SearchGraph(ABC, Generic[X]):
         the nodes of the new search graph.
 
         :param fn: A function that takes the final result of this search graph and returns a new
-        search graph.
+            search graph.
         """
         # pylint: disable=cyclic-import
         from .bind_search_graph import BindSearchGraph
@@ -71,7 +71,7 @@ class SearchGraph(ABC, Generic[X]):
         Map the final result of the search graph to a new value.
 
         :param fn: A function that takes the final result of this search graph and returns a new
-        result.
+            result.
         """
         # pylint: disable=cyclic-import
         from .map_search_graph import MapSearchGraph

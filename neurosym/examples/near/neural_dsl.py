@@ -34,7 +34,7 @@ class NeuralDSL(DSL):
 
         :param dsl: The DSL to extend.
         :param neural_hole_filler: A ``NeuralHoleFiller`` object that
-        maps types to neural modules.
+            maps types to neural modules.
         """
 
         return cls(

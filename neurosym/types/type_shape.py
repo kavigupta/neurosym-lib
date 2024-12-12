@@ -107,7 +107,7 @@ class TypeShape:
 
     def reshape_to_nlc(self, tensor):
         """
-        Reshape a given Tensor with this TypeShape to one of the form (N, L, *C).
+        Reshape a given Tensor with this TypeShape to one of the form `(N, L, *C)`.
         Requires 0-1 sequence axes.
         """
         assert (
