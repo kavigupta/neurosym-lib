@@ -11,8 +11,11 @@ from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.return_search_graph import ReturnSearchGraph
+from neurosym.utils.documentation import internal_only
+from neurosym.utils.logging import log
 
 
+@internal_only
 def refinement_graph(
     sub_dsl: DSL,
     overall_dsl: DSL,
@@ -25,6 +28,13 @@ def refinement_graph(
     neural_hole_filler: NeuralHoleFiller,
     **near_params,
 ):
+    """
+    Graph for running a repeated refinement search. This graph will replace the
+    symbol_to_replace in the current_program with a new program from the sub_dsl.
+    The new program will be validated using the validation_cost_creator.
+
+    This process will be repeated until the symbol is no longer in the program.
+    """
     u = current_program.uninitialize()
     if symbol_to_replace not in {x.symbol for x in u.postorder}:
         return ReturnSearchGraph(current_program, cost)
@@ -46,13 +56,13 @@ def refinement_graph(
         _freeze(result)
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
-        print(
+        log(
             "Refined",
             render_s_expression(current_program.uninitialize()),
             "at",
             symbol_to_replace,
         )
-        print("to", render_s_expression(result.uninitialize()))
+        log("to", render_s_expression(result.uninitialize()))
 
         return refinement_graph(
             sub_dsl,
