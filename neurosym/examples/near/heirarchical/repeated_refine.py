@@ -85,6 +85,7 @@ def _freeze(program):
             p.requires_grad = False
     return copy.deepcopy(program)
 
+
 class _RefinementEmbedding:
     """
     Represents a refinement embedding that places the given program in some main
