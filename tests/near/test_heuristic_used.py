@@ -17,7 +17,7 @@ class TestNeuralModels(unittest.TestCase):
             6,
             near.debug_nested_dsl.get_combinator_dsl,
             near.DoNothingNeuralHoleFiller(),
-            "StopIteration",
+            "No results",
         )
 
     def test_no_heuristic_combinator_works_more_time(self):
@@ -34,7 +34,7 @@ class TestNeuralModels(unittest.TestCase):
             6,
             near.debug_nested_dsl.get_variable_dsl,
             near.DoNothingNeuralHoleFiller(),
-            "StopIteration",
+            "No results",
         )
 
     def test_no_heuristic_variables_works_more_time(self):
@@ -124,20 +124,17 @@ class TestNeuralModels(unittest.TestCase):
     ):
         if not isinstance(neural_hole_filler, near.NeuralHoleFiller):
             neural_hole_filler = neural_hole_filler(nesting)
-        try:
-            results = near.debug_nested_dsl.run_near_on_dsl(
-                nesting,
-                dsl_fn(nesting),
-                neural_hole_filler=neural_hole_filler,
-                **kwargs,
-            )
-            if not results:
-                actual = "No results"
-            else:
-                [actual] = results
-                actual = ns.render_s_expression(actual.program)
-        except StopIteration:
-            actual = "StopIteration"
+        results = near.debug_nested_dsl.run_near_on_dsl(
+            nesting,
+            dsl_fn(nesting),
+            neural_hole_filler=neural_hole_filler,
+            **kwargs,
+        )
+        if not results:
+            actual = "No results"
+        else:
+            [actual] = results
+            actual = ns.render_s_expression(actual.initalized_program.uninitialize())
         if callable(expected):
             expected = expected(nesting)
         if isinstance(expected, str):

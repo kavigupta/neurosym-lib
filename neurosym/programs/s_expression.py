@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from typing import Dict, Tuple, Union
 
 
@@ -71,6 +72,7 @@ class InitializedSExpression:
     # state includes things related to the execution of the program,
     # e.g. weights of a neural network
     state: Dict[str, object]
+    ident: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def all_state_values(self):
         """
@@ -81,3 +83,53 @@ class InitializedSExpression:
         yield from self.state.values()
         for child in self.children:
             yield from child.all_state_values()
+
+    def uninitialize(self) -> SExpression:
+        """
+        Return the SExpression corresponding to this InitializedSExpression.
+
+        :return: The SExpression corresponding to this InitializedSExpression.
+        """
+
+        return SExpression(
+            self.symbol,
+            tuple(child.uninitialize() for child in self.children),
+        )
+
+    def replace_first(
+        self, symbol: str, replacement: "InitializedSExpression"
+    ) -> Tuple["InitializedSExpression", bool]:
+        """
+        Replace the first occurrence of a node with a given symbol in this InitializedSExpression
+        with a replacement.
+
+        In general, a minimal number of nodes should be copied. If the symbol is not found,
+        a reference to this InitializedSExpression is returned.
+
+        :param symbol: The symbol whose node's first occurrence to replace.
+        :param replacement: The value to replace the node with.
+
+        :return: A tuple of the new InitializedSExpression and a boolean indicating whether
+            the replacement was successful. The replacement is successful if the symbol was found
+            in the tree.
+        """
+        if self.symbol == symbol:
+            return replacement, True
+        new_children = []
+        replaced = False
+        for child in self.children:
+            if replaced:
+                new_children.append(child)
+                continue
+            new_child, child_replaced = child.replace_first(symbol, replacement)
+            replaced = replaced or child_replaced
+            new_children.append(new_child)
+        if not replaced:
+            return self, False
+        return (
+            InitializedSExpression(self.symbol, tuple(new_children), self.state),
+            replaced,
+        )
+
+    def __hash__(self):
+        return hash(self.ident)

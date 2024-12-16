@@ -1,10 +1,9 @@
+import itertools
 from types import NoneType
 from typing import Callable, Union
 
-import numpy as np
 import torch
 from frozendict import frozendict
-from sklearn.exceptions import NotFittedError
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
@@ -13,13 +12,10 @@ from neurosym.examples.near.methods.near_example_trainer import (
 )
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
-from neurosym.examples.near.search_graph import near_graph
+from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
-from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
-from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
@@ -33,11 +29,8 @@ class NEAR:
 
     def __init__(
         self,
-        input_dim: int,
-        output_dim: int,
         max_depth: int,
         lr: float = 1e-4,
-        max_seq_len: int = 100,
         n_epochs: int = 10,
         accelerator: str = "cpu",
     ):
@@ -48,14 +41,10 @@ class NEAR:
         :param output_dim: Dimensionality of the output predictions.
         :param max_depth: Maximum depth of the search graph.
         :param lr: Learning rate.
-        :param max_seq_len: Maximum sequence length for modelling trajectories.
         :param n_epochs: Number of epochs for training.
         :param accelerator: Accelerator to use for training ('cpu' / 'cuda' / etc.).
         """
-        self.input_dim = input_dim
-        self.output_dim = output_dim
         self.lr = lr
-        self.max_seq_len = max_seq_len
         self.n_epochs = n_epochs
         self.max_depth = max_depth
         self.accelerator = accelerator
@@ -65,9 +54,7 @@ class NEAR:
         self.loss_callback = None
         self.search_strategy = None
 
-        self._is_fitted = False
         self._is_registered = False
-        self.programs = None
         self.validation_params = None
 
     def register_search_params(
@@ -120,30 +107,14 @@ class NEAR:
 
         :return: A list of `n_programs` number of trained estimators.
         """
-        sexprs = self._search(datamodule, program_signature, n_programs, max_iterations)
+        validation_cost = self._get_validator(datamodule)
 
-        self.programs = [
-            self.train_program(sexpr, datamodule, max_epochs=validation_max_epochs)
-            for (sexpr, cost) in sexprs
-        ]
-
-        return self.programs
-
-    def _search(
-        self,
-        datamodule,
-        program_signature,
-        n_programs,
-        max_iterations: Union[int, NoneType] = None,
-    ):
         if not self._is_registered:
             raise NameError(
                 "Search Parameters not available. Call `register_search_params` first!"
             )
 
-        validation_cost = self._get_validator(datamodule, **self.validation_params)
-
-        g = near_graph(
+        g = validated_near_graph(
             self.neural_dsl,
             parse_type(
                 s=program_signature,
@@ -151,91 +122,31 @@ class NEAR:
             ),
             is_goal=lambda _: True,
             max_depth=self.max_depth,
+            cost=validation_cost,
+            validation_epochs=validation_max_epochs,
         )
 
         iterator = self.search_strategy(
-            g, validation_cost, max_depth=self.max_depth, max_iterations=max_iterations
+            g, max_depth=self.max_depth, max_iterations=max_iterations
         )
 
-        sexprs = []
-        try:
-            while len(sexprs) < n_programs:
-                node = next(iterator)
-                self._is_fitted = True
-                cost = validation_cost(node)
-                if cost == validation_cost.error_loss:
-                    continue
-                sexprs.append((node.program, cost))
-
-        except StopIteration as exc:
-            if (not self._is_fitted) or (len(sexprs) == 0):
-                raise StopIteration(
-                    "No symbolic program found! Check logs and hyperparameters!"
-                ) from exc
-
-        sexprs = sorted(sexprs, key=lambda x: x[1])
-        for i, (sexpr, cost) in enumerate(sexprs):
-            log(f"({i}) Cost: {cost:.4f}, {render_s_expression(sexpr)}")
+        sexprs = list(itertools.islice(iterator, n_programs))
         return sexprs
 
-    def _get_validator(self, datamodule, **kwargs):
-        validation_params = dict(
-            trainer_cfg=self._trainer_config(datamodule),
+    def _get_validator(self, datamodule):
+
+        validation_cost = ValidationCost(
+            trainer_cfg=self._trainer_config(),
             neural_dsl=self.neural_dsl,
             datamodule=datamodule,
-            enable_model_summary=False,
-            progress_by_epoch=False,
-            accelerator=self.accelerator,
+            **self.validation_params,
         )
-        validation_params.update(**kwargs)
-
-        validation_cost = ValidationCost(**validation_params)
         return validation_cost
 
-    def train_program(
-        self,
-        program: SExpression,
-        datamodule: pl.LightningDataModule,  # type: ignore
-        max_epochs: int,
-        **kwargs,
-    ):
-        """
-        Trains a program on the provided data.
-
-        :param program: The symbolic expression representing the program to train.
-        :param datamodule: Data module containing the training and validation data.
-        :return: Trained TorchProgramModule.
-        """
-        log(f"Validating {render_s_expression(program)}")
-        trainer_params = dict(self.validation_params.items())
-        trainer_params.update(**kwargs, max_epochs=max_epochs)
-        module, _ = self._get_validator(datamodule, **trainer_params).validate_model(
-            program
-        )
-        return module
-
-    def predict(self, X: np.ndarray):
-        """
-        Makes predictions using the fitted programs.
-
-        :param X: Input data as a NumPy array.
-        :return: List of predictions from each fitted program.
-        """
-        if not self._is_fitted:
-            raise NotFittedError(
-                "No fitted program found! Call 'fit' with appropriate arguments before using this program."
-            )
-
-        with torch.no_grad():
-            pred = [program(torch.tensor(X)).cpu().numpy() for program in self.programs]
-        return pred
-
-    def _trainer_config(self, datamodule: pl.LightningDataModule) -> NEARTrainerConfig:
+    def _trainer_config(self) -> NEARTrainerConfig:
         return NEARTrainerConfig(
             lr=self.lr,
-            max_seq_len=self.max_seq_len,
             n_epochs=self.n_epochs,
-            num_labels=self.output_dim,
-            train_steps=len(datamodule.train),
             loss_callback=self.loss_callback,
+            accelerator=self.accelerator,
         )

@@ -7,14 +7,13 @@ class TorchProgramModule(nn.Module):
     and the contained modules are added to the module list.
 
     :param dsl: The DSL that the program is written in.
-    :param program: The program to wrap.
+    :param initialized_program: The initialized program to wrap.
     """
 
-    def __init__(self, dsl, program):
+    def __init__(self, dsl, initialized_program):
         super().__init__()
         self.dsl = dsl
-        self.program = program
-        self.initalized_program = dsl.initialize(program)
+        self.initalized_program = initialized_program
         self.contained_modules = nn.ModuleList(
             list(self.initalized_program.all_state_values())
         )
