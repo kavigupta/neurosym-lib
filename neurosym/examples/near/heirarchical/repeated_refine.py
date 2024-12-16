@@ -1,3 +1,4 @@
+import copy
 from typing import Callable
 
 from torch import nn
@@ -53,9 +54,9 @@ def refinement_graph(
 
     def after_search(result, cost_result):
         result = result.initalized_program
-        _freeze(result)
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
+        replaced = _freeze(replaced)
         log(
             "Refined",
             render_s_expression(current_program.uninitialize()),
@@ -82,7 +83,7 @@ def _freeze(program):
     for state in program.all_state_values():
         for p in state.parameters():
             p.requires_grad = False
-
+    return copy.deepcopy(program)
 
 class _RefinementEmbedding:
     """

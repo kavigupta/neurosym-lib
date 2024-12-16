@@ -18,7 +18,7 @@ class ReturnSearchGraph(SearchGraph[X]):
         return self.result
 
     def expand_node(self, node: X) -> Iterable[X]:
-        raise NotImplementedError("Expanding a goal node is not allowed.")
+        return []
 
     def is_goal_node(self, node: X) -> bool:
         assert node is self.result
