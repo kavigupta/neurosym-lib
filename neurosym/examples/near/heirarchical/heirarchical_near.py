@@ -65,15 +65,8 @@ def heirarchical_near_graph(
         cost=validation_cost_creator(high_level_dsl, lambda x: x),
         **near_params,
     )
-
-    def after_search(res, cost):
-        # print(res.initalized_program)
-        # for x in res.initalized_program.children:
-        #     print(x.state["lin"].weight)
-        #     print(x.state["lin"].bias)
-        #     print()
-        # 1/0
-        return refinement_graph(
+    g = g.bind(
+        lambda res, cost: refinement_graph(
             refined_dsl,
             overall_dsl,
             res.initalized_program,
@@ -83,6 +76,5 @@ def heirarchical_near_graph(
             neural_hole_filler,
             **near_params,
         )
-
-    g = g.bind(after_search)
+    )
     return g
