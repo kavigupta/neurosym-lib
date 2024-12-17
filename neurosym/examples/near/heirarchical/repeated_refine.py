@@ -36,8 +36,7 @@ def refinement_graph(
 
     This process will be repeated until the symbol is no longer in the program.
     """
-    current_program = copy.deepcopy(current_program)
-    _freeze(current_program)
+    current_program = _freeze(current_program)
     u = current_program.uninitialize()
     if symbol_to_replace not in {x.symbol for x in u.postorder}:
         return ReturnSearchGraph(current_program, cost)
