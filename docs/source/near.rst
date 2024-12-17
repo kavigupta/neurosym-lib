@@ -20,7 +20,7 @@ NEAR Operations
 --------------------------------------------
 
 .. autofunction:: neurosym.examples.near.operations.ite_torch
-.. autofunction:: neurosym.examplxes.near.operations.map_torch
+.. autofunction:: neurosym.examples.near.operations.map_torch
 .. autofunction:: neurosym.examples.near.operations.fold_torch
 .. autofunction:: neurosym.examples.near.operations.running_agg_torch
 .. autoclass:: neurosym.examples.near.operations.SymmetricMorletFilter
