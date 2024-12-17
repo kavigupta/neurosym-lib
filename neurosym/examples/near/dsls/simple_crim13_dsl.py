@@ -135,9 +135,7 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
     dslf.concrete(
         "ite",
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(
-            cond, fx, fy
-        ),
+        lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
     # pylint: enable=unnecessary-lambda
     # dslf.concrete(
