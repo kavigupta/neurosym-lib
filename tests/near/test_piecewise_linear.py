@@ -215,7 +215,7 @@ class TestPiecewiseLinear(unittest.TestCase):
             validation_epochs=1000,
         )
         # produce 2 results, this ensures that continued iteration doesn't break things
-        num_results = 1
+        num_results = 2
         results = self.search(g, num_results)
         self.assertEqual(len(results), num_results)
         program_str = ns.render_s_expression(results[0].uninitialize())
