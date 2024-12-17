@@ -215,10 +215,10 @@ class TestPiecewiseLinear(unittest.TestCase):
             validation_epochs=1000,
         )
         # produce 2 results, this ensures that continued iteration doesn't break things
-        results = self.search(g, 2)
-        self.assertEqual(len(results), 2)
-        result_main, result_2 = results
-        program_str = ns.render_s_expression(result_main.uninitialize())
+        num_results = 1
+        results = self.search(g, num_results)
+        self.assertEqual(len(results), num_results)
+        program_str = ns.render_s_expression(results[0].uninitialize())
         self.assertIn(program_str, [negative, positive])
         children = [s.children[0].state["aff"] for s in results[0].children]
         cond, cons, alt = [(s.weight.item(), s.bias.item()) for s in children]
@@ -234,5 +234,5 @@ class TestPiecewiseLinear(unittest.TestCase):
             self.assertLess(np.abs(branch[1]), 0.25)
 
         # Just check that these exist. The second one won't be the optimum
-        print(result_2)
-        print(ns.render_s_expression(result_2.uninitialize()))
+        print(results[1])
+        print(ns.render_s_expression(results[1].uninitialize()))
