@@ -6,6 +6,7 @@ from tutorial.process_tutorial import create_skeleton
 from .utils import execute_notebook
 
 validate = """
+trajectories = [program_to_trajectory(dsl, prog) for prog in best_programs]
 from permacache import stable_hash
 def validate(t):
     vy = t[:, -1]
