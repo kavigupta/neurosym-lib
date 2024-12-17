@@ -2,7 +2,6 @@
 import torch
 from torch import nn
 
-import neurosym as ns
 from neurosym.dsl.dsl_factory import DSLFactory
 
 from ..operations.aggregation import running_agg_torch
@@ -84,18 +83,6 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
         lambda f1, f2: lambda x: f1(x) * f2(x),
     )
 
-    def filter_tensor(x):
-        match x:
-            case ns.ArrowType(a, b):
-                return filter_tensor(a) or filter_tensor(b)
-            case ns.ListType(a):
-                return filter_tensor(a)
-            case ns.TensorType():
-                return True
-            case _:
-                return False
-
-    dslf.filtered_type_variable("tensor", filter_tensor)
     dslf.concrete(
         "running_avg_last5",
         "(#a -> $fH) -> [#a] -> $fH",
@@ -138,9 +125,6 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
     # pylint: enable=unnecessary-lambda
-    # dslf.concrete(
-    #     "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
-    # )
 
     dslf.prune_to("([$fI]) -> $fO")
     return dslf.finalize()

@@ -19,11 +19,22 @@ class SymmetricMorletFilter(torch.nn.Module):
         self.s = torch.nn.Parameter(torch.tensor(0.5, requires_grad=True))
 
     def get_filter(self, x):
+        """
+        Compute the morlet filter for a given sequence.
+
+        :param x: ``(L,)`` sequence of values.
+        :return: ``(L,)`` sequence of filter values.
+        """
         return torch.exp(-0.5 * torch.pow(self.w * x / self.s, 2)) * torch.cos(
             self.w * x
         )
 
     def forward(self, batch):
+        """
+        Apply the morlet filter to the batch.
+
+        :param batch: ``(B, L, D)`` or ``(L, D)`` sequence of values.
+        """
         seq_dim = 1 if len(batch.shape) == 3 else 0
         seq_len = batch.shape[seq_dim]
         morlet_filter = (

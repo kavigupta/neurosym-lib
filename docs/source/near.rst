@@ -20,8 +20,11 @@ NEAR Operations
 --------------------------------------------
 
 .. autofunction:: neurosym.examples.near.operations.ite_torch
-.. autofunction:: neurosym.examples.near.operations.map_torch
+.. autofunction:: neurosym.examplxes.near.operations.map_torch
 .. autofunction:: neurosym.examples.near.operations.fold_torch
+.. autofunction:: neurosym.examples.near.operations.running_agg_torch
+.. autoclass:: neurosym.examples.near.operations.SymmetricMorletFilter
+    :members:
 
 NEAR Factory Functions
 --------------------------------------------
@@ -52,9 +55,12 @@ NEAR Transformer
 
 Example Datasets/DSLs
 --------------------------------------------
+.. autofunction:: neurosym.datasets.crim13_investigation_example
 .. autofunction:: neurosym.datasets.near_data_example
 .. autofunction:: neurosym.examples.near.differentiable_arith_dsl
 .. autofunction:: neurosym.examples.near.example_rnn_dsl
+.. autofunction:: neurosym.examples.near.simple_crim13_dsl
+.. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
 
 Utilites
 --------------------------------------------

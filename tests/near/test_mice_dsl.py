@@ -22,7 +22,9 @@ class TestNEARMiceDSL(unittest.TestCase):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
-        datamodule = ns.datasets.crim13_example(train_seed=0, batch_size=1024)
+        datamodule = ns.datasets.crim13_investigation_example(
+            train_seed=0, batch_size=1024
+        )
         _, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=10)
         trainer_cfg = near.NEARTrainerConfig(n_epochs=10)
