@@ -59,7 +59,7 @@ class DSLSearchGraph(SearchGraph[SExpression]):
         if not self.skip_ahead:
             return self._direct_expand_node(node)
         for expanded_node in self._direct_expand_node(node):
-            yield self._maximally_expanded_node(expanded_node)
+            return self._maximally_expanded_node(expanded_node)
 
     def _direct_expand_node(self, node):
         hole_sets = self.hole_set_chooser.choose_hole_sets(node.program)
