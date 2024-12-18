@@ -18,12 +18,6 @@ class SExpression:
     symbol: str
     children: Tuple[Union["SExpression", str]]
 
-    @property
-    def postorder(self):
-        for x in self.children:
-            yield from x.postorder
-        yield self
-
     def replace_symbols_by_id(self, id_to_symbol):
         """
         Replace symbols in the S-expression based on the given mapping. The current
@@ -133,3 +127,16 @@ class InitializedSExpression:
 
     def __hash__(self):
         return hash(self.ident)
+
+
+def postorder(s_exp: SExpression | InitializedSExpression):
+    """
+    Traverse an SExpression/InitializedSExpression in postorder.
+
+    :param s_exp: The expression to traverse.
+
+    :return: An iterator over the expression in postorder.
+    """
+    for x in s_exp.children:
+        yield from postorder(x)
+    yield s_exp

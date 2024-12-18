@@ -11,3 +11,5 @@ S-Expressions
 
 .. autoclass:: neurosym.Hole
     :members:
+
+.. autofunction:: neurosym.postorder

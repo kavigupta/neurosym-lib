@@ -99,7 +99,7 @@ from .program_dist.tree_distribution.tree_distribution import (
     TreeDistribution,
     TreeProgramDistributionFamily,
 )
-from .programs.s_expression import InitializedSExpression, SExpression
+from .programs.s_expression import InitializedSExpression, SExpression, postorder
 from .programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
