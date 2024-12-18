@@ -2,7 +2,6 @@ import itertools
 from types import NoneType
 from typing import Callable
 
-from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
@@ -99,7 +98,6 @@ class DSLSearchGraph(SearchGraph[SExpression]):
             # More than one expansion, so return the node as is
             return node
         except StopIteration:
-            print("skipping", render_s_expression(node.program))
             # Exactly one expansion, so try to expand it further
             return self._maximally_expanded_node(first_expansion)
 
