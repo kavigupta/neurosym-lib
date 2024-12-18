@@ -45,6 +45,12 @@ def inject_linear_replacements(dslf):
         dict(aff=lambda: nn.Linear(1, 1)),
     )
     dslf.parameterized(
+        "aff_y",
+        "{f, 2} -> {f, 1}",
+        lambda x, aff: aff(x[:, 1][:, None]),
+        dict(aff=lambda: nn.Linear(1, 1)),
+    )
+    dslf.parameterized(
         "aff_xplusy",
         "{f, 2} -> {f, 1}",
         lambda xy, aff: aff(xy[:, 0][:, None] + xy[:, 1][:, None]),
@@ -138,7 +144,7 @@ class TestPiecewiseLinear(unittest.TestCase):
 
     def search(self, g, count=3):
 
-        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=1000)
+        iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=100)
 
         return list(itertools.islice(iterator, count))
 
