@@ -6,7 +6,7 @@ import stitch_core
 from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
-from ..programs.s_expression import SExpression
+from ..programs.s_expression import SExpression, postorder
 from ..programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -32,7 +32,7 @@ def _compute_abstraction_production(
     Returns an AbstractionProduction corresponding to the abstraction.
     """
     abstr_body = _inject_parameters(abstr_body)
-    usage = next(x for x in s_expression_using.postorder if x.symbol == abstr_name)
+    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,

@@ -9,7 +9,7 @@ from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import ValidationCost
-from neurosym.programs.s_expression import InitializedSExpression
+from neurosym.programs.s_expression import InitializedSExpression, postorder
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.return_search_graph import ReturnSearchGraph
 from neurosym.utils.documentation import internal_only
@@ -38,7 +38,7 @@ def refinement_graph(
     """
     current_program = _freeze(current_program)
     u = current_program.uninitialize()
-    if symbol_to_replace not in {x.symbol for x in u.postorder}:
+    if symbol_to_replace not in {x.symbol for x in postorder(u)}:
         return ReturnSearchGraph(current_program, cost)
 
     g = validated_near_graph(
