@@ -143,6 +143,6 @@ def validated_near_graph(
     def validate_program(sexpr: SExpression) -> InitializedSExpression:
         log(f"Validating {render_s_expression(sexpr)}")
         module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
-        return module.initalized_program
+        return module
 
     return g.map(validate_program)
