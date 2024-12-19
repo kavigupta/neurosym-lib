@@ -134,11 +134,11 @@ class ValidationCost:
         """
         try:
             initialized = self.neural_dsl.initialize(program)
-            program_module = TorchProgramModule(self.neural_dsl, initialized)
         except PartialProgramNotFoundError as e:
             raise UninitializableProgramError(
                 f"Partial Program not found for {render_s_expression(program)}"
             ) from e
+        program_module = TorchProgramModule(self.neural_dsl, initialized)
 
         model = self.embedding(program_module)
 
