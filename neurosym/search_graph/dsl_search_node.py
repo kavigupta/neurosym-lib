@@ -16,5 +16,5 @@ class DSLSearchNode:
     """
 
     program: SExpression
-    dsl: DSL
+    dsl: DSL = field(hash=False)
     metadata: Dict[str, object] = field(hash=False)
