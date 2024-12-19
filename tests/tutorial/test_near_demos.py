@@ -46,7 +46,7 @@ class TestNearDemos(unittest.TestCase):
 
         *_, stars, res, _ = result.split("\n")
         assert stars == "*" * 80
-        self.assertEqual(res, '(output (map (linear)))')
+        self.assertEqual(res, "(output (map (linear)))")
 
     @parameterized.expand([(path,) for path in regression_notebooks])
     def test_discrete_exercise_skeleton(self, path):
