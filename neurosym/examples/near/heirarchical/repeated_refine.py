@@ -48,7 +48,7 @@ def refinement_graph(
         .astype()
         .output_type,
         cost=validation_cost_creator(
-            _RefinementEmbedding(symbol_to_replace, current_program, overall_dsl)
+            _RefinementEmbedding(symbol_to_replace, current_program)
         ),
         **near_params,
     )
@@ -97,15 +97,13 @@ class _RefinementEmbedding:
         self,
         symbol_to_replace: str,
         main_program: InitializedSExpression,
-        overall_dsl: DSL,
     ):
         self.to_replace = symbol_to_replace
         self.frozen = main_program
-        self.overall_dsl = overall_dsl
 
     def __call__(self, program_module):
         frozen_subst, replaced = self.frozen.replace_first(
-            self.to_replace, program_module.initalized_program
+            self.to_replace, program_module
         )
         assert replaced
-        return TorchProgramModule(self.overall_dsl, frozen_subst)
+        return frozen_subst
