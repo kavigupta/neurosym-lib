@@ -94,7 +94,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             symbol="linear_bool",
             refined_dsl=predicate_dsl(),
             typ=ns.parse_type("([{f, 4}]) -> [{f, 4}]"),
-            validation_cost_creator=lambda dsl, embedding: NearCost(
+            validation_cost_creator=lambda embedding: NearCost(
                 NumberHolesStructuralCost(),
                 near.ValidationCost(
                     trainer_cfg=near.NEARTrainerConfig(
@@ -103,7 +103,6 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
                         accelerator="cpu",
                         loss_callback=nn.functional.mse_loss,
                     ),
-                    neural_dsl=near.NeuralDSL.from_dsl(dsl, filler),
                     datamodule=dataset_factory(42),
                     progress_by_epoch=True,
                     embedding=embedding,

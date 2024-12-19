@@ -4,7 +4,10 @@ import torch
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.cost import NearValidationHeuristic, UninitializableProgramError
+from neurosym.examples.near.cost import (
+    NearValidationHeuristic,
+    UninitializableProgramError,
+)
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
@@ -34,14 +37,12 @@ class ValidationCost(NearValidationHeuristic):
     def __init__(
         self,
         *,
-        neural_dsl: DSL,
         trainer_cfg: NEARTrainerConfig,
         datamodule: DatasetWrapper,
         progress_by_epoch=False,
         embedding=lambda x: x,
         n_epochs=None,
     ):
-        self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.progress_by_epoch = progress_by_epoch
@@ -53,7 +54,6 @@ class ValidationCost(NearValidationHeuristic):
         Returns a new ValidationCost object with a different number of epochs.
         """
         return ValidationCost(
-            neural_dsl=self.neural_dsl,
             trainer_cfg=self.trainer_cfg,
             datamodule=self.datamodule,
             progress_by_epoch=self.progress_by_epoch,
@@ -84,7 +84,7 @@ class ValidationCost(NearValidationHeuristic):
     #     return val_loss
 
     def train_and_compute_cost(
-        self, model: InitializedSExpression
+        self, dsl: DSL, model: InitializedSExpression
     ) -> Tuple[TorchProgramModule, float]:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
@@ -95,11 +95,11 @@ class ValidationCost(NearValidationHeuristic):
         :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
         log(f"Training {render_s_expression(model.uninitialize())}")
-        module, val_loss = self._fit_trainer(model, n_epochs=self.n_epochs)
+        module, val_loss = self._fit_trainer(dsl, model, n_epochs=self.n_epochs)
         return module, val_loss
 
-    def _fit_trainer(self, program, *, n_epochs):
-        program_module, model = self.program_to_module(program)
+    def _fit_trainer(self, dsl, program, *, n_epochs):
+        program_module, model = self.program_to_module(dsl, program)
 
         val_loss = _train_model(
             model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
@@ -108,7 +108,7 @@ class ValidationCost(NearValidationHeuristic):
         return program_module, val_loss
 
     def program_to_module(
-        self, program: InitializedSExpression
+        self, dsl: DSL, program: InitializedSExpression
     ) -> Tuple[TorchProgramModule, torch.nn.Module]:
         """
         Convert a program to a TorchProgramModule, which can then be trained.
@@ -120,7 +120,7 @@ class ValidationCost(NearValidationHeuristic):
             These should share weights, so that training the model also trains the program.
         """
 
-        program_module = TorchProgramModule(self.neural_dsl, program)
+        program_module = TorchProgramModule(dsl, program)
 
         model = self.embedding(program_module)
 

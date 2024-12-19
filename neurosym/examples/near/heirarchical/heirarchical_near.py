@@ -18,7 +18,7 @@ def heirarchical_near_graph(
     refined_dsl: DSL,
     typ: Type,
     validation_cost_creator: Callable[
-        [DSL, Callable[[TorchProgramModule], nn.Module]], NearCost
+        [Callable[[TorchProgramModule], nn.Module]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
     **near_params
@@ -62,7 +62,7 @@ def heirarchical_near_graph(
     g = validated_near_graph(
         NeuralDSL.from_dsl(dsl=high_level_dsl, neural_hole_filler=neural_hole_filler),
         typ,
-        cost=validation_cost_creator(high_level_dsl, lambda x: x),
+        cost=validation_cost_creator(lambda x: x),
         **near_params,
     )
     g = g.bind(
@@ -72,7 +72,7 @@ def heirarchical_near_graph(
             res.initalized_program,
             cost,
             symbol,
-            lambda func: validation_cost_creator(refined_dsl, func),
+            lambda func: validation_cost_creator(func),
             neural_hole_filler,
             **near_params,
         )

@@ -52,7 +52,6 @@ class TestNEARSequentialDSL(unittest.TestCase):
             cost=NearCost(
                 NumberHolesStructuralCost(),
                 near.ValidationCost(
-                    neural_dsl=neural_dsl,
                     trainer_cfg=trainer_cfg,
                     datamodule=datamodule,
                 ),

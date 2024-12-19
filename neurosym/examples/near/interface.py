@@ -140,7 +140,6 @@ class NEAR:
             NumberHolesStructuralCost(),
             ValidationCost(
                 trainer_cfg=self._trainer_config(),
-                neural_dsl=self.neural_dsl,
                 datamodule=datamodule,
                 **self.validation_params,
             ),

@@ -146,7 +146,7 @@ def validated_near_graph(
         module = dsl.initialize(sexpr)
         module, _ = cost.validation_heuristic.with_n_epochs(
             validation_epochs
-        ).train_and_compute_cost(module)
+        ).train_and_compute_cost(dsl, module)
         return module
 
     return g.map(validate_program)

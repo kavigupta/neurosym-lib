@@ -114,8 +114,7 @@ def get_neural_dsl(dsl):
     )
 
 
-def get_validation_cost(dsl, dataset, **validation_params):
-    neural_dsl = get_neural_dsl(dsl)
+def get_validation_cost(dataset, **validation_params):
     return NearCost(
         NumberHolesStructuralCost(),
         near.ValidationCost(
@@ -125,7 +124,6 @@ def get_validation_cost(dsl, dataset, **validation_params):
                 accelerator="cpu",
                 loss_callback=nn.functional.mse_loss,
             ),
-            neural_dsl=neural_dsl,
             datamodule=dataset,
             progress_by_epoch=False,
             **validation_params,
@@ -156,7 +154,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl()
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset))
         )
 
         programs = [
@@ -199,7 +197,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset)), 10
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 10
         )
         s_exps = [
             ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
@@ -216,9 +214,7 @@ class TestPiecewiseLinear(unittest.TestCase):
             "linear_bool",
             lr_dsl,
             ns.parse_type("{f, 2} -> {f, 1}"),
-            lambda dsl, embedding: get_validation_cost(
-                dsl, get_dataset(), embedding=embedding
-            ),
+            lambda embedding: get_validation_cost(get_dataset(), embedding=embedding),
             neural_hole_filler,
             is_goal=lambda _: True,
             max_depth=10000,

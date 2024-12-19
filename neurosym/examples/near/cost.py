@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple
 
+from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import (
@@ -35,18 +37,18 @@ class NearValidationHeuristic(ABC):
 
     @abstractmethod
     def train_and_compute_cost(
-        self, model: InitializedSExpression
-    ) -> Tuple[InitializedSExpression, float]:
+        self, dsl: DSL, model: InitializedSExpression
+    ) -> Tuple[TorchProgramModule, float]:
         """
         Train a model and compute the validation cost. This is allowed to
         mutate the original model.
         """
 
-    def compute_cost(self, model: InitializedSExpression) -> float:
+    def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
         """
         Compute the validation cost of a model.
         """
-        _, val_loss = self.train_and_compute_cost(model)
+        _, val_loss = self.train_and_compute_cost(dsl, model)
         return val_loss
 
 
@@ -61,11 +63,11 @@ class NearCost:
     structural_cost_weight: float = 0.5
     error_loss: float = 10000
 
-    def compute_cost(self, model: InitializedSExpression) -> float:
+    def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
         """
         Compute the cost of a model.
         """
-        val_loss = self.validation_heuristic.compute_cost(model)
+        val_loss = self.validation_heuristic.compute_cost(dsl, model)
         struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize())
         return (
             1 - self.structural_cost_weight
@@ -81,13 +83,12 @@ class NearCost:
                 program = node.dsl.initialize(program)
             except PartialProgramNotFoundError:
                 log(f"Partial Program not found for {render_s_expression(program)}")
-                # TODO
                 return self.error_loss
             except UninitializableProgramError as e:
                 log(e.message)
                 return self.error_loss
         assert is_initialized_s_expression(program), type(program)
-        return self.compute_cost(program)
+        return self.compute_cost(node.dsl, program)
 
 
 class NumberHolesStructuralCost(StructuralCost):
