@@ -2,13 +2,16 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple
 
+from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import (
     InitializedSExpression,
     SExpression,
     is_initialized_s_expression,
 )
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
+from neurosym.utils.logging import log
 
 
 class StructuralCost(ABC):
@@ -56,6 +59,7 @@ class NearCost:
     structural_cost: StructuralCost
     validation_heuristic: NearValidationHeuristic
     structural_cost_weight: float = 0.5
+    error_loss: float = 10000
 
     def compute_cost(self, model: InitializedSExpression) -> float:
         """
@@ -73,7 +77,15 @@ class NearCost:
         """
         program = node.program
         if not isinstance(program, InitializedSExpression):
-            program = node.dsl.initialize(program)
+            try:
+                program = node.dsl.initialize(program)
+            except PartialProgramNotFoundError:
+                log(f"Partial Program not found for {render_s_expression(program)}")
+                # TODO
+                return self.error_loss
+            except UninitializableProgramError as e:
+                log(e.message)
+                return self.error_loss
         assert is_initialized_s_expression(program), type(program)
         return self.compute_cost(program)
 
@@ -87,3 +99,15 @@ class NumberHolesStructuralCost(StructuralCost):
         for child in model.children:
             cost += self.compute_structural_cost(child)
         return cost
+
+
+class UninitializableProgramError(Exception):
+    """
+    UninitializableProgramError is raised when a program cannot be
+    initialized due to either an inability to fill a hole in a partial program
+    or when a program has no parameters.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
