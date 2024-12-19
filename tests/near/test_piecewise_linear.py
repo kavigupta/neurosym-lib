@@ -6,6 +6,7 @@ from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 
 def high_level_dsl(linear_layers=True):
@@ -115,17 +116,20 @@ def get_neural_dsl(dsl):
 
 def get_validation_cost(dsl, dataset, **validation_params):
     neural_dsl = get_neural_dsl(dsl)
-    return near.ValidationCost(
-        trainer_cfg=near.NEARTrainerConfig(
-            lr=0.005,
-            n_epochs=100,
-            accelerator="cpu",
-            loss_callback=nn.functional.mse_loss,
+    return NearCost(
+        NumberHolesStructuralCost(),
+        near.ValidationCost(
+            trainer_cfg=near.NEARTrainerConfig(
+                lr=0.005,
+                n_epochs=100,
+                accelerator="cpu",
+                loss_callback=nn.functional.mse_loss,
+            ),
+            neural_dsl=neural_dsl,
+            datamodule=dataset,
+            progress_by_epoch=False,
+            **validation_params,
         ),
-        neural_dsl=neural_dsl,
-        datamodule=dataset,
-        progress_by_epoch=False,
-        **validation_params,
     )
 
 

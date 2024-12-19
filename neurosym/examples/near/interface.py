@@ -6,6 +6,7 @@ import torch
 from frozendict import frozendict
 
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 from neurosym.examples.near.methods.near_example_trainer import (
     NEARTrainerConfig,
     classification_mse_loss,
@@ -135,11 +136,14 @@ class NEAR:
 
     def _get_validator(self, datamodule):
 
-        validation_cost = ValidationCost(
-            trainer_cfg=self._trainer_config(),
-            neural_dsl=self.neural_dsl,
-            datamodule=datamodule,
-            **self.validation_params,
+        validation_cost = NearCost(
+            NumberHolesStructuralCost(),
+            ValidationCost(
+                trainer_cfg=self._trainer_config(),
+                neural_dsl=self.neural_dsl,
+                datamodule=datamodule,
+                **self.validation_params,
+            ),
         )
         return validation_cost
 

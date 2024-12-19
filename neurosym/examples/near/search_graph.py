@@ -1,8 +1,9 @@
+import dataclasses
 from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import NearCost
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
-from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
@@ -116,7 +117,7 @@ def validated_near_graph(
     max_depth=1000,
     max_num_edges=100,
     is_goal=lambda x: True,
-    cost: ValidationCost,
+    cost: NearCost,
     validation_epochs: int,
 ) -> SearchGraph[TorchProgramModule]:
     """
@@ -143,7 +144,10 @@ def validated_near_graph(
 
     def validate_program(sexpr: SExpression) -> TorchProgramModule:
         log(f"Validating {render_s_expression(sexpr)}")
-        module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
+        module = dsl.initialize(sexpr)
+        module, _ = cost.validation_heuristic.with_n_epochs(
+            validation_epochs
+        ).train_and_compute_cost(module)
         return module
 
     return g.map(validate_program)
