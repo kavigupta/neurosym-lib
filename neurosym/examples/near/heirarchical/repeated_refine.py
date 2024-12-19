@@ -48,7 +48,7 @@ def refinement_graph(
         .astype()
         .output_type,
         cost=validation_cost_creator(
-            _RefinementEmbedding(current_program, overall_dsl)
+            _RefinementEmbedding(symbol_to_replace, current_program)
         ),
         **near_params,
     )
@@ -93,7 +93,11 @@ class _RefinementEmbedding:
     program, replacing a specified symbol.
     """
 
-    def __init__(self, symbol_to_replace: str, main_program: InitializedSExpression):
+    def __init__(
+        self,
+        symbol_to_replace: str,
+        main_program: InitializedSExpression,
+    ):
         self.to_replace = symbol_to_replace
         self.frozen = main_program
 
