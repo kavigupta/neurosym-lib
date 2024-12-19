@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
