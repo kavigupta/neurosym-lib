@@ -41,7 +41,7 @@ class TestNearDemos(unittest.TestCase):
         result = execute_notebook(
             path,
             suffix="import json; print('*' * 80); "
-            + "print(ns.render_s_expression(module.contained_modules.uninitialize()))",
+            + "print(ns.render_s_expression(program.uninitialize()))",
         )
 
         *_, stars, res, _ = result.split("\n")
