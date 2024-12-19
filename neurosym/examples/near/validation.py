@@ -83,9 +83,9 @@ class ValidationCost(NearValidationHeuristic):
 
     #     return val_loss
 
-    def train_and_compute_cost(
+    def compute_cost(
         self, dsl: DSL, model: InitializedSExpression
-    ) -> Tuple[TorchProgramModule, float]:
+    ) -> Tuple[InitializedSExpression, float]:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
         validation loss.
@@ -95,21 +95,18 @@ class ValidationCost(NearValidationHeuristic):
         :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
         log(f"Training {render_s_expression(model.uninitialize())}")
-        module, val_loss = self._fit_trainer(dsl, model, n_epochs=self.n_epochs)
-        return module, val_loss
 
-    def _fit_trainer(self, dsl, program, *, n_epochs):
-        program_module, model = self.program_to_module(dsl, program)
+        model = self.program_to_module(dsl, model)
 
         val_loss = _train_model(
-            model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
+            model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
         )
 
-        return program_module, val_loss
+        return val_loss
 
     def program_to_module(
         self, dsl: DSL, program: InitializedSExpression
-    ) -> Tuple[TorchProgramModule, torch.nn.Module]:
+    ) -> torch.nn.Module:
         """
         Convert a program to a TorchProgramModule, which can then be trained.
         This can be overriden in subclasses to provide custom behavior, e.g.,
@@ -120,15 +117,14 @@ class ValidationCost(NearValidationHeuristic):
             These should share weights, so that training the model also trains the program.
         """
 
-        program_module = TorchProgramModule(dsl, program)
-
-        model = self.embedding(program_module)
+        model = self.embedding(program)
+        model = TorchProgramModule(dsl, model)
 
         if len(list(model.parameters())) == 0:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
-        return program_module, model
+        return model
 
 
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):

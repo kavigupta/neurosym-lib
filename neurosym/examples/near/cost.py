@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import (
@@ -36,20 +34,16 @@ class NearValidationHeuristic(ABC):
     """
 
     @abstractmethod
-    def train_and_compute_cost(
-        self, dsl: DSL, model: InitializedSExpression
-    ) -> Tuple[TorchProgramModule, float]:
-        """
-        Train a model and compute the validation cost. This is allowed to
-        mutate the original model.
-        """
-
     def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
         """
-        Compute the validation cost of a model.
+        Train a model and compute the validation cost. This mutates the model
+        to train it
+
+        :param dsl: The DSL to use for training.
+        :param model: The model to train. Will be mutated in place.
+
+        :returns: The validation loss as a `float`.
         """
-        _, val_loss = self.train_and_compute_cost(dsl, model)
-        return val_loss
 
 
 @dataclass

@@ -157,18 +157,14 @@ class TestPiecewiseLinear(unittest.TestCase):
             self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset))
         )
 
-        programs = [
-            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
-        ]
+        programs = [ns.render_s_expression(p.uninitialize()) for p in result]
 
         expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
         self.assertIn(expected, programs)
 
         result_relevant = result[programs.index(expected)]
 
-        [cond, cons, alt] = [
-            x.state["lin"] for x in result_relevant.initalized_program.children
-        ]
+        [cond, cons, alt] = [x.state["lin"] for x in result_relevant.children]
 
         print("Conditional weight:")
         print(cond.weight)
@@ -199,9 +195,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         result = self.search(
             self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 10
         )
-        s_exps = [
-            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
-        ]
+        s_exps = [ns.render_s_expression(p.uninitialize()) for p in result]
         print(s_exps)
         for s_exp in s_exps:
             self.assertNotIn(s_exp, [negative, positive])

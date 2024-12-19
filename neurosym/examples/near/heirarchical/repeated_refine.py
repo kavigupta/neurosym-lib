@@ -48,13 +48,12 @@ def refinement_graph(
         .astype()
         .output_type,
         cost=validation_cost_creator(
-            _RefinementEmbedding(symbol_to_replace, current_program, overall_dsl)
+            _RefinementEmbedding(current_program, overall_dsl)
         ),
         **near_params,
     )
 
     def after_search(result, cost_result):
-        result = result.initalized_program
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
         replaced = _freeze(replaced)
@@ -94,19 +93,13 @@ class _RefinementEmbedding:
     program, replacing a specified symbol.
     """
 
-    def __init__(
-        self,
-        symbol_to_replace: str,
-        main_program: InitializedSExpression,
-        overall_dsl: DSL,
-    ):
+    def __init__(self, symbol_to_replace: str, main_program: InitializedSExpression):
         self.to_replace = symbol_to_replace
         self.frozen = main_program
-        self.overall_dsl = overall_dsl
 
     def __call__(self, program_module):
         frozen_subst, replaced = self.frozen.replace_first(
-            self.to_replace, program_module.initalized_program
+            self.to_replace, program_module
         )
         assert replaced
-        return TorchProgramModule(self.overall_dsl, frozen_subst)
+        return frozen_subst
