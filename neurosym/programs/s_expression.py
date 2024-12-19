@@ -2,8 +2,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Dict, Tuple, Union
 
-from neurosym.utils.documentation import internal_only
-
 
 @dataclass(frozen=True, eq=True)
 class SExpression:
@@ -130,12 +128,6 @@ class InitializedSExpression:
     def __hash__(self):
         return hash(self.ident)
 
-@internal_only
-def is_initialized_s_expression(p):
-    """
-    Check if a value is an InitializedSExpression.
-    """
-    return hasattr(p, "all_state_values")
 
 def postorder(s_exp: SExpression | InitializedSExpression):
     """

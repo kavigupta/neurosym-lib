@@ -59,7 +59,6 @@ class NeuralDSL(DSL):
                     f"Cannot initialize program {program}."
                 )
             return _NeuralHole(
-                program,
                 {"initialized_module": module},
                 _inject_environment_argument(program.twe.typ),
             )
@@ -72,8 +71,7 @@ class _NeuralHole:
     A hole that can be filled with a neural module.
     """
 
-    def __init__(self, original_hole, initialized, semantic):
-        self.original_hole = original_hole
+    def __init__(self, initialized, semantic):
         self.initialized = initialized
         self.semantic = semantic
 
@@ -83,9 +81,6 @@ class _NeuralHole:
 
     def all_state_values(self):
         return self.initialized.values()
-
-    def uninitialize(self) -> Hole:
-        return self.original_hole
 
 
 def _create_module_for_type(module_factory, t):
