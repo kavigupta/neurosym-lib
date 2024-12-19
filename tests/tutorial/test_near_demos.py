@@ -36,19 +36,17 @@ class TestNearDemos(unittest.TestCase):
     @parameterized.expand([(path,) for path in regression_notebooks])
     def test_near_demo_regression(self, path):
         """
-        Counts the number of modules in the solution. Should be more than 1 as a linear
-        layer won't be able to approximate a non-linear function
+        Checks that the output is as expected
         """
         result = execute_notebook(
             path,
             suffix="import json; print('*' * 80); "
-            + "print(json.dumps([len(module.contained_modules)]))",
+            + "print(ns.render_s_expression(module.contained_modules.uninitialize()))",
         )
 
-        *_, stars, len_module, _ = result.split("\n")
+        *_, stars, res, _ = result.split("\n")
         assert stars == "*" * 80
-        n_layers = json.loads(len_module)[0]
-        self.assertGreaterEqual(n_layers, 1)
+        self.assertEqual(res, '(output (map (linear)))')
 
     @parameterized.expand([(path,) for path in regression_notebooks])
     def test_discrete_exercise_skeleton(self, path):
