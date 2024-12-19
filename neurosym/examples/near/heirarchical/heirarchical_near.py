@@ -69,7 +69,7 @@ def heirarchical_near_graph(
         lambda res, cost: refinement_graph(
             refined_dsl,
             overall_dsl,
-            res.initalized_program,
+            res,
             cost,
             symbol,
             lambda func: validation_cost_creator(refined_dsl, func),
