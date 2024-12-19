@@ -193,9 +193,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         result = self.search(
             self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset)), 10
         )
-        s_exps = [
-            ns.render_s_expression(p.uninitialize()) for p in result
-        ]
+        s_exps = [ns.render_s_expression(p.uninitialize()) for p in result]
         print(s_exps)
         for s_exp in s_exps:
             self.assertNotIn(s_exp, [negative, positive])
