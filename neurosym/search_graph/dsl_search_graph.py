@@ -52,6 +52,7 @@ class DSLSearchGraph(SearchGraph[SExpression]):
     def initial_node(self):
         return DSLSearchNode(
             Hole.of(TypeWithEnvironment(self.target_type, Environment.empty())),
+            self.dsl,
             self.metadata_computer.for_initial_node(),
         )
 
@@ -80,6 +81,7 @@ class DSLSearchGraph(SearchGraph[SExpression]):
                 )
                 yield DSLSearchNode(
                     expanded_program,
+                    self.dsl,
                     self.metadata_computer.for_expanded_node(node, expanded_program),
                 )
 
