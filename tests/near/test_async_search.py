@@ -8,6 +8,7 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 
 class TestNEARAsyncSearch(unittest.TestCase):
@@ -45,10 +46,13 @@ class TestNEARAsyncSearch(unittest.TestCase):
             ),
             is_goal=lambda _: True,
             max_depth=max_depth,
-            cost=near.ValidationCost(
-                neural_dsl=neural_dsl,
-                trainer_cfg=trainer_cfg,
-                datamodule=datamodule,
+            cost=NearCost(
+                NumberHolesStructuralCost(),
+                near.ValidationCost(
+                    neural_dsl=neural_dsl,
+                    trainer_cfg=trainer_cfg,
+                    datamodule=datamodule,
+                ),
             ),
         )
         # succeed if this raises StopIteration

@@ -16,6 +16,7 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 from .utils import assertDSLEnumerable
 
@@ -48,10 +49,13 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=lambda _: True,
-            cost=near.ValidationCost(
-                neural_dsl=neural_dsl,
-                trainer_cfg=trainer_cfg,
-                datamodule=datamodule,
+            cost=NearCost(
+                NumberHolesStructuralCost(),
+                near.ValidationCost(
+                    neural_dsl=neural_dsl,
+                    trainer_cfg=trainer_cfg,
+                    datamodule=datamodule,
+                ),
             ),
         )
         # succeed if this raises StopIteration

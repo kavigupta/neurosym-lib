@@ -5,6 +5,7 @@ from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 dataset_factory = lambda train_seed: ns.DatasetWrapper(
     ns.DatasetFromNpy(
@@ -93,18 +94,21 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             symbol="linear_bool",
             refined_dsl=predicate_dsl(),
             typ=ns.parse_type("([{f, 4}]) -> [{f, 4}]"),
-            validation_cost_creator=lambda dsl, embedding: near.ValidationCost(
-                trainer_cfg=near.NEARTrainerConfig(
-                    lr=0.1,
-                    n_epochs=100,
-                    accelerator="cpu",
-                    loss_callback=nn.functional.mse_loss,
+            validation_cost_creator=lambda dsl, embedding: NearCost(
+                NumberHolesStructuralCost(),
+                near.ValidationCost(
+                    trainer_cfg=near.NEARTrainerConfig(
+                        lr=0.1,
+                        n_epochs=100,
+                        accelerator="cpu",
+                        loss_callback=nn.functional.mse_loss,
+                    ),
+                    neural_dsl=near.NeuralDSL.from_dsl(dsl, filler),
+                    datamodule=dataset_factory(42),
+                    progress_by_epoch=True,
+                    embedding=embedding,
+                    structural_cost_weight=0.5,
                 ),
-                neural_dsl=near.NeuralDSL.from_dsl(dsl, filler),
-                datamodule=dataset_factory(42),
-                progress_by_epoch=True,
-                embedding=embedding,
-                structural_cost_weight=0.5,
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,
