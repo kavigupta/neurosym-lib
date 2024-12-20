@@ -116,9 +116,9 @@ class ValidationCost(NearValidationHeuristic):
         :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
             These should share weights, so that training the model also trains the program.
         """
+        program_module = TorchProgramModule(dsl, program)
 
-        model = self.embedding(program)
-        model = TorchProgramModule(dsl, model)
+        model = self.embedding(program_module)
 
         if len(list(model.parameters())) == 0:
             raise UninitializableProgramError(
