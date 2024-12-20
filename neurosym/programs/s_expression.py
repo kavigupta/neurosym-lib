@@ -130,12 +130,14 @@ class InitializedSExpression:
     def __hash__(self):
         return hash(self.ident)
 
+
 @internal_only
 def is_initialized_s_expression(p):
     """
     Check if a value is an InitializedSExpression.
     """
     return hasattr(p, "all_state_values")
+
 
 def postorder(s_exp: SExpression | InitializedSExpression):
     """

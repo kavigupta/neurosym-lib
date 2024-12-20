@@ -128,6 +128,7 @@ class ValidationCost(NearValidationHeuristic):
             )
         return model
 
+
 def default_near_cost(
     *,
     trainer_cfg: NEARTrainerConfig,
