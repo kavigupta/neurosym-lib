@@ -134,7 +134,8 @@ class InitializedSExpression:
 @internal_only
 def is_initialized_s_expression(p):
     """
-    Check if a value is an InitializedSExpression.
+    Check if a value is an InitializedSExpression. Duck typed because
+    we want to allow Holes and other classes to be treated as InitializedSExpressions.
     """
     return hasattr(p, "all_state_values")
 
