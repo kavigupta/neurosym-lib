@@ -54,7 +54,6 @@ def refinement_graph(
     )
 
     def after_search(result, cost_result):
-        result = result.initalized_program
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
         replaced = _freeze(replaced)

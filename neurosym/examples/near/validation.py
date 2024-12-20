@@ -9,7 +9,7 @@ from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfi
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
-from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression import InitializedSExpression, SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
@@ -122,7 +122,7 @@ class ValidationCost:
 
     def program_to_module(
         self, program: SExpression
-    ) -> Tuple[TorchProgramModule, torch.nn.Module]:
+    ) -> Tuple[InitializedSExpression, torch.nn.Module]:
         """
         Convert a program to a TorchProgramModule, which can then be trained.
         This can be overriden in subclasses to provide custom behavior, e.g.,
@@ -133,13 +133,12 @@ class ValidationCost:
             These should share weights, so that training the model also trains the program.
         """
         try:
-            program_module = TorchProgramModule(
-                self.neural_dsl, self.neural_dsl.initialize(program)
-            )
+            initialized = self.neural_dsl.initialize(program)
         except PartialProgramNotFoundError as e:
             raise UninitializableProgramError(
                 f"Partial Program not found for {render_s_expression(program)}"
             ) from e
+        program_module = TorchProgramModule(self.neural_dsl, initialized)
 
         model = self.embedding(program_module)
 
@@ -147,7 +146,7 @@ class ValidationCost:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
-        return program_module, model
+        return initialized, model
 
 
 class UninitializableProgramError(Exception):
