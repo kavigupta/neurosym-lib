@@ -6,7 +6,6 @@ from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 
 def high_level_dsl(linear_layers=True):

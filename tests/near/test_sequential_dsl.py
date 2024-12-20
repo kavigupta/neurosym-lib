@@ -16,7 +16,6 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.validation import default_near_cost
 
 from .utils import assertDSLEnumerable
 
@@ -49,7 +48,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=lambda _: True,
-            cost=default_near_cost(
+            cost=near.default_near_cost(
                 trainer_cfg=trainer_cfg,
                 datamodule=datamodule,
             ),

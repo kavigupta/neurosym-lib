@@ -7,7 +7,7 @@ from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
     NearCost,
     NearValidationHeuristic,
-    NumberHolesStructuralCost,
+    NumberHolesNearStructuralCost,
     UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
@@ -147,7 +147,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=NumberHolesStructuralCost(),
+        structural_cost=NumberHolesNearStructuralCost(),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,

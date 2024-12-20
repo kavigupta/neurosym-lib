@@ -14,7 +14,7 @@ from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.logging import log
 
 
-class StructuralCost(ABC):
+class NearStructuralCost(ABC):
     """
     Compute a structural cost for a program. This is used to guide the search towards
     more completed programs.
@@ -52,14 +52,17 @@ class NearCost:
     Near cost function that combines a structural cost and a validation heuristic.
     """
 
-    structural_cost: StructuralCost
+    structural_cost: NearStructuralCost
     validation_heuristic: NearValidationHeuristic
     structural_cost_weight: float = 0.5
     error_loss: float = 10000
 
     def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
         """
-        Compute the cost of a model.
+        Compute the cost of a model. Calling this will mutate the `model`.
+
+        :param dsl: The DSL to use for training.
+        :param model: The model to train. Will be mutated in place.
         """
         val_loss = self.validation_heuristic.compute_cost(dsl, model)
         struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize())
@@ -67,12 +70,22 @@ class NearCost:
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
 
-    def __call__(self, node: DSLSearchNode) -> float:
+    def __call__(
+        self, node: DSLSearchNode | SExpression | InitializedSExpression
+    ) -> float:
         """
-        Compute the cost of a model.
+        Compute the cost of a node or program. Will initialize the program if it is not
+        already initialized, but if it is initialized, it will mutate the program.
+
+        :param node: The node or program to compute the cost of.
+
+        :returns: The cost as a `float`.
         """
-        program = node.program
-        if not isinstance(program, InitializedSExpression):
+        if isinstance(node, DSLSearchNode):
+            program = node.program
+        else:
+            program = node
+        if not is_initialized_s_expression(program):
             try:
                 program = node.dsl.initialize(program)
             except PartialProgramNotFoundError:
@@ -85,7 +98,11 @@ class NearCost:
         return self.compute_cost(node.dsl, program)
 
 
-class NumberHolesStructuralCost(StructuralCost):
+class NumberHolesNearStructuralCost(NearStructuralCost):
+    """
+    Structural cost that counts the number of holes in a program.
+    """
+
     def compute_structural_cost(self, model: SExpression) -> float:
         cost = 0
         if isinstance(model, Hole):

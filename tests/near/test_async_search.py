@@ -8,7 +8,6 @@ import pytest
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.cost import NearCost, NumberHolesStructuralCost
 
 
 class TestNEARAsyncSearch(unittest.TestCase):

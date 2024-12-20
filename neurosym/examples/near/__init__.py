@@ -1,3 +1,9 @@
+from neurosym.examples.near.cost import (
+    NearCost,
+    NearStructuralCost,
+    NearValidationHeuristic,
+    NumberHolesNearStructuralCost,
+)
 from neurosym.examples.near.heirarchical.heirarchical_near import (
     heirarchical_near_graph,
 )
