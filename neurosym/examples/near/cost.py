@@ -64,30 +64,43 @@ class NearCost:
         :param dsl: The DSL to use for training.
         :param model: The model to train. Will be mutated in place.
         """
-        val_loss = self.validation_heuristic.compute_cost(dsl, model)
+        try:
+            val_loss = self.validation_heuristic.compute_cost(dsl, model)
+        except UninitializableProgramError as e:
+            log(e.message)
+            return self.error_loss
         struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize())
         return (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
 
     def __call__(
-        self, node: DSLSearchNode | SExpression | InitializedSExpression
+        self,
+        node: DSLSearchNode | SExpression | InitializedSExpression,
+        dsl: DSL | None = None,
     ) -> float:
         """
         Compute the cost of a node or program. Will initialize the program if it is not
         already initialized, but if it is initialized, it will mutate the program.
 
         :param node: The node or program to compute the cost of.
+        :param dsl: The DSL to use for training. Only required if `node` is not
+            a `DSLSearchNode`.
 
         :returns: The cost as a `float`.
         """
         if isinstance(node, DSLSearchNode):
             program = node.program
+            assert (
+                dsl is None or dsl == node.dsl
+            ), "If node is a DSLSearchNode, dsl must be None or equal to node.dsl"
+            dsl = node.dsl
         else:
+            assert dsl is not None, "If node is not a DSLSearchNode, dsl must be provided"
             program = node
         if not is_initialized_s_expression(program):
             try:
-                program = node.dsl.initialize(program)
+                program = dsl.initialize(program)
             except PartialProgramNotFoundError:
                 log(f"Partial Program not found for {render_s_expression(program)}")
                 return self.error_loss
@@ -95,7 +108,7 @@ class NearCost:
                 log(e.message)
                 return self.error_loss
         assert is_initialized_s_expression(program), type(program)
-        return self.compute_cost(node.dsl, program)
+        return self.compute_cost(dsl, program)
 
 
 class NumberHolesNearStructuralCost(NearStructuralCost):
