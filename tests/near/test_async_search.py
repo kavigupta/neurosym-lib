@@ -46,12 +46,9 @@ class TestNEARAsyncSearch(unittest.TestCase):
             ),
             is_goal=lambda _: True,
             max_depth=max_depth,
-            cost=NearCost(
-                NumberHolesStructuralCost(),
-                near.ValidationCost(
-                    trainer_cfg=trainer_cfg,
-                    datamodule=datamodule,
-                ),
+            cost=near.default_near_cost(
+                trainer_cfg=trainer_cfg,
+                datamodule=datamodule,
             ),
         )
         # succeed if this raises StopIteration

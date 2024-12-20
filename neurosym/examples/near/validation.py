@@ -5,7 +5,9 @@ import torch
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
+    NearCost,
     NearValidationHeuristic,
+    NumberHolesStructuralCost,
     UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
@@ -125,6 +127,34 @@ class ValidationCost(NearValidationHeuristic):
                 f"No parameters in program {render_s_expression(program)}"
             )
         return model
+
+def default_near_cost(
+    *,
+    trainer_cfg: NEARTrainerConfig,
+    datamodule: DatasetWrapper,
+    progress_by_epoch=False,
+    **kwargs,
+):
+    """
+    Default NearCost. This is a 50/50 blend of structural cost and validation cost,
+    with the given parameters.
+
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
+    return NearCost(
+        structural_cost=NumberHolesStructuralCost(),
+        validation_heuristic=ValidationCost(
+            trainer_cfg=trainer_cfg,
+            datamodule=datamodule,
+            progress_by_epoch=progress_by_epoch,
+            **kwargs,
+        ),
+        structural_cost_weight=0.5,
+    )
 
 
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):

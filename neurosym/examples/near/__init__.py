@@ -6,6 +6,7 @@ from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHol
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,
+    default_near_cost,
 )
 
 from .dsls import debug_nested_dsl

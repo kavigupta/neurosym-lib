@@ -115,19 +115,16 @@ def get_neural_dsl(dsl):
 
 
 def get_validation_cost(dataset, **validation_params):
-    return NearCost(
-        NumberHolesStructuralCost(),
-        near.ValidationCost(
-            trainer_cfg=near.NEARTrainerConfig(
-                lr=0.005,
-                n_epochs=100,
-                accelerator="cpu",
-                loss_callback=nn.functional.mse_loss,
-            ),
-            datamodule=dataset,
-            progress_by_epoch=False,
-            **validation_params,
+    return near.default_near_cost(
+        trainer_cfg=near.NEARTrainerConfig(
+            lr=0.005,
+            n_epochs=100,
+            accelerator="cpu",
+            loss_callback=nn.functional.mse_loss,
         ),
+        datamodule=dataset,
+        progress_by_epoch=False,
+        **validation_params,
     )
 
 
