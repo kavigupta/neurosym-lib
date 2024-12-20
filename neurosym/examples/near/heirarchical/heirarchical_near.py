@@ -3,12 +3,12 @@ from typing import Callable
 from torch import nn
 
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import NearCost
 from neurosym.examples.near.heirarchical.repeated_refine import refinement_graph
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
-from neurosym.examples.near.validation import ValidationCost
 from neurosym.types.type import Type
 
 
@@ -18,7 +18,7 @@ def heirarchical_near_graph(
     refined_dsl: DSL,
     typ: Type,
     validation_cost_creator: Callable[
-        [DSL, Callable[[TorchProgramModule], nn.Module]], ValidationCost
+        [Callable[[TorchProgramModule], nn.Module]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
     **near_params
@@ -32,7 +32,7 @@ def heirarchical_near_graph(
     :param symbol: The symbol to replace in the high level DSL.
     :param refined_dsl: The refined DSL to use for the replacement.
     :param typ: The type of the program to generate.
-    :param validation_cost_creator: A function that creates a ValidationCost object.
+    :param validation_cost_creator: A function that creates a NearCost object.
     :param neural_hole_filler: The neural hole filler to use for the search.
     :param near_params: Additional parameters to pass to the search graph.
 
@@ -62,7 +62,7 @@ def heirarchical_near_graph(
     g = validated_near_graph(
         NeuralDSL.from_dsl(dsl=high_level_dsl, neural_hole_filler=neural_hole_filler),
         typ,
-        cost=validation_cost_creator(high_level_dsl, lambda x: x),
+        cost=validation_cost_creator(lambda x: x),
         **near_params,
     )
     g = g.bind(
@@ -72,7 +72,7 @@ def heirarchical_near_graph(
             res,
             cost,
             symbol,
-            lambda func: validation_cost_creator(refined_dsl, func),
+            validation_cost_creator,
             neural_hole_filler,
             **near_params,
         )

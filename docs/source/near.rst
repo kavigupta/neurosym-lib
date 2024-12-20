@@ -6,10 +6,24 @@
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
-.. autoclass:: neurosym.examples.near.ValidationCost
-    :members:
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
+
+``NEAR`` Cost
+--------------------------------------------
+.. autoclass:: neurosym.examples.near.NearCost
+    :members:
+.. autoclass:: neurosym.examples.near.default_near_cost
+    :members:
+.. autoclass:: neurosym.examples.near.NearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.NumberHolesNearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.NearValidationHeuristic
+    :members:
+.. autoclass:: neurosym.examples.near.ValidationCost
+    :members:
+
 
 ``NEAR`` Heirarchical Algorithm
 --------------------------------------------

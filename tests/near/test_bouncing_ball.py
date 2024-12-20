@@ -93,18 +93,16 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             symbol="linear_bool",
             refined_dsl=predicate_dsl(),
             typ=ns.parse_type("([{f, 4}]) -> [{f, 4}]"),
-            validation_cost_creator=lambda dsl, embedding: near.ValidationCost(
+            validation_cost_creator=lambda embedding: near.default_near_cost(
                 trainer_cfg=near.NEARTrainerConfig(
                     lr=0.1,
                     n_epochs=100,
                     accelerator="cpu",
                     loss_callback=nn.functional.mse_loss,
                 ),
-                neural_dsl=near.NeuralDSL.from_dsl(dsl, filler),
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
                 embedding=embedding,
-                structural_cost_weight=0.5,
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,

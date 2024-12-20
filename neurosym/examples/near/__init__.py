@@ -1,3 +1,9 @@
+from neurosym.examples.near.cost import (
+    NearCost,
+    NearStructuralCost,
+    NearValidationHeuristic,
+    NumberHolesNearStructuralCost,
+)
 from neurosym.examples.near.heirarchical.heirarchical_near import (
     heirarchical_near_graph,
 )
@@ -6,6 +12,7 @@ from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHol
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,
+    default_near_cost,
 )
 
 from .dsls import debug_nested_dsl
