@@ -13,6 +13,7 @@ from neurosym.examples.near.methods.near_example_trainer import (
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
+from neurosym.examples.near.validation import default_near_cost
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
 
@@ -134,7 +135,7 @@ class NEAR:
 
     def _get_validator(self, datamodule):
 
-        validation_cost = near.default_near_cost(
+        validation_cost = default_near_cost(
             trainer_cfg=self._trainer_config(),
             datamodule=datamodule,
             **self.validation_params,
