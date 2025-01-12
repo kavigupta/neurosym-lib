@@ -96,7 +96,9 @@ class NearCost:
             ), "If node is a DSLSearchNode, dsl must be None or equal to node.dsl"
             dsl = node.dsl
         else:
-            assert dsl is not None, "If node is not a DSLSearchNode, dsl must be provided"
+            assert (
+                dsl is not None
+            ), "If node is not a DSLSearchNode, dsl must be provided"
             program = node
         if not is_initialized_s_expression(program):
             try:
