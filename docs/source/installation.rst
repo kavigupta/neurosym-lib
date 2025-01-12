@@ -35,17 +35,12 @@ Tutorials
 
 These tutorial illustrate some more complex use cases:
 
--  Tutorials on Neural guided synthesis:
+-  `Tutorial on Abstraction Learning <https://neurosymbolic-learning.github.io/discrete_exercise_solutions.html>`_
 
-    - `Tutorial 1: Classification <https://neurosymbolic-learning.github.io/near_demo_classification.html>`_
-
-    - `Tutorial 2: Regression <https://neurosymbolic-learning.github.io/near_demo_regression_solutions.html>`_
-
-    - `Tutorial 3: Physics Simulation <https://neurosymbolic-learning.github.io/bouncing_ball_exercise_solutions.html>`_
+-  `Tutorials on neural guided synthesis: <https://neurosymbolic-learning.github.io/bouncing_ball_exercise_solutions.html>`
 
     .. - `Tutorial 4: Mice Behaviors <https://neurosymbolic-learning.github.io/TODO.html>`_
 
--  `Tutorial on Abstraction Learning <https://neurosymbolic-learning.github.io/discrete_exercise_solutions.html>`_
 
 .. -  Tutorial on DSL Design:
 .. -  Tutorial on Dreamcoder:
