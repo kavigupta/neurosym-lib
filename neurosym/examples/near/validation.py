@@ -63,28 +63,6 @@ class ValidationCost(NearValidationHeuristic):
             n_epochs=n_epochs,
         )
 
-    # def __call__(
-    #     self, node: DSLSearchNode | SExpression, n_epochs: int = None
-    # ) -> float:
-    #     """
-    #     Trains a partial program. Returns validation cost after training.
-
-    #     :param node: The partial program DSLSearchNode to compute the score for.
-
-    #     :returns: The validation loss as a `float`.
-    #     """
-    #     if isinstance(node, DSLSearchNode):
-    #         program = node.program
-    #     else:
-    #         program = node
-    #     try:
-    #         _, val_loss = self.validate_model(program=program, n_epochs=n_epochs)
-    #     except UninitializableProgramError as e:
-    #         log(e.message)
-    #         return self.error_loss
-
-    #     return val_loss
-
     def compute_cost(
         self, dsl: DSL, model: InitializedSExpression
     ) -> Tuple[InitializedSExpression, float]:
