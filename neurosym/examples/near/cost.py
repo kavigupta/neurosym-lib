@@ -21,7 +21,7 @@ class NearStructuralCost(ABC):
     """
 
     @abstractmethod
-    def compute_structural_cost(self, model: SExpression) -> float:
+    def compute_structural_cost(self, model: SExpression, dsl: DSL) -> float:
         """
         Computes the structural cost of a partial program.
         """
@@ -69,7 +69,7 @@ class NearCost:
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
-        struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize())
+        struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize(), dsl)
         return (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
@@ -124,12 +124,12 @@ class PerHoleNearStructuralCost(NearStructuralCost):
         Compute the cost of a hole.
         """
 
-    def compute_structural_cost(self, model: SExpression) -> float:
+    def compute_structural_cost(self, model: SExpression, dsl: DSL) -> float:
         if isinstance(model, Hole):
             return self.compute_hole_cost(model)
         cost = 0
         for child in model.children:
-            cost += self.compute_structural_cost(child)
+            cost += self.compute_structural_cost(child, dsl)
         return cost
 
 
@@ -138,7 +138,7 @@ class NumberHolesNearStructuralCost(PerHoleNearStructuralCost):
     Structural cost that counts the number of holes in a program.
     """
 
-    def compute_hole_cost(self, hole: Hole) -> float:
+    def compute_hole_cost(self, hole: Hole, dsl: DSL) -> float:
         return 1
 
 
