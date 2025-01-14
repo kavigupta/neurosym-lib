@@ -48,8 +48,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
             is_goal=lambda _: True,
-            cost=near.ValidationCost(
-                neural_dsl=neural_dsl,
+            cost=near.default_near_cost(
                 trainer_cfg=trainer_cfg,
                 datamodule=datamodule,
             ),

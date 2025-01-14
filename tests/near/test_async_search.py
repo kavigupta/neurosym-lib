@@ -45,8 +45,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
             ),
             is_goal=lambda _: True,
             max_depth=max_depth,
-            cost=near.ValidationCost(
-                neural_dsl=neural_dsl,
+            cost=near.default_near_cost(
                 trainer_cfg=trainer_cfg,
                 datamodule=datamodule,
             ),

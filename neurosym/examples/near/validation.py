@@ -1,24 +1,27 @@
-from typing import Tuple, Union
+from typing import Tuple
 
 import torch
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import (
+    NearCost,
+    NearValidationHeuristic,
+    NumberHolesNearStructuralCost,
+    UninitializableProgramError,
+)
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
-from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
-from neurosym.programs.hole import Hole
-from neurosym.programs.s_expression import InitializedSExpression, SExpression
+from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
 
-class ValidationCost:
+class ValidationCost(NearValidationHeuristic):
     """
     A class that computes the validation cost of a program using a neural DSL.
     This is epsilon-admissible heuristic: https://arxiv.org/abs/2007.12101
@@ -26,7 +29,6 @@ class ValidationCost:
     :param neural_dsl: The neural DSL to use.
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
-    :param error_loss: The loss to return if the program is invalid.
     :param progress_by_epoch: Whether to display progress by epoch.
     :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
         The scale of the validation cost (float) and structural_cost (int) can
@@ -37,69 +39,33 @@ class ValidationCost:
     def __init__(
         self,
         *,
-        neural_dsl: DSL,
         trainer_cfg: NEARTrainerConfig,
         datamodule: DatasetWrapper,
-        error_loss=10000,
         progress_by_epoch=False,
-        structural_cost_weight=0.5,
         embedding=lambda x: x,
+        n_epochs=None,
     ):
-        self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
-        self.error_loss = error_loss
-        self.structural_cost_weight = structural_cost_weight
         self.progress_by_epoch = progress_by_epoch
         self.embedding = embedding
+        self.n_epochs = n_epochs
 
-    def structural_cost(self, program: SExpression) -> int:
+    def with_n_epochs(self, n_epochs: int) -> "ValidationCost":
         """
-        Recursively calculates the structural cost of a program.
-        Approximated as the total number of Holes.
-
-        :param program: The program to compute the structural cost for.
-
-        :returns: An integer structural cost of the program.
+        Returns a new ValidationCost object with a different number of epochs.
         """
-        cost = 0
-        if isinstance(program, Hole):
-            cost += 1
-            return cost
-        for child in program.children:
-            cost += self.structural_cost(child)
-        return cost
-
-    def __call__(
-        self, node: DSLSearchNode | SExpression, n_epochs: int = None
-    ) -> float:
-        """
-        Trains a partial program. Returns validation cost after training.
-
-        :param node: The partial program DSLSearchNode to compute the score for.
-
-        :returns: The validation loss as a `float`.
-        """
-        if isinstance(node, DSLSearchNode):
-            program = node.program
-        else:
-            program = node
-        try:
-            log(f"Training {render_s_expression(program)}")
-            _, val_loss = self.validate_model(program=program, n_epochs=n_epochs)
-        except UninitializableProgramError as e:
-            log(e.message)
-            return self.error_loss
-
-        return (
-            1 - self.structural_cost_weight
-        ) * val_loss + self.structural_cost_weight * self.structural_cost(
-            program=program
+        return ValidationCost(
+            trainer_cfg=self.trainer_cfg,
+            datamodule=self.datamodule,
+            progress_by_epoch=self.progress_by_epoch,
+            embedding=self.embedding,
+            n_epochs=n_epochs,
         )
 
-    def validate_model(
-        self, program: SExpression, n_epochs: Union[int, None] = None
-    ) -> Tuple[TorchProgramModule, float]:
+    def compute_cost(
+        self, dsl: DSL, model: InitializedSExpression
+    ) -> Tuple[InitializedSExpression, float]:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
         validation loss.
@@ -108,21 +74,19 @@ class ValidationCost:
 
         :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
-        module, val_loss = self._fit_trainer(program, n_epochs=n_epochs)
-        return module, val_loss
+        log(f"Training {render_s_expression(model.uninitialize())}")
 
-    def _fit_trainer(self, program, *, n_epochs):
-        program_module, model = self.program_to_module(program)
+        model = self.program_to_module(dsl, model)
 
         val_loss = _train_model(
-            model, self.datamodule, n_epochs=n_epochs, trainer_cfg=self.trainer_cfg
+            model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
         )
 
-        return program_module, val_loss
+        return val_loss
 
     def program_to_module(
-        self, program: SExpression
-    ) -> Tuple[InitializedSExpression, torch.nn.Module]:
+        self, dsl: DSL, program: InitializedSExpression
+    ) -> torch.nn.Module:
         """
         Convert a program to a TorchProgramModule, which can then be trained.
         This can be overriden in subclasses to provide custom behavior, e.g.,
@@ -132,13 +96,7 @@ class ValidationCost:
         :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
             These should share weights, so that training the model also trains the program.
         """
-        try:
-            initialized = self.neural_dsl.initialize(program)
-        except PartialProgramNotFoundError as e:
-            raise UninitializableProgramError(
-                f"Partial Program not found for {render_s_expression(program)}"
-            ) from e
-        program_module = TorchProgramModule(self.neural_dsl, initialized)
+        program_module = TorchProgramModule(dsl, program)
 
         model = self.embedding(program_module)
 
@@ -146,19 +104,36 @@ class ValidationCost:
             raise UninitializableProgramError(
                 f"No parameters in program {render_s_expression(program)}"
             )
-        return initialized, model
+        return model
 
 
-class UninitializableProgramError(Exception):
+def default_near_cost(
+    *,
+    trainer_cfg: NEARTrainerConfig,
+    datamodule: DatasetWrapper,
+    progress_by_epoch=False,
+    **kwargs,
+):
     """
-    UninitializableProgramError is raised when a program cannot be
-    initialized due to either an inability to fill a hole in a partial program
-    or when a program has no parameters.
-    """
+    Default NearCost. This is a 50/50 blend of structural cost and validation cost,
+    with the given parameters.
 
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
+    return NearCost(
+        structural_cost=NumberHolesNearStructuralCost(),
+        validation_heuristic=ValidationCost(
+            trainer_cfg=trainer_cfg,
+            datamodule=datamodule,
+            progress_by_epoch=progress_by_epoch,
+            **kwargs,
+        ),
+        structural_cost_weight=0.5,
+    )
 
 
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
