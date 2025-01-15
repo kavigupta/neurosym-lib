@@ -49,6 +49,18 @@ class TestMinimalTermSize(unittest.TestCase):
             7,  # (* (+ (1) (1)) (+ (1) (1)))
         )
 
+    def test_basic_arith_symbol_weights(self):
+        dsl = self.basicDSL()
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(
+                    ns.parse_type("product"), ns.Environment.empty()
+                ),
+                {"+": 0.1, "*": 10},
+            ),
+            14.2,  # (* (+ (1) (1)) (+ (1) (1)))
+        )
+
     num_nesting = 100
 
     def heavilyNestedBinaryDSL(self):
@@ -158,3 +170,50 @@ class TestMinimalTermSize(unittest.TestCase):
         )
 
         self.assertLessEqual(count(), 5)
+
+    def choiceNestedDSL(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("1a", "() -> a0", lambda x: x)
+        dslf.concrete("1b", "() -> b0", lambda x: x)
+        for i in range(1, self.num_nesting):
+            for sym in "ab":
+                dslf.concrete(
+                    f"{sym}_{i}",
+                    f"({sym}{i-1}, {sym}{i-1}) -> {sym}{i}",
+                    lambda x, y: x + y,
+                )
+        dslf.concrete("done_a", f"a{self.num_nesting - 1} -> t", lambda x: x)
+        dslf.concrete("done_b", f"b{self.num_nesting - 1} -> t", lambda x: x)
+        return dslf.finalize()
+
+    def test_choice_heavily_nested(self):
+        depth = self.num_nesting - 1
+        dsl = self.choiceNestedDSL()
+        print(dsl.render())
+        count = self.instrumentDSL(dsl)
+        symbol_costs = {}
+        # we would like to force the model to pick a even though
+        # it is initially more unpleasant to use. So we give the last
+        # symbol in b a very high cost.
+
+        a_unpleasant = 2
+        b_bad = 10
+
+        for i in range(self.num_nesting):
+            symbol_costs[f"a_{i}"] = a_unpleasant
+            symbol_costs[f"b_{i}"] = 1
+        symbol_costs["a_0"] = 1
+        symbol_costs["b_1"] = b_bad
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("t"), ns.Environment.empty()),
+                symbol_costs,
+            ),
+            # done_a
+            1
+            # a_{depth} * 2^0 + a_{depth - 1} * 2^1 + ... + a_1 * 2^{depth - 1}
+            + 2 * (2**depth - 1)
+            # 1a * 2^depth
+            + 2**depth,
+        )
+        self.assertLessEqual(count(), depth**2 + 20)
