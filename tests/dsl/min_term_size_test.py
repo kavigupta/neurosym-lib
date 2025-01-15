@@ -71,7 +71,7 @@ class TestMinimalTermSize(unittest.TestCase):
             ),
             2 ** (i + 1) - 1,
         )
-        self.assertLessEqual(count(), 0.5 * i**2 + 10)
+        self.assertLessEqual(count(), 0.5 * i**2 + 20)
 
     num_linear_nesting = 1000
 

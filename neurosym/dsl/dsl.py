@@ -258,16 +258,22 @@ class DSL:
     def _minimum_type_computer(self):
         return MinimalTermSizeForTypeComputer(self)
 
-    def minimal_term_size_for_type(self, typ: TypeWithEnvironment) -> int:
+    def minimal_term_size_for_type(
+        self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int] = None
+    ) -> int:
         """
         Minimal term size for the given type.
 
         :param typ: The type to compute the minimal term size for.
+        :param symbol_costs: A dictionary of symbol costs. If None, all symbols have a cost of 1.
 
-        :return: The minimal term size for the given type, as a count of symbols
-            in the tree. If the type is not constructible, returns float('inf').
+        :return: The minimal term size for the given type, as a sum of symbol costs
+            for the symbols in the tree. If the type is not constructible, returns
+            float('inf').
         """
-        return self._minimum_type_computer.compute(typ)
+        if symbol_costs is None:
+            symbol_costs = {}
+        return self._minimum_type_computer.compute(typ, symbol_costs)
 
     def compute_type(
         self,
