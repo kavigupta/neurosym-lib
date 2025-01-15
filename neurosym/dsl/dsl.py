@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 from types import NoneType
 from typing import Callable, Dict, Iterator, List, Tuple, Union
 
@@ -15,6 +16,7 @@ from neurosym.utils.tree_trie import TreeTrie
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
+from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
 
 ROOT_SYMBOL = "<root>"
@@ -251,6 +253,21 @@ class DSL:
             for sym, in_t in rules
             if all(t in constructible for t in in_t)
         }
+
+    @cached_property
+    def _minimum_type_computer(self):
+        return MinimalTermSizeForTypeComputer(self)
+
+    def minimal_term_size_for_type(self, typ: TypeWithEnvironment) -> int:
+        """
+        Minimal term size for the given type.
+
+        :param typ: The type to compute the minimal term size for.
+
+        :return: The minimal term size for the given type, as a count of symbols
+            in the tree. If the type is not constructible, returns float('inf').
+        """
+        return self._minimum_type_computer.compute(typ)
 
     def compute_type(
         self,
