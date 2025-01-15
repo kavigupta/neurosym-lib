@@ -151,7 +151,7 @@ class MinimalStepsNearStructuralCost(PerHoleNearStructuralCost):
     """
 
     def compute_hole_cost(self, hole: Hole, dsl: DSL) -> float:
-        return dsl.minimal_term_size_for_type(hole.type)
+        return dsl.minimal_term_size_for_type(hole.twe)
 
 
 class UninitializableProgramError(Exception):
