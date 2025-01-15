@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from types import NoneType
 from typing import Callable, Dict, Iterator, List, Tuple, Union
 
-from frozendict import frozendict
 import numpy as np
+from frozendict import frozendict
 
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_with_environment import (
