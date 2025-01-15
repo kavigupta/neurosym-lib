@@ -113,19 +113,33 @@ class NearCost:
         return self.compute_cost(dsl, program)
 
 
-class NumberHolesNearStructuralCost(NearStructuralCost):
+class PerHoleNearStructuralCost(NearStructuralCost):
+    """
+    Structural cost is run on each hole in the program, then summed.
+    """
+
+    @abstractmethod
+    def compute_hole_cost(self, hole: Hole) -> float:
+        """
+        Compute the cost of a hole.
+        """
+
+    def compute_structural_cost(self, model: SExpression) -> float:
+        if isinstance(model, Hole):
+            return self.compute_hole_cost(model)
+        cost = 0
+        for child in model.children:
+            cost += self.compute_structural_cost(child)
+        return cost
+
+
+class NumberHolesNearStructuralCost(PerHoleNearStructuralCost):
     """
     Structural cost that counts the number of holes in a program.
     """
 
-    def compute_structural_cost(self, model: SExpression) -> float:
-        cost = 0
-        if isinstance(model, Hole):
-            cost += 1
-            return cost
-        for child in model.children:
-            cost += self.compute_structural_cost(child)
-        return cost
+    def compute_hole_cost(self, hole: Hole) -> float:
+        return 1
 
 
 class UninitializableProgramError(Exception):
