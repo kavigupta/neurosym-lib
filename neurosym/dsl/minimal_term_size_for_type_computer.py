@@ -1,8 +1,5 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
-from neurosym.programs.s_expression import SExpression
 from neurosym.types.type_with_environment import TypeWithEnvironment
 from neurosym.utils.documentation import internal_only
 
@@ -51,6 +48,7 @@ class MinimalTermSizeForTypeComputer:
         self.dsl = dsl
         self._by_type = {}
 
+    @internal_only
     def compute(self, typ: TypeWithEnvironment):
         # iterative deepening search
         depth_limit = 1
@@ -70,9 +68,6 @@ class MinimalTermSizeForTypeComputer:
                 return self._by_type[typ]
             if _definitely_greater_than_or_eq(self._by_type[typ], depth_limit):
                 return self._by_type[typ]
-        print(
-            f"Computing {typ} with depth limit {depth_limit}: value in cache: {self._by_type.get(typ, None)}"
-        )
         best_size = _AtLeast(float("inf"))
         for expansion in self.dsl.expansions_for_type(typ):
             size_so_far = 1
