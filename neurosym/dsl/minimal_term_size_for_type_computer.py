@@ -9,14 +9,6 @@ from neurosym.utils.documentation import internal_only
 class _AtLeast:
     value: int
 
-    def __add__(self, other):
-        if isinstance(other, _AtLeast):
-            return _AtLeast(self.value + other.value)
-        return _AtLeast(self.value + other)
-
-    def __radd__(self, other):
-        return self + other
-
 
 def _definitely_less_than_or_eq(value, limit):
     if isinstance(value, _AtLeast):
@@ -79,9 +71,10 @@ class MinimalTermSizeForTypeComputer:
                 child_size = self._compute_with_depth(
                     child_type, symbol_costs, depth_limit - size_so_far
                 )
-                size_so_far += child_size
-                if isinstance(size_so_far, _AtLeast):
+                if isinstance(child_size, _AtLeast):
+                    size_so_far = _AtLeast(size_so_far + child_size.value)
                     break
+                size_so_far += child_size
                 if size_so_far >= depth_limit:
                     size_so_far = _AtLeast(size_so_far)
                     break
