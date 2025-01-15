@@ -69,7 +69,9 @@ class NearCost:
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss
-        struct_cost = self.structural_cost.compute_structural_cost(model.uninitialize(), dsl)
+        struct_cost = self.structural_cost.compute_structural_cost(
+            model.uninitialize(), dsl
+        )
         return (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
