@@ -6,20 +6,21 @@ from neurosym.utils.documentation import internal_only
 
 @internal_only
 class MinimalTermSizeForTypeComputer:
-    # TODO symbol costs
-    def __init__(self, dsl):
+
+    def __init__(self, dsl, symbol_costs: Dict[str, int]):
         self.dsl = dsl
         self._value = {}
         self._at_most = {}
+        self.symbol_costs = symbol_costs
 
     @internal_only
-    def compute(self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int]):
+    def compute(self, typ: TypeWithEnvironment):
         while True:
-            updated, value = self._run_full_update(typ, symbol_costs)
+            updated, value = self._run_full_update(typ)
             if not updated:
                 return value
 
-    def _run_full_update(self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int]):
+    def _run_full_update(self, typ: TypeWithEnvironment):
         fringe = [typ]
         seen = set()
         updated = False
@@ -28,20 +29,18 @@ class MinimalTermSizeForTypeComputer:
             if current in seen:
                 continue
             seen.add(current)
-            updated_this, _ = self._run_update(current, symbol_costs, fringe)
+            updated_this, _ = self._run_update(current, fringe)
             updated |= updated_this
         if not updated:
             self._value[typ] = self._at_most.get(typ, float("inf"))
         return updated, self._value.get(typ, float("inf"))
 
-    def _run_update(
-        self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int], fringe
-    ):
+    def _run_update(self, typ: TypeWithEnvironment, fringe):
         if typ in self._value:
             return False, self._value[typ]
         best_size = self._at_most.get(typ, float("inf"))
         for expansion in self.dsl.expansions_for_type(typ):
-            size_so_far = symbol_costs.get(expansion.symbol, 1)
+            size_so_far = self.symbol_costs.get(expansion.symbol, 1)
             children_types = [child.twe for child in expansion.children]
             for child_type in children_types:
                 fringe.append(child_type)

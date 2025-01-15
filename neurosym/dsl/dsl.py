@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from functools import cached_property
 from types import NoneType
 from typing import Callable, Dict, Iterator, List, Tuple, Union
 
+from frozendict import frozendict
 import numpy as np
 
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
@@ -56,6 +56,8 @@ class DSL:
                 i,
                 is_wildcard_predicate=lambda x: isinstance(x, GenericTypeVariable),
             )
+
+        self._minimum_type_computer = {}
 
     def symbols(self):
         """
@@ -254,10 +256,6 @@ class DSL:
             if all(t in constructible for t in in_t)
         }
 
-    @cached_property
-    def _minimum_type_computer(self):
-        return MinimalTermSizeForTypeComputer(self)
-
     def minimal_term_size_for_type(
         self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int] = None
     ) -> int:
@@ -273,7 +271,9 @@ class DSL:
         """
         if symbol_costs is None:
             symbol_costs = {}
-        return self._minimum_type_computer.compute(typ, symbol_costs)
+        return self._minimum_type_computer.get(
+            frozendict(symbol_costs), MinimalTermSizeForTypeComputer(self, symbol_costs)
+        ).compute(typ)
 
     def compute_type(
         self,
