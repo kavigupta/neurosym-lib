@@ -5,9 +5,9 @@ import torch
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
+    MinimalStepsNearStructuralCost,
     NearCost,
     NearValidationHeuristic,
-    NumberHolesNearStructuralCost,
     UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
@@ -125,7 +125,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=NumberHolesNearStructuralCost(),
+        structural_cost=MinimalStepsNearStructuralCost(),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,

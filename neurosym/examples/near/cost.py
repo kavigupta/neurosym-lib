@@ -144,6 +144,16 @@ class NumberHolesNearStructuralCost(PerHoleNearStructuralCost):
         return 1
 
 
+class MinimalStepsNearStructuralCost(PerHoleNearStructuralCost):
+    """
+    Structural cost that counts the minimal number of steps needed to fill
+    each hole in a program.
+    """
+
+    def compute_hole_cost(self, hole: Hole, dsl: DSL) -> float:
+        return dsl.minimal_term_size_for_type(hole.type)
+
+
 class UninitializableProgramError(Exception):
     """
     UninitializableProgramError is raised when a program cannot be

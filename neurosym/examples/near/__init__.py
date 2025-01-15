@@ -1,4 +1,5 @@
 from neurosym.examples.near.cost import (
+    MinimalStepsNearStructuralCost,
     NearCost,
     NearStructuralCost,
     NearValidationHeuristic,
