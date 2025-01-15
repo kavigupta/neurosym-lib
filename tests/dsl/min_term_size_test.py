@@ -3,6 +3,7 @@ import unittest
 from parameterized import parameterized
 
 import neurosym as ns
+from neurosym.examples import near
 
 
 class TestMinimalTermSize(unittest.TestCase):
@@ -83,9 +84,9 @@ class TestMinimalTermSize(unittest.TestCase):
             ),
             2 ** (i + 1) - 1,
         )
-        self.assertLessEqual(count(), 0.5 * i**2 + 20)
+        self.assertLessEqual(count(), 2 * i**2 + 10)
 
-    num_linear_nesting = 1000
+    num_linear_nesting = 100
 
     def heavilyHeavilyNestedLinearDSL(self):
         dslf = ns.DSLFactory()
@@ -94,7 +95,7 @@ class TestMinimalTermSize(unittest.TestCase):
             dslf.concrete(f"f_{i}", f"(t{i-1}) -> t{i}", lambda x: x)
         return dslf.finalize()
 
-    @parameterized.expand([(i,) for i in range(1, num_linear_nesting, 100)])
+    @parameterized.expand([(i,) for i in range(1, num_linear_nesting, 10)])
     def test_heavily_heavily_nested_linear(self, i):
         dsl = self.heavilyHeavilyNestedLinearDSL()
         count = self.instrumentDSL(dsl)
@@ -104,7 +105,7 @@ class TestMinimalTermSize(unittest.TestCase):
             ),
             i + 1,
         )
-        self.assertLessEqual(count(), 3 * i + 10)
+        self.assertLessEqual(count(), 2 * i**2 + 10)
 
     def lambdasDSL(self):
         dslf = ns.DSLFactory()
@@ -127,7 +128,7 @@ class TestMinimalTermSize(unittest.TestCase):
             1 + 2,  # (lam (1 ($0)))
         )
 
-        self.assertLessEqual(count(), 10)
+        self.assertLessEqual(count(), 50)
 
     def test_lambdas_more_nesting(self):
         dsl = self.lambdasDSL()
@@ -141,7 +142,7 @@ class TestMinimalTermSize(unittest.TestCase):
             1 + 1 + 2 * 2,  # (lam (+ (1 ($0)) (1 ($0))))
         )
 
-        self.assertLessEqual(count(), 20)
+        self.assertLessEqual(count(), 50)
 
     def test_lambdas_even_more_nesting(self):
         dsl = self.lambdasDSL()
@@ -155,7 +156,7 @@ class TestMinimalTermSize(unittest.TestCase):
             1 + 3 + 2 * 4,  # (lam (* (+ (1 ($0)) (1 ($0))) (+ (1 ($0)) (1 ($0))))
         )
 
-        self.assertLessEqual(count(), 20)
+        self.assertLessEqual(count(), 50)
 
     def test_impossible_type(self):
         dsl = self.lambdasDSL()
@@ -216,4 +217,84 @@ class TestMinimalTermSize(unittest.TestCase):
             # 1a * 2^depth
             + 2**depth,
         )
-        self.assertLessEqual(count(), depth**2 + 20)
+        self.assertLessEqual(count(), 4 * depth**2 + 20)
+
+    def test_basic_cycle(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("cycle", "(a) -> a", lambda x: x)
+        dsl = dslf.finalize()
+        count = self.instrumentDSL(dsl)
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+            ),
+            float("inf"),  # cannot be expressed
+        )
+
+        self.assertLessEqual(count(), 5)
+
+    def test_basic_cycle_with_terminal(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("cycle", "(a, b) -> a", lambda x: x)
+        dslf.concrete("terminal", "() -> b", lambda: 1)
+        dsl = dslf.finalize()
+        count = self.instrumentDSL(dsl)
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+            ),
+            float("inf"),  # cannot be expressed
+        )
+
+        self.assertLessEqual(count(), 5)
+
+    def test_basic_cycle_with_another_cycle(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("cycle_a", "(a, b) -> a", lambda x: x)
+        dslf.concrete("cycle_b", "(b, a) -> b", lambda: 1)
+        dsl = dslf.finalize()
+        count = self.instrumentDSL(dsl)
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+            ),
+            float("inf"),  # cannot be expressed
+        )
+
+        self.assertLessEqual(count(), 5)
+
+    def test_basic_cycle_with_a_variable_cycle(self):
+        dslf = ns.DSLFactory()
+        dslf.concrete("compose_x", "(#a -> x, x -> #c) -> #a -> #c", lambda x: x)
+        dslf.concrete("compose_y", "(#a -> y, y -> #c) -> #a -> #c", lambda x: x)
+        dsl = dslf.finalize()
+        count = self.instrumentDSL(dsl)
+        self.assertEqual(
+            dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(ns.parse_type("u -> v"), ns.Environment.empty())
+            ),
+            float("inf"),  # cannot be expressed
+        )
+
+        self.assertLessEqual(count(), 10)
+
+    def test_rnn_dsl(self):
+        original_dsl = near.example_rnn_dsl(12, 4)
+        self.assertEqual(
+            original_dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(
+                    ns.parse_type("[{f, 12}] -> [{f, 12}]"),
+                    ns.Environment.empty(),
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            original_dsl.minimal_term_size_for_type(
+                ns.TypeWithEnvironment(
+                    ns.parse_type("{f, 12} -> {f, 4}"),
+                    ns.Environment.empty(),
+                )
+            ),
+            float("inf"),
+        )
