@@ -121,14 +121,14 @@ class PerHoleNearStructuralCost(NearStructuralCost):
     """
 
     @abstractmethod
-    def compute_hole_cost(self, hole: Hole) -> float:
+    def compute_hole_cost(self, hole: Hole, dsl: DSL) -> float:
         """
         Compute the cost of a hole.
         """
 
     def compute_structural_cost(self, model: SExpression, dsl: DSL) -> float:
         if isinstance(model, Hole):
-            return self.compute_hole_cost(model)
+            return self.compute_hole_cost(model, dsl)
         cost = 0
         for child in model.children:
             cost += self.compute_structural_cost(child, dsl)
