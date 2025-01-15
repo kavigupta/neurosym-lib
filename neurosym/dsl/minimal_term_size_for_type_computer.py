@@ -1,3 +1,5 @@
+from typing import Dict
+
 from neurosym.types.type_with_environment import TypeWithEnvironment
 from neurosym.utils.documentation import internal_only
 
