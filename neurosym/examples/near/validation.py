@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import Tuple
 
 import torch
@@ -6,9 +5,11 @@ import torch
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
+    IdentityProgramEmbedding,
     NearCost,
     NearValidationHeuristic,
     NumberHolesNearStructuralCost,
+    ProgramEmbedding,
     UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
@@ -20,30 +21,6 @@ from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
-
-
-class ProgramEmbedding(ABC):
-    """
-    A class that embeds a program within a larger framework.
-    """
-
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
-        """
-        Embeds a program into a neural model.
-
-        :param program: The program to embed.
-        :returns: The neural model.
-        """
-        raise NotImplementedError
-
-
-class IdentityProgramEmbedding(ProgramEmbedding):
-    """
-    An embedding that does nothing.
-    """
-
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
-        return program
 
 
 class ValidationCost(NearValidationHeuristic):

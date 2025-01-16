@@ -9,7 +9,7 @@ from neurosym.examples.near.models.torch_program_module import TorchProgramModul
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
-from neurosym.examples.near.validation import IdentityProgramEmbedding
+from neurosym.examples.near.cost import IdentityProgramEmbedding
 from neurosym.types.type import Type
 
 

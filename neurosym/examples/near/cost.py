@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import torch
+
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import (
@@ -44,6 +47,30 @@ class NearValidationHeuristic(ABC):
 
         :returns: The validation loss as a `float`.
         """
+
+
+class ProgramEmbedding(ABC):
+    """
+    A class that embeds a program within a larger framework.
+    """
+
+    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+        """
+        Embeds a program into a neural model.
+
+        :param program: The program to embed.
+        :returns: The neural model.
+        """
+        raise NotImplementedError
+
+
+class IdentityProgramEmbedding(ProgramEmbedding):
+    """
+    An embedding that does nothing.
+    """
+
+    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+        return program
 
 
 @dataclass
