@@ -123,7 +123,7 @@ def get_validation_cost(dataset, embedding=lambda x: x):
     )
     return near.NearCost(
         structural_cost=near.MinimalStepsNearStructuralCost(
-            embedding=embedding, symbol_costs={"linear_bool": lin_bool_size}
+            symbol_costs={"linear_bool": lin_bool_size}
         ),
         validation_heuristic=near.ValidationCost(
             trainer_cfg=near.NEARTrainerConfig(
@@ -134,8 +134,8 @@ def get_validation_cost(dataset, embedding=lambda x: x):
             ),
             datamodule=dataset,
             progress_by_epoch=False,
-            embedding=embedding,
         ),
+        embedding=embedding,
         structural_cost_weight=0.2,
     )
 
