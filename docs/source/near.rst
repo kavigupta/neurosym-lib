@@ -17,7 +17,7 @@
     :members:
 .. autoclass:: neurosym.examples.near.NearStructuralCost
     :members:
-.. autoclass:: neurosym.examples.near.PerHoleNearStructuralCost
+.. autoclass:: neurosym.examples.near.PerNodeNearStructuralCost
     :members:
 .. autoclass:: neurosym.examples.near.NumberHolesNearStructuralCost
     :members:

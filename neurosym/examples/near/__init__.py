@@ -4,7 +4,7 @@ from neurosym.examples.near.cost import (
     NearStructuralCost,
     NearValidationHeuristic,
     NumberHolesNearStructuralCost,
-    PerHoleNearStructuralCost,
+    PerNodeNearStructuralCost,
     ProgramEmbedding,
 )
 from neurosym.examples.near.heirarchical.heirarchical_near import (
