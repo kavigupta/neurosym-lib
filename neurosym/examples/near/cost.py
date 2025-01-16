@@ -58,7 +58,9 @@ class ProgramEmbedding(ABC):
     """
 
     @abstractmethod
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+    def embed_initialized_program(
+        self, program: TorchProgramModule
+    ) -> TorchProgramModule:
         """
         Embeds a program into a neural model.
 
@@ -72,7 +74,9 @@ class IdentityProgramEmbedding(ProgramEmbedding):
     An embedding that does nothing.
     """
 
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+    def embed_initialized_program(
+        self, program: TorchProgramModule
+    ) -> TorchProgramModule:
         return program
 
 

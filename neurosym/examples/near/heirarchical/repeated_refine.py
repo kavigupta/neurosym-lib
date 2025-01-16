@@ -103,7 +103,7 @@ class _RefinementEmbedding(ProgramEmbedding):
         self.frozen = main_program
         self.overall_dsl = overall_dsl
 
-    def embed_initialized_program(self, program):
+    def embed_initialized_program(self, program) -> TorchProgramModule:
         frozen_subst, replaced = self.frozen.replace_first(
             self.to_replace, program.initalized_program
         )
