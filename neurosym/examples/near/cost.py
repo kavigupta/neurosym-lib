@@ -112,7 +112,7 @@ class NearCost:
             log(e.message)
             return self.error_loss
         struct_cost = self.structural_cost.compute_structural_cost(
-            model.uninitialize(), dsl
+            self.embedding.embed_initialized_program(model).uninitialize(), dsl
         )
         return (
             1 - self.structural_cost_weight
