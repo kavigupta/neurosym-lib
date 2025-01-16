@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import Tuple
 
 import torch
@@ -6,9 +5,11 @@ import torch
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
+    IdentityProgramEmbedding,
     MinimalStepsNearStructuralCost,
     NearCost,
     NearValidationHeuristic,
+    ProgramEmbedding,
     UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
@@ -20,30 +21,6 @@ from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
-
-
-class ProgramEmbedding(ABC):
-    """
-    A class that embeds a program within a larger framework.
-    """
-
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
-        """
-        Embeds a program into a neural model.
-
-        :param program: The program to embed.
-        :returns: The neural model.
-        """
-        raise NotImplementedError
-
-
-class IdentityProgramEmbedding(ProgramEmbedding):
-    """
-    An embedding that does nothing.
-    """
-
-    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
-        return program
 
 
 class ValidationCost(NearValidationHeuristic):
@@ -67,16 +44,11 @@ class ValidationCost(NearValidationHeuristic):
         trainer_cfg: NEARTrainerConfig,
         datamodule: DatasetWrapper,
         progress_by_epoch=False,
-        embedding=IdentityProgramEmbedding(),
         n_epochs=None,
     ):
-        assert isinstance(
-            embedding, ProgramEmbedding
-        ), f"embedding must be a ProgramEmbedding, but was {embedding}"
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.progress_by_epoch = progress_by_epoch
-        self.embedding = embedding
         self.n_epochs = n_epochs
 
     def with_n_epochs(self, n_epochs: int) -> "ValidationCost":
@@ -87,12 +59,11 @@ class ValidationCost(NearValidationHeuristic):
             trainer_cfg=self.trainer_cfg,
             datamodule=self.datamodule,
             progress_by_epoch=self.progress_by_epoch,
-            embedding=self.embedding,
             n_epochs=n_epochs,
         )
 
     def compute_cost(
-        self, dsl: DSL, model: InitializedSExpression
+        self, dsl: DSL, model: InitializedSExpression, embedding: ProgramEmbedding
     ) -> Tuple[InitializedSExpression, float]:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
@@ -104,7 +75,7 @@ class ValidationCost(NearValidationHeuristic):
         """
         log(f"Training {render_s_expression(model.uninitialize())}")
 
-        model = self.program_to_module(dsl, model)
+        model = self.program_to_module(dsl, model, embedding)
 
         val_loss = _train_model(
             model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
@@ -113,7 +84,7 @@ class ValidationCost(NearValidationHeuristic):
         return val_loss
 
     def program_to_module(
-        self, dsl: DSL, program: InitializedSExpression
+        self, dsl: DSL, program: InitializedSExpression, embedding: ProgramEmbedding
     ) -> torch.nn.Module:
         """
         Convert a program to a TorchProgramModule, which can then be trained.
@@ -126,7 +97,7 @@ class ValidationCost(NearValidationHeuristic):
         """
         program_module = TorchProgramModule(dsl, program)
 
-        model = self.embedding.embed_initialized_program(program_module)
+        model = embedding.embed_initialized_program(program_module)
 
         if len(list(model.parameters())) == 0:
             raise UninitializableProgramError(
@@ -140,6 +111,7 @@ def default_near_cost(
     trainer_cfg: NEARTrainerConfig,
     datamodule: DatasetWrapper,
     progress_by_epoch=False,
+    embedding: ProgramEmbedding = IdentityProgramEmbedding(),
     **kwargs,
 ):
     """
@@ -161,6 +133,7 @@ def default_near_cost(
             **kwargs,
         ),
         structural_cost_weight=0.5,
+        embedding=embedding,
     )
 
 
