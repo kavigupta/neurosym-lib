@@ -5,7 +5,6 @@ from neurosym.examples.near.cost import (
     NearStructuralCost,
     NearValidationHeuristic,
     NumberHolesNearStructuralCost,
-    PerHoleNearStructuralCost,
     PerNodeNearStructuralCost,
     ProgramEmbedding,
 )

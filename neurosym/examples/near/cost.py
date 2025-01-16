@@ -209,11 +209,10 @@ class MinimalStepsNearStructuralCost(PerNodeNearStructuralCost):
 
     def compute_node_cost(self, node: SExpression, dsl: DSL) -> float:
         if not isinstance(node, Hole):
-            return self.symbol_costs.get(node.symbol, 0) - 1
+            return max(self.symbol_costs.get(node.symbol, 0) - 1, 0)
         result = dsl.minimal_term_size_for_type(
             node.twe, symbol_costs=self.symbol_costs
         )
-        print(render_s_expression(node), result)
         return result
 
 
