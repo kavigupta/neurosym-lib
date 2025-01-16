@@ -113,7 +113,7 @@ def get_neural_dsl(dsl):
     )
 
 
-def get_validation_cost(dataset, **validation_params):
+def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
     return near.default_near_cost(
         trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
@@ -123,7 +123,7 @@ def get_validation_cost(dataset, **validation_params):
         ),
         datamodule=dataset,
         progress_by_epoch=False,
-        **validation_params,
+        embedding=embedding,
     )
 
 

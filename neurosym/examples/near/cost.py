@@ -37,13 +37,16 @@ class NearValidationHeuristic(ABC):
     """
 
     @abstractmethod
-    def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
+    def compute_cost(
+        self, dsl: DSL, model: InitializedSExpression, embedding: "ProgramEmbedding"
+    ) -> float:
         """
         Train a model and compute the validation cost. This mutates the model
         to train it
 
         :param dsl: The DSL to use for training.
         :param model: The model to train. Will be mutated in place.
+        :param embedding: The embedding to use for the model.
 
         :returns: The validation loss as a `float`.
         """
@@ -83,6 +86,12 @@ class NearCost:
     validation_heuristic: NearValidationHeuristic
     structural_cost_weight: float = 0.5
     error_loss: float = 10000
+    embedding: ProgramEmbedding = IdentityProgramEmbedding()
+
+    def __post_init__(self):
+        assert isinstance(
+            self.embedding, ProgramEmbedding
+        ), f"embedding must be a ProgramEmbedding, but was {self.embedding}"
 
     def compute_cost(self, dsl: DSL, model: InitializedSExpression) -> float:
         """
@@ -92,7 +101,9 @@ class NearCost:
         :param model: The model to train. Will be mutated in place.
         """
         try:
-            val_loss = self.validation_heuristic.compute_cost(dsl, model)
+            val_loss = self.validation_heuristic.compute_cost(
+                dsl, model, self.embedding
+            )
         except UninitializableProgramError as e:
             log(e.message)
             return self.error_loss

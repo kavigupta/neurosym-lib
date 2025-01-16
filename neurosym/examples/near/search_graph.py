@@ -144,7 +144,7 @@ def validated_near_graph(
         log(f"Validating {render_s_expression(sexpr)}")
         module = dsl.initialize(sexpr)
         _ = cost.validation_heuristic.with_n_epochs(validation_epochs).compute_cost(
-            dsl, module
+            dsl, module, cost.embedding
         )
         return module
 

@@ -102,10 +102,10 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
                 ),
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
-                embedding=embedding,
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,
+            embedding=embedding,
         )
         best_programs = itertools.islice(
             ns.search.bounded_astar(g, max_depth=1000, max_iterations=10000), 4
