@@ -37,7 +37,7 @@ class ProgramEmbedding(ABC):
         raise NotImplementedError
 
 
-class IdentityEmbedding(ProgramEmbedding):
+class IdentityProgramEmbedding(ProgramEmbedding):
     """
     An embedding that does nothing.
     """
@@ -67,7 +67,7 @@ class ValidationCost(NearValidationHeuristic):
         trainer_cfg: NEARTrainerConfig,
         datamodule: DatasetWrapper,
         progress_by_epoch=False,
-        embedding=IdentityEmbedding(),
+        embedding=IdentityProgramEmbedding(),
         n_epochs=None,
     ):
         assert isinstance(
