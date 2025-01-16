@@ -88,6 +88,12 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
 
     def test_heirarchical_bouncing_ball(self):
         filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
+        lin_bool_size = predicate_dsl().minimal_term_size_for_type(
+            ns.TypeWithEnvironment(
+                ns.parse_type("{f, 4} -> {f, 1}"), ns.Environment.empty()
+            )
+        )
+
         g = near.heirarchical_near_graph(
             high_level_dsl=bounce_dsl(),
             symbol="linear_bool",
@@ -103,6 +109,8 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
                 embedding=embedding,
+                # structural_cost_weight=0.2,
+                symbol_costs={"linear_bool": lin_bool_size},
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,
