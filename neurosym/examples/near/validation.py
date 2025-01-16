@@ -125,7 +125,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=MinimalStepsNearStructuralCost(),
+        structural_cost=MinimalStepsNearStructuralCost({}),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,
