@@ -56,6 +56,15 @@ class ProgramEmbedding(ABC):
     """
 
     @abstractmethod
+    def embed_program(self, program: SExpression) -> SExpression:
+        """
+        Embeds a program into a larger program.
+
+        :param program: The program to embed.
+        :returns: The embedded program.
+        """
+
+    @abstractmethod
     def embed_initialized_program(
         self, program: TorchProgramModule
     ) -> TorchProgramModule:
@@ -71,6 +80,9 @@ class IdentityProgramEmbedding(ProgramEmbedding):
     """
     An embedding that does nothing.
     """
+
+    def embed_program(self, program: SExpression) -> SExpression:
+        return program
 
     def embed_initialized_program(
         self, program: TorchProgramModule
@@ -110,7 +122,7 @@ class NearCost:
             log(e.message)
             return self.error_loss
         struct_cost = self.structural_cost.compute_structural_cost(
-            model.uninitialize(), dsl
+            self.embedding.embed_program(model.uninitialize()), dsl
         )
         return (
             1 - self.structural_cost_weight
