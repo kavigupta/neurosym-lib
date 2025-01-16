@@ -112,16 +112,19 @@ def default_near_cost(
     datamodule: DatasetWrapper,
     progress_by_epoch=False,
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
+    structural_cost_weight: float = 0.5,
     **kwargs,
 ):
     """
-    Default NearCost. This is a 50/50 blend of structural cost and validation cost,
+    Default NearCost. This is, by default, a 50/50 blend of structural cost and validation cost,
     with the given parameters.
 
     :param neural_dsl: The neural DSL to use.
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
     :param progress_by_epoch: Whether to display progress by epoch.
+    :param embedding: The embedding to use.
+    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
@@ -132,7 +135,7 @@ def default_near_cost(
             progress_by_epoch=progress_by_epoch,
             **kwargs,
         ),
-        structural_cost_weight=0.5,
+        structural_cost_weight=structural_cost_weight,
         embedding=embedding,
     )
 
