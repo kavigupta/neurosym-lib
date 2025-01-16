@@ -3,13 +3,12 @@ from typing import Callable
 from torch import nn
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.cost import NearCost
+from neurosym.examples.near.cost import IdentityProgramEmbedding, NearCost
 from neurosym.examples.near.heirarchical.repeated_refine import refinement_graph
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
-from neurosym.examples.near.cost import IdentityProgramEmbedding
 from neurosym.types.type import Type
 
 

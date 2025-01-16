@@ -4,12 +4,11 @@ from typing import Callable
 from torch import nn
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.cost import NearCost
+from neurosym.examples.near.cost import NearCost, ProgramEmbedding
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
-from neurosym.examples.near.cost import ProgramEmbedding
 from neurosym.programs.s_expression import InitializedSExpression, postorder
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.return_search_graph import ReturnSearchGraph
