@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Tuple
 
 import torch
@@ -21,6 +22,30 @@ from neurosym.utils.logging import log
 pl = import_pytorch_lightning()
 
 
+class ProgramEmbedding(ABC):
+    """
+    A class that embeds a program within a larger framework.
+    """
+
+    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+        """
+        Embeds a program into a neural model.
+
+        :param program: The program to embed.
+        :returns: The neural model.
+        """
+        raise NotImplementedError
+
+
+class IdentityProgramEmbedding(ProgramEmbedding):
+    """
+    An embedding that does nothing.
+    """
+
+    def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
+        return program
+
+
 class ValidationCost(NearValidationHeuristic):
     """
     A class that computes the validation cost of a program using a neural DSL.
@@ -42,9 +67,12 @@ class ValidationCost(NearValidationHeuristic):
         trainer_cfg: NEARTrainerConfig,
         datamodule: DatasetWrapper,
         progress_by_epoch=False,
-        embedding=lambda x: x,
+        embedding=IdentityProgramEmbedding(),
         n_epochs=None,
     ):
+        assert isinstance(
+            embedding, ProgramEmbedding
+        ), f"embedding must be a ProgramEmbedding, but was {embedding}"
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
         self.progress_by_epoch = progress_by_epoch
@@ -98,7 +126,7 @@ class ValidationCost(NearValidationHeuristic):
         """
         program_module = TorchProgramModule(dsl, program)
 
-        model = self.embedding(program_module)
+        model = self.embedding.embed_initialized_program(program_module)
 
         if len(list(model.parameters())) == 0:
             raise UninitializableProgramError(

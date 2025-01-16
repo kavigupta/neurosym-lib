@@ -79,3 +79,11 @@ class TestReplaceFirst(unittest.TestCase):
         self.assertEqual(len(a_states), len(a_states_new))
         for old, new in zip(a_states, a_states_new):
             self.assertIs(old, new)
+
+    def test_replace_in_s_expression(self):
+        dsl = self.compute_dsl()
+        a = ns.parse_s_expression("(+ (+ (1) (c)) (c))")
+        b = dsl.initialize(ns.parse_s_expression("(+ (1) (c))"))
+        c, replaced = a.replace_first("c", b)
+        self.assertTrue(replaced)
+        self.assertEqual(ns.render_s_expression(c), "(+ (+ (1) (+ (1) (c))) (c))")
