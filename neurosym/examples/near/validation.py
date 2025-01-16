@@ -6,9 +6,9 @@ from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.cost import (
     IdentityProgramEmbedding,
+    MinimalStepsNearStructuralCost,
     NearCost,
     NearValidationHeuristic,
-    NumberHolesNearStructuralCost,
     ProgramEmbedding,
     UninitializableProgramError,
 )
@@ -113,6 +113,7 @@ def default_near_cost(
     progress_by_epoch=False,
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
     structural_cost_weight: float = 0.5,
+    symbol_costs=None,
     **kwargs,
 ):
     """
@@ -128,7 +129,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=NumberHolesNearStructuralCost(),
+        structural_cost=MinimalStepsNearStructuralCost(symbol_costs=symbol_costs or {}),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,

@@ -1,5 +1,6 @@
 from neurosym.examples.near.cost import (
     IdentityProgramEmbedding,
+    MinimalStepsNearStructuralCost,
     NearCost,
     NearStructuralCost,
     NearValidationHeuristic,

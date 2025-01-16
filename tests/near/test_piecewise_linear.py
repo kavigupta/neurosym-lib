@@ -114,6 +114,13 @@ def get_neural_dsl(dsl):
 
 
 def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
+
+    lr_dsl = linear_replacement_dsl()
+    lin_bool_size = lr_dsl.minimal_term_size_for_type(
+        ns.TypeWithEnvironment(
+            ns.parse_type("{f, 2} -> {f, 1}"), ns.Environment.empty()
+        )
+    )
     return near.default_near_cost(
         trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
@@ -124,6 +131,8 @@ def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
         datamodule=dataset,
         progress_by_epoch=False,
         embedding=embedding,
+        structural_cost_weight=0.2,
+        symbol_costs={"linear_bool": lin_bool_size},
     )
 
 
@@ -189,7 +198,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 10
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 5
         )
         s_exps = [ns.render_s_expression(p.uninitialize()) for p in result]
         print(s_exps)

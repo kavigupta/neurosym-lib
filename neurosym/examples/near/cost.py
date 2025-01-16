@@ -198,6 +198,24 @@ class NumberHolesNearStructuralCost(PerNodeNearStructuralCost):
         return 0
 
 
+@dataclass
+class MinimalStepsNearStructuralCost(PerNodeNearStructuralCost):
+    """
+    Structural cost that counts the minimal number of steps needed to fill
+    each hole in a program.
+    """
+
+    symbol_costs: dict[str, int]
+
+    def compute_node_cost(self, node: SExpression, dsl: DSL) -> float:
+        if not isinstance(node, Hole):
+            return max(self.symbol_costs.get(node.symbol, 0) - 1, 0)
+        result = dsl.minimal_term_size_for_type(
+            node.twe, symbol_costs=self.symbol_costs
+        )
+        return result
+
+
 class UninitializableProgramError(Exception):
     """
     UninitializableProgramError is raised when a program cannot be

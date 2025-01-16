@@ -21,6 +21,8 @@
     :members:
 .. autoclass:: neurosym.examples.near.NumberHolesNearStructuralCost
     :members:
+.. autoclass:: neurosym.examples.near.MinimalStepsNearStructuralCost
+    :members:
 .. autoclass:: neurosym.examples.near.NearValidationHeuristic
     :members:
 .. autoclass:: neurosym.examples.near.ValidationCost
