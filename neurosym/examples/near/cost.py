@@ -205,7 +205,7 @@ class MinimalStepsNearStructuralCost(PerNodeNearStructuralCost):
     each hole in a program.
     """
 
-    symbol_costs: dict[str, int] = None
+    symbol_costs: dict[str, int]
 
     def compute_node_cost(self, node: SExpression, dsl: DSL) -> float:
         if not isinstance(node, Hole):
