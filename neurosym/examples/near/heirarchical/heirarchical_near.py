@@ -9,6 +9,7 @@ from neurosym.examples.near.models.torch_program_module import TorchProgramModul
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
+from neurosym.examples.near.validation import IdentityEmbedding
 from neurosym.types.type import Type
 
 
@@ -62,7 +63,7 @@ def heirarchical_near_graph(
     g = validated_near_graph(
         NeuralDSL.from_dsl(dsl=high_level_dsl, neural_hole_filler=neural_hole_filler),
         typ,
-        cost=validation_cost_creator(lambda x: x),
+        cost=validation_cost_creator(IdentityEmbedding()),
         **near_params,
     )
     g = g.bind(
