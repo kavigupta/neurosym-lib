@@ -198,7 +198,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 10
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 5
         )
         s_exps = [ns.render_s_expression(p.uninitialize()) for p in result]
         print(s_exps)
