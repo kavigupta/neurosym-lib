@@ -104,7 +104,9 @@ class _RefinementEmbedding(ProgramEmbedding):
         self.overall_dsl = overall_dsl
 
     def embed_program(self, program) -> InitializedSExpression:
-        frozen_subst, replaced = self.frozen.uninitialize().replace_first(self.to_replace, program)
+        frozen_subst, replaced = self.frozen.uninitialize().replace_first(
+            self.to_replace, program
+        )
         assert replaced
         return frozen_subst
 
