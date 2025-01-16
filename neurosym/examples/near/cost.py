@@ -57,6 +57,7 @@ class ProgramEmbedding(ABC):
     A class that embeds a program within a larger framework.
     """
 
+    @abstractmethod
     def embed_initialized_program(self, program: TorchProgramModule) -> torch.nn.Module:
         """
         Embeds a program into a neural model.
@@ -64,7 +65,6 @@ class ProgramEmbedding(ABC):
         :param program: The program to embed.
         :returns: The neural model.
         """
-        raise NotImplementedError
 
 
 class IdentityProgramEmbedding(ProgramEmbedding):
