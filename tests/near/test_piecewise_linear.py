@@ -113,17 +113,30 @@ def get_neural_dsl(dsl):
     )
 
 
-def get_validation_cost(dataset, **validation_params):
-    return near.default_near_cost(
-        trainer_cfg=near.NEARTrainerConfig(
-            lr=0.005,
-            n_epochs=100,
-            accelerator="cpu",
-            loss_callback=nn.functional.mse_loss,
+def get_validation_cost(dataset, embedding=lambda x: x):
+
+    lr_dsl = linear_replacement_dsl()
+    lin_bool_size = lr_dsl.minimal_term_size_for_type(
+        ns.TypeWithEnvironment(
+            ns.parse_type("{f, 2} -> {f, 1}"), ns.Environment.empty()
+        )
+    )
+    return near.NearCost(
+        structural_cost=near.MinimalStepsNearStructuralCost(
+            embedding=embedding, symbol_costs={"linear_bool": lin_bool_size}
         ),
-        datamodule=dataset,
-        progress_by_epoch=False,
-        **validation_params,
+        validation_heuristic=near.ValidationCost(
+            trainer_cfg=near.NEARTrainerConfig(
+                lr=0.005,
+                n_epochs=100,
+                accelerator="cpu",
+                loss_callback=nn.functional.mse_loss,
+            ),
+            datamodule=dataset,
+            progress_by_epoch=False,
+            embedding=embedding,
+        ),
+        structural_cost_weight=0.2,
     )
 
 
