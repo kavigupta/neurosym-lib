@@ -12,6 +12,8 @@ from neurosym.examples.near.heirarchical.heirarchical_near import (
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
+    IdentityProgramEmbedding,
+    ProgramEmbedding,
     UninitializableProgramError,
     ValidationCost,
     default_near_cost,

@@ -27,6 +27,10 @@
     :members:
 .. autoclass:: neurosym.examples.near.ValidationCost
     :members:
+.. autoclass:: neurosym.examples.near.ProgramEmbedding
+    :members:
+.. autoclass:: neurosym.examples.near.IdentityProgramEmbedding
+    :members:
 
 
 ``NEAR`` Heirarchical Algorithm
