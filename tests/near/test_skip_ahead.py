@@ -65,8 +65,6 @@ class TestSkipAhead(unittest.TestCase):
         dslf.concrete("map", "(#a -> #b) -> [#a] -> [#b]", None)
         dslf.concrete("aToB", "() -> a -> b", None)
 
-        # dslf.lambdas()
-
         dslf.prune_to("[a] -> [a]")
 
         return dslf.finalize()
