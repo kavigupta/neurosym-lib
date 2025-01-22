@@ -134,7 +134,7 @@ class TestNeuralModels(unittest.TestCase):
             actual = "No results"
         else:
             [actual] = results
-            actual = ns.render_s_expression(actual.initalized_program.uninitialize())
+            actual = ns.render_s_expression(actual.uninitialize())
         if callable(expected):
             expected = expected(nesting)
         if isinstance(expected, str):

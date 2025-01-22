@@ -1,5 +1,10 @@
 from torch import nn
 
+from neurosym.programs.s_expression import (
+    InitializedSExpression,
+    is_initialized_s_expression,
+)
+
 
 class TorchProgramModule(nn.Module):
     """
@@ -10,8 +15,11 @@ class TorchProgramModule(nn.Module):
     :param initialized_program: The initialized program to wrap.
     """
 
-    def __init__(self, dsl, initialized_program):
+    def __init__(self, dsl, initialized_program: InitializedSExpression):
         super().__init__()
+        assert is_initialized_s_expression(initialized_program), type(
+            initialized_program
+        )
         self.dsl = dsl
         self.initalized_program = initialized_program
         self.contained_modules = nn.ModuleList(

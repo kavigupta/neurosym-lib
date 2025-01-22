@@ -113,19 +113,26 @@ def get_neural_dsl(dsl):
     )
 
 
-def get_validation_cost(dsl, dataset, **validation_params):
-    neural_dsl = get_neural_dsl(dsl)
-    return near.ValidationCost(
+def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
+
+    lr_dsl = linear_replacement_dsl()
+    lin_bool_size = lr_dsl.minimal_term_size_for_type(
+        ns.TypeWithEnvironment(
+            ns.parse_type("{f, 2} -> {f, 1}"), ns.Environment.empty()
+        )
+    )
+    return near.default_near_cost(
         trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
             n_epochs=100,
             accelerator="cpu",
             loss_callback=nn.functional.mse_loss,
         ),
-        neural_dsl=neural_dsl,
         datamodule=dataset,
         progress_by_epoch=False,
-        **validation_params,
+        embedding=embedding,
+        structural_cost_weight=0.2,
+        symbol_costs={"linear_bool": lin_bool_size},
     )
 
 
@@ -152,21 +159,17 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl()
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset))
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset))
         )
 
-        programs = [
-            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
-        ]
+        programs = [ns.render_s_expression(p.uninitialize()) for p in result]
 
         expected = "(ite (linear_bool) (linear_bool) (linear_bool))"
         self.assertIn(expected, programs)
 
         result_relevant = result[programs.index(expected)]
 
-        [cond, cons, alt] = [
-            x.state["lin"] for x in result_relevant.initalized_program.children
-        ]
+        [cond, cons, alt] = [x.state["lin"] for x in result_relevant.children]
 
         print("Conditional weight:")
         print(cond.weight)
@@ -195,11 +198,9 @@ class TestPiecewiseLinear(unittest.TestCase):
         dsl = high_level_dsl(linear_layers=False)
         dataset = get_dataset()
         result = self.search(
-            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dsl, dataset)), 10
+            self.near_graph(get_neural_dsl(dsl), get_validation_cost(dataset)), 5
         )
-        s_exps = [
-            ns.render_s_expression(p.initalized_program.uninitialize()) for p in result
-        ]
+        s_exps = [ns.render_s_expression(p.uninitialize()) for p in result]
         print(s_exps)
         for s_exp in s_exps:
             self.assertNotIn(s_exp, [negative, positive])
@@ -212,9 +213,7 @@ class TestPiecewiseLinear(unittest.TestCase):
             "linear_bool",
             lr_dsl,
             ns.parse_type("{f, 2} -> {f, 1}"),
-            lambda dsl, embedding: get_validation_cost(
-                dsl, get_dataset(), embedding=embedding
-            ),
+            lambda embedding: get_validation_cost(get_dataset(), embedding=embedding),
             neural_hole_filler,
             is_goal=lambda _: True,
             max_depth=10000,

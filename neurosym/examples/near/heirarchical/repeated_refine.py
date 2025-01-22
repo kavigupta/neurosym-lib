@@ -4,11 +4,11 @@ from typing import Callable
 from torch import nn
 
 from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import NearCost, ProgramEmbedding
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
-from neurosym.examples.near.validation import ValidationCost
 from neurosym.programs.s_expression import InitializedSExpression, postorder
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.return_search_graph import ReturnSearchGraph
@@ -24,7 +24,7 @@ def refinement_graph(
     cost,
     symbol_to_replace: str,
     validation_cost_creator: Callable[
-        [Callable[[TorchProgramModule], nn.Module]], ValidationCost
+        [Callable[[TorchProgramModule], nn.Module]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
     **near_params,
@@ -54,7 +54,6 @@ def refinement_graph(
     )
 
     def after_search(result, cost_result):
-        result = result.initalized_program
         replaced, worked = current_program.replace_first(symbol_to_replace, result)
         assert worked
         replaced = _freeze(replaced)
@@ -88,7 +87,7 @@ def _freeze(program):
     return program
 
 
-class _RefinementEmbedding:
+class _RefinementEmbedding(ProgramEmbedding):
     """
     Represents a refinement embedding that places the given program in some main
     program, replacing a specified symbol.
@@ -104,9 +103,16 @@ class _RefinementEmbedding:
         self.frozen = main_program
         self.overall_dsl = overall_dsl
 
-    def __call__(self, program_module):
+    def embed_program(self, program) -> InitializedSExpression:
+        frozen_subst, replaced = self.frozen.uninitialize().replace_first(
+            self.to_replace, program
+        )
+        assert replaced
+        return frozen_subst
+
+    def embed_initialized_program(self, program) -> TorchProgramModule:
         frozen_subst, replaced = self.frozen.replace_first(
-            self.to_replace, program_module.initalized_program
+            self.to_replace, program.initalized_program
         )
         assert replaced
         return TorchProgramModule(self.overall_dsl, frozen_subst)

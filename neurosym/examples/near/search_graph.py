@@ -1,10 +1,9 @@
 from typing import Callable, TypeVar
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
-from neurosym.examples.near.validation import ValidationCost
+from neurosym.examples.near.cost import NearCost
 from neurosym.programs.hole import Hole
-from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression import InitializedSExpression, SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_graph import DSLSearchGraph
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
@@ -116,9 +115,9 @@ def validated_near_graph(
     max_depth=1000,
     max_num_edges=100,
     is_goal=lambda x: True,
-    cost: ValidationCost,
+    cost: NearCost,
     validation_epochs: int,
-) -> SearchGraph[TorchProgramModule]:
+) -> SearchGraph[InitializedSExpression]:
     """
     Like `near_graph`, but validates the programs using the cost function. This is useful
     for when you want the actual programs, not just the S-expressions.
@@ -141,9 +140,12 @@ def validated_near_graph(
         cost=cost,
     )
 
-    def validate_program(sexpr: SExpression) -> TorchProgramModule:
+    def validate_program(sexpr: SExpression) -> InitializedSExpression:
         log(f"Validating {render_s_expression(sexpr)}")
-        module, _ = cost.validate_model(sexpr, n_epochs=validation_epochs)
+        module = dsl.initialize(sexpr)
+        _ = cost.validation_heuristic.with_n_epochs(validation_epochs).compute_cost(
+            dsl, module, cost.embedding
+        )
         return module
 
     return g.map(validate_program)
