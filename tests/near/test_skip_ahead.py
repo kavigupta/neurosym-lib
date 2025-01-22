@@ -1,11 +1,6 @@
 import unittest
 
-import torch
-
 import neurosym as ns
-from neurosym.examples import near
-
-from .utils import assertDSLEnumerable
 
 
 class TestSkipAhead(unittest.TestCase):
