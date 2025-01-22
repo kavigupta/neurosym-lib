@@ -71,7 +71,6 @@ class DSLSearchGraph(SearchGraph[SExpression]):
         relevant_productions = {}
         for hole in relevant_holes:
             relevant_productions[hole] = self.dsl.expansions_for_type(hole.twe)
-        print(relevant_productions)
         for hole_set in hole_sets:
             hole_set = sorted(hole_set)
             for hole_replacements in itertools.product(
@@ -102,8 +101,6 @@ class DSLSearchGraph(SearchGraph[SExpression]):
             # More than one expansion, so return the node as is
             return node
         except StopIteration:
-            print(render_s_expression(node.program))
-            print(render_s_expression(first_expansion.program))
             # 1/0
             # Exactly one expansion, so try to expand it further
             return self._maximally_expanded_node(first_expansion, depth + 1)
