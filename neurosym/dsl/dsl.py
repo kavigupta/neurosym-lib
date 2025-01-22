@@ -271,9 +271,12 @@ class DSL:
         """
         if symbol_costs is None:
             symbol_costs = {}
-        return self._minimum_type_computer.get(
-            frozendict(symbol_costs), MinimalTermSizeForTypeComputer(self, symbol_costs)
-        ).compute(typ)
+        key = frozendict(symbol_costs)
+        if key not in self._minimum_type_computer:
+            self._minimum_type_computer[key] = MinimalTermSizeForTypeComputer(
+                self, symbol_costs
+            )
+        return self._minimum_type_computer[key].compute(typ)
 
     def compute_type(
         self,
