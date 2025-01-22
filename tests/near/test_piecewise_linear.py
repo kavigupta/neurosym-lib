@@ -120,7 +120,6 @@ def get_validation_cost(
     if symbol_costs is None:
         symbol_costs = {}
 
-    lr_dsl = linear_replacement_dsl()
     return near.default_near_cost(
         trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
