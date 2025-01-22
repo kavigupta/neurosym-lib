@@ -1,5 +1,5 @@
 import copy
-from typing import Callable
+from typing import Callable, Dict
 
 from torch import nn
 
@@ -24,7 +24,7 @@ def refinement_graph(
     cost,
     symbol_to_replace: str,
     validation_cost_creator: Callable[
-        [Callable[[TorchProgramModule], nn.Module]], NearCost
+        [Callable[[TorchProgramModule], nn.Module], Dict[str, float]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
     **near_params,
@@ -48,7 +48,8 @@ def refinement_graph(
         .astype()
         .output_type,
         cost=validation_cost_creator(
-            _RefinementEmbedding(symbol_to_replace, current_program, overall_dsl)
+            _RefinementEmbedding(symbol_to_replace, current_program, overall_dsl),
+            {},
         ),
         **near_params,
     )

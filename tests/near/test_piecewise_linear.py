@@ -113,7 +113,12 @@ def get_neural_dsl(dsl):
     )
 
 
-def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
+def get_validation_cost(
+    dataset, embedding=near.IdentityProgramEmbedding(), symbol_costs=None
+):
+
+    if symbol_costs is None:
+        symbol_costs = {}
 
     lr_dsl = linear_replacement_dsl()
     lin_bool_size = lr_dsl.minimal_term_size_for_type(
@@ -132,7 +137,7 @@ def get_validation_cost(dataset, embedding=near.IdentityProgramEmbedding()):
         progress_by_epoch=False,
         embedding=embedding,
         structural_cost_weight=0.2,
-        symbol_costs={"linear_bool": lin_bool_size},
+        symbol_costs=symbol_costs,
     )
 
 
@@ -213,7 +218,9 @@ class TestPiecewiseLinear(unittest.TestCase):
             "linear_bool",
             lr_dsl,
             ns.parse_type("{f, 2} -> {f, 1}"),
-            lambda embedding: get_validation_cost(get_dataset(), embedding=embedding),
+            lambda embedding, symbol_costs: get_validation_cost(
+                get_dataset(), embedding=embedding, symbol_costs=symbol_costs
+            ),
             neural_hole_filler,
             is_goal=lambda _: True,
             max_depth=10000,
