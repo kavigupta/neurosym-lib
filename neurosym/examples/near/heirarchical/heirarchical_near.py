@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict
 
 from torch import nn
 
@@ -10,6 +10,7 @@ from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.types.type import Type
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 
 def heirarchical_near_graph(
@@ -18,7 +19,7 @@ def heirarchical_near_graph(
     refined_dsl: DSL,
     typ: Type,
     validation_cost_creator: Callable[
-        [Callable[[TorchProgramModule], nn.Module]], NearCost
+        [Callable[[TorchProgramModule], nn.Module], Dict[str, float]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
     **near_params
@@ -59,10 +60,19 @@ def heirarchical_near_graph(
 
     """
     overall_dsl = high_level_dsl.add_productions(*refined_dsl.productions)
+    symbol_cost = refined_dsl.minimal_term_size_for_type(
+        TypeWithEnvironment(
+            high_level_dsl.get_production(symbol)
+            .type_signature()
+            .return_type_template(),
+            Environment.empty(),
+        )
+    )
+
     g = validated_near_graph(
         NeuralDSL.from_dsl(dsl=high_level_dsl, neural_hole_filler=neural_hole_filler),
         typ,
-        cost=validation_cost_creator(IdentityProgramEmbedding()),
+        cost=validation_cost_creator(IdentityProgramEmbedding(), {symbol: symbol_cost}),
         **near_params,
     )
     g = g.bind(
