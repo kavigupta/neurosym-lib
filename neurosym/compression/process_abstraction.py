@@ -1,5 +1,6 @@
 import itertools
 from typing import List, Union
+import uuid
 
 import stitch_core
 
@@ -70,7 +71,9 @@ def _next_symbol(dsl):
     possible_conflict = [
         x[2:-1] for x in dsl.symbols() if x.startswith("__") and x.endswith("0")
     ]
+    print(possible_conflict)
     possible_conflict = {int(x) for x in possible_conflict if x.isnumeric()}
+    print(possible_conflict)
     number = next(x for x in itertools.count(1) if x not in possible_conflict)
     return f"__{number}"
 
@@ -110,7 +113,7 @@ class _StitchLambdaRewriter:
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
         ) = _multi_lambda_to_single_lambda(dsl)
-        self.zero_arg_lambda_symbol = _next_symbol(dsl)
+        self.zero_arg_lambda_symbol = uuid.uuid4().hex
 
         self.first_single_to_multi = {
             single[0]: multi for multi, single in self.multi_to_single.items()
@@ -206,9 +209,11 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         for x in res.rewritten
     ]
     user = next(x for x in rewritten if abstr.name in symbols_for_program(x))
+    print(abstr.body)
     abstr_body = rewriter.from_stitch(
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
     )
+    print(abstr_body)
     prod = _compute_abstraction_production(dsl, user, abstr.name, abstr_body)
     dsl2 = dsl.add_productions(prod)
     return dsl2, rewritten
@@ -225,6 +230,10 @@ def multi_step_compression(dsl: DSL, programs: List[SExpression], iterations: in
     :return: The DSL with up to `iterations` new abstraction productions, and the programs
         rewritten to use the new abstractions.
     """
+    print([render_s_expression(x) for x in programs])
     for _ in range(iterations):
+        print(dsl.render())
+        print([render_s_expression(x) for x in programs])
         dsl, programs = single_step_compression(dsl, programs)
+    print([render_s_expression(x) for x in programs])
     return dsl, programs
