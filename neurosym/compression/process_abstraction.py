@@ -1,6 +1,6 @@
 import itertools
-from typing import List, Union
 import uuid
+from typing import List, Union
 
 import stitch_core
 
