@@ -89,12 +89,9 @@ def full_algorithm(xs, values, dsl):
     dist_family = BigramProgramDistributionFamily(dsl)
     dist = dist_family.uniform()
     while True:
-        print(dsl.render())
         best_programs = best_fits(xs, values, dsl, dist_family, dist, count=5000)
         abstraction_dsl, rewritten = multi_step_compression(dsl, best_programs, 5)
         abstraction_family = BigramProgramDistributionFamily(abstraction_dsl)
-        for x in rewritten:
-            print(render_s_expression(x))
         abstraction_dist = abstraction_family.fit_distribution(
             rewritten
         ).bound_minimum_likelihood(0.01)
