@@ -1,4 +1,5 @@
 import itertools
+import uuid
 from typing import List, Union
 
 import stitch_core
@@ -110,7 +111,7 @@ class _StitchLambdaRewriter:
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
         ) = _multi_lambda_to_single_lambda(dsl)
-        self.zero_arg_lambda_symbol = _next_symbol(dsl)
+        self.zero_arg_lambda_symbol = uuid.uuid4().hex
 
         self.first_single_to_multi = {
             single[0]: multi for multi, single in self.multi_to_single.items()
