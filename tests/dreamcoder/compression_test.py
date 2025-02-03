@@ -4,7 +4,6 @@ from functools import lru_cache
 import numpy as np
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import DSLFactory
 
 arith_dsl = ns.examples.mutable_arith_combinators_dsl
 
@@ -183,7 +182,7 @@ class BasicProcessDSL(unittest.TestCase):
         This is a bit of a contrived example, but it's a good test of the robustness of the compression
         algorithm's handling of variable names.
         """
-        dslf = DSLFactory()
+        dslf = ns.DSLFactory()
         dslf.concrete("0", "() -> f", lambda: 0)
         dslf.concrete("+", "(f, f) -> f", lambda x, y: x + y)
         for i in range(10):
