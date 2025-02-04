@@ -27,7 +27,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         )
         _, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=10)
-        trainer_cfg = near.NEARTrainerConfig(n_epochs=10)
+        trainer_cfg = near.NEARTrainerConfig(n_epochs=10, lr=0.01)
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),

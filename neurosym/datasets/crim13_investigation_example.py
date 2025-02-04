@@ -17,8 +17,8 @@ def crim13_investigation_example(train_seed, **kwargs) -> DatasetWrapper:
     train_labels = (
         "data/mice_classification/calms21_task1/train_investigation_labels.npy"
     )
-    val_data = "data/mice_classification/calms21_task1/val_data.npy"
-    val_labels = "data/mice_classification/calms21_task1/val_investigation_labels.npy"
+    test_data = "data/mice_classification/calms21_task1/test_data.npy"
+    test_labels = "data/mice_classification/calms21_task1/test_investigation_labels.npy"
 
     return DatasetWrapper(
         DatasetFromNpy(
@@ -27,8 +27,8 @@ def crim13_investigation_example(train_seed, **kwargs) -> DatasetWrapper:
             train_seed,
         ),
         DatasetFromNpy(
-            val_data,
-            val_labels,
+            test_data,
+            test_labels,
             None,
         ),
         **kwargs,
