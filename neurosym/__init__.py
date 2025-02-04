@@ -67,6 +67,7 @@ from neurosym.python_dsl.run_dfa import add_disambiguating_type_tags, run_dfa_on
 from neurosym.search_graph.bind_search_graph import BindSearchGraph
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.map_search_graph import MapSearchGraph
+from neurosym.search_graph.return_search_graph import ReturnSearchGraph
 from neurosym.search_graph.search_graph_transformer import (
     FilterEdgesGraph,
     LimitEdgesGraph,
@@ -98,7 +99,7 @@ from .program_dist.tree_distribution.tree_distribution import (
     TreeDistribution,
     TreeProgramDistributionFamily,
 )
-from .programs.s_expression import InitializedSExpression, SExpression
+from .programs.s_expression import InitializedSExpression, SExpression, postorder
 from .programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,

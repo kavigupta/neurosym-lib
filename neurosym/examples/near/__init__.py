@@ -1,8 +1,22 @@
+from neurosym.examples.near.cost import (
+    IdentityProgramEmbedding,
+    MinimalStepsNearStructuralCost,
+    NearCost,
+    NearStructuralCost,
+    NearValidationHeuristic,
+    NumberHolesNearStructuralCost,
+    PerNodeNearStructuralCost,
+    ProgramEmbedding,
+)
+from neurosym.examples.near.heirarchical.heirarchical_near import (
+    heirarchical_near_graph,
+)
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import (
     UninitializableProgramError,
     ValidationCost,
+    default_near_cost,
 )
 
 from .dsls import debug_nested_dsl

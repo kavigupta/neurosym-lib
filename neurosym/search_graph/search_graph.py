@@ -43,13 +43,23 @@ class SearchGraph(ABC, Generic[X]):
         out search graph metadata from the node.
         """
 
-    def bind(self, fn: Callable[[X], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
+    def yield_goal_node(self, node: N) -> Iterable[X]:
+        """
+        Yield the final result of the search graph, if the node is a goal node.
+
+        :param node: The node to check if it is a goal node.
+        :return: Iterable of the final result of the search graph.
+        """
+        if self.is_goal_node(node):
+            yield self.finalize(node)
+
+    def bind(self, fn: Callable[[X, float], "SearchGraph[Y]"]) -> "SearchGraph[Y]":
         """
         Bind this search graph to another search graph. The nodes of this search graph will spawn
         the nodes of the new search graph.
 
         :param fn: A function that takes the final result of this search graph and returns a new
-        search graph.
+            search graph.
         """
         # pylint: disable=cyclic-import
         from .bind_search_graph import BindSearchGraph
@@ -61,7 +71,7 @@ class SearchGraph(ABC, Generic[X]):
         Map the final result of the search graph to a new value.
 
         :param fn: A function that takes the final result of this search graph and returns a new
-        result.
+            result.
         """
         # pylint: disable=cyclic-import
         from .map_search_graph import MapSearchGraph

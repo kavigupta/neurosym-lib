@@ -1,5 +1,8 @@
 import unittest
 
+import numpy as np
+from parameterized import parameterized
+
 import neurosym as ns
 
 dsl = ns.examples.basic_arith_dsl()
@@ -77,7 +80,7 @@ class TestSearch(unittest.TestCase):
             character_to_match="2",
             desired_number=4,
         ).bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=x,
                 moves=["1A", "1BB", "2A", "2B"],
                 character_to_match="B",
@@ -95,7 +98,7 @@ class TestSearch(unittest.TestCase):
             character_to_match="2",
             desired_number=4,
         ).bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[("1",), ("2",)],
                 character_to_match="2",
@@ -113,7 +116,7 @@ class TestSearch(unittest.TestCase):
             desired_number=4,
         )
         g = g.bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[("1",), ("2",)],
                 character_to_match="2",
@@ -121,13 +124,49 @@ class TestSearch(unittest.TestCase):
             )
         )
         g = g.bind(
-            lambda x: StringContentsSearchGraph(
+            lambda x, _: StringContentsSearchGraph(
                 start=(x,),
                 moves=[(("1",),), (("2",),)],
                 character_to_match=("1",),
                 desired_number=4,
             )
         )
+        node = next(ns.search.astar(g))
+        self.assertEqual(
+            node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))
+        )
+
+    @parameterized.expand(range(10))
+    def test_bind_three_types_returns_random(self, seed):
+        rng = np.random.RandomState(seed)
+        g = StringContentsSearchGraph(
+            start="",
+            moves=["1A", "1B", "22A", "2B"],
+            character_to_match="2",
+            desired_number=4,
+        )
+        if rng.rand() < 0.5:
+            g = g.bind(ns.ReturnSearchGraph)
+        g = g.bind(
+            lambda x, _: StringContentsSearchGraph(
+                start=(x,),
+                moves=[("1",), ("2",)],
+                character_to_match="2",
+                desired_number=4,
+            )
+        )
+        if rng.rand() < 0.5:
+            g = g.bind(ns.ReturnSearchGraph)
+        g = g.bind(
+            lambda x, _: StringContentsSearchGraph(
+                start=(x,),
+                moves=[(("1",),), (("2",),)],
+                character_to_match=("1",),
+                desired_number=4,
+            )
+        )
+        if rng.rand() < 0.5:
+            g = g.bind(ns.ReturnSearchGraph)
         node = next(ns.search.astar(g))
         self.assertEqual(
             node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))

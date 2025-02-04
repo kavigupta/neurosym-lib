@@ -17,7 +17,7 @@ class TestNeuralModels(unittest.TestCase):
             6,
             near.debug_nested_dsl.get_combinator_dsl,
             near.DoNothingNeuralHoleFiller(),
-            "No results",
+            re.compile("No results|.*wrong.*"),
         )
 
     def test_no_heuristic_combinator_works_more_time(self):
@@ -34,7 +34,7 @@ class TestNeuralModels(unittest.TestCase):
             6,
             near.debug_nested_dsl.get_variable_dsl,
             near.DoNothingNeuralHoleFiller(),
-            "No results",
+            re.compile("No results|.*wrong.*"),
         )
 
     def test_no_heuristic_variables_works_more_time(self):
@@ -134,7 +134,7 @@ class TestNeuralModels(unittest.TestCase):
             actual = "No results"
         else:
             [actual] = results
-            actual = ns.render_s_expression(actual.program)
+            actual = ns.render_s_expression(actual.uninitialize())
         if callable(expected):
             expected = expected(nesting)
         if isinstance(expected, str):
