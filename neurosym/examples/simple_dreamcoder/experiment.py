@@ -64,10 +64,10 @@ def compute_learning_curve_for_default_experiment(
 ):
     dsl = example_dsl()
     xs_train, values_train = example_dataset(
-        num_sequences=1000, len_sequences=20, seed=seed * 2
+        num_sequences=1000, len_sequences=100, seed=seed * 2
     )
     xs_test, values_test = example_dataset(
-        num_sequences=100, len_sequences=20, seed=seed * 2 + 1
+        num_sequences=100, len_sequences=100, seed=seed * 2 + 1
     )
 
     return compute_learning_curve(
@@ -83,9 +83,8 @@ def compute_learning_curve_for_default_experiment(
 
 
 def compute_and_save_learning_curve_for_default_experiment(
-    *, compression_steps_by_iteration, count, seed, num_iterations=10
+    root_path, *, compression_steps_by_iteration, count, seed, num_iterations=10
 ):
-    root_path = "outputs/simple_dreamcoder"
     path = os.path.join(
         root_path,
         f"learning_curve_{num_iterations}_{compression_steps_by_iteration}_{count}_{seed}.json",
@@ -107,6 +106,7 @@ def compute_and_save_learning_curve_for_default_experiment(
             indent=2,
         )
     return compute_and_save_learning_curve_for_default_experiment(
+        root_path,
         compression_steps_by_iteration=compression_steps_by_iteration,
         count=count,
         num_iterations=num_iterations,
@@ -114,22 +114,23 @@ def compute_and_save_learning_curve_for_default_experiment(
     )
 
 
-def learning_curves_all():
+def learning_curves_all(root_path):
     results = {}
     for compression_steps_by_iteration in [0, 1, 5]:
-        for count in [5000]:
+        for count in [500, 5000]:
             res_compress_count = []
             for seed in range(3):
                 res_compress_count.append(
                     compute_and_save_learning_curve_for_default_experiment(
+                        root_path,
                         compression_steps_by_iteration=compression_steps_by_iteration,
                         count=count,
                         seed=seed,
-                        num_iterations=25,
+                        num_iterations=50,
                     )
                 )
                 results[(compression_steps_by_iteration, count)] = res_compress_count
     return results
 
 if __name__ == "__main__":
-    learning_curves_all()
+    learning_curves_all("outputs/simple_dreamcoder")
