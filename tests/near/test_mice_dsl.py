@@ -18,7 +18,7 @@ from .utils import assertDSLEnumerable
 
 
 class TestNEARMiceDSL(unittest.TestCase):
-    def test_mice_dsl_perf(self):
+    def test_replicate_tinycrim13(self):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
@@ -32,30 +32,31 @@ class TestNEARMiceDSL(unittest.TestCase):
             dsl=original_dsl,
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
         )
-        validation_cost = near.ValidationCost(
-            neural_dsl=neural_dsl,
+        cost = near.default_near_cost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,
         )
 
-        g = near.near_graph(
+        g = near.validated_near_graph(
             neural_dsl,
             neural_dsl.valid_root_types[0],
             is_goal=lambda _: True,
-            cost=validation_cost,
+            cost=cost,
+            validation_epochs=15,
         )
         iterator = ns.search.bounded_astar(
             g,
             max_depth=4,
         )
         # Should not throw a StopIteration error
-        best_program = next(iterator)
-        self.assertIsNotNone(best_program)
+        initialized_program = next(iterator)
+        self.assertIsNotNone(initialized_program)
 
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
         feature_data = datamodule.test.inputs
         labels = datamodule.test.outputs.flatten()
-        module, _ = validation_cost.validate_model(best_program, n_epochs=15)
+        # module, _ = validation_cost.validate_model(best_program, n_epochs=15)
+        module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
         predictions = (
             module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
         )
