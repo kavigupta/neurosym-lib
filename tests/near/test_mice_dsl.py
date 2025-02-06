@@ -50,6 +50,9 @@ class TestNEARMiceDSL(unittest.TestCase):
         )
         # Should not throw a StopIteration error
         initialized_program = next(iterator)
+        _ = cost.validation_heuristic.with_n_epochs(20).compute_cost(  # pylint: disable=no-member
+            neural_dsl, initialized_program, cost.embedding
+        )
         self.assertIsNotNone(initialized_program)
 
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
