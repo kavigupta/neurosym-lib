@@ -31,7 +31,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         targets = targets.squeeze(-1)  # (B, T, 1) -> (B, T)
         predictions = predictions.view(-1, predictions.shape[-1])
         targets = targets.view(-1)
-        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes=2)
+        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes=2) # pylint: disable=not-callable
         return torch.nn.functional.binary_cross_entropy_with_logits(
             predictions,
             targets_one_hot.float(),
@@ -46,13 +46,13 @@ class TestNEARMiceDSL(unittest.TestCase):
             train_seed=0, batch_size=1024
         )
         _, output_dim = datamodule.train.get_io_dims()
-        original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=10)
+        original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=16)
         trainer_cfg = near.NEARTrainerConfig(
             n_epochs=12, lr=1e-4, loss_callback=self.tinycrim13_binary_cross_entropy_loss
         )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
-            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
+            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=16),
         )
         # structural cost goes from 0 -> \inf, each delta is around +/- 2.
         # validation cost goes from 0 -> 1, each delta is around +/- 0.1.
