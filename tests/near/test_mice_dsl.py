@@ -18,6 +18,26 @@ from .utils import assertDSLEnumerable
 
 
 class TestNEARMiceDSL(unittest.TestCase):
+    @staticmethod
+    def tinycrim13_binary_cross_entropy_loss(
+        predictions: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Compute the binary cross entropy loss with class weights for the Tiny CRIM13 dataset.
+        This is the same loss function used in the base NEAR implementation.
+        predictions: (B, T, O)
+        targets: (B, T, 1)
+        """
+        targets = targets.squeeze(-1)  # (B, T, 1) -> (B, T)
+        predictions = predictions.view(-1, predictions.shape[-1])
+        targets = targets.view(-1)
+        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes=2)
+        return torch.nn.functional.binary_cross_entropy_with_logits(
+            predictions,
+            targets_one_hot.float(),
+            weight=torch.tensor([2.0, 1.0], device=predictions.device),
+        )
+
     def test_replicate_tinycrim13(self):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
@@ -27,11 +47,17 @@ class TestNEARMiceDSL(unittest.TestCase):
         )
         _, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=10)
-        trainer_cfg = near.NEARTrainerConfig(n_epochs=10, lr=0.01)
+        trainer_cfg = near.NEARTrainerConfig(
+            n_epochs=12, lr=1e-4, loss_callback=self.tinycrim13_binary_cross_entropy_loss
+        )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
         )
+        # structural cost goes from 0 -> \inf, each delta is around +/- 2.
+        # validation cost goes from 0 -> 1, each delta is around +/- 0.1.
+        # To ensure equal weight, we scale the structural cost by 0.05 so that
+        # the delta is around 2 * 0.05 = +/-0.1.
         cost = near.default_near_cost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,
@@ -41,11 +67,11 @@ class TestNEARMiceDSL(unittest.TestCase):
             neural_dsl,
             neural_dsl.valid_root_types[0],
             is_goal=lambda _: True,
-            cost=cost
+            cost=cost,
         )
         iterator = ns.search.bounded_astar(
             g,
-            max_depth=4,
+            max_depth=5,
         )
         # Should not throw a StopIteration error
         program = next(iterator)
