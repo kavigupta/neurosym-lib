@@ -64,7 +64,7 @@ class ValidationCost(NearValidationHeuristic):
 
     def compute_cost(
         self, dsl: DSL, model: InitializedSExpression, embedding: ProgramEmbedding
-    ) -> Tuple[InitializedSExpression, float]:
+    ) -> float:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
         validation loss.
