@@ -31,7 +31,9 @@ class TestNEARMiceDSL(unittest.TestCase):
         targets = targets.squeeze(-1)  # (B, T, 1) -> (B, T)
         predictions = predictions.view(-1, predictions.shape[-1])
         targets = targets.view(-1)
-        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes=2) # pylint: disable=not-callable
+        targets_one_hot = torch.nn.functional.one_hot(
+            targets, num_classes=2
+        )  # pylint: disable=not-callable
         return torch.nn.functional.binary_cross_entropy_with_logits(
             predictions,
             targets_one_hot.float(),
@@ -48,7 +50,9 @@ class TestNEARMiceDSL(unittest.TestCase):
         _, output_dim = datamodule.train.get_io_dims()
         original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=16)
         trainer_cfg = near.NEARTrainerConfig(
-            n_epochs=12, lr=1e-4, loss_callback=self.tinycrim13_binary_cross_entropy_loss
+            n_epochs=12,
+            lr=1e-4,
+            loss_callback=self.tinycrim13_binary_cross_entropy_loss,
         )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
@@ -76,7 +80,9 @@ class TestNEARMiceDSL(unittest.TestCase):
         # Should not throw a StopIteration error
         program = next(iterator)
         initialized_program = neural_dsl.initialize(program)
-        _ = cost.validation_heuristic.with_n_epochs(40).compute_cost(  # pylint: disable=no-member
+        _ = cost.validation_heuristic.with_n_epochs(
+            40
+        ).compute_cost(  # pylint: disable=no-member
             neural_dsl, initialized_program, cost.embedding
         )
         self.assertIsNotNone(initialized_program)
