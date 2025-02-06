@@ -31,9 +31,11 @@ class TestNEARMiceDSL(unittest.TestCase):
         targets = targets.squeeze(-1)  # (B, T, 1) -> (B, T)
         predictions = predictions.view(-1, predictions.shape[-1])
         targets = targets.view(-1)
+        # pylint: disable=not-callable
         targets_one_hot = torch.nn.functional.one_hot(
             targets, num_classes=2
-        )  # pylint: disable=not-callable
+        )
+        # pylint: enable=not-callable
         return torch.nn.functional.binary_cross_entropy_with_logits(
             predictions,
             targets_one_hot.float(),
@@ -80,11 +82,13 @@ class TestNEARMiceDSL(unittest.TestCase):
         # Should not throw a StopIteration error
         program = next(iterator)
         initialized_program = neural_dsl.initialize(program)
+        # pylint: disable=no-member
         _ = cost.validation_heuristic.with_n_epochs(
             40
-        ).compute_cost(  # pylint: disable=no-member
+        ).compute_cost(
             neural_dsl, initialized_program, cost.embedding
         )
+        # pylint: enable=no-member
         self.assertIsNotNone(initialized_program)
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
         feature_data = datamodule.test.inputs
