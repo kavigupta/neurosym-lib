@@ -60,7 +60,8 @@ def running_agg_torch(seq, fn, window_start: callable, window_end: callable):
     ), f"Expected 3D tensor with shape (N, L, D), got {seq.shape}"
     seq_len = seq.shape[1]
     aggs = []
-    for t in range(seq_len):
+    # start from t=1 to avoid an empty window.
+    for t in range(1, seq_len):
         start = max(0, window_start(t))
         end = min(seq_len, window_end(t))
         window = seq[:, start:end]
