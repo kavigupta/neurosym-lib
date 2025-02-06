@@ -37,24 +37,23 @@ class TestNEARMiceDSL(unittest.TestCase):
             datamodule=datamodule,
         )
 
-        g = near.validated_near_graph(
+        g = near.near_graph(
             neural_dsl,
             neural_dsl.valid_root_types[0],
             is_goal=lambda _: True,
-            cost=cost,
-            validation_epochs=15,
+            cost=cost
         )
         iterator = ns.search.bounded_astar(
             g,
             max_depth=4,
         )
         # Should not throw a StopIteration error
-        initialized_program = next(iterator)
-        _ = cost.validation_heuristic.with_n_epochs(20).compute_cost(  # pylint: disable=no-member
+        program = next(iterator)
+        initialized_program = neural_dsl.initialize(program)
+        _ = cost.validation_heuristic.with_n_epochs(40).compute_cost(  # pylint: disable=no-member
             neural_dsl, initialized_program, cost.embedding
         )
         self.assertIsNotNone(initialized_program)
-
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
         feature_data = datamodule.test.inputs
         labels = datamodule.test.outputs.flatten()
