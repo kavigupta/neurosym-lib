@@ -6,7 +6,7 @@ import time
 import tqdm.auto as tqdm
 
 from neurosym.examples.simple_dreamcoder.algorithm import (
-    best_fits,
+    compute_best_fits_for_each,
     evaluate_all_programs,
     iterate_algorithm,
 )
@@ -42,7 +42,7 @@ def compute_learning_curve(
         total=num_iterations,
     ):
         # TODO check if this is just returning test error now
-        _, best_programs_test = best_fits(
+        _, best_programs_test = compute_best_fits_for_each(
             xs_test, values_test, updated_dsl, dist_family, dist, count=count
         )
         test_error = (
