@@ -10,7 +10,6 @@ import tqdm.auto as tqdm
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.simple_dreamcoder.algorithm import (
     compute_best_fits_for_each,
-    evaluate_all_programs,
     simple_dreamcoder,
 )
 from neurosym.examples.simple_dreamcoder.domain import example_dataset, example_dsl
@@ -57,20 +56,8 @@ def compute_learning_curve(
         ),
         total=num_iterations,
     ):
-        # TODO check if this is just returning test error now
-        _, best_programs_test = compute_best_fits_for_each(
+        test_error, _ = compute_best_fits_for_each(
             xs_test, values_test, updated_dsl, dist_family, dist, count=count
-        )
-        test_error = (
-            (
-                (
-                    evaluate_all_programs(xs_test, updated_dsl, best_programs_test)[1]
-                    - values_test
-                )
-                ** 2
-            )
-            .sum(-1)
-            .mean()
         )
         val_errors.append(error)
         test_errors.append(test_error)
