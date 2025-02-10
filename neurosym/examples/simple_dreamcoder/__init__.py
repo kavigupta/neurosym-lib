@@ -5,4 +5,8 @@ from .algorithm import (
     simple_dreamcoder,
 )
 from .domain import example_dataset, example_dsl
-from .experiment import all_experiments
+from .experiment import (
+    run_all_experiments,
+    compute_learning_curve,
+    compute_learning_curve_for_default_experiment,
+)

@@ -2,9 +2,12 @@ import itertools
 import json
 import os
 import time
+from typing import List, Tuple
 
+import numpy as np
 import tqdm.auto as tqdm
 
+from neurosym.dsl.dsl import DSL
 from neurosym.examples.simple_dreamcoder.algorithm import (
     compute_best_fits_for_each,
     evaluate_all_programs,
@@ -15,16 +18,29 @@ from neurosym.utils.logging import log
 
 
 def compute_learning_curve(
-    dsl,
-    xs_train,
-    values_train,
-    xs_test,
-    values_test,
+    dsl: DSL,
+    xs_train: np.ndarray,
+    values_train: np.ndarray,
+    xs_test: np.ndarray,
+    values_test: np.ndarray,
     *,
-    compression_steps_by_iteration,
-    count,
-    num_iterations,
-):
+    compression_steps_by_iteration: int,
+    count: int,
+    num_iterations: int,
+) -> Tuple[List[float], List[float], List[float]]:
+    """
+    Compute the learning curve for the simple dreamcoder algorithm. This will run the algorithm
+    for a fixed dataset and DSL, and return the timings, validation errors, and test errors.
+
+    :param dsl: The DSL to use
+    :param xs_train: The input sequences for the training set
+    :param values_train: The target values for the training set
+    :param xs_test: The input sequences for the test set
+    :param values_test: The target values for the test set
+    :param compression_steps_by_iteration: The number of compression steps to take at each iteration
+    :param count: The number of programs to consider
+    :param num_iterations: The number of iterations to run
+    """
     timings = []
     val_errors = []
     test_errors = []
@@ -63,8 +79,21 @@ def compute_learning_curve(
 
 
 def compute_learning_curve_for_default_experiment(
-    *, compression_steps_by_iteration, count, seed, num_iterations=10
-):
+    *, compression_steps_by_iteration: int, count: int, seed: int, num_iterations=10
+) -> Tuple[List[float], List[float], List[float]]:
+    """
+    Compute the learning curve for the simple dreamcoder algorithm. This will run the algorithm
+    for a fixed dataset and DSL, and return the timings, validation errors, and test errors.
+
+    :param compression_steps_by_iteration: The number of compression steps to take at each iteration
+    :param count: The number of programs to consider
+    :param seed: The random seed to use
+    :param num_iterations: The number of iterations to run
+
+    :return: A tuple of ```(timings, val_errors, test_errors)```, where ```timings``` is a list of
+        the time at each iteration, ```val_errors``` is a list of the validation errors at each iteration,
+        and ```test_errors``` is a list of the test errors at each iteration
+    """
     dsl = example_dsl()
     xs_train, values_train = example_dataset(
         num_sequences=1000, len_sequences=100, seed=seed * 2
@@ -85,7 +114,7 @@ def compute_learning_curve_for_default_experiment(
     )
 
 
-def compute_and_save_learning_curve_for_default_experiment(
+def _compute_and_save_learning_curve_for_default_experiment(
     root_path, *, compression_steps_by_iteration, count, seed, num_iterations=10
 ):
     path = os.path.join(
@@ -109,7 +138,7 @@ def compute_and_save_learning_curve_for_default_experiment(
             f,
             indent=2,
         )
-    return compute_and_save_learning_curve_for_default_experiment(
+    return _compute_and_save_learning_curve_for_default_experiment(
         root_path,
         compression_steps_by_iteration=compression_steps_by_iteration,
         count=count,
@@ -118,14 +147,21 @@ def compute_and_save_learning_curve_for_default_experiment(
     )
 
 
-def all_experiments(root_path):
+def run_all_experiments(root_path: str):
+    """
+    Run all experiments for the simple dreamcoder algorithm. This will run the algorithm
+    for different values of compression_steps_by_iteration and count, and save the results
+    in the ``root_path``; if the results already exist, they will be loaded instead.
+
+    :param root_path: The root path to save the results
+    """
     results = {}
     for compression_steps_by_iteration in range(1 + 5):
         for count in [500]:
             res_compress_count = []
             for seed in range(10):
                 res_compress_count.append(
-                    compute_and_save_learning_curve_for_default_experiment(
+                    _compute_and_save_learning_curve_for_default_experiment(
                         root_path,
                         compression_steps_by_iteration=compression_steps_by_iteration,
                         count=count,
@@ -138,4 +174,4 @@ def all_experiments(root_path):
 
 
 if __name__ == "__main__":
-    all_experiments("outputs/simple_dreamcoder")
+    run_all_experiments("outputs/simple_dreamcoder")

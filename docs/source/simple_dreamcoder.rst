@@ -18,3 +18,9 @@ Utilities
 
 .. autofunction:: neurosym.examples.simple_dreamcoder.run_safely
 .. autofunction:: neurosym.examples.simple_dreamcoder.evaluate_all_programs
+
+Experiments
+--------------------------------------------
+.. autofunction:: neurosym.examples.simple_dreamcoder.compute_learning_curve
+.. autofunction:: neurosym.examples.simple_dreamcoder.compute_learning_curve_for_default_experiment
+.. autofunction:: neurosym.examples.simple_dreamcoder.run_all_experiments
