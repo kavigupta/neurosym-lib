@@ -19,7 +19,9 @@ class SimpleDreamcoderRegressionTest(unittest.TestCase):
             seed=seed,
         )
         self.assertEqual(set(result.keys()), {"timings", "val_errors", "test_errors"})
-        self.assertEqual(set(result_current.keys()), {"timings", "val_errors", "test_errors"})
+        self.assertEqual(
+            set(result_current.keys()), {"timings", "val_errors", "test_errors"}
+        )
         self.assertEqual(len(result["timings"]), len(result_current["timings"]))
         for k in result:
             if k == "timings":
