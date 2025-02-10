@@ -6,7 +6,8 @@ from neurosym.dsl.dsl_factory import DSLFactory
 def example_dataset(num_sequences, len_sequences, *, seed, slack=30, stride=5):
     xs = np.linspace(-10, 10, len_sequences * stride)
     values = (
-        np.random.RandomState(seed).rand(num_sequences, len_sequences * stride + slack) * 4
+        np.random.RandomState(seed).rand(num_sequences, len_sequences * stride + slack)
+        * 4
         - 2
     )
     values = np.mean(

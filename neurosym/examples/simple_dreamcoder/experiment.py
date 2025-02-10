@@ -4,6 +4,7 @@ import os
 import time
 
 import tqdm.auto as tqdm
+
 from neurosym.examples.simple_dreamcoder.algorithm import (
     best_fits,
     evaluate_all_programs,

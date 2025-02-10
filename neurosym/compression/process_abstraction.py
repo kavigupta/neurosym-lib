@@ -1,7 +1,6 @@
 import itertools
 import uuid
 from typing import List, Union
-import uuid
 
 import stitch_core
 

@@ -1,4 +1,5 @@
 import itertools
+
 import numpy as np
 
 from neurosym.compression.process_abstraction import multi_step_compression
@@ -29,7 +30,7 @@ def evaluate_all_programs(xs, dsl, programs):
         ys = []
         for inp in xs:
             y = run_safely(actual_fn, inp)
-            if y is None or not (-2 <= y <= 2):
+            if y is None or not -2 <= y <= 2:
                 break
             ys.append(y)
         else:
