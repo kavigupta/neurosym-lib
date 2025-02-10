@@ -10,6 +10,7 @@ from neurosym.examples.simple_dreamcoder.algorithm import (
     iterate_algorithm,
 )
 from neurosym.examples.simple_dreamcoder.domain import example_dataset, example_dsl
+from neurosym.utils.logging import log
 
 
 def compute_learning_curve(
@@ -93,7 +94,7 @@ def compute_and_save_learning_curve_for_default_experiment(
     if os.path.exists(path):
         with open(path, "r") as f:
             return json.load(f)
-    print(path)
+    log(f"Running experiment for path: {path}")
     timings, val_errors, test_errors = compute_learning_curve_for_default_experiment(
         compression_steps_by_iteration=compression_steps_by_iteration,
         count=count,
@@ -115,7 +116,7 @@ def compute_and_save_learning_curve_for_default_experiment(
     )
 
 
-def learning_curves_all(root_path):
+def all_experiments(root_path):
     results = {}
     for compression_steps_by_iteration in range(1 + 5):
         for count in [500]:
@@ -135,4 +136,4 @@ def learning_curves_all(root_path):
 
 
 if __name__ == "__main__":
-    learning_curves_all("outputs/simple_dreamcoder")
+    all_experiments("outputs/simple_dreamcoder")
