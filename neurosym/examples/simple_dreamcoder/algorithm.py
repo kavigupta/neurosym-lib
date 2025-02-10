@@ -105,6 +105,23 @@ def simple_dreamcoder(
     compression_steps_by_iteration=1,
     count=5000,
 ):
+    """
+    Implementation of the simple dreamcoder algorithm. This algorithm works by
+    iteratively compressing the DSL, computing the best programs for each sequence,
+    and then compressing the DSL again.
+
+    :param xs: The input sequences, a numpy array of shape ```(N,)```
+    :param values: The target values, a numpy array of shape ```(num_sequences, N)```
+    :param dsl: The DSL to use
+
+    :param val_split: The fraction of the dataset to use for validation
+    :param compression_steps_by_iteration: The number of compression steps to take at each iteration
+    :param count: The number of programs to consider
+
+    :return: A generator that yields a tuple of ```(dsl, dist_family, dist, best_programs, error)```
+        at each iteration. You can choose to stop the generator at any point, e.g., by using
+        the validation error.
+    """
     num_train = int(len(xs) * (1 - val_split))
     dist_family = BigramProgramDistributionFamily(dsl)
     dist = dist_family.uniform()

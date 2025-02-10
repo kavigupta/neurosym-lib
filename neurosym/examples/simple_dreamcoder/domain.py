@@ -1,5 +1,6 @@
 import numpy as np
 
+from neurosym.dsl.dsl import DSL
 from neurosym.dsl.dsl_factory import DSLFactory
 
 
@@ -36,14 +37,17 @@ def example_dataset(num_sequences, len_sequences, *, seed, slack=30, stride=5):
     return xs, values
 
 
-def example_dsl():
+def example_dsl() -> DSL:
+    """
+    An example DSL for the simple symbolic regression task. This DSL includes
+    basic arithmetic operations, as well as some trigonometric functions.
+    """
     dslf = DSLFactory()
     dslf.concrete("0", "() -> f", lambda: 0)
     dslf.concrete("1", "() -> f", lambda: 1)
     dslf.concrete("2", "() -> f", lambda: 2)
     dslf.concrete("+", "(f, f) -> f", lambda x, y: x + y)
     dslf.concrete("-", "(f, f) -> f", lambda x, y: x - y)
-    # BEGIN SOLUTION "YOUR CODE HERE"
     dslf.concrete("*", "(f, f) -> f", lambda x, y: x * y)
     dslf.concrete("**", "(f, f) -> f", lambda x, y: x**y)
     dslf.concrete("/", "(f, f) -> f", lambda x, y: x / y)
@@ -51,7 +55,6 @@ def example_dsl():
     dslf.concrete("sqrt", "f -> f", np.sqrt)
     dslf.concrete("<", "(f, f) -> b", lambda x, y: x < y)
     dslf.concrete("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
-    # END SOLUTION
     dslf.lambdas()
     dslf.prune_to("f -> f")
     return dslf.finalize()

@@ -1,16 +1,17 @@
 Simplified Dreamcoder Algorithm
 ===========================================
 
-Domain
---------------------------------------------
-
-.. autofunction:: neurosym.examples.simple_dreamcoder.example_dataset
-
-
 Algorithm
 --------------------------------------------
 
 .. autofunction:: neurosym.examples.simple_dreamcoder.compute_best_fits_for_each
+.. autofunction:: neurosym.examples.simple_dreamcoder.simple_dreamcoder
+
+Example Domain
+--------------------------------------------
+
+.. autofunction:: neurosym.examples.simple_dreamcoder.example_dataset
+.. autofunction:: neurosym.examples.simple_dreamcoder.example_dsl
 
 Utilities
 --------------------------------------------
