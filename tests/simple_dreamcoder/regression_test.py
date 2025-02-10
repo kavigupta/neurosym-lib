@@ -1,29 +1,35 @@
 import unittest
 
+from parameterized import parameterized
+
 from neurosym.examples.simple_dreamcoder.experiment import (
+    compute_and_save_learning_curve_for_default_experiment,
     compute_learning_curve_for_default_experiment,
-    run_all_experiments,
 )
 
 
 class SimpleDreamcoderRegressionTest(unittest.TestCase):
-    def test_single_regression(self):
-        seed = 0
-        results_all = run_all_experiments("outputs/simple_dreamcoder")
-        (compression_steps_by_iteration, count), *_ = results_all
-        result = results_all[(compression_steps_by_iteration, count)][seed]
-        result_current = compute_learning_curve_for_default_experiment(
+    @parameterized.expand(
+        [
+            (num_iterations, compression_steps_by_iteration)
+            for num_iterations in [10, 20]
+            for compression_steps_by_iteration in [1, 5]
+        ]
+    )
+    def test_single_regression(self, num_iterations, compression_steps_by_iteration):
+        kwargs = dict(
             compression_steps_by_iteration=compression_steps_by_iteration,
-            count=count,
-            num_iterations=len(result["timings"]),
-            seed=seed,
+            count=100,
+            num_iterations=num_iterations,
+            seed=0,
         )
-        self.assertEqual(set(result.keys()), {"timings", "val_errors", "test_errors"})
-        self.assertEqual(
-            set(result_current.keys()), {"timings", "val_errors", "test_errors"}
+        result_s = compute_and_save_learning_curve_for_default_experiment(
+            "outputs/simple_dreamcoder_test", **kwargs
         )
-        self.assertEqual(len(result["timings"]), len(result_current["timings"]))
-        for k in result:
-            if k == "timings":
-                continue
-            self.assertEqual(result[k], result_current[k])
+        timings_c, val_errors_c, test_errors_c = (
+            compute_learning_curve_for_default_experiment(**kwargs)
+        )
+        print(result_s)
+        self.assertEqual(result_s["val_errors"], val_errors_c)
+        self.assertEqual(result_s["test_errors"], test_errors_c)
+        self.assertEqual(len(result_s["timings"]), len(timings_c))

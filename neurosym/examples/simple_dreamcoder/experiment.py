@@ -114,9 +114,24 @@ def compute_learning_curve_for_default_experiment(
     )
 
 
-def _compute_and_save_learning_curve_for_default_experiment(
-    root_path, *, compression_steps_by_iteration, count, seed, num_iterations=10
-):
+def compute_and_save_learning_curve_for_default_experiment(
+    root_path: str,
+    *,
+    compression_steps_by_iteration: int,
+    count: int,
+    seed: int,
+    num_iterations=10,
+) -> Tuple[List[float], List[float], List[float]]:
+    """
+    Compute the learning curve for the simple dreamcoder algorithm. This will run the algorithm
+    for a fixed dataset and DSL, and return the timings, validation errors, and test errors.
+
+    :param root_path: The root path to save the results
+    :param compression_steps_by_iteration: The number of compression steps to take at each iteration
+    :param count: The number of programs to consider
+    :param seed: The random seed to use
+    :param num_iterations: The number of iterations to run
+    """
     path = os.path.join(
         root_path,
         f"learning_curve_{num_iterations}_{compression_steps_by_iteration}_{count}_{seed}.json",
@@ -138,7 +153,7 @@ def _compute_and_save_learning_curve_for_default_experiment(
             f,
             indent=2,
         )
-    return _compute_and_save_learning_curve_for_default_experiment(
+    return compute_and_save_learning_curve_for_default_experiment(
         root_path,
         compression_steps_by_iteration=compression_steps_by_iteration,
         count=count,
@@ -161,7 +176,7 @@ def run_all_experiments(root_path: str):
             res_compress_count = []
             for seed in range(10):
                 res_compress_count.append(
-                    _compute_and_save_learning_curve_for_default_experiment(
+                    compute_and_save_learning_curve_for_default_experiment(
                         root_path,
                         compression_steps_by_iteration=compression_steps_by_iteration,
                         count=count,

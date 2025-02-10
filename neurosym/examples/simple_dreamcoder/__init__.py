@@ -6,6 +6,7 @@ from .algorithm import (
 )
 from .domain import example_dataset, example_dsl
 from .experiment import (
+    compute_and_save_learning_curve_for_default_experiment,
     compute_learning_curve,
     compute_learning_curve_for_default_experiment,
     run_all_experiments,
