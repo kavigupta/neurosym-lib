@@ -2,10 +2,7 @@ import unittest
 
 from parameterized import parameterized
 
-from neurosym.examples.simple_dreamcoder.experiment import (
-    compute_and_save_learning_curve_for_default_experiment,
-    compute_learning_curve_for_default_experiment,
-)
+from neurosym.examples import simple_dreamcoder
 
 
 class SimpleDreamcoderRegressionTest(unittest.TestCase):
@@ -23,11 +20,13 @@ class SimpleDreamcoderRegressionTest(unittest.TestCase):
             num_iterations=num_iterations,
             seed=0,
         )
-        result_s = compute_and_save_learning_curve_for_default_experiment(
-            "outputs/simple_dreamcoder_test", **kwargs
+        result_s = (
+            simple_dreamcoder.compute_and_save_learning_curve_for_default_experiment(
+                "outputs/simple_dreamcoder_test", **kwargs
+            )
         )
         timings_c, val_errors_c, test_errors_c = (
-            compute_learning_curve_for_default_experiment(**kwargs)
+            simple_dreamcoder.compute_learning_curve_for_default_experiment(**kwargs)
         )
         print(result_s)
         self.assertEqual(result_s["val_errors"], val_errors_c)
