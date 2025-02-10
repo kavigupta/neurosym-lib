@@ -2,6 +2,7 @@ import numpy as np
 
 from neurosym.dsl.dsl_factory import DSLFactory
 
+
 def example_dataset(num_sequences, len_sequences, *, seed, slack=30, stride=5):
     """
     An example dataset for a simple symbolic regression task. The sequences here
