@@ -23,4 +23,5 @@ Experiments
 --------------------------------------------
 .. autofunction:: neurosym.examples.simple_dreamcoder.compute_learning_curve
 .. autofunction:: neurosym.examples.simple_dreamcoder.compute_learning_curve_for_default_experiment
+.. autofunction:: neurosym.examples.simple_dreamcoder.compute_and_save_learning_curve_for_default_experiment
 .. autofunction:: neurosym.examples.simple_dreamcoder.run_all_experiments
