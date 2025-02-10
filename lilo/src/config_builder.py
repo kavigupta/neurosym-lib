@@ -99,12 +99,19 @@ def get_domain_metadata(domain: str) -> dict:
     @param domain str containing domain_name
 
     @returns dictionary containing the following keys{
-    "tasks_loader": SAGNIK_TBD
-    "task_language_loader": SAGNIK_TBD
+        
+    "tasks_loader": str identifying class associated with the domain in TaskLoaderRegistry. This class should inherit from TaskDataLoader and contain a load_tasks method that returns a dict containing keys "train" and "test", each of which should correspond to a List of Task objects (or objects of classes inheriting from Task), where Task is the class defined in dreamcoder.task. For an example, see lilo/data/compositional_graphics/make_tasks.py.
+    
+    "task_language_loader": str identifying class associated with the domain in TaskLanguageLoaderRegistry. This class should inherit from TaskDataLoader and contain a load_task_language method that returns a tuple[dict, dict] containing language and vocab dictionaries respectively. For an example, see lilo/data/compositional_graphics/make_tasks.py.
+    
     "ocaml_special_handler": SAGNIK_TBD
+    
     "dsl_description_prefix": str containing domain-specific language description
+    
     "global_batch_sizes": SAGNIK_TBD
+    
     "n_tasks_train": int containing number of training tasks in the domain
+    
     "n_tasks_test": int containing number of testing tasks in the domain
     }
     '''
@@ -231,16 +238,16 @@ def build_config(
     experiment_name: str,
     experiment_type: str,
     domain: str,
-    custom_experiment_type: str = None,
+    custom_experiment_type: str | None = None,
     output_directory: str = DEFAULT_EXPERIMENT_DIR,
     random_seed: int = 0,
     iterations: int = 1,
     init_iteration: int = 0,
     task_batcher: str = RandomShuffleOrderedTaskBatcher.name,
-    global_batch_size: int = ALL,
-    enumeration_timeout: int = None,
-    recognition_train_steps: int = None,
-    encoder: str = None,
+    global_batch_size: int | str = ALL,
+    enumeration_timeout: int | None = None,
+    recognition_train_steps: int | None = None,
+    encoder: str | None = None,
     stitch_params: dict = DEFAULT_STITCH_PARAMS,
     gpt_params: dict = DEFAULT_GPT_PARAMS,
     compute_likelihoods: bool = True,
@@ -251,8 +258,6 @@ def build_config(
     init_grammar_from_checkpoint: bool = False,
     resume_checkpoint_directory: bool = False,
     s3_sync: bool = True,
-    weightUpdate: str = "None",
-    syMetricMethod: str = "None",
 ) -> dict:
     
     """
@@ -272,7 +277,7 @@ def build_config(
         random_seed:
             int containing the random seed that is eventually used for random task batching in src/task_loaders.py    
         iterations:
-            int containing the number of wake-sleep iterations the model
+            int containing the number of wake-sleep iterations the model runs for
         init_iteration: 
             int containing iteration to start the experiment from
         task_batcher:
@@ -315,21 +320,15 @@ def build_config(
         increment_task_batcher: 
             bool containing whether to increment the task batcher's global_batch_start pointer at each iteration in src/task_loaders.py OrderedTaskBatcher.get_task_batch_ids function i.e. increment the global pointer with respect to which the batches are calculated.
         init_frontiers_from_checkpoint:
-            SAGNIK_TBD
+            bool that determines whether the frontiers containing programs that may solve a task are being initialized from a checkpoint from a previous training run.
         init_frontiers_every_iteration:
-
+            SAGNIK_TBD
         init_grammar_from_checkpoint:
-
+            bool that determines whether the grammar is being initialized from a checkpoint from a previous training run.
         resume_checkpoint_directory:
-
+            directory containing the checkpoint to resume training from.
         s3_sync:
-
-        weightUpdate:
-            str containing the weight update method to be used by Stitch in experiment. Default is "None".
-
-        syMetricMethod:
-            str containing the method by which SyMetric is used by DreamCoder in the experiment. Default is "None".
-
+            bool that determines whether to sync the experiment's outputs to an S3 bucket.
     Returns:
         dict: updated config body and config metadata
     """
@@ -370,8 +369,6 @@ def build_config(
             init_grammar_from_checkpoint=init_grammar_from_checkpoint,
             resume_checkpoint_directory=resume_checkpoint_directory,
             random_seed=random_seed,
-            weightUpdate=weightUpdate,
-            syMetricMethod=syMetricMethod,
         )
     )
     return config
@@ -381,11 +378,11 @@ def build_config_metadata(
     experiment_name: str,
     domain: str,
     experiment_type: str,
-    custom_experiment_type: str = None,
-    global_batch_size: int = ALL,
-    enumeration_timeout: int = None,
-    recognition_train_steps: int = None,
-    encoder: str = None,
+    custom_experiment_type: str | None = None,
+    global_batch_size: int | str = ALL,
+    enumeration_timeout: int | None = None,
+    recognition_train_steps: int | None = None,
+    encoder: str | None = None,
     output_directory: str = DEFAULT_EXPERIMENT_DIR,
     init_iteration: int = 0,
     init_frontiers_from_checkpoint: bool = False,
@@ -393,9 +390,7 @@ def build_config_metadata(
     init_grammar_from_checkpoint: bool = False,
     resume_checkpoint_directory: bool = False,
     random_seed: int = 0,
-    weightUpdate: str = "None",
-    syMetricMethod: str = "None",
-):
+) -> dict:
     domain_meta = get_domain_metadata(domain)
 
     export_directory = os.path.join(
@@ -439,8 +434,6 @@ def build_config_metadata(
             "encoder": encoder,
             "random_seed": random_seed,
             "curr_iteration": init_iteration,
-            "weight_update": weightUpdate,
-            "symetric_method": syMetricMethod
         }
     }
 
@@ -450,17 +443,17 @@ def build_config_body(
     domain: str,
     iterations: int = 1,
     task_batcher: str = RandomShuffleOrderedTaskBatcher.name,
-    global_batch_size: int = ALL,
-    enumeration_timeout: int = None,
-    recognition_train_steps: int = None,
-    encoder: str = None,
+    global_batch_size: int | str = ALL,
+    enumeration_timeout: int | None = None,
+    recognition_train_steps: int | None = None,
+    encoder: str | None = None,
     stitch_params: dict = DEFAULT_STITCH_PARAMS,
     gpt_params: dict = DEFAULT_GPT_PARAMS,
     compute_likelihoods: bool = True,
     compute_description_lengths: bool = True,
     increment_task_batcher: bool = True,
     s3_sync: bool = True,
-):
+) -> dict:
     template_path = os.path.join(
         DEFAULT_TEMPLATE_DIR, f"template_{experiment_type}.json"
     )

@@ -2,12 +2,17 @@ from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
 from dreamcoder.grammar import *
 from dreamcoder.utilities import get_root_dir, limit_virtual_memory_fn
 import dreamcoder.neurosym as ns
-
+from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
+from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
+from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
+from dreamcoder.neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.program import Program
 import os
 import traceback
 import subprocess
+import numpy as np
+import time as time
 
 DEFAULT_SOLVER_DIRECTORY = "."
 
@@ -15,6 +20,157 @@ INDUCTIVE_EXAMPLES_LIKELIHOOD_MODEL = "inductive_examples_likelihood_model"  # O
 
 INDUCTIVE_EXAMPLES_DISCOUNTED_PRIOR_LIKELIHOOD_MODEL = "inductive_examples_discounted_prior_likelihood_model"  # Use the inductive examples or otherwise use a discounted prior
 
+def budgetIncrement(lb):
+        if True:
+            return 1.5
+        # Very heuristic - not sure what to do here
+        if lb < 24.0:
+            return 1.0
+        elif lb < 27.0:
+            return 0.5
+        else:
+            return 0.25
+
+import neurosym as ns
+from neurosym.dsl.abstraction import _with_index_parameters
+
+def matchBr(s: str, ind: int) -> int | None:
+    """
+    Given an opening bracket at position ind in string s, find the  position of the corresponding closing bracket.
+
+    Arguments: 
+    s (str): denoting the solution program expression (already processed by replacements())
+    ind (int): is an integer denoting the starting position of the start bracket '('
+
+    Returns: 
+    int | None: an integer denoting position of closing bracket. If start index does not have an open bracket or no closing brackets close the starting bracket, returns None.
+    """
+    brPair = 0
+    for j in range(ind, len(s)):
+        if s[j]=="(":
+            brPair+=1
+        if s[j]==")":
+            brPair-=1
+        if brPair==0:
+            if j==ind:
+                return None
+            return j
+    return None
+
+def get_argument_list(s: str) -> list[str] | None:
+    """
+    Returns function body and arguments present in a lambda function serving as an abstraction in DreamCoder's grammar.
+
+    Args:
+        s (str): function body
+
+    Returns:
+        list[str] | None: lambda function body and arguments present in the function. If there is neither body nor a set of arguments, this returns None.
+    """
+    start_bracket = s.find("(")
+    if start_bracket != -1:
+        end_bracket = matchBr(s, start_bracket)
+        if end_bracket == None:
+            print(f"No closing bracket found for {s}")
+            return None
+        remaining_arguments = get_argument_list(s[end_bracket+2:])
+        if remaining_arguments == None:
+            return [s[start_bracket+1:end_bracket]]
+        else:
+            return [s[start_bracket+1:end_bracket]] + remaining_arguments
+    else:
+        return s.split(" ")
+    
+def parse_abstraction_dc_to_ns(abstraction: str, primitive_list: list[str]) -> ns.InitializedSExpression | ns.AbstractionIndexParameter | None:
+    """
+    Converts a DreamCoder (Stitch) abstraction or a subabstraction within it to a NeuroSym InitializedSExpression or a AbstractionIndexParameter.
+    
+    Example of such a Stitch abstraction string: 
+    "#(lambda (lambda (#(lambda (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_div (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate $0 mathDomain_4) mathDomain_0) mathDomain_0) mathDomain_3) mathDomain_5) mathDomain_4) mathDomain_0) mathDomain_0)) (mathDomain_swap (#(lambda (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub $0 mathDomain_5) mathDomain_1) mathDomain_1) mathDomain_0)) (mathDomain_multone (mathDomain_rrotate (#(lambda (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub $0 mathDomain_5) mathDomain_1) mathDomain_1) mathDomain_0)) (mathDomain_swap (#(lambda (mathDomain_swap (mathDomain_simplify $0 mathDomain_0) mathDomain_0)) $0) $1)) mathDomain_4) mathDomain_5)) mathDomain_5))))"
+    
+    Example output of such a conversion:
+    (lambda (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_div (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub (mathDomain_multone (mathDomain_rrotate (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub (mathDomain_swap (mathDomain_swap (mathDomain_simplify #0 (mathDomain_0)) (mathDomain_0)) #1) (mathDomain_5)) (mathDomain_1)) (mathDomain_1)) (mathDomain_0)) (mathDomain_4)) (mathDomain_5)) (mathDomain_5)) (mathDomain_1)) (mathDomain_1)) (mathDomain_0)) (mathDomain_5)) (mathDomain_4)) (mathDomain_0)) (mathDomain_0)) (mathDomain_3)) (mathDomain_5)) (mathDomain_4)) (mathDomain_0)) (mathDomain_0)))
+    
+    Args:
+        abstraction (str): Abstraction discovered by Stitch in DreamCoder
+    
+    Returns:
+        ns.InitializedSExpression |  ns.AbstractionIndexParameter | None: Abstraction in NeuroSym format. If the abstraction is not parseable, returns None.
+    """
+    if abstraction == "":
+        print("Empty abstraction")
+        return None
+    if abstraction[0] == "(":
+        if matchBr(abstraction, 0) == len(abstraction)-1:
+            return parse_abstraction_dc_to_ns(abstraction[1:-1], primitive_list)
+        else:
+            print(f"Unmatched brackets in {abstraction}")
+            return None
+    elif abstraction[0] == "#":
+        end_bracket = matchBr(abstraction, 1)
+        if end_bracket == len(abstraction)-1:
+            return parse_abstraction_dc_to_ns(abstraction[2:-1], primitive_list)
+        else:
+            if end_bracket == None:
+                print(f"No closing bracket found for {abstraction}")
+                return None
+            argument_list = get_argument_list(abstraction[1:])
+            if argument_list == None:
+                print(f"No arguments found for {abstraction}")
+                return None
+            arg_tuple = tuple([parse_abstraction_dc_to_ns(arg_abstraction, primitive_list) for arg_abstraction in argument_list])
+            if None in arg_tuple:
+                print(f"None in arg_tuple for {abstraction}")
+            arg_tuple = tuple([x for x in arg_tuple if x != None])
+            if len(arg_tuple) == 0:
+                return None
+            if len(arg_tuple) == 1:
+                return arg_tuple[0]
+            sub_abstraction_body = arg_tuple[0]
+            sub_abstraction_args = arg_tuple[1:]
+            #This assert ensures that the function at the root of the InitializedSExpression has the correct types
+            assert isinstance(sub_abstraction_body, ns.InitializedSExpression)
+            result = _with_index_parameters(sub_abstraction_body, sub_abstraction_args, True)
+            #This assert ensures that the final result of calling _with_index_parameters has the correct types and not just an "object" type (derived from the apply function call in the _with_index_parameters function)
+            assert isinstance(result, ns.InitializedSExpression) or isinstance(result, ns.AbstractionIndexParameter)
+            return result
+            # return ns.InitializedSExpression("lambda", arg_tuple, {})
+    elif abstraction.split(" ")[0] == "lambda":
+        end_bracket = matchBr(abstraction, 7)
+        if end_bracket  == len(abstraction)-1:
+            return parse_abstraction_dc_to_ns(abstraction[8:-1], primitive_list)
+        else:
+            if end_bracket == None:
+                print(f"No closing bracket found for {abstraction}")
+                return None
+            argument_list = get_argument_list(abstraction[7:end_bracket])
+            if argument_list == None:
+                print(f"No arguments found for {abstraction}")
+                return None
+            arg_tuple = tuple([parse_abstraction_dc_to_ns(arg_abstraction, primitive_list) for arg_abstraction in argument_list])
+            if None in arg_tuple:
+                print(f"None in arg_tuple for {abstraction}")
+            arg_tuple = tuple([x for x in arg_tuple if x != None])
+            return ns.InitializedSExpression("lambda", arg_tuple, {})
+    else:
+        splits = abstraction.split(" ")
+        func = splits[0]
+        if func in primitive_list:
+            argument_list = get_argument_list(abstraction[len(func)+1:])
+            if argument_list == None:
+                print(f"No arguments found for {abstraction}")
+                return None
+            arg_tuple = tuple([parse_abstraction_dc_to_ns(arg_abstraction, primitive_list) for arg_abstraction in argument_list])
+            if None in arg_tuple:
+                print(f"None in arg_tuple for {abstraction}")
+            arg_tuple = tuple([x for x in arg_tuple if x != None])
+            return ns.InitializedSExpression(func, arg_tuple, {})
+        else:
+            if abstraction[0] == "$":
+                abstraction_child = ns.AbstractionIndexParameter(int(abstraction.split(" ")[0][1:]))
+                return abstraction_child
+            else:
+                return ns.InitializedSExpression(abstraction, (), {})
 
 def multicoreEnumeration(
     g,
@@ -35,15 +191,95 @@ def multicoreEnumeration(
     """g: Either a Grammar, or a map from task to grammar.
     Returns (list-of-frontiers, map-from-task-to-search-time)"""
     
+    assert enumerationTimeout is not None, "enumerateForTasks: You must provide a timeout."
+    
+    if not isinstance(g, dict):
+        g = {t: g for t in tasks}
+    task2grammar = g
+    print(f"task2grammar: {task2grammar}")
+    for t in tasks:
+        print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
+        break
     dslf = ns.DSLFactory()
+    
+    #Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
     dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("incr", "(i) -> ii", lambda x: x + 1)
-    dslf.concrete("incr2", "(i) -> ii", lambda x: x + 2)
-    dslf.prune_to("ii")
+    dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
+    dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
+    dslf.prune_to("i")
+    max_arity = 1
+    num_productions = 4 # make sure to include root in this count
     dsl = dslf.finalize()
+    primitive_list = [prod[0] for prod in dslf._concrete_productions]
+    
+    for task in g.keys():
+        for k, v in task2grammar[task].expression2likelihood.items():
+            if k not in primitive_list:
+                #This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
+                parsed_abstraction = parse_abstraction_dc_to_ns(k, primitive_list)
+                if parsed_abstraction != None:
+                    s_exp = ns.SExpression(k, [parsed_abstraction])
+                    type_argument = [dsl.compute_type_abs(x) for x in s_exp.children][0]
+                    reversed_order_items = [value for _, value in type_argument.env._elements.items()]
+                    new_type_env_dict = {}
+                    for key in type_argument.env._elements.keys():
+                        new_type_env_dict[key] = reversed_order_items.pop()
+                    corrected_type_argument = TypeWithEnvironment(typ = type_argument.typ, env = Environment(_elements = new_type_env_dict))
+                    type_signature = FunctionTypeSignature([x[0] for _, x in corrected_type_argument.env._elements.items()], corrected_type_argument.typ)
+                    final = AbstractionProduction(k, type_signature, s_exp)                    
+                    dsl = dsl.add_production(final)                    
+                    primitive_list.append(k)
+    
+    #Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
     family = ns.BigramProgramDistributionFamily(dsl)
     print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
-    dist = family.uniform()
+    frontiers = []
+    dist_dict = {task: np.zeros((num_productions, max_arity, num_productions), dtype=np.float32) for task in tasks}
+    for t in tasks:
+        dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
+        likelihood_dict = task2grammar[t].expression2likelihood
+        dreamcoder_ns_mapping = {}
+        #Automatically maps dreamcoder primitive name to corresponding neurosym index
+        ordered_symbols = dsl.ordered_symbols(include_root=True)
+        for p in range(len(ordered_symbols)):
+            dreamcoder_ns_mapping[ordered_symbols[p]] = p
+        for k, v in likelihood_dict.items():
+           production_ind = dreamcoder_ns_mapping[k]
+           for prod_ind in range(num_productions):
+               for arity in range(max_arity):
+                   dist[prod_ind][arity][production_ind] = v
+        #Filter the productions out that are impossible to reach
+        dist_dict[t] = dist * family._valid_mask
+    
+    min_likelihood_dict = {task: 0.0 for task in tasks}
+    enumerations = {task: [] for task in tasks}
+    
+    #SAGNIK_TBD: Recreate the while loop below - while satisfying memory and time constraints, enumerate all programs in between the lower and upper bound
+    # SAGNIK_TBD: Optimize for one CPU per job
+    for job in min_likelihood_dict.keys():
+        starting = time.time()
+        parsed_enumerations = []
+        while True:
+            bi = budgetIncrement(min_likelihood_dict[job])
+            current_generations = list(family.enumerate(dist = dist_dict[job], min_likelihood = min_likelihood_dict[job], chunk_size = bi))
+            enumerations[job] += current_generations
+            
+            #Here we attempt to parse enumerated programs to DreamCoder-style programs to create DreamCoder Frontier Entries
+            for ns_prog_tuple in current_generations:
+                ns_prog, prob_fraction = ns_prog_tuple
+                dreamcoder_prog = Program.parse(ns_prog)
+                #Not sure if the probability here is the log posterior or one of the other log probabilities
+                log_prob = math.log(float(format(prob_fraction, '.10g')))
+                dreamcoder_entry = FrontierEntry(dreamcoder_prog, log_prob)
+                parsed_enumerations.append(dreamcoder_entry)
+            min_likelihood_dict[job] += bi
+            if time.time() - starting > enumerationTimeout:
+                break
+        frontiers[job] = Frontier(parsed_enumerations, task=t)        
+    
+    bestSearchTime = {t: None for t in task2grammar}
+    return [frontiers[t] for t in tasks], bestSearchTime
+
     #use expression2likelihood for bigram in dsl
     enumerations = list(enumerate_dsl(family, dist, min_likelihood=-1000000))
     print(enumerations)
@@ -60,19 +296,10 @@ def multicoreEnumeration(
     #         ],
     #         task=t,
     #     )
-    if not isinstance(g, dict):
-        g = {t: g for t in tasks}
-    task2grammar = g
-    print("task2grammar", task2grammar)
-    for t in tasks:
-        print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
-        break
-    
-    
+
     #frontiers = {t: Frontier([Program.parse(i[0]) for i in enumerations], task=t) for t in task2grammar}
     frontiers = {t: Frontier([], task=t) for t in task2grammar}
     bestSearchTime = {t: None for t in task2grammar}
-    return [frontiers[t] for t in tasks], bestSearchTime
 
     # # We don't use actual threads but instead use the multiprocessing
     # # library. This is because we need to be able to kill workers.

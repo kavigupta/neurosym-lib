@@ -210,20 +210,6 @@ parser.add_argument(
     help="Strategy for selecting body tasks in the LLM solver prompt. `random`: Samples randomly. `cosine_similarity`: Computes similarity between language descriptions of body tasks and target task.",
 )
 
-parser.add_argument(
-    "--weightUpdate",
-    default="None",
-    choices=["None", "PercentageProgramUpdate"], 
-    help="Weight update strategy for prioritizing tasks in the Stitch model. `None`: No weight update. `PercentageProgramUpdate`: Weight update based on percentage of programs in the Stitch model."
-)
-
-parser.add_argument(
-    "--syMetricMethod",
-    default="None",
-    choices=["None", "Rewrite", "RewriteEnumeration"],
-    help= "Type of technique for integrating syMetric into DreamCoder enumeration. `None`: No integration. `Rewrite`: Integrate syMetric's Rewrite rules into DreamCoder enumeration."
-)
-
 def main(args):
 
     gpt_params = json.loads(args.gpt_params)
@@ -261,8 +247,6 @@ def main(args):
             init_grammar_from_checkpoint=args.init_grammar_from_checkpoint,
             resume_checkpoint_directory=args.resume_checkpoint_directory,
             s3_sync=(not args.no_s3_sync),
-            weightUpdate=args.weightUpdate,
-            syMetricMethod=args.syMetricMethod,
         )
 
         if args.global_batch_size_all:
@@ -324,8 +308,6 @@ def main(args):
                 init_grammar_from_checkpoint=args.init_grammar_from_checkpoint,
                 resume_checkpoint_directory=args.resume_checkpoint_directory,
                 s3_sync=(not args.no_s3_sync),
-                weightUpdate=args.weightUpdate,
-                syMetricMethod=args.syMetricMethod,
             )
 
             experiment_state, experiment_iterator = init_experiment_state_and_iterator(

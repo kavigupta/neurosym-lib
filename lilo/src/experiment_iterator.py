@@ -48,12 +48,8 @@ OCAML_SPECIAL_HANDLER = "ocaml_special_handler"
 RANDOM_SEED = "random_seed"
 RANDOM_SEED_WILDCARD = "{RANDOM_SEED}"
 RANDOM_GENERATOR = "random_generator"
-WEIGHT_UPDATE = "weight_update"
-SYMETRIC_METHOD = "symetric_method"
-
 
 LOG_DEBUG, LOG_WARNING, LOG_INFO = 3, 2, 1
-
 
 class ExperimentState:
 
@@ -61,23 +57,19 @@ class ExperimentState:
     SAMPLES = "samples"
     FRONTIERS = "frontiers"
 
-    def __init__(self, config):
+    def __init__(self, config: dict):
+        """
+        Initialize the experiment state from a config.
+
+        Args:
+            config (dict): A dictionary containing the config generated from a JSON file using build_config in src/config_builder.py.
+        """
         self.config = config
 
         self.metadata = self.init_metadata_from_config(config)
         self.curr_iteration = self.init_curr_iteration()
         
         self.tasks, self.task_frontiers = self.init_tasks_from_config(config)
-        self.weights = {} #SAGNIK
-        for task_type in self.tasks.keys():
-            for task in self.tasks[task_type]:
-                self.weights[str(task.name)] = 1.0
-        self.weightUpdate = self.metadata[WEIGHT_UPDATE] #can be "None" or "PercentProgramsUpdated"
-        self.syMetricMethod = self.metadata[SYMETRIC_METHOD] #can be "None" or "Rewrite"
-        if self.metadata[TASKS_LOADER]=="re2":
-            self.syMetricReplaceableTokens = ["_" + ch for ch in "abcdefghijklmnopqrstuvwxyz"]
-        else:
-            self.syMetricReplaceableTokens = []
         self.task_language, self.task_vocab = self.init_task_language_from_config(
             config
         )
@@ -99,7 +91,17 @@ class ExperimentState:
 
         self.maybe_resume_from_checkpoint()
 
-    def init_tasks_from_config(self, config):
+    def init_tasks_from_config(self, config: dict) -> tuple[dict, dict]:
+        """
+        Initialize tasks and task frontiers from a config. The tasks are loaded from a task loader specified in the config.      
+
+        Args:
+            config (dict): A dictionary containing the config generated from a JSON file using build_config in src/config_builder.py.
+
+        Returns:
+            dict: A dictionary containing the tasks loaded from the task loader. Normally, this dictionary has format {"train": List[Task], "test": List[Task]} where Task is the class defined in dreamcoder.task.
+            dict: A dictionary containing the empty task frontiers for each task loaded from the task loader. Normally, this dictionary has format {"train": {Task: Frontier}, "test": {Task: Frontier}} where Frontier is the class defined in dreamcoder.frontier.
+        """
         task_loader = task_loaders.TaskLoaderRegistry[config[METADATA][TASKS_LOADER]]
         self.tasks = task_loader.load_tasks()
 
@@ -110,14 +112,30 @@ class ExperimentState:
 
         return self.tasks, self.task_frontiers
 
-    def init_task_language_from_config(self, config):
+    def init_task_language_from_config(self, config: dict) -> tuple[dict, dict]:
+        """
+        Initialize task language and vocab from a config. The task language is loaded from a task language loader specified in the config.
+
+        Args:
+            config (dict): A dictionary containing the config generated from a JSON file using build_config in src/config_builder.py.
+
+        Returns:
+            tuple[dict, dict]: A tuple containing the task language and vocab loaded from the task language loader. For an example of a language_loader.load_task_language() function, see CompositionalGraphics200HumanLanguageLoader.load_task_language() in lilo/data/compositional_graphics/make_tasks.py.
+        """
         language_loader = task_loaders.TaskLanguageLoaderRegistry[
             config[METADATA][TASK_LANGUAGE_LOADER]
         ]
 
         return language_loader.load_task_language()
 
-    def init_models_from_config(self, config, models_to_initialize=None):
+    def init_models_from_config(self, config: dict, models_to_initialize: list[str] | None = None) -> None:
+        """
+        Initializes models from config if the model type is in models_to_initialize. If models_to_initialize is None, initializes all models in the config. model_type is usually a string in the config file like "grammar" or "examples_encoder" - for an example of a config using model types, see lilo/experiments_iterative/templates/template_dreamcoder.json.
+        
+        Args:
+            config (dict): A dictionary containing the config generated from a JSON file using build_config in src/config_builder.py.
+            models_to_initialize (list[str] | None): A list of model types to initialize. If None, initializes all models in the config. Defaults to None.
+        """
         for model_initializer_block in config[MODEL_INITIALIZERS]:
             model_type = model_initializer_block[MODEL_TYPE]
             if (
@@ -138,7 +156,16 @@ class ExperimentState:
             )
             self.models[model_type] = model
 
-    def init_metadata_from_config(self, config):
+    def init_metadata_from_config(self, config: dict) -> dict:
+        """
+        Initialize metadata from a config. The metadata is a dictionary containing the task data loader, the task language loader, ocaml_handler, and other metadata specified in the config (see src.config_builder.py's get_domain_metadata function).
+
+        Args:
+            config (dict): A dictionary containing the config generated from a JSON file using build_config in src/config_builder.py.
+
+        Returns:
+            dict: A dictionary containing the metadata specified in the config.
+        """
         metadata = copy.copy(config[METADATA])
         metadata[TIMESTAMP] = (
             utils.escaped_timestamp() if metadata[EXPORT_WITH_TIMESTAMP] else ""
@@ -162,7 +189,9 @@ class ExperimentState:
         return self.curr_iteration == self.metadata.get(CURR_ITERATION, 0)
 
     def init_log_and_export_from_config(self):
-        """Initializes time-stamped checkpoint directory and log file if log and export directory are provided."""
+        """
+        Initializes time-stamped checkpoint directory and log file if log and export directory are provided.
+        """
 
         log_directory = self.metadata[LOG_DIRECTORY]
         export_directory = self.metadata[EXPORT_DIRECTORY]
@@ -186,7 +215,14 @@ class ExperimentState:
     def init_logger(self):
         pass
 
-    def log_metadata(self, verbosity=LOG_DEBUG):
+    def log_metadata(self, verbosity: int = LOG_DEBUG):
+        """
+        Log metadata to console.
+
+        Args:
+            verbosity (int, optional): Verbosity level. Defaults to LOG_DEBUG.
+        """
+        
         if verbosity >= LOG_DEBUG:
             keys_to_log = {k for k in self.metadata}
         elif verbosity < LOG_DEBUG and verbosity >= LOG_WARNING:
@@ -199,7 +235,14 @@ class ExperimentState:
                 print(f"\t{attr}: {self.metadata[attr]}")
         print(f"====================================")
 
-    def log_frontiers(self, verbosity=LOG_DEBUG, include_samples=False):
+    def log_frontiers(self, verbosity: int =LOG_DEBUG, include_samples: bool = False):
+        """
+        Log frontiers to console.
+        
+        Args:
+            verbosity (int, optional): Verbosity level. Defaults to LOG_DEBUG.
+            include_samples (bool, optional): Whether to include samples. Defaults to False.
+        """
         print(f"============LOGGING FRONTIERS============")
         for task_split in self.task_frontiers:
             num_solved = len(self.get_non_empty_frontiers_for_split(task_split))
@@ -219,7 +262,13 @@ class ExperimentState:
                 )
         print(f"====================================")
 
-    def maybe_resume_from_checkpoint(self):
+    def maybe_resume_from_checkpoint(self) -> bool | None:
+        """
+        Initialize grammar and frontiers from checkpoint if specified in the config.
+        
+        Returns:
+            bool | None: True if frontiers were loaded from checkpoint, False otherwise. None if no checkpoint was found.
+        """
         if self.metadata[INIT_GRAMMAR_FROM_CHECKPOINT]:
             self.init_grammar_from_checkpoint()
 
@@ -246,6 +295,10 @@ class ExperimentState:
                 return frontiers_loaded
 
     def init_grammar_from_checkpoint(self):
+        """
+        Initialize grammar from checkpoint.
+        """
+        
         grammar = self.models[model_loaders.GRAMMAR].load_model_from_checkpoint(
             self, self.get_checkpoint_directory_maybe_resume()
         )
@@ -254,7 +307,15 @@ class ExperimentState:
         self.models[model_loaders.GRAMMAR] = grammar
         print(f"Loaded grammar from: {self.get_checkpoint_directory_maybe_resume()}")
 
-    def get_checkpoint_directory(self):
+    def get_checkpoint_directory(self) -> str:
+        
+        """
+        Get the checkpoint directory for the current iteration.
+        
+        Returns:
+            str: The checkpoint directory for the current iteration.
+        """
+        
         checkpoint_directory = os.path.join(
             self.metadata[EXPORT_DIRECTORY], str(self.curr_iteration)
         )
@@ -262,6 +323,7 @@ class ExperimentState:
         return checkpoint_directory
 
     def get_resume_checkpoint_directory(self):
+        
         if self.metadata.get(RESUME_CHECKPOINT_DIRECTORY):
             resume_checkpoint_directory = self.metadata[RESUME_CHECKPOINT_DIRECTORY]
             if RANDOM_SEED_WILDCARD in resume_checkpoint_directory:
