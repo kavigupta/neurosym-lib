@@ -8,7 +8,7 @@ import tqdm.auto as tqdm
 from neurosym.examples.simple_dreamcoder.algorithm import (
     compute_best_fits_for_each,
     evaluate_all_programs,
-    iterate_algorithm,
+    simple_dreamcoder,
 )
 from neurosym.examples.simple_dreamcoder.domain import example_dataset, example_dsl
 from neurosym.utils.logging import log
@@ -30,7 +30,7 @@ def compute_learning_curve(
     test_errors = []
     for updated_dsl, dist_family, dist, _, error in tqdm.tqdm(
         itertools.islice(
-            iterate_algorithm(
+            simple_dreamcoder(
                 xs_train,
                 values_train,
                 dsl,

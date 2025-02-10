@@ -97,8 +97,13 @@ def compute_best_fits_for_each(
     return errors.min(1).mean(), [filtered_programs[i] for i in program_idxs]
 
 
-def iterate_algorithm(
-    xs, values, dsl, val_split=0.1, compression_steps_by_iteration=1, count=5000
+def simple_dreamcoder(
+    xs: np.ndarray,
+    values: np.ndarray,
+    dsl: DSL,
+    val_split=0.1,
+    compression_steps_by_iteration=1,
+    count=5000,
 ):
     num_train = int(len(xs) * (1 - val_split))
     dist_family = BigramProgramDistributionFamily(dsl)
