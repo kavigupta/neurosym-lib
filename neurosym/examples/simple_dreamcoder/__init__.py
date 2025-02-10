@@ -1,2 +1,2 @@
 from .domain import example_dataset
-from .algorithm import best_fits, evaluate_all_programs, run_safely
+from .algorithm import compute_best_fits_for_each, evaluate_all_programs, run_safely
