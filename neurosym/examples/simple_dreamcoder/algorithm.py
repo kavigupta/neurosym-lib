@@ -7,7 +7,6 @@ from neurosym.program_dist.bigram import BigramProgramDistributionFamily
 from neurosym.programs.s_expression_render import render_s_expression
 
 
-# TODO update the code in the discrete_exercise_solutions.ipynb to use these
 def run_safely(f, x):
     # pylint: disable=broad-except
     try:
@@ -45,7 +44,7 @@ def best_fits(xs, values, dsl, family, dist, *, count=5000):
     filtered_programs, ys = evaluate_all_programs(xs, dsl, programs)
     errors = ((ys[None] - values[:, None]) ** 2).sum(-1)
     program_idxs = errors.argmin(1)
-    return [filtered_programs[i] for i in program_idxs]
+    return errors.min(1).mean(), [filtered_programs[i] for i in program_idxs]
 
 
 def iterate_algorithm(
@@ -55,7 +54,7 @@ def iterate_algorithm(
     dist_family = BigramProgramDistributionFamily(dsl)
     dist = dist_family.uniform()
     while True:
-        best_programs = best_fits(xs, values, dsl, dist_family, dist, count=count)
+        _, best_programs = best_fits(xs, values, dsl, dist_family, dist, count=count)
         error = (
             (
                 (

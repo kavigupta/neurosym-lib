@@ -41,7 +41,8 @@ def compute_learning_curve(
         ),
         total=num_iterations,
     ):
-        best_programs_test = best_fits(
+        # TODO check if this is just returning test error now
+        _, best_programs_test = best_fits(
             xs_test, values_test, updated_dsl, dist_family, dist, count=count
         )
         test_error = (
