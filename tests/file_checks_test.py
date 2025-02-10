@@ -62,7 +62,11 @@ class OnlyDirectImportsTest(unittest.TestCase):
         imports = {ast.unparse(node) for node in gatherer.imports}
         imports = {imp for imp in imports if "neurosym" in imp}
 
-        expected = {"from neurosym.examples import near", "import neurosym as ns"}
+        expected = {
+            "from neurosym.examples import near",
+            "from neurosym.examples import simple_dreamcoder",
+            "import neurosym as ns",
+        }
 
         self.assertEqual(imports | expected, expected)
 
