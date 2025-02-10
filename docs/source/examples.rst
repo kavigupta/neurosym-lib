@@ -6,5 +6,6 @@ Implemented Algorithms
     :maxdepth: 1
     
     near
+    simple_dreamcoder
     dreamcoder
     examples_other
