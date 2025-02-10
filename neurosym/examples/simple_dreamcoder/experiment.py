@@ -117,17 +117,17 @@ def compute_and_save_learning_curve_for_default_experiment(
 
 def learning_curves_all(root_path):
     results = {}
-    for compression_steps_by_iteration in [0, 1, 5]:
+    for compression_steps_by_iteration in range(1 + 5):
         for count in [500]:
             res_compress_count = []
-            for seed in range(3):
+            for seed in range(10):
                 res_compress_count.append(
                     compute_and_save_learning_curve_for_default_experiment(
                         root_path,
                         compression_steps_by_iteration=compression_steps_by_iteration,
                         count=count,
                         seed=seed,
-                        num_iterations=50,
+                        num_iterations=100,
                     )
                 )
                 results[(compression_steps_by_iteration, count)] = res_compress_count
