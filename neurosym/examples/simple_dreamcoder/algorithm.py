@@ -3,7 +3,9 @@ from typing import Callable, List
 
 import numpy as np
 
+from neurosym.compression.process_abstraction import multi_step_compression
 from neurosym.dsl.dsl import DSL
+from neurosym.program_dist.bigram import BigramProgramDistributionFamily
 from neurosym.program_dist.distribution import (
     ProgramDistribution,
     ProgramDistributionFamily,
@@ -93,3 +95,54 @@ def compute_best_fits_for_each(
     errors = ((ys[None] - values[:, None]) ** 2).sum(-1)
     program_idxs = errors.argmin(1)
     return errors.min(1).mean(), [filtered_programs[i] for i in program_idxs]
+
+
+def simple_dreamcoder(
+    xs: np.ndarray,
+    values: np.ndarray,
+    dsl: DSL,
+    val_split=0.1,
+    compression_steps_by_iteration=1,
+    count=5000,
+):
+    """
+    Implementation of the simple dreamcoder algorithm. This algorithm works by
+    iteratively compressing the DSL, computing the best programs for each sequence,
+    and then compressing the DSL again.
+
+    :param xs: The input sequences, a numpy array of shape ```(N,)```
+    :param values: The target values, a numpy array of shape ```(num_sequences, N)```
+    :param dsl: The DSL to use
+
+    :param val_split: The fraction of the dataset to use for validation
+    :param compression_steps_by_iteration: The number of compression steps to take at each iteration
+    :param count: The number of programs to consider
+
+    :return: A generator that yields a tuple of ```(dsl, dist_family, dist, best_programs, error)```
+        at each iteration. You can choose to stop the generator at any point, e.g., by using
+        the validation error.
+    """
+    num_train = int(len(xs) * (1 - val_split))
+    dist_family = BigramProgramDistributionFamily(dsl)
+    dist = dist_family.uniform()
+    while True:
+        _, best_programs = compute_best_fits_for_each(
+            xs, values, dsl, dist_family, dist, count=count
+        )
+        error = (
+            (
+                (
+                    evaluate_all_programs(xs, dsl, best_programs[num_train:])[1]
+                    - values[num_train:]
+                )
+                ** 2
+            )
+            .sum(-1)
+            .mean()
+        )
+        yield dsl, dist_family, dist, best_programs, error
+        dsl, rewritten = multi_step_compression(
+            dsl, best_programs[:num_train], compression_steps_by_iteration
+        )
+        dist_family = BigramProgramDistributionFamily(dsl)
+        dist = dist_family.fit_distribution(rewritten).bound_minimum_likelihood(0.01)
