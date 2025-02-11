@@ -1,7 +1,9 @@
+import itertools
 import neurosym as ns
 from neurosym.dsl.abstraction import _with_index_parameters
 from neurosym.dsl.abstraction import AbstractionProduction
 from neurosym.types.type_signature import FunctionTypeSignature
+from neurosym.types.type_string_repr import parse_type
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from neurosym.types.type import AtomicType
 from neurosym.program_dist.bigram import BigramProgramDistributionFamily
@@ -146,8 +148,11 @@ def parse_abstraction_dc_to_ns(abstraction: str, primitive_list: list[str]) -> n
             else:
                 return ns.InitializedSExpression(abstraction, (), {})
 
-def enumerate_dsl(family, dist, min_likelihood=-6, max_denominator=10**6):
-    result = list(family.enumerate(dist, min_likelihood=min_likelihood))
+
+def enumerate_dsl(family, dist, min_likelihood=-6, max_denominator=10**6, count=None):
+    result = list(
+        itertools.islice(family.enumerate(dist, min_likelihood=min_likelihood), count)
+    )
     result = [
         (
             ns.render_s_expression(prog),
@@ -177,6 +182,8 @@ if __name__ == "__main__":
     dslf.concrete("mathDomain_3", "() -> i", lambda: 3)
     dslf.concrete("mathDomain_4", "() -> i", lambda: 4)
     dslf.concrete("mathDomain_5", "() -> i", lambda: 5)
+    dslf.lambdas()
+    dslf.prune_to("s -> s")
     dsl = dslf.finalize()
     render = ns.render_s_expression(s_exp)
     print(f"\n Final Render: {render} \n")
@@ -190,11 +197,13 @@ if __name__ == "__main__":
     corrected_type_argument = TypeWithEnvironment(typ = type_argument.typ, env = Environment(_elements = new_type_env_dict))
     print(f"\n {corrected_type_argument}")
     type_signature = FunctionTypeSignature([x[0] for _, x in corrected_type_argument.env._elements.items()], corrected_type_argument.typ)
-    final = AbstractionProduction(render, type_signature, s_exp)
+    final = AbstractionProduction("abs_0", type_signature, s_exp)
     dsl = dsl.add_production(final)
-    dsl = dsl.with_valid_root_types([AtomicType("s")]) 
+    dsl = dsl.with_valid_root_types([parse_type("s -> s")])
+    print(dsl._production_by_symbol)
+    print(dsl.render())
     family = BigramProgramDistributionFamily(dsl)
-    enumerations = list(enumerate_dsl(family, family.uniform(), min_likelihood=-800)) 
-    #type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
-    #abstraction = AbstractionProduction(abstr_name, type_signature, abstr_body) 
-    #dsl.add_production(abstraction)
+    enumerations = list(enumerate_dsl(family, family.uniform(), min_likelihood=-8000, count=30)) 
+    # type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
+    # abstraction = AbstractionProduction(abstr_name, type_signature, abstr_body)
+    # dsl.add_production(abstraction)
