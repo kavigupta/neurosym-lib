@@ -268,9 +268,8 @@ def multicoreEnumeration(
             for ns_prog_tuple in current_generations:
                 ns_prog, prob_fraction = ns_prog_tuple
                 dreamcoder_prog = Program.parse(ns_prog)
-                #Not sure if the probability here is the log posterior or one of the other log probabilities
                 log_prob = math.log(float(format(prob_fraction, '.10g')))
-                dreamcoder_entry = FrontierEntry(dreamcoder_prog, log_prob)
+                dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logLikelihood=log_prob)
                 parsed_enumerations.append(dreamcoder_entry)
             min_likelihood_dict[job] += bi
             if time.time() - starting > enumerationTimeout:
