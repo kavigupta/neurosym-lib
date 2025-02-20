@@ -20,6 +20,7 @@ def calms21_investigation_example(train_seed, **kwargs) -> DatasetWrapper:
     test_data = "data/mice_classification/calms21_task1/test_data.npy"
     test_labels = "data/mice_classification/calms21_task1/test_investigation_labels.npy"
 
+    # pylint: disable=duplicate-code
     return DatasetWrapper(
         DatasetFromNpy(
             train_data,
@@ -33,3 +34,4 @@ def calms21_investigation_example(train_seed, **kwargs) -> DatasetWrapper:
         ),
         **kwargs,
     )
+    # pylint: enable=duplicate-code

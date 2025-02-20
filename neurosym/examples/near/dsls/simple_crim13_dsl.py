@@ -6,16 +6,16 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 from ..operations.aggregation import running_agg_torch
 from ..operations.basic import ite_torch
-from ..operations.lists import map_torch, fold_torch, map_prefix_torch
+from ..operations.lists import map_prefix_torch, map_torch
 
 CRIM13_FEATURES = {
-    "position" : torch.LongTensor([0, 1, 2, 3]),
-    "distance" : torch.LongTensor([4]),
-    "distance_change" : torch.LongTensor([5]),
-    "angle" : torch.LongTensor([6, 7, 10]),
-    "angle_change" : torch.LongTensor([8, 9]),
-    "velocity" : torch.LongTensor([11, 12, 13, 14]),
-    "acceleration" : torch.LongTensor([15, 16, 17, 18]),
+    "position": torch.LongTensor([0, 1, 2, 3]),
+    "distance": torch.LongTensor([4]),
+    "distance_change": torch.LongTensor([5]),
+    "angle": torch.LongTensor([6, 7, 10]),
+    "angle_change": torch.LongTensor([8, 9]),
+    "velocity": torch.LongTensor([11, 12, 13, 14]),
+    "acceleration": torch.LongTensor([15, 16, 17, 18]),
 }
 
 CRIM13_FULL_FEATURE_DIM = 19
@@ -132,7 +132,6 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
         "([#a] -> #b) -> [#a] -> [#b]",
         lambda f: lambda x: map_prefix_torch(f, x),
     )
-
 
     dslf.prune_to("([$fI]) -> [$fO]")
     return dslf.finalize()

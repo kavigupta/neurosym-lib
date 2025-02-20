@@ -14,12 +14,11 @@ def crim13_data_example(train_seed, **kwargs) -> DatasetWrapper:
     """
 
     train_data = "data/mice_classification/crim13/train_crim13_data.npy"
-    train_labels = (
-        "data/mice_classification/crim13/train_crim13_labels.npy"
-    )
+    train_labels = "data/mice_classification/crim13/train_crim13_labels.npy"
     test_data = "data/mice_classification/crim13/test_crim13_data.npy"
     test_labels = "data/mice_classification/crim13/test_crim13_labels.npy"
 
+    # pylint: disable=duplicate-code
     return DatasetWrapper(
         DatasetFromNpy(
             train_data,
@@ -33,3 +32,4 @@ def crim13_data_example(train_seed, **kwargs) -> DatasetWrapper:
         ),
         **kwargs,
     )
+    # pylint: enable=duplicate-code

@@ -45,7 +45,9 @@ class SymmetricMorletFilter(torch.nn.Module):
         return torch.sum(torch.mul(batch, morlet_filter), dim=seq_dim)
 
 
-def running_agg_torch(seq, fn, window_start: callable, window_end: callable, full_window: bool = False):
+def running_agg_torch(
+    seq, fn, window_start: callable, window_end: callable, full_window: bool = False
+):
     """
     Base function to compute various kinds of running aggregates.
 
@@ -64,7 +66,7 @@ def running_agg_torch(seq, fn, window_start: callable, window_end: callable, ful
     for t in range(0, seq_len):
         start = max(0, window_start(t))
         end = min(seq_len, window_end(t))
-        window = seq[:, start:end+1]
+        window = seq[:, start : end + 1]
         running_agg = torch.mean(window, dim=1)
         aggs.append(fn(running_agg))
     out = torch.stack(aggs, dim=1)

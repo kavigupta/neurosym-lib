@@ -34,7 +34,7 @@ def map_prefix_torch(func, lst):  # noqa: E741
     """
     Runs a map operation on a list of tensors, using the entire prefix of the list.
     """
-    N, L = lst.shape[:2]
+    _, L = lst.shape[:2]
 
     outputs = []
     for t in range(L):
