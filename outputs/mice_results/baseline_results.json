@@ -1,0 +1,41 @@
+{
+    "astar_near": {
+        "program": "Start(MapPrefixes(Last5Avg(PositionSelect())))",
+        "struct_cost": 0.0200,
+        "f1_score": 0.9439,
+        "all_f1s": [
+            0.9439,
+            0.0
+        ],
+        "hamming_accuracy": 0.8937,
+        "unweighted_f1": 0.4719,
+        "path_cost": 0.1276,
+        "time": 2275.7735
+    },
+    "enumeration": {
+        "program": "Start(Map(PositionSelect()))",
+        "struct_cost": 0.0100,
+        "f1_score": 0.1076,
+        "all_f1s": [
+            0.1076,
+            0.0
+        ],
+        "hamming_accuracy": 0.8937,
+        "unweighted_f1": 0.4719,
+        "path_cost": 0.1176,
+        "time": 271.8955
+    },
+    "iddfs_near": {
+        "program": "Start(MapPrefixes(Last5Avg(AccelerationSelect())))",
+        "struct_cost": 0.0200,
+        "f1_score": 0.9439,
+        "all_f1s": [
+            0.9439,
+            0.0
+        ],
+        "hamming_accuracy": 0.8937,
+        "unweighted_f1": 0.4719,
+        "path_cost": 0.1276,
+        "time": 19691.4884
+    }
+}
