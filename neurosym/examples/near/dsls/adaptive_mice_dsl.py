@@ -7,7 +7,30 @@ from neurosym.dsl.dsl_factory import DSLFactory
 from ..operations.aggregation import SymmetricMorletFilter, running_agg_torch
 from ..operations.basic import ite_torch
 from ..operations.lists import map_torch
+from .simple_calms21_dsl import CALMS21_FEATURES, CALMS21_FULL_FEATURE_DIM
 from .simple_crim13_dsl import CRIM13_FEATURES, CRIM13_FULL_FEATURE_DIM
+
+
+def adaptive_calms21_dsl(
+    num_classes,
+    hidden_dim=None,
+):
+    """
+    A differentiable DSL for finding interpretable programs for mice behavior classification on the CALMS21 dataset.
+    This DSL contains advanced aggregation functions such as convolution and morlet filters.
+    Consult https://arxiv.org/abs/2104.02710 for more details.
+    Consult https://neurosymbolic-learning.github.io/popl23tutorial/neurosymbolic_notebook3.html for a tutorial.
+
+    :param num_classes: Number of behavior classes.
+    :param hidden_dim: Size of hidden dimension (if None, set to num_classes).
+    """
+    return adaptive_mice_dsl_builder(
+        num_classes=num_classes,
+        hidden_dim=hidden_dim,
+        seq_len=100,  # CALMS21 dataset has a maximum sequence length of 100.
+        features=CALMS21_FEATURES,
+        full_feature_dim=CALMS21_FULL_FEATURE_DIM,
+    )
 
 
 def adaptive_crim13_dsl(
@@ -15,8 +38,7 @@ def adaptive_crim13_dsl(
     hidden_dim=None,
 ):
     """
-    A differentiable DSL for finding interpretable programs for mice behavior
-    classification on the CRIM13 dataset.
+    A differentiable DSL for finding interpretable programs for mice behavior classification on the CRIM13 dataset.
     This DSL contains advanced aggregation functions such as convolution and morlet filters.
     Consult https://arxiv.org/abs/2007.12101 for more details.
     Consult https://github.com/trishullab/near/blob/master/near_code/dsl_crim13.py for the reference implementation.
@@ -24,13 +46,35 @@ def adaptive_crim13_dsl(
     :param num_classes: Number of behavior classes.
     :param hidden_dim: Size of hidden dimension (if None, set to num_classes).
     """
-    hidden_dim = num_classes if hidden_dim is None else hidden_dim
-    seq_len = (
-        13  # CRIM13 dataset has max sequence length of 13. Change for other datasets.
+    return adaptive_mice_dsl_builder(
+        num_classes=num_classes,
+        hidden_dim=hidden_dim,
+        seq_len=13,  # CRIM13 dataset has a sequence length of 13.
+        features=CRIM13_FEATURES,
+        full_feature_dim=CRIM13_FULL_FEATURE_DIM,
     )
 
+
+def adaptive_mice_dsl_builder(
+    num_classes,
+    features,
+    full_feature_dim,
+    seq_len,
+    hidden_dim=None,
+):
+    """
+    Builds a differentiable DSL for finding interpretable programs for mice behavior classification.
+
+    :param num_classes: Number of behavior classes.
+    :param features: A dictionary of feature names to feature indices.
+    :param full_feature_dim: The full feature dimension.
+    :param seq_len: The sequence length of the dataset.
+    :param hidden_dim: Size of hidden dimension (if None, set to num_classes).
+    """
+    hidden_dim = num_classes if hidden_dim is None else hidden_dim
+
     dslf = DSLFactory(
-        input_size=CRIM13_FULL_FEATURE_DIM,
+        input_size=full_feature_dim,
         output_size=num_classes,
         max_overall_depth=6,
         hidden_size=hidden_dim,
@@ -39,7 +83,7 @@ def adaptive_crim13_dsl(
     dslf.typedef("fH", "{f, $hidden_size}")
     dslf.typedef("fI", "{f, $input_size}")
 
-    for feature_name, feature_indices in CRIM13_FEATURES.items():
+    for feature_name, feature_indices in features.items():
         dslf.parameterized(
             f"affine_{feature_name}",
             "() -> $fI -> $fH",

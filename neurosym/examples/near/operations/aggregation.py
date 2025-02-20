@@ -45,7 +45,7 @@ class SymmetricMorletFilter(torch.nn.Module):
         return torch.sum(torch.mul(batch, morlet_filter), dim=seq_dim)
 
 
-def running_agg_torch(seq, fn, window_start: callable, window_end: callable):
+def running_agg_torch(seq, fn, window_start: callable, window_end: callable, full_window: bool = False):
     """
     Base function to compute various kinds of running aggregates.
 
@@ -53,6 +53,7 @@ def running_agg_torch(seq, fn, window_start: callable, window_end: callable):
     :param fn: ``((N, D) -> (N, D))``
     :param window_start: A callable function f(t:int) -> int that returns the index of the window start.
     :param window_end: A callable function f(t:int) -> int that returns the index of the window end.
+    :param full_window: If True, the function will only return the full window aggregates.
     """
     # @TODO: The only reason we aren't allowing 2D is because I don't know how to dynmaically switch between arr[s:e] and arr[:, s:e]
     assert (
@@ -60,12 +61,13 @@ def running_agg_torch(seq, fn, window_start: callable, window_end: callable):
     ), f"Expected 3D tensor with shape (N, L, D), got {seq.shape}"
     seq_len = seq.shape[1]
     aggs = []
-    # start from t=1 to avoid an empty window.
-    for t in range(1, seq_len):
+    for t in range(0, seq_len):
         start = max(0, window_start(t))
         end = min(seq_len, window_end(t))
-        window = seq[:, start:end]
+        window = seq[:, start:end+1]
         running_agg = torch.mean(window, dim=1)
         aggs.append(fn(running_agg))
     out = torch.stack(aggs, dim=1)
-    return out[:, -1]
+    if not full_window:
+        out = out[:, -1]
+    return out

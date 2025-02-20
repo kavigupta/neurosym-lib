@@ -6,27 +6,30 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 from ..operations.aggregation import running_agg_torch
 from ..operations.basic import ite_torch
-from ..operations.lists import map_torch, fold_torch, map_prefix_torch
 
-CRIM13_FEATURES = {
-    "position" : torch.LongTensor([0, 1, 2, 3]),
-    "distance" : torch.LongTensor([4]),
-    "distance_change" : torch.LongTensor([5]),
-    "angle" : torch.LongTensor([6, 7, 10]),
-    "angle_change" : torch.LongTensor([8, 9]),
-    "velocity" : torch.LongTensor([11, 12, 13, 14]),
-    "acceleration" : torch.LongTensor([15, 16, 17, 18]),
+CALMS21_FEATURES = {
+    "res_angle_head_body": torch.LongTensor(list(range(0, 2))),
+    "axis_ratio": torch.LongTensor(list(range(2, 4))),
+    "speed": torch.LongTensor(list(range(4, 6))),
+    "acceleration": torch.LongTensor(list(range(6, 8))),
+    "tangential_velocity": torch.LongTensor(list(range(8, 10))),
+    "rel_angle_social": torch.LongTensor(list(range(10, 12))),
+    "angle_between": torch.LongTensor(list(range(12, 13))),
+    "facing_angle": torch.LongTensor(list(range(13, 15))),
+    "overlap_bboxes": torch.LongTensor(list(range(15, 16))),
+    "area_ellipse_ratio": torch.LongTensor(list(range(16, 17))),
+    "min_res_nose_dist": torch.LongTensor(list(range(17, 18))),
 }
 
-CRIM13_FULL_FEATURE_DIM = 19
+CALMS21_FULL_FEATURE_DIM = 18
 
 
-def simple_crim13_dsl(num_classes, hidden_dim=None):
+def simple_calms21_dsl(num_classes, hidden_dim=None):
     """
     A differentiable DSL for finding interpretable programs for mice behavior
-    classification on the CRIM13 dataset.
+    classification on the CALMS21 dataset.
     Consult https://arxiv.org/abs/2007.12101 for more details.
-    Consult https://github.com/trishullab/near/blob/master/near_code/dsl_crim13.py for the reference implementation.
+    Consult https://github.com/trishullab/near/blob/master/near_code/dsl_calms21.py for the reference implementation.
 
     :param num_classes: Number of behavior classes.
     :param hidden_dim: Size of hidden dimension (if None, set to num_classes).
@@ -34,7 +37,7 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
     hidden_dim = num_classes if hidden_dim is None else hidden_dim
 
     dslf = DSLFactory(
-        input_size=CRIM13_FULL_FEATURE_DIM,
+        input_size=CALMS21_FULL_FEATURE_DIM,
         output_size=num_classes,
         max_overall_depth=6,
         hidden_size=hidden_dim,
@@ -43,7 +46,7 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
     dslf.typedef("fH", "{f, $hidden_size}")
     dslf.typedef("fI", "{f, $input_size}")
 
-    for feature_name, feature_indices in CRIM13_FEATURES.items():
+    for feature_name, feature_indices in CALMS21_FEATURES.items():
         dslf.parameterized(
             f"affine_{feature_name}",
             "() -> $fI -> $fH",
@@ -105,34 +108,23 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
     if hidden_dim != num_classes:
         dslf.parameterized(
             "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> [$fO]",
+            "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f, lin: lambda x: lin(f(x)).softmax(-1),
             dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
         )
     else:
         dslf.concrete(
             "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> [$fO]",
+            "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f: lambda x: f(x).softmax(-1),
         )
     # pylint: disable=unnecessary-lambda
     dslf.concrete(
         "ite",
-        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        ite_torch,
+        "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
+        lambda cond, fx, fy: ite_torch(cond, fx, fy),
     )
     # pylint: enable=unnecessary-lambda
-    dslf.concrete(
-        "map",
-        "(#a -> #b) -> [#a] -> [#b]",
-        lambda f: lambda x: map_torch(f, x),
-    )
-    dslf.concrete(
-        "map_prefix",
-        "([#a] -> #b) -> [#a] -> [#b]",
-        lambda f: lambda x: map_prefix_torch(f, x),
-    )
 
-
-    dslf.prune_to("([$fI]) -> [$fO]")
+    dslf.prune_to("([$fI]) -> $fO")
     return dslf.finalize()

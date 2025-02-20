@@ -19,7 +19,7 @@ from .utils import assertDSLEnumerable
 
 class TestNEARMiceDSL(unittest.TestCase):
     @staticmethod
-    def tinycrim13_binary_cross_entropy_loss(
+    def tinycalms21_binary_cross_entropy_loss(
         predictions: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
         """
@@ -40,19 +40,19 @@ class TestNEARMiceDSL(unittest.TestCase):
             weight=torch.tensor([2.0, 1.0], device=predictions.device),
         )
 
-    def test_replicate_tinycrim13(self):
+    def test_replicate_tinycalms21(self):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
-        datamodule = ns.datasets.crim13_investigation_example(
+        datamodule = ns.datasets.calms21_investigation_example(
             train_seed=0, batch_size=1024
         )
         _, output_dim = datamodule.train.get_io_dims()
-        original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=16)
+        original_dsl = near.simple_calms21_dsl(num_classes=output_dim, hidden_dim=16)
         trainer_cfg = near.NEARTrainerConfig(
             n_epochs=12,
             lr=1e-4,
-            loss_callback=self.tinycrim13_binary_cross_entropy_loss,
+            loss_callback=self.tinycalms21_binary_cross_entropy_loss,
         )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
@@ -111,6 +111,6 @@ class TestNEARMiceDSL(unittest.TestCase):
         sure all DSL combinations upto a fixed depth are valid.
         """
         self.maxDiff = None
-        dsl = near.simple_crim13_dsl(num_classes=2)
+        dsl = near.simple_calms21_dsl(num_classes=2)
 
         assertDSLEnumerable(dsl, "([$fL]) -> $fO")
