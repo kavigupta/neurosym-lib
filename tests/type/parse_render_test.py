@@ -160,6 +160,9 @@ class TestParse(unittest.TestCase):
     def test_atomic(self):
         self.assertEqual(ns.parse_type("int"), ns.AtomicType("int"))
 
+    def test_atomic_parenthesized(self):
+        self.assertEqual(ns.parse_type("(int)"), ns.AtomicType("int"))
+
     def test_tensor(self):
         self.assertEqual(
             ns.parse_type("{int, 3, 4}"), ns.TensorType(ns.AtomicType("int"), (3, 4))
@@ -179,6 +182,12 @@ class TestParse(unittest.TestCase):
     def test_arrow_single_arg(self):
         self.assertEqual(
             ns.parse_type("int -> bool"),
+            ns.ArrowType((ns.AtomicType("int"),), ns.AtomicType("bool")),
+        )
+
+    def test_arrow_single_arg_paren(self):
+        self.assertEqual(
+            ns.parse_type("(int) -> bool"),
             ns.ArrowType((ns.AtomicType("int"),), ns.AtomicType("bool")),
         )
 
@@ -231,6 +240,10 @@ class TestParse(unittest.TestCase):
     def test_unparenthesized_arrow_inside_argument(self):
         t = "(i -> b, [i]) -> [i]"
         self.assertEqual(ns.render_type(ns.parse_type(t)), t)
+
+    def test_parenthesized_return(self):
+        t = "(a -> b) -> ([a] -> [b])"
+        self.assertEqual(ns.render_type(ns.parse_type(t)), "(a -> b) -> [a] -> [b]")
 
     def test_bad_parse(self):
         self.assertRaises(Exception, lambda: ns.render_type(ns.parse_type("f -> f]")))
