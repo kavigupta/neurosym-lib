@@ -3,10 +3,12 @@ import unittest
 import neurosym as ns
 
 dslf = ns.DSLFactory()
-dslf.concrete("1", "() -> i -> i", lambda: 1)
-dslf.concrete("+", "(#t -> i, #t -> i) -> #t -> i", lambda x, y: lambda t: x(t) + y(t))
-dslf.concrete("id", "#a -> #a", lambda x: x)
-dslf.concrete(
+dslf.production("1", "() -> i -> i", lambda: 1)
+dslf.production(
+    "+", "(#t -> i, #t -> i) -> #t -> i", lambda x, y: lambda t: x(t) + y(t)
+)
+dslf.production("id", "#a -> #a", lambda x: x)
+dslf.production(
     "compose", "(#a -> #b, #b -> #c) -> #a -> #c", lambda f, g: lambda x: f(g(x))
 )
 dsl = dslf.finalize()
@@ -54,13 +56,13 @@ class TestEnumeratability(unittest.TestCase):
 
     def test_filtered_variable(self):
         dslf_2 = ns.DSLFactory()
-        dslf_2.concrete("1", "() -> i", lambda: 1)
-        dslf_2.concrete("1f", "() -> f", lambda: 1)
+        dslf_2.production("1", "() -> i", lambda: 1)
+        dslf_2.production("1f", "() -> f", lambda: 1)
         dslf_2.filtered_type_variable(
             "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
         )
-        dslf_2.concrete("+", "(%num, %num) -> %num", lambda x, y: x + y)
-        dslf_2.concrete("*", "(#a, #a) -> #a", lambda x, y: x + y)
+        dslf_2.production("+", "(%num, %num) -> %num", lambda x, y: x + y)
+        dslf_2.production("*", "(#a, #a) -> #a", lambda x, y: x + y)
         dsl_2 = dslf_2.finalize()
         expans = {
             ns.render_s_expression(prog)

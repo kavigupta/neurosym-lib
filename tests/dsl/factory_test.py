@@ -9,8 +9,8 @@ class TestDuplicateProduction(unittest.TestCase):
     def test_basic_duplicate(self):
         dslf = ns.DSLFactory()
         ident = lambda x: x
-        dslf.concrete("1", "() -> i", ident)
-        dslf.concrete("1", "() -> f", ident)
+        dslf.production("1", "() -> i", ident)
+        dslf.production("1", "() -> f", ident)
         self.assertRaisesRegex(
             ValueError,
             "^Duplicate declarations for production: 1$",
@@ -20,8 +20,8 @@ class TestDuplicateProduction(unittest.TestCase):
     def test_exact_duplicate_allowed(self):
         dslf = ns.DSLFactory()
         ident = lambda x: x
-        dslf.concrete("1", "() -> i", ident)
-        dslf.concrete("1", "() -> i", ident)
+        dslf.production("1", "() -> i", ident)
+        dslf.production("1", "() -> i", ident)
         dsl = dslf.finalize()
         assertDSL(
             self,
@@ -35,10 +35,10 @@ class TestDuplicateProduction(unittest.TestCase):
 class TestPruning(unittest.TestCase):
     def test_basic_pruning(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("identity", "i -> i", lambda x: x)
-        dslf.concrete("add", "(i, i) -> i", lambda x, y: x + y)
-        dslf.concrete("convert", "#x -> f", float)
+        dslf.production("1", "() -> i", lambda x: x)
+        dslf.production("identity", "i -> i", lambda x: x)
+        dslf.production("add", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("convert", "#x -> f", float)
         dslf.prune_to("f")
         dsl = dslf.finalize()
         assertDSL(
@@ -55,10 +55,10 @@ class TestPruning(unittest.TestCase):
 
     def test_pruning_error(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("identity", "i -> i", lambda x: x)
-        dslf.concrete("add", "(i, i) -> i", lambda x, y: x + y)
-        dslf.concrete("convert", "#x -> i", float)
+        dslf.production("1", "() -> i", lambda x: x)
+        dslf.production("identity", "i -> i", lambda x: x)
+        dslf.production("add", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("convert", "#x -> i", float)
         dslf.prune_to("f")
         self.assertRaisesRegex(
             TypeError,
@@ -68,9 +68,9 @@ class TestPruning(unittest.TestCase):
 
     def test_pruning_specific(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("identity", "f -> i", lambda x: x)
-        dslf.concrete("add", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("1", "() -> i", lambda x: x)
+        dslf.production("identity", "f -> i", lambda x: x)
+        dslf.production("add", "(i, i) -> i", lambda x, y: x + y)
         dslf.prune_to("i")
         self.assertRaises(
             TypeError,
@@ -80,9 +80,9 @@ class TestPruning(unittest.TestCase):
 
     def test_allow_pruning(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("identity", "f -> i", lambda x: x)
-        dslf.concrete("add", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("1", "() -> i", lambda x: x)
+        dslf.production("identity", "f -> i", lambda x: x)
+        dslf.production("add", "(i, i) -> i", lambda x, y: x + y)
         dslf.prune_to("i", tolerate_pruning_entire_productions=True)
         dsl = dslf.finalize()
         assertDSL(
@@ -96,8 +96,8 @@ class TestPruning(unittest.TestCase):
 
     def test_pruning_with_call(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda x: x)
-        dslf.concrete("call", "(i -> i, i) -> i", lambda x, y: x(y))
+        dslf.production("1", "() -> i", lambda x: x)
+        dslf.production("call", "(i -> i, i) -> i", lambda x, y: x(y))
         dslf.lambdas()
         dslf.prune_to("i")
         dsl = dslf.finalize()

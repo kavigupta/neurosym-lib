@@ -153,7 +153,7 @@ def create_python_dsl(
                 assert len(input_types) == 1
                 for length in dsl_subset.lengths_by_sequence_type.get(target, []):
                     typ = ArrowType(input_types * length, parse_type(target))
-                    dslf.concrete(
+                    dslf.production(
                         prod
                         + PYTHON_DSL_SEPARATOR
                         + python_ast_tools.clean_type(target)
@@ -164,7 +164,7 @@ def create_python_dsl(
                     )
             else:
                 typ = ArrowType(tuple(input_types), parse_type(target))
-                dslf.concrete(
+                dslf.production(
                     prod + PYTHON_DSL_SEPARATOR + python_ast_tools.clean_type(target),
                     render_type(typ),
                     None,
@@ -172,7 +172,7 @@ def create_python_dsl(
     for target, leaves in dsl_subset.leaves.items():
         for constant in leaves:
             typ = ArrowType((), parse_type(target))
-            dslf.concrete(
+            dslf.production(
                 constant + PYTHON_DSL_SEPARATOR + target, render_type(typ), None
             )
     add_additional_productions(dslf)
