@@ -1,5 +1,6 @@
 import copy
 from typing import Callable, Dict, List, Tuple
+import warnings
 
 import numpy as np
 
@@ -117,14 +118,13 @@ class DSLFactory:
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
-        Add a concrete production to the DSL.
-
-        :param symbol: The symbol for the production.
-        :param type_str: The type string for the production.
-        :param semantics: The semantics to use for the production. This should have
-            a type corresponding to ``type_str``. Note: *this is not checked*.
+        Deprecated alias of :py:meth:`production`.
         """
-        self.parameterized(symbol, type_str, semantics, {})
+        warnings.warn(
+            "The method concrete is deprecated. Use production instead.",
+            DeprecationWarning,
+        )
+        self.production(symbol, type_str, semantics, {})
 
     def parameterized(
         self,
@@ -132,6 +132,22 @@ class DSLFactory:
         type_str: str,
         semantics: object,
         parameters: Dict[str, Callable[[], object]],
+    ):
+        """
+        Deprecated alias of :py:meth:`production`.
+        """
+        warnings.warn(
+            "The method parameterized is deprecated. Use production instead.",
+            DeprecationWarning,
+        )
+        self.production(symbol, type_str, semantics, parameters)
+
+    def production(
+        self,
+        symbol: str,
+        type_str: str,
+        semantics: object,
+        parameters: Dict[str, Callable[[], object]] = None,
     ):
         """
         Add a parameterized production to the DSL.
@@ -143,6 +159,8 @@ class DSLFactory:
         :param parameters: A dictionary mapping parameter names to functions that
             generate initial parameter values.
         """
+        if parameters is None:
+            parameters = {}
         sig = self.t.sig(type_str)
         self._parameterized_productions.append(
             (
