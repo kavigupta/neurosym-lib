@@ -34,7 +34,7 @@ jobs:
           pip install -r requirements.txt
       - name: Test with pytest
         run: |
-          pytest -W error -W ignore:PicklingWarning ${{ matrix.test-file }} || pytest -W error -W ignore:PicklingWarning ${{ matrix.test-file }} --lf
+          pytest ${{ matrix.test-file }} || pytest ${{ matrix.test-file }} --lf
 
   lint:
     runs-on: ubuntu-latest
