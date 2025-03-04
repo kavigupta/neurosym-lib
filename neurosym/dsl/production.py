@@ -268,7 +268,7 @@ class ParameterizedProduction(ConcreteProduction):
     def of(
         cls, symbol, type_signature, compute, initializers=None, provide_enviroment=None
     ):
-        if initializers is None and provide_enviroment is None:
+        if not initializers and provide_enviroment is None:
             return ConcreteProduction(symbol, type_signature, compute)
         # pylint: disable=unexpected-keyword-arg
         return cls(
