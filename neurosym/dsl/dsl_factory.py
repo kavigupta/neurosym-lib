@@ -194,7 +194,9 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         prods = [
-            production_constructor(symbol, FunctionTypeSignature.from_type(expansion), *args)
+            production_constructor(
+                symbol, FunctionTypeSignature.from_type(expansion), *args
+            )
             for expansion in sigs
         ]
 
