@@ -29,22 +29,22 @@ def bounce_dsl():
     ## DSL for the bounce example.
     dslf.typedef("fL", "{f, $L}")
 
-    dslf.parameterized(
+    dslf.production(
         "linear_bool",
         "() -> $fL -> {f, 1}",
         lambda lin: lin,
         dict(lin=lambda: nn.Linear(L, 1)),
     )
-    dslf.parameterized(
+    dslf.production(
         "linear", "() -> $fL -> $fL", lambda lin: lin, dict(lin=lambda: nn.Linear(L, L))
     )
 
-    dslf.concrete(
+    dslf.production(
         "ite",
         "(#a -> {f, 1}, #a -> #a, #a -> #a) -> #a -> #a",
         near.operations.ite_torch,
     )
-    dslf.concrete(
+    dslf.production(
         "map",
         "(#a -> #b) -> [#a] -> [#b]",
         lambda f: lambda x: near.operations.map_torch(f, x),
@@ -59,7 +59,7 @@ def predicate_dsl():
     dslf.typedef("fL", "{f, $L}")
 
     def add_projection(name, channel):
-        dslf.parameterized(
+        dslf.production(
             name,
             "$fL -> {f, 1}",
             lambda x, lin: lin(x[..., [channel]]),

@@ -183,10 +183,10 @@ class BasicProcessDSL(unittest.TestCase):
         algorithm's handling of variable names.
         """
         dslf = ns.DSLFactory()
-        dslf.concrete("0", "() -> f", lambda: 0)
-        dslf.concrete("+", "(f, f) -> f", lambda x, y: x + y)
+        dslf.production("0", "() -> f", lambda: 0)
+        dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
         for i in range(10):
-            dslf.concrete(f"__{i}0", "f -> f -> f", None)
+            dslf.production(f"__{i}0", "f -> f -> f", None)
 
         dslf.lambdas()
         dslf.prune_to("f -> f")

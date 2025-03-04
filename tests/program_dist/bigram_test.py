@@ -18,13 +18,13 @@ from .utils import (
 
 def get_dsl(with_vars=False, with_3=False):
     dslf = ns.DSLFactory()
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("2", "() -> i", lambda: 2)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("2", "() -> i", lambda: 2)
     if with_3:
-        dslf.concrete("3", "() -> i", lambda: 3)
+        dslf.production("3", "() -> i", lambda: 3)
     if with_vars:
-        dslf.concrete("call", "(i -> i, i) -> i", lambda f, x: f(x))
+        dslf.production("call", "(i -> i, i) -> i", lambda f, x: f(x))
         dslf.lambdas()
     dslf.prune_to("i")
     return dslf.finalize()
@@ -32,23 +32,23 @@ def get_dsl(with_vars=False, with_3=False):
 
 def get_dsl_for_ordering():
     dslf = ns.DSLFactory()
-    dslf.concrete("+", "(i, i, i) -> t", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("2", "() -> i", lambda: 2)
-    dslf.concrete("3", "() -> i", lambda: 2)
+    dslf.production("+", "(i, i, i) -> t", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("2", "() -> i", lambda: 2)
+    dslf.production("3", "() -> i", lambda: 2)
     dslf.prune_to("t")
     return dslf.finalize()
 
 
 def get_more_complex_dsl():
     dslf = ns.DSLFactory()
-    dslf.concrete("0", "() -> i", lambda: 0)
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("*", "(f, f) -> f", lambda x, y: x + y)
-    dslf.concrete("sqrt", "i -> f", np.sqrt)
-    dslf.concrete(">", "(f, f) -> b", np.sqrt)
-    dslf.concrete("<", "(i, i) -> b", np.sqrt)
-    dslf.concrete("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
+    dslf.production("0", "() -> i", lambda: 0)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("*", "(f, f) -> f", lambda x, y: x + y)
+    dslf.production("sqrt", "i -> f", np.sqrt)
+    dslf.production(">", "(f, f) -> b", np.sqrt)
+    dslf.production("<", "(i, i) -> b", np.sqrt)
+    dslf.production("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
     dslf.lambdas()
     dslf.prune_to("f -> f")
     return dslf.finalize()

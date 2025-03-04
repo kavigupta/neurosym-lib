@@ -1,6 +1,6 @@
 import copy
-from typing import Callable, Dict, List, Tuple
 import warnings
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
@@ -34,9 +34,9 @@ class DSLFactory:
 
         dslf = DSLFactory()
         dslf.typedef("fn", "(i) -> i")
-        dslf.concrete("inc", "$fn", lambda x: x + 1)
-        dslf.concrete("const_0", "$fn", lambda x: 0)
-        dslf.concrete("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
+        dslf.production("inc", "$fn", lambda x: x + 1)
+        dslf.production("const_0", "$fn", lambda x: 0)
+        dslf.production("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
         dslf.finalize()
     """
 
@@ -67,7 +67,7 @@ class DSLFactory:
         .. code-block:: python
 
             dslf.typedef("fn", "(i) -> i")
-            dslf.concrete("inc", "$fn", lambda x: x + 1)
+            dslf.production("inc", "$fn", lambda x: x + 1)
         """
         self.t.typedef(key, type_str)
 
@@ -83,7 +83,7 @@ class DSLFactory:
             dslf.filtered_type_variable(
                 "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
             )
-            dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
+            dslf.production("+", "%num -> %num -> %num", lambda x: x)
         """
         self.t.filtered_type_variable(key, type_filter)
 

@@ -31,7 +31,7 @@ def get_combinator_dsl(nesting):
     return a tensor of all zeros.
     """
     dslf = DSLFactory()
-    dslf.parameterized(
+    dslf.production(
         "terminal",
         "() -> {f, 1} -> {f, 2}",
         lambda lin: lin,
@@ -40,12 +40,12 @@ def get_combinator_dsl(nesting):
 
     for i in range(2, nesting + 1):
         typ = "({f, 1} -> {f, %s}) -> {f, 1} -> {f, %s}" % (i, i + 1)
-        dslf.concrete(
+        dslf.production(
             f"correct_{i}",
             typ,
             lambda f: lambda x: _expand_last_axis(f(x)),
         )
-        dslf.concrete(
+        dslf.production(
             f"wrong_{i}",
             typ,
             lambda f: lambda x: _expand_last_axis(f(x)) * 0,
@@ -63,7 +63,7 @@ def get_variable_dsl(nesting):
     a variable
     """
     dslf = DSLFactory()
-    dslf.parameterized(
+    dslf.production(
         "terminal",
         "{f, 1} -> {f, 2}",
         lambda x, *, lin: lin(x),
@@ -72,8 +72,8 @@ def get_variable_dsl(nesting):
 
     for i in range(2, nesting + 1):
         typ = "{f, %s} -> {f, %s}" % (i, i + 1)
-        dslf.concrete(f"correct_{i}", typ, _expand_last_axis)
-        dslf.concrete(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
+        dslf.production(f"correct_{i}", typ, _expand_last_axis)
+        dslf.production(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
 
     dslf.lambdas(max_arity=1)
     dslf.prune_to("{f, 1} -> {f, %s}" % (nesting + 1))
