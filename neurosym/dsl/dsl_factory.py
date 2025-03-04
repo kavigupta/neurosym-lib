@@ -15,7 +15,6 @@ from ..types.type_signature import (
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
-    ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
