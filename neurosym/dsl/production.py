@@ -264,6 +264,21 @@ class ParameterizedProduction(ConcreteProduction):
     initializers: Dict[str, Callable[[], object]]
     provide_enviroment: Union[NoneType, str] = None
 
+    @classmethod
+    def of(
+        cls, symbol, type_signature, compute, initializers=None, provide_enviroment=None
+    ):
+        if not initializers and provide_enviroment is None:
+            return ConcreteProduction(symbol, type_signature, compute)
+        # pylint: disable=unexpected-keyword-arg
+        return cls(
+            symbol,
+            type_signature,
+            compute,
+            initializers=initializers,
+            provide_enviroment=provide_enviroment,
+        )
+
     def with_index(self, index):
         # pylint: disable=unexpected-keyword-arg
         return ParameterizedProduction(

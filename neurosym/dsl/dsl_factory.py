@@ -15,7 +15,6 @@ from ..types.type_signature import (
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
-    ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
@@ -44,7 +43,6 @@ class DSLFactory:
         self, max_expansion_steps=np.inf, max_env_depth=4, max_overall_depth=6, **env
     ):
         self.t = TypeDefiner(**env)
-        self._concrete_productions = []
         self._parameterized_productions = []
         self._signatures = []
         self._known_types = []
@@ -126,15 +124,7 @@ class DSLFactory:
         :param semantics: The semantics to use for the production. This should have
             a type corresponding to ``type_str``. Note: *this is not checked*.
         """
-        sig = self.t.sig(type_str)
-        self._concrete_productions.append(
-            (
-                symbol,
-                sig,
-                semantics,
-            )
-        )
-        self._signatures.append(sig)
+        self.parameterized(symbol, type_str, semantics, {})
 
     def parameterized(
         self,
@@ -235,12 +225,7 @@ class DSLFactory:
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
-                *universe, ConcreteProduction, self._concrete_productions
-            )
-        )
-        sym_to_productions.update(
-            self._expansions_for_all_productions(
-                *universe, ParameterizedProduction, self._parameterized_productions
+                *universe, ParameterizedProduction.of, self._parameterized_productions
             )
         )
 
