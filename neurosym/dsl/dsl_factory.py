@@ -180,12 +180,12 @@ class DSLFactory:
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def _expansions_for_single_production(
-        self, terminals, type_constructors, constructor, symbol, sig, *args
+        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
     ):
         sigs = list(
             _signature_expansions(
                 sig,
-                terminals,
+                type_atoms,
                 type_constructors,
                 max_expansion_steps=self.max_expansion_steps,
                 max_overall_depth=self.max_overall_depth,
@@ -194,19 +194,21 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         prods = [
-            constructor(symbol, FunctionTypeSignature.from_type(expansion), *args)
+            production_constructor(
+                symbol, FunctionTypeSignature.from_type(expansion), *args
+            )
             for expansion in sigs
         ]
 
         return {symbol: Production.reindex(prods)}
 
     def _expansions_for_all_productions(
-        self, expand_to, terminals, type_constructors, args
+        self, type_atoms, type_constructors, production_constructor, args
     ):
         result = {}
         for arg in args:
             for_prod = self._expansions_for_single_production(
-                expand_to, terminals, type_constructors, *arg
+                type_atoms, type_constructors, production_constructor, *arg
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
