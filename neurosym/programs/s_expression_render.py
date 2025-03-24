@@ -2,7 +2,7 @@ from typing import Iterator, Set
 
 from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 
-from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression import SExpression, InitializedSExpression
 
 
 def _to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
@@ -23,7 +23,7 @@ def _to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:
         return s_exp.__to_pair__(for_stitch=for_stitch)
     if isinstance(s_exp, str):
         return s_exp
-    assert isinstance(s_exp, SExpression), f"Expected SExpression, got {s_exp}"
+    assert isinstance(s_exp, SExpression) or isinstance(s_exp, InitializedSExpression), f"Expected SExpression, got {s_exp}"
     if for_stitch and not s_exp.children:
         if s_exp.symbol.startswith("$"):
             return s_exp.symbol

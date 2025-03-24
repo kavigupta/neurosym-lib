@@ -219,6 +219,7 @@ class FiniteDistributionTest(unittest.TestCase):
         dsl = dslf.finalize()
         self.family = ns.BigramProgramDistributionFamily(dsl)
         self.dist = self.family.uniform()
+        
 
     def test_finite_distribution(self):
         self.assertEqual(
@@ -234,3 +235,22 @@ class FiniteDistributionTest(unittest.TestCase):
                 ("(/ (- (1) (1)) (- (1) (1)))", Fraction(1, 8)),
             },
         )
+        
+if __name__ == "__main__":
+    dslf = ns.DSLFactory()
+    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.concrete("+", "(i, i) -> ii", lambda x, y: x + y)
+    dslf.concrete("-", "(i, i) -> ii", lambda x, y: x - y)
+    dslf.concrete("*", "(ii, ii) -> iii", lambda x, y: x * y)
+    dslf.concrete("/", "(ii, ii) -> iii", lambda x, y: x // y)
+    dslf.prune_to("iii")
+    dsl = dslf.finalize()
+    concrete_prods = dslf._concrete_productions
+    symbol_list = []
+    sig_list = []
+    semantics_list = []
+    for prods in concrete_prods:
+        symbol, sig, semantics = prods
+        symbol_list.append(symbol)
+        sig_list.append(sig)
+        semantics_list.append(semantics)
