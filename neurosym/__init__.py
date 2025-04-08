@@ -1,3 +1,9 @@
+import sys
+import os
+directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(directory)
+sys.path.append(os.path.dirname(directory))
+
 from neurosym.datasets.load_data import (
     DatasetFromNpy,
     DatasetWrapper,

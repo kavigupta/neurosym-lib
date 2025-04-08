@@ -2,7 +2,7 @@ from typing import Iterator, Set
 
 from s_expression_parser import Pair, ParserConfig, Renderer, nil, parse
 
-from neurosym.programs.s_expression import SExpression
+from neurosym.programs.s_expression import SExpression, InitializedSExpression
 
 
 def _to_pair(s_exp: SExpression, *, for_stitch: bool) -> Pair:

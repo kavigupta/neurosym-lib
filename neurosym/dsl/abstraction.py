@@ -91,7 +91,7 @@ class AbstractionProduction(FunctionLikeProduction):
         return f"{self._symbol:>15} :: {self._type_signature.render()} = {self._render_as_lambda()}"
 
 
-def _with_index_parameters(ise: InitializedSExpression, inputs: tuple):
+def _with_index_parameters(ise: InitializedSExpression, inputs: tuple, must_be_s_exp: bool = False):
     """
     With the given inputs, replace all AbstractionIndexParameters in the given
     InitializedSExpression with AbstractionParameters.
@@ -99,13 +99,17 @@ def _with_index_parameters(ise: InitializedSExpression, inputs: tuple):
     Args:
         ise: The InitializedSExpression.
         inputs: The inputs.
+        must_be_s_exp: Whether the replaced values must always be an InitializedSExpression (even in the AbstractionParameter nodes) or whether AbstractionParameter nodes are allowed in the returned InitializedSExpression. When this is set to true, the resulting InitializedSExpression is renderable via programs/s_expression_render.py/render_s_expression. Defaults to False.
 
     Returns a new InitializedSExpression.
     """
     if isinstance(ise, AbstractionIndexParameter):
-        return ise.apply(inputs)
+        result = ise.apply(inputs)
+        if must_be_s_exp:
+            return result.value
+        return result
     return InitializedSExpression(
         ise.symbol,
-        tuple(_with_index_parameters(x, inputs) for x in ise.children),
+        tuple(_with_index_parameters(x, inputs, must_be_s_exp) for x in ise.children),
         ise.state,
     )
