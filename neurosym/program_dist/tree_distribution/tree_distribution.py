@@ -50,6 +50,25 @@ class TreeDistribution:
     # Node ordering
     node_ordering: Callable[["TreeDistribution"], NodeOrdering]
 
+    def __post_init__(self):
+        """
+        Test the distribution for consistency.
+        """
+        for path in self.distribution:
+            assert len(path) <= self.limit
+        seen = set()
+        fringe = [((0, 0),)]
+        while fringe:
+            path = fringe.pop()
+            assert path in self.distribution, f"Path {path} not in distribution"
+            seen.add(path)
+            for parent_index, _ in self.distribution[path]:
+                for position in range(self.symbols[parent_index][1]):
+                    new_path = path + ((parent_index, position),)
+                    new_path = new_path[-self.limit :]
+                    if new_path not in seen:
+                        fringe.append(new_path)
+
     @cached_property
     def symbol_to_index(self) -> Dict[str, int]:
         """
