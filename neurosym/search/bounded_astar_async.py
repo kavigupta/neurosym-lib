@@ -1,11 +1,12 @@
 import queue
-from typing import Callable
+from typing import Callable, Iterable, TypeVar
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from neurosym.programs.s_expression import SExpression
 from neurosym.search.bounded_astar import BoundedAStarNode
 from neurosym.search_graph.search_graph import SearchGraph
+
+X = TypeVar("X")
 
 
 class FuturePriorityQueue(queue.PriorityQueue):
@@ -41,11 +42,8 @@ class FuturePriorityQueue(queue.PriorityQueue):
 
 
 def bounded_astar_async(
-    g: SearchGraph,
-    cost_plus_heuristic: Callable[[SExpression], float],
-    max_depth: int,
-    max_workers: int,
-):
+    g: SearchGraph[X], max_depth: int, max_workers: int
+) -> Iterable[X]:
     """
     Performs a bounded a-star search on the given search graph, yielding each node in
     the order it was visited. Evaluates the cost_plus_heuristic function asynchronously
@@ -53,9 +51,6 @@ def bounded_astar_async(
     graph.
 
     :param g: Search graph to search over
-    :param cost_plus_heuristic: Cost plus heuristic function to use for A*.
-        The heuristic function should be admissible, i.e. it should never overestimate
-        the cost to reach the goal.
     :param max_depth: Maximum depth to search to.
     :param max_workers: Maximum number of workers to use for evaluating
         the cost_plus_heuristic function.
@@ -70,7 +65,7 @@ def bounded_astar_async(
         fringe = FuturePriorityQueue()
 
         def add_to_fringe(node, depth):
-            future = executor.apipe(cost_plus_heuristic, node)
+            future = executor.apipe(g.cost, node)
             fringe.putitem(
                 future,
                 future_fn=lambda ret: BoundedAStarNode(ret, node, depth),
@@ -85,8 +80,7 @@ def bounded_astar_async(
                 if node.program in visited or depth > max_depth:
                     continue
                 visited.add(node.program)
-                if g.is_goal_node(node):
-                    yield node
+                yield from g.yield_goal_node(node)
                 for child in g.expand_node(node):
                     add_to_fringe(child, depth + 1)
             except queue.Empty:

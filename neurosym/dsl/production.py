@@ -126,7 +126,7 @@ class ConcreteProduction(FunctionLikeProduction):
     """
     Represents a production rule in a simple s-expression grammar, that does
     not have any parameters. This is added to the DSL by the :py:class:`neurosym.DSLFactory`
-    when :py:meth:`neurosym.DSLFactory.concrete` is called.
+    when :py:meth:`neurosym.DSLFactory.production` is called.
     """
 
     _symbol: str
@@ -258,11 +258,26 @@ class ParameterizedProduction(ConcreteProduction):
     Like a concrete production, but with some parameters that need to be initialized.
 
     This is added to the DSL by the :py:class:`neurosym.DSLFactory` when
-    :py:meth:`neurosym.DSLFactory.parameterized` is called.
+    :py:meth:`neurosym.DSLFactory.production` is called with the `initializers` argument.
     """
 
     initializers: Dict[str, Callable[[], object]]
     provide_enviroment: Union[NoneType, str] = None
+
+    @classmethod
+    def of(
+        cls, symbol, type_signature, compute, initializers=None, provide_enviroment=None
+    ):
+        if not initializers and provide_enviroment is None:
+            return ConcreteProduction(symbol, type_signature, compute)
+        # pylint: disable=unexpected-keyword-arg
+        return cls(
+            symbol,
+            type_signature,
+            compute,
+            initializers=initializers,
+            provide_enviroment=provide_enviroment,
+        )
 
     def with_index(self, index):
         # pylint: disable=unexpected-keyword-arg

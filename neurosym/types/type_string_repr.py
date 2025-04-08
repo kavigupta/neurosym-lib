@@ -104,7 +104,7 @@ def render_type(t: Type) -> str:
     raise NotImplementedError(f"Unknown type {t}")
 
 
-def _parse_type_from_buf(reversed_buf, env: TypeDefiner):
+def _parse_non_arrow_type(reversed_buf, env: TypeDefiner):
     assert isinstance(env, TypeDefiner)
     first_tok = reversed_buf.pop()
     if first_tok.isnumeric():
@@ -112,36 +112,32 @@ def _parse_type_from_buf(reversed_buf, env: TypeDefiner):
     if first_tok.startswith("$"):
         return env.lookup_type(first_tok[1:])
     if first_tok == "{":
-        internal_type = _parse_type_from_buf(reversed_buf, env)
+        internal_type = _parse_non_arrow_type(reversed_buf, env)
         shape = []
         while True:
             tok = reversed_buf.pop()
             if tok == "}":
                 break
             assert tok == ",", f"Expected ',' but got {tok}"
-            size = _parse_type_from_buf(reversed_buf, env)
+            size = _parse_non_arrow_type(reversed_buf, env)
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
     if first_tok == "[":
-        internal_type = _parse_type_from_buf_multi(reversed_buf, env)
+        internal_type = _parse_potential_arrow_type(reversed_buf, env)
         close_bracket = reversed_buf.pop()
         assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
     if first_tok == "(":
-        input_types = []
-        while True:
-            if reversed_buf[-1] == ")":
-                reversed_buf.pop()
-                break
-            input_types.append(_parse_type_from_buf_multi(reversed_buf, env))
-            tok = reversed_buf.pop()
-            if tok == ")":
-                break
-            assert tok == ",", f"Expected ',' but got {tok}"
-        tok = reversed_buf.pop()
-        assert tok == "->", f"Expected '->' but got {tok}"
-        output_type = _parse_type_from_buf_multi(reversed_buf, env)
-        return ArrowType(tuple(input_types), output_type)
+        res = _parse_delimited_list(
+            reversed_buf,
+            env,
+            delimiter=",",
+            terminator=")",
+            sub_parser=_parse_potential_arrow_type,
+        )
+        if len(res) == 1:
+            return res[0]
+        return res
     if first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
     if first_tok.startswith("%"):
@@ -150,15 +146,42 @@ def _parse_type_from_buf(reversed_buf, env: TypeDefiner):
     return AtomicType(first_tok)
 
 
-def _parse_type_from_buf_multi(reversed_buf, env):
-    t_head = _parse_type_from_buf(reversed_buf, env)
-    if not reversed_buf:
-        return t_head
-    if reversed_buf and reversed_buf[-1] != "->":
-        return t_head
+def _parse_potential_arrow_type(reversed_buf, env):
+    elements = _parse_delimited_list(
+        reversed_buf,
+        env,
+        delimiter="->",
+        terminator=None,
+        sub_parser=_parse_non_arrow_type,
+    )
+    typ = elements[-1]
+    for t_head in elements[:-1][::-1]:
+        if not isinstance(t_head, tuple):
+            assert isinstance(t_head, Type)
+            t_head = (t_head,)
+        typ = ArrowType(t_head, typ)
+    return typ
+
+
+def _parse_delimited_list(reversed_buf, env, *, delimiter, terminator, sub_parser):
+    if reversed_buf and reversed_buf[-1] == terminator:
+        reversed_buf.pop()
+        return ()
+    t_head = sub_parser(reversed_buf, env)
+    if reversed_buf and reversed_buf[-1] == terminator:
+        reversed_buf.pop()
+        return (t_head,)
+    if terminator is None and (not reversed_buf or reversed_buf[-1] != delimiter):
+        return (t_head,)
     reversed_buf.pop()
-    t_tail = _parse_type_from_buf_multi(reversed_buf, env)
-    return ArrowType((t_head,), t_tail)
+    t_tail = _parse_delimited_list(
+        reversed_buf,
+        env,
+        delimiter=delimiter,
+        terminator=terminator,
+        sub_parser=sub_parser,
+    )
+    return (t_head,) + t_tail
 
 
 def lex_type(s: str) -> List[str]:
@@ -214,6 +237,6 @@ def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)
     buf = lex_type(s)[::-1]
-    t = _parse_type_from_buf_multi(buf, env)
+    t = _parse_potential_arrow_type(buf, env)
     assert buf == [], f"Extra tokens {buf[::-1]}"
     return t

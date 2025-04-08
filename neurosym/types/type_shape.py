@@ -68,7 +68,7 @@ class TypeShape:
                 f"Too few sequence dimensions, {render_type(typ)} expected"
                 f" {count_sequences}, got {len(self.sequence_lengths)}"
             )
-        if count_sequences < len(self.sequence_lengths):
+        if 1 <= count_sequences < len(self.sequence_lengths):
             raise TypeShapeException(
                 f"Too many sequence dimensions, {render_type(typ)} expected"
                 f" {count_sequences}, got {len(self.sequence_lengths)}"
@@ -80,7 +80,7 @@ class TypeShape:
                 shape.append(sequence_lengths_to_use.pop(0))
             else:
                 shape.append(dim)
-        assert not sequence_lengths_to_use
+        assert count_sequences == 0 or not sequence_lengths_to_use
         return tuple(shape)
 
     @property
@@ -91,6 +91,33 @@ class TypeShape:
         :return: The number of batch and sequence axes.
         """
         return len(self.batch_size) + len(self.sequence_lengths)
+
+    def squash_batch_axis(self, tensor):
+        """
+        Reshape a given Tensor with this TypeShape to one with a single batch axis.
+        """
+        assert self.batch_size == tensor.shape[: len(self.batch_size)]
+        return tensor.view((-1, *tensor.shape[len(self.batch_size) :]))
+
+    def unsquash_batch_axis(self, tensor):
+        """
+        Reshape a given Tensor with this TypeShape to one with the original batch axis.
+        """
+        return tensor.view((*self.batch_size, *tensor.shape[1:]))
+
+    def reshape_to_nlc(self, tensor):
+        """
+        Reshape a given Tensor with this TypeShape to one of the form `(N, L, *C)`.
+        Requires 0-1 sequence axes.
+        """
+        assert (
+            len(self.sequence_lengths) <= 1
+        ), "Can only reshape tensors to NLC if they have 0-1 sequence axes"
+        tensor_shape = tensor.shape[self.num_batch_and_sequence_axes :]
+        tensor = self.squash_batch_axis(tensor)
+        if not self.sequence_lengths:
+            tensor = tensor.view((tensor.shape[0], 1, *tensor_shape))
+        return tensor
 
 
 def compute_type_shape(typ: Type, shape: Tuple[int, ...]) -> TypeShape:

@@ -2,14 +2,40 @@
 ===========================================
 
 .. autofunction:: neurosym.examples.near.near_graph
+.. autofunction:: neurosym.examples.near.validated_near_graph
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
-.. autoclass:: neurosym.examples.near.NEARTrainer
-.. autoclass:: neurosym.examples.near.ValidationCost
-    :members:
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
+
+``NEAR`` Cost
+--------------------------------------------
+.. autoclass:: neurosym.examples.near.NearCost
+    :members:
+.. autoclass:: neurosym.examples.near.default_near_cost
+    :members:
+.. autoclass:: neurosym.examples.near.NearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.PerNodeNearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.NumberHolesNearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.MinimalStepsNearStructuralCost
+    :members:
+.. autoclass:: neurosym.examples.near.NearValidationHeuristic
+    :members:
+.. autoclass:: neurosym.examples.near.ValidationCost
+    :members:
+.. autoclass:: neurosym.examples.near.ProgramEmbedding
+    :members:
+.. autoclass:: neurosym.examples.near.IdentityProgramEmbedding
+    :members:
+
+
+``NEAR`` Heirarchical Algorithm
+--------------------------------------------
+.. autofunction:: neurosym.examples.near.heirarchical_near_graph
 
 NEAR Interface
 --------------------------------------------
@@ -26,6 +52,13 @@ NEAR Operations
 NEAR Factory Functions
 --------------------------------------------
 
+.. autoclass:: neurosym.examples.near.NeuralHoleFiller
+    :members:
+.. autoclass:: neurosym.examples.near.DictionaryNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.DoNothingNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.UnionNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.GenericMLPRNNNeuralHoleFiller
+.. autoclass:: neurosym.examples.near.TransformerNeuralHoleFiller
 .. autofunction:: neurosym.examples.near.create_modules
 .. autofunction:: neurosym.examples.near.mlp_factory
 .. autoclass:: neurosym.examples.near.MLPConfig
@@ -35,7 +68,6 @@ NEAR Factory Functions
 .. autoclass:: neurosym.examples.near.RNNConfig
 .. autoclass:: neurosym.examples.near.Seq2SeqRNN
 .. autoclass:: neurosym.examples.near.Seq2ClassRNN
-.. autoclass:: neurosym.examples.near.transformer_factory
 
 NEAR Transformer
 --------------------------------------------
@@ -53,8 +85,7 @@ Example Datasets/DSLs
 Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
-.. autoclass:: neurosym.examples.near.BaseTrainerConfig
-.. autoclass:: neurosym.examples.near.BaseTrainer
+.. autofunction:: neurosym.examples.near.schedule_optimizer
 .. autoclass:: neurosym.examples.near.UninitializableProgramError
 
 For testing and demonstration purposes

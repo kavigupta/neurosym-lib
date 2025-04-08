@@ -13,43 +13,43 @@ def _create_mutable_arith_combinators_dsl():
 
     dslf = DSLFactory()
     dslf.typedef("fn", "(i) -> i")
-    dslf.concrete(
+    dslf.production(
         "x",
         "() -> $fn",
         lambda: lambda t: t,
     )
 
-    dslf.concrete(
+    dslf.production(
         "1",
         "() -> $fn",
         lambda: lambda t: 1,
     )
 
-    dslf.concrete(
+    dslf.production(
         "+",
         "($fn, $fn) -> $fn",
         lambda x, y: lambda t: x(t) + y(t),
     )
 
-    dslf.concrete(
+    dslf.production(
         "*",
         "($fn, $fn) -> $fn",
         lambda x, y: lambda t: x(t) * y(t),
     )
 
-    dslf.concrete(
+    dslf.production(
         "even?",
         "($fn) -> $fn",
         lambda x: lambda t: x(t) % 2 == 0,
     )
 
-    dslf.concrete(
+    dslf.production(
         "ite",
         "($fn, $fn, $fn) -> $fn",
         lambda cond, fx, fy: lambda t: fx(t) if cond(t) else fy(t),
     )
 
-    dslf.parameterized(
+    dslf.production(
         "count",
         "() -> $fn",
         lambda counter: lambda t: _increment_and_return(counter),

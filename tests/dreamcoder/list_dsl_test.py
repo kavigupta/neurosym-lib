@@ -39,9 +39,10 @@ class TestListDSL(unittest.TestCase):
             dsl,
             ns.parse_type("[i] -> i"),
             is_goal=is_goal,
+            cost=lambda x: 0,
         )
         it = ns.search.bfs(g)
-        node = next(it).program
+        node = next(it)
         self.assertEqual(
             ns.render_s_expression(node),
             "(lam_11 (index (1) ($0_3)))",

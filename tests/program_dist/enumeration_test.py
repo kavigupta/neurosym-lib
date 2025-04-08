@@ -210,11 +210,11 @@ class TreeDistributionTest(unittest.TestCase):
 class FiniteDistributionTest(unittest.TestCase):
     def setUp(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda: 1)
-        dslf.concrete("+", "(i, i) -> ii", lambda x, y: x + y)
-        dslf.concrete("-", "(i, i) -> ii", lambda x, y: x - y)
-        dslf.concrete("*", "(ii, ii) -> iii", lambda x, y: x * y)
-        dslf.concrete("/", "(ii, ii) -> iii", lambda x, y: x // y)
+        dslf.production("1", "() -> i", lambda: 1)
+        dslf.production("+", "(i, i) -> ii", lambda x, y: x + y)
+        dslf.production("-", "(i, i) -> ii", lambda x, y: x - y)
+        dslf.production("*", "(ii, ii) -> iii", lambda x, y: x * y)
+        dslf.production("/", "(ii, ii) -> iii", lambda x, y: x // y)
         dslf.prune_to("iii")
         dsl = dslf.finalize()
         self.family = ns.BigramProgramDistributionFamily(dsl)

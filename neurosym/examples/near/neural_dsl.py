@@ -1,18 +1,13 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Set, Tuple, Union
+from typing import List
 
-from torch import nn
-
-from neurosym.programs.s_expression_render import symbols_for_program
-from neurosym.search_graph.dsl_search_node import DSLSearchNode
-from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
-from ...dsl.production import ParameterizedProduction, Production
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
 from ...types.type import ArrowType, ListType, TensorType, Type
+from .neural_hole_filler import DictionaryNeuralHoleFiller, NeuralHoleFiller
 
 
 class PartialProgramNotFoundError(Exception):
@@ -28,61 +23,26 @@ class NeuralDSL(DSL):
     These neural heuristics can be used to fill holes in partial programs.
     """
 
-    # partial_programs: Dict[Type, SExpression]
-    type_to_symbol: Dict[Type, str]
-    original_symbols: Set[str]
+    neural_hole_filler: NeuralHoleFiller
 
     @classmethod
-    def from_dsl(
-        cls, dsl: DSL, modules: Dict[Type, Tuple[str, Callable[[], nn.Module]]]
-    ):
+    def from_dsl(cls, dsl: DSL, neural_hole_filler: NeuralHoleFiller):
         """
         Creates a NeuralDSL from a DSL and a set of type specific modules.
 
         The type specific modules are used to fill holes in partial programs.
 
         :param dsl: The DSL to extend.
-        :param modules: A dictionary mapping types to tags and functions that
-            are used to initialize the modules for that type.
+        :param neural_hole_filler: A ``NeuralHoleFiller`` object that
+            maps types to neural modules.
         """
-        partial_productions = []
-        type_to_symbol = {}
-
-        count_by_tag = {}
-        for fn_type, (tag, module_template) in modules.items():
-            count_by_tag[tag] = count_by_tag.get(tag, 0) + 1
-            identifier = f"__neural_dsl_internal_{tag}_{count_by_tag[tag]}"
-            type_to_symbol[fn_type] = identifier
-            # pylint: disable=unexpected-keyword-arg
-            module_c_prod = ParameterizedProduction(
-                identifier,
-                FunctionTypeSignature([], fn_type),
-                _inject_environment_argument(fn_type),
-                index=None,
-                initializers=dict(initialized_module=module_template),
-                provide_enviroment="environment",
-            )
-
-            partial_productions.append(module_c_prod)
-
-        productions = dsl.productions + partial_productions
 
         return cls(
-            productions=productions,
+            productions=dsl.productions,
             valid_root_types=dsl.valid_root_types,
             max_type_depth=dsl.max_type_depth,
             max_env_depth=dsl.max_env_depth,
-            type_to_symbol=type_to_symbol,
-            original_symbols=set(dsl.symbols()),
-        )
-
-    def get_partial_program(self, hole: Hole) -> Production:
-        """
-        Returns a production that can be used to fill the given hole.
-        """
-        return SExpression(
-            self.type_to_symbol[hole.twe.typ],
-            [],
+            neural_hole_filler=neural_hole_filler,
         )
 
     def initialize(self, program: SExpression) -> InitializedSExpression:
@@ -93,32 +53,39 @@ class NeuralDSL(DSL):
         initialized.
         """
         if isinstance(program, Hole):
-            try:
-                prog = self.get_partial_program(program)
-            except KeyError as e:
+            module = self.neural_hole_filler.initialize_module(program.twe)
+            if module is None:
                 raise PartialProgramNotFoundError(
                     f"Cannot initialize program {program}."
-                ) from e
-        else:
-            prog = program
+                )
+            return _NeuralHole(
+                program,
+                {"initialized_module": module},
+                _inject_environment_argument(program.twe.typ),
+            )
 
-        if hasattr(prog, "__initialize__"):
-            return prog.__initialize__(self)
-        prod = self.get_production(prog.symbol)
-        return InitializedSExpression(
-            prog.symbol,
-            tuple(self.initialize(child) for child in prog.children),
-            prod.initialize(self),
-        )
+        return super().initialize(program)
 
-    def program_has_no_holes(self, program: Union[SExpression, DSLSearchNode]) -> bool:
-        """
-        Returns True if the given program has no holes.
-        """
-        if isinstance(program, DSLSearchNode):
-            program = program.program
-        assert isinstance(program, SExpression)
-        return symbols_for_program(program) - self.original_symbols == set()
+
+class _NeuralHole:
+    """
+    A hole that can be filled with a neural module.
+    """
+
+    def __init__(self, original_hole, initialized, semantic):
+        self.original_hole = original_hole
+        self.initialized = initialized
+        self.semantic = semantic
+
+    def __compute_value__(self, dsl, environment):
+        del dsl
+        return self.semantic(**self.initialized, environment=environment)
+
+    def all_state_values(self):
+        return self.initialized.values()
+
+    def uninitialize(self) -> Hole:
+        return self.original_hole
 
 
 def _create_module_for_type(module_factory, t):
@@ -135,15 +102,16 @@ def _inject_environment_argument(t):
     )
 
 
-def create_modules(tag: str, types: List[Type], module_factory):
+def create_modules(types: List[Type], module_factory):
     """
     Create a dictionary of modules for a set of types, given the module factory.
 
-    :param tag: Tag to use for the modules.
     :param types: Types to create modules for.
     :param module_factory: Function that creates a module given the input and output shapes.
     """
-    return {t: (tag, _create_module_for_type(module_factory, t)) for t in types}
+    return DictionaryNeuralHoleFiller(
+        {t: _create_module_for_type(module_factory, t) for t in types}
+    )
 
 
 @internal_only

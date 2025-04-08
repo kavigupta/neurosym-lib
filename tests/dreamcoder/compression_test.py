@@ -173,3 +173,27 @@ class BasicProcessDSL(unittest.TestCase):
                 "(__10 (2))",
             ],
         )
+
+    def test_many_abstractions(self):
+        """
+        This tests tests an edge case where the abstraction variable being added is a suffix
+        of an existing abstraction variable, which is used in the definition of the new abstraction.
+
+        This is a bit of a contrived example, but it's a good test of the robustness of the compression
+        algorithm's handling of variable names.
+        """
+        dslf = ns.DSLFactory()
+        dslf.production("0", "() -> f", lambda: 0)
+        dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
+        for i in range(10):
+            dslf.production(f"__{i}0", "f -> f -> f", None)
+
+        dslf.lambdas()
+        dslf.prune_to("f -> f")
+
+        dsl = dslf.finalize()
+        examples = ["(__10 (+ (0) (0)))"] * 2
+        _, results = ns.compression.single_step_compression(
+            dsl, [ns.parse_s_expression(x) for x in examples]
+        )
+        self.assertEqual([ns.render_s_expression(x) for x in results], ["(__100)"] * 2)

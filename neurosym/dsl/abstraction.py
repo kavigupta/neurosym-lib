@@ -41,8 +41,8 @@ class AbstractionParameter:
 
     value: object
 
-    def __compute_value__(self, dsl):
-        del dsl
+    def __compute_value__(self, dsl, environment):
+        del dsl, environment
         return self.value
 
 

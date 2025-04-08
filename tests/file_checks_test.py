@@ -62,7 +62,11 @@ class OnlyDirectImportsTest(unittest.TestCase):
         imports = {ast.unparse(node) for node in gatherer.imports}
         imports = {imp for imp in imports if "neurosym" in imp}
 
-        expected = {"from neurosym.examples import near", "import neurosym as ns"}
+        expected = {
+            "from neurosym.examples import near",
+            "from neurosym.examples import simple_dreamcoder",
+            "import neurosym as ns",
+        }
 
         self.assertEqual(imports | expected, expected)
 
@@ -184,6 +188,9 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
         if self.is_inherited_and_undocumented(obj):
             return
 
+        if self.is_lambda(obj):
+            return
+
         self.fail(f"Object {obj} not documented")
 
     def is_inherited_and_undocumented(self, obj):
@@ -198,6 +205,10 @@ class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
             if obj.__name__ in dir(base):
                 return True
         return False
+
+    def is_lambda(self, obj):
+        # checks if the given object is a python lambda function
+        return inspect.isfunction(obj) and obj.__name__ == "<lambda>"
 
 
 def get_class_that_defined_method(meth):
