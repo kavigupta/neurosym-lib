@@ -210,7 +210,7 @@ def multicoreEnumeration(
     max_arity = 1
     num_productions = 4 # make sure to include root in this count
     dsl = dslf.finalize()
-    primitive_list = [prod[0] for prod in dslf._concrete_productions]
+    primitive_list = [prod[0] for prod in dslf._parameterized_productions]
     
     for task in g.keys():
         for k, v in task2grammar[task].expression2likelihood.items():

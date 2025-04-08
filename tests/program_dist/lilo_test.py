@@ -18,12 +18,12 @@ if __name__ == "__main__":
     family = ns.BigramProgramDistributionFamily(dsl)
     dist = family.uniform()
     print(enumerate_dsl(family, dist, min_likelihood=-1000000))
-    concrete_prods = dslf._concrete_productions
+    concrete_prods = dslf._parameterized_productions
     symbol_list = []
     sig_list = []
     semantics_list = []
     for prods in concrete_prods:
-        symbol, sig, semantics = prods
+        symbol, sig, semantics, _ = prods
         symbol_list.append(symbol)
         sig_list.append(sig)
         semantics_list.append(semantics)

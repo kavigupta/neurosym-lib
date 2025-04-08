@@ -245,12 +245,12 @@ if __name__ == "__main__":
     dslf.concrete("/", "(ii, ii) -> iii", lambda x, y: x // y)
     dslf.prune_to("iii")
     dsl = dslf.finalize()
-    concrete_prods = dslf._concrete_productions
+    concrete_prods = dslf._parameterized_productions
     symbol_list = []
     sig_list = []
     semantics_list = []
     for prods in concrete_prods:
-        symbol, sig, semantics = prods
+        symbol, sig, semantics, _ = prods
         symbol_list.append(symbol)
         sig_list.append(sig)
         semantics_list.append(semantics)
