@@ -1,0 +1,37 @@
+from .load_data import DatasetFromNpy, DatasetWrapper
+
+
+def calms21_investigation_example(train_seed, **kwargs) -> DatasetWrapper:
+    """
+    Data example for a tiny CRIM13 dataset. Available in the data/ folder.
+    Source for full dataset: https://data.caltech.edu/records/4emt5-b0t10
+    Takes a seed and returns a DatasetWrapper object containing the data.
+
+    :param train_seed: Seed for the train data.
+    :param kwargs: Additional arguments to pass to the DatasetWrapper constructor.
+
+    :return: DatasetWrapper object containing the CRIM13 dataset.
+    """
+
+    train_data = "data/mice_classification/calms21_task1/train_data.npy"
+    train_labels = (
+        "data/mice_classification/calms21_task1/train_investigation_labels.npy"
+    )
+    test_data = "data/mice_classification/calms21_task1/test_data.npy"
+    test_labels = "data/mice_classification/calms21_task1/test_investigation_labels.npy"
+
+    # pylint: disable=duplicate-code
+    return DatasetWrapper(
+        DatasetFromNpy(
+            train_data,
+            train_labels,
+            train_seed,
+        ),
+        DatasetFromNpy(
+            test_data,
+            test_labels,
+            None,
+        ),
+        **kwargs,
+    )
+    # pylint: enable=duplicate-code
