@@ -6,10 +6,10 @@ import neurosym as ns
 
 def make_compute_dsl():
     dslf = ns.DSLFactory()
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("double", "(i) -> i", lambda x: x * 2)
-    dslf.concrete("triple", "(i) -> i", lambda x: x * 3)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("double", "(i) -> i", lambda x: x * 2)
+    dslf.production("triple", "(i) -> i", lambda x: x * 3)
     dslf.lambdas()
     dslf.prune_to("i", "i -> i", "i -> i -> i", "(i, i) -> i", "(i, i) -> i -> i")
     return dslf.finalize()
@@ -216,10 +216,10 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
 
 def make_varied_type_dsl():
     dslf = ns.DSLFactory()
-    dslf.concrete("^", "(f, i) -> f", lambda x, y: x**y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("1f", "() -> f", lambda x: 1.0)
-    dslf.concrete("double", "(i) -> i", lambda x: x * 2)
+    dslf.production("^", "(f, i) -> f", lambda x, y: x**y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("1f", "() -> f", lambda x: 1.0)
+    dslf.production("double", "(i) -> i", lambda x: x * 2)
     dslf.lambdas()
     dslf.prune_to("f", "f -> f", "(f, i) -> f", "(f, i) -> i")
     return dslf.finalize()

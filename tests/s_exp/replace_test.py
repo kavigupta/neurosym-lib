@@ -42,14 +42,14 @@ class TestReplaceNode(unittest.TestCase):
 class TestReplaceFirst(unittest.TestCase):
     def compute_dsl(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda: 1)
+        dslf.production("1", "() -> i", lambda: 1)
 
         def counter_fn(counter):
             counter[0] += 1
             return counter[0]
 
-        dslf.parameterized("c", "() -> i", counter_fn, dict(counter=lambda: [0]))
-        dslf.parameterized(
+        dslf.production("c", "() -> i", counter_fn, dict(counter=lambda: [0]))
+        dslf.production(
             "+",
             "(i, i) -> i",
             lambda x, y, counter: x + y + counter_fn(counter),

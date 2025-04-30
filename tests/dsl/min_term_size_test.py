@@ -23,10 +23,10 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def basicDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> literal", lambda x: x)
-        dslf.concrete("id", "literal -> literal", lambda x: x)
-        dslf.concrete("+", "(literal, literal) -> sum", lambda x, y: x + y)
-        dslf.concrete("*", "(sum, sum) -> product", lambda x, y: x * y)
+        dslf.production("1", "() -> literal", lambda x: x)
+        dslf.production("id", "literal -> literal", lambda x: x)
+        dslf.production("+", "(literal, literal) -> sum", lambda x, y: x + y)
+        dslf.production("*", "(sum, sum) -> product", lambda x, y: x * y)
         return dslf.finalize()
 
     def test_basic_arith(self):
@@ -66,10 +66,10 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def heavilyNestedBinaryDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> t0", lambda x: x)
+        dslf.production("1", "() -> t0", lambda x: x)
         for i in range(1, self.num_nesting):
             for c in "fg":
-                dslf.concrete(
+                dslf.production(
                     f"{c}_{i}", f"(t{i-1}, t{i-1}) -> t{i}", lambda x, y: x + y
                 )
         return dslf.finalize()
@@ -90,9 +90,9 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def heavilyHeavilyNestedLinearDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> t0", lambda x: x)
+        dslf.production("1", "() -> t0", lambda x: x)
         for i in range(1, self.num_linear_nesting):
-            dslf.concrete(f"f_{i}", f"(t{i-1}) -> t{i}", lambda x: x)
+            dslf.production(f"f_{i}", f"(t{i-1}) -> t{i}", lambda x: x)
         return dslf.finalize()
 
     @parameterized.expand([(i,) for i in range(1, num_linear_nesting, 10)])
@@ -109,10 +109,10 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def lambdasDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "a -> literal", lambda x: x)
-        dslf.concrete("id", "literal -> literal", lambda x: x)
-        dslf.concrete("+", "(literal, literal) -> sum", lambda x, y: x + y)
-        dslf.concrete("*", "(sum, sum) -> product", lambda x, y: x * y)
+        dslf.production("1", "a -> literal", lambda x: x)
+        dslf.production("id", "literal -> literal", lambda x: x)
+        dslf.production("+", "(literal, literal) -> sum", lambda x, y: x + y)
+        dslf.production("*", "(sum, sum) -> product", lambda x, y: x * y)
         dslf.lambdas()
         return dslf.finalize()
 
@@ -174,17 +174,17 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def choiceNestedDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1a", "() -> a0", lambda x: x)
-        dslf.concrete("1b", "() -> b0", lambda x: x)
+        dslf.production("1a", "() -> a0", lambda x: x)
+        dslf.production("1b", "() -> b0", lambda x: x)
         for i in range(1, self.num_nesting):
             for sym in "ab":
-                dslf.concrete(
+                dslf.production(
                     f"{sym}_{i}",
                     f"({sym}{i-1}, {sym}{i-1}) -> {sym}{i}",
                     lambda x, y: x + y,
                 )
-        dslf.concrete("done_a", f"a{self.num_nesting - 1} -> t", lambda x: x)
-        dslf.concrete("done_b", f"b{self.num_nesting - 1} -> t", lambda x: x)
+        dslf.production("done_a", f"a{self.num_nesting - 1} -> t", lambda x: x)
+        dslf.production("done_b", f"b{self.num_nesting - 1} -> t", lambda x: x)
         return dslf.finalize()
 
     def test_choice_heavily_nested(self):
@@ -221,7 +221,7 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def test_basic_cycle(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("cycle", "(a) -> a", lambda x: x)
+        dslf.production("cycle", "(a) -> a", lambda x: x)
         dsl = dslf.finalize()
         count = self.instrumentDSL(dsl)
         self.assertEqual(
@@ -235,8 +235,8 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def test_basic_cycle_with_terminal(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("cycle", "(a, b) -> a", lambda x: x)
-        dslf.concrete("terminal", "() -> b", lambda: 1)
+        dslf.production("cycle", "(a, b) -> a", lambda x: x)
+        dslf.production("terminal", "() -> b", lambda: 1)
         dsl = dslf.finalize()
         count = self.instrumentDSL(dsl)
         self.assertEqual(
@@ -250,8 +250,8 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def test_basic_cycle_with_another_cycle(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("cycle_a", "(a, b) -> a", lambda x: x)
-        dslf.concrete("cycle_b", "(b, a) -> b", lambda: 1)
+        dslf.production("cycle_a", "(a, b) -> a", lambda x: x)
+        dslf.production("cycle_b", "(b, a) -> b", lambda: 1)
         dsl = dslf.finalize()
         count = self.instrumentDSL(dsl)
         self.assertEqual(
@@ -265,8 +265,8 @@ class TestMinimalTermSize(unittest.TestCase):
 
     def test_basic_cycle_with_a_variable_cycle(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("compose_x", "(#a -> x, x -> #c) -> #a -> #c", lambda x: x)
-        dslf.concrete("compose_y", "(#a -> y, y -> #c) -> #a -> #c", lambda x: x)
+        dslf.production("compose_x", "(#a -> x, x -> #c) -> #a -> #c", lambda x: x)
+        dslf.production("compose_y", "(#a -> y, y -> #c) -> #a -> #c", lambda x: x)
         dsl = dslf.finalize()
         count = self.instrumentDSL(dsl)
         self.assertEqual(

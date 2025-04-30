@@ -17,14 +17,14 @@ class TestSkipAhead(unittest.TestCase):
 
     def basicSkipAheadDSL(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("a1Tob", "a1 -> b", None)
-        dslf.concrete("a2Tob", "a2 -> b", None)
-        dslf.concrete("bToc", "b -> c", None)
-        dslf.concrete("cTod", "c -> d", None)
-        dslf.concrete("dToe", "d -> e", None)
-        dslf.concrete("eTof", "e -> f", None)
-        dslf.concrete("fTog", "f -> g", None)
-        dslf.concrete("f2Tog", "f2 -> g", None)
+        dslf.production("a1Tob", "a1 -> b", None)
+        dslf.production("a2Tob", "a2 -> b", None)
+        dslf.production("bToc", "b -> c", None)
+        dslf.production("cTod", "c -> d", None)
+        dslf.production("dToe", "d -> e", None)
+        dslf.production("eTof", "e -> f", None)
+        dslf.production("fTog", "f -> g", None)
+        dslf.production("f2Tog", "f2 -> g", None)
         return dslf.finalize()
 
     def assertNodes(self, nodes, expected_reprs):
@@ -60,10 +60,10 @@ class TestSkipAhead(unittest.TestCase):
         #   but they should not be expanded to infinity.
         dslf = ns.DSLFactory()
 
-        dslf.concrete("id", "() -> a -> a", None)
-        dslf.concrete("loop", "(#a -> b, #a -> #b) -> #a -> #b", None)
-        dslf.concrete("map", "(#a -> #b) -> [#a] -> [#b]", None)
-        dslf.concrete("aToB", "() -> a -> b", None)
+        dslf.production("id", "() -> a -> a", None)
+        dslf.production("loop", "(#a -> b, #a -> #b) -> #a -> #b", None)
+        dslf.production("map", "(#a -> #b) -> [#a] -> [#b]", None)
+        dslf.production("aToB", "() -> a -> b", None)
 
         dslf.prune_to("[a] -> [a]")
 

@@ -11,7 +11,7 @@ from neurosym.examples import near
 def high_level_dsl(linear_layers=True):
     dslf = ns.DSLFactory()
     if linear_layers:
-        dslf.parameterized(
+        dslf.production(
             "linear_bool",
             "() -> {f, 2} -> {f, 1}",
             lambda lin: lin,
@@ -20,7 +20,7 @@ def high_level_dsl(linear_layers=True):
     else:
         inject_linear_replacements(dslf)
 
-    dslf.concrete(
+    dslf.production(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
         near.operations.ite_torch,
@@ -38,25 +38,25 @@ def linear_replacement_dsl():
 
 
 def inject_linear_replacements(dslf):
-    dslf.parameterized(
+    dslf.production(
         "aff_x",
         "{f, 2} -> {f, 1}",
         lambda x, aff: aff(x[:, 0][:, None]),
         dict(aff=lambda: nn.Linear(1, 1)),
     )
-    dslf.parameterized(
+    dslf.production(
         "aff_y",
         "{f, 2} -> {f, 1}",
         lambda x, aff: aff(x[:, 1][:, None]),
         dict(aff=lambda: nn.Linear(1, 1)),
     )
-    dslf.parameterized(
+    dslf.production(
         "aff_xplusy",
         "{f, 2} -> {f, 1}",
         lambda xy, aff: aff(xy[:, 0][:, None] + xy[:, 1][:, None]),
         dict(aff=lambda: nn.Linear(1, 1)),
     )
-    dslf.parameterized(
+    dslf.production(
         "aff_yminusx",
         "{f, 2} -> {f, 1}",
         lambda xy, aff: aff(xy[:, 1][:, None] - xy[:, 0][:, None]),
