@@ -116,10 +116,9 @@ def render_s_expression(
     :param for_stitch: Whether we are parsing this expression from ``stitch_core``,
         in which case we need to handle the "leaf-" prefix that we introduced
         in ``parse_s_expression``.
-    ;param allow_sexp_head: Whether we are allowing the head of the SExpression
+    :param allow_sexp_head: Whether we are allowing the head of the SExpression
         to be an SExpression. This is useful for parsing the head of a program
         as an SExpression, which is not standard.
-
 
     :returns: The string representing the SExpression.
     """
