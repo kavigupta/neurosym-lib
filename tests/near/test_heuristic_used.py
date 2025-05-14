@@ -61,6 +61,7 @@ class TestNeuralModels(unittest.TestCase):
             self.transformer_modules,
             self.compute_combinator_soln,
         )
+        1/0
 
     def test_variable_dsl_works_with_transformer(self):
         self.assertNearReturns(
