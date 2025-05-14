@@ -162,9 +162,7 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
             x, y = batch["inputs"], batch["outputs"]
             optimizer.zero_grad()
             loss = trainer_cfg.loss_callback(model(x, environment=()), y)
-            log(
-                f"Training loss: {loss.item():.4f}"
-            )
+            log(f"Training loss: {loss.item():.4f}")
             loss.backward()
             optimizer.step()
             for scheduler in schedulers:
