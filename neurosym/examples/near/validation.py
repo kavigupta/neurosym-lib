@@ -80,6 +80,7 @@ class ValidationCost(NearValidationHeuristic):
         val_loss = _train_model(
             model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
         )
+        log(f"Validation loss: {val_loss:.4f}")
 
         return val_loss
 
