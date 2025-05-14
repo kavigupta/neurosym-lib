@@ -80,7 +80,6 @@ class ValidationCost(NearValidationHeuristic):
         val_loss = _train_model(
             model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
         )
-        log(f"Validation loss: {val_loss:.4f}")
 
         return val_loss
 
@@ -162,7 +161,6 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
             x, y = batch["inputs"], batch["outputs"]
             optimizer.zero_grad()
             loss = trainer_cfg.loss_callback(model(x, environment=()), y)
-            log(f"Training loss: {loss.item():.4f}")
             loss.backward()
             optimizer.step()
             for scheduler in schedulers:
