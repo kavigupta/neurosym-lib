@@ -5,9 +5,13 @@ import neurosym as ns
 
 refresh = False
 
+import sys
+
 
 class TestDFARegression(unittest.TestCase):
     def test_python_dfa(self):
+        if sys.version_info < (3, 12):
+            self.skipTest("Python version is below 3.12, skipping DFA test.")
         if refresh:
             with open("test_data/dfa.json", "w") as f:
                 json.dump(ns.python_dfa(), f, indent=2)
