@@ -29,7 +29,7 @@ setuptools.setup(
         "scikit-learn",
         "s-exp-parser==1.4.0",
         "no_toplevel_code==1.0.0",
-        "ast-scope==0.5.1",
+        "ast-scope==0.5.2",
         "pathos==0.3.2"
     ],
 )
