@@ -40,6 +40,7 @@ _python_transitions = frozendict(
                 "returns": "TA",
                 "type_comment": "TC",
                 "keywords": "[K]",
+                "type_params": "[TP]",
             },
             ast.Return: {"value": "E"},
             ast.Delete: {"targets": "[L]"},
@@ -215,6 +216,7 @@ _python_transitions = frozendict(
         "[W]": {"list": "W"},
         "[alias]": {"list": "alias"},
         "[TI]": {"list": "TI"},
+        "[TP]": {"list": "TP"},
     }
 )
 
