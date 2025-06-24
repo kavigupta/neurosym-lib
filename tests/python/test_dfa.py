@@ -1,11 +1,10 @@
 import json
+import sys
 import unittest
 
 import neurosym as ns
 
 refresh = False
-
-import sys
 
 
 class TestDFARegression(unittest.TestCase):
