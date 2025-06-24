@@ -5,11 +5,9 @@ import numpy as np
 import torch
 from torch import nn
 
-from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.types.type import ArrowType, Type
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_shape import infer_output_shape, tensor_dimensions
-from neurosym.types.type_with_environment import TypeWithEnvironment
 
 
 class NearTransformer(nn.Module):
@@ -209,39 +207,33 @@ def _sample_orthonormal_matrix(d_model):
     return torch.nn.init.orthogonal_(torch.empty(d_model, d_model))
 
 
-class TransformerNeuralHoleFiller(NeuralHoleFiller):
+def transformer_factory(
+    max_tensor_size: int,
+    hidden_size: int,
+    num_head: int = 8,
+    num_encoder_layers: int = 6,
+    num_decoder_layers: int = 6,
+):
     """
-    Hole filler that attempts to use a transformer to fill holes.
+    Allows instantiating a transformer with a given hidden size, number of heads,
 
-    :param hidden_size: The size of the hidden layer in the transformer.
-    :param max_tensor_size: The maximum size of the input tensor.
+    This transformer should work on any types, and will deduce the structure of
+    the computation from the context. Also takes into account the environment.
+
+    :param hidden_size: The hidden size of the transformer (d_model).
     :param num_head: The number of heads in the transformer.
     :param num_encoder_layers: The number of encoder layers in the transformer.
     :param num_decoder_layers: The number of decoder layers in the transformer.
     """
 
-    def __init__(
-        self,
-        hidden_size,
-        max_tensor_size,
-        num_head=8,
-        num_encoder_layers=6,
-        num_decoder_layers=6,
-    ):
-        self.hidden_size = hidden_size
-        self.max_tensor_size = max_tensor_size
-        self.num_head = num_head
-        self.num_encoder_layers = num_encoder_layers
-        self.num_decoder_layers = num_decoder_layers
-
-    def initialize_module(
-        self, type_with_environment: TypeWithEnvironment
-    ) -> nn.Module | None:
+    def construct_model(typ):
         return NearTransformer(
-            max_tensor_size=self.max_tensor_size,
-            hidden_size=self.hidden_size,
-            num_head=self.num_head,
-            num_encoder_layers=self.num_encoder_layers,
-            num_decoder_layers=self.num_decoder_layers,
-            typ=type_with_environment.typ,
+            max_tensor_size=max_tensor_size,
+            hidden_size=hidden_size,
+            num_head=num_head,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            typ=typ,
         )
+
+    return construct_model

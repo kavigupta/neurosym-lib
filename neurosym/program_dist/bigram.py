@@ -39,26 +39,10 @@ class BigramProgramDistribution:
 
     dist_fam: "BigramProgramDistributionFamily"
     distribution: np.ndarray
-    _disable_validation: bool = False
 
     def __post_init__(self):
         assert self.distribution.ndim == 3
         assert self.distribution.shape[0] == self.distribution.shape[2]
-        if not self._disable_validation:
-            # check that everything reachable has a distribution
-            distro_sums = self.distribution.sum(-1)
-            sym_arities = self.dist_fam.sym_arities
-            seen, fringe = set(), [sym_arities.index(("<root>", 1))]
-            while fringe:
-                idx = fringe.pop()
-                if idx in seen:
-                    continue
-                seen.add(idx)
-                for child_idx in range(sym_arities[idx][1]):
-                    assert np.allclose(distro_sums[idx, child_idx], 1.0), (
-                        f"The reachable transition ({sym_arities[idx][0]}, {child_idx})'s"
-                        f" distribution has a sum of {distro_sums[idx, child_idx]} instead of 1.0"
-                    )
 
     def bound_minimum_likelihood(
         self, min_likelihood: float, symbol_mask: np.ndarray = None
@@ -313,10 +297,6 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._additional_preorder_masks = additional_preorder_masks
         self._include_type_preorder_mask = include_type_preorder_mask
         self._node_ordering = node_ordering
-
-    @property
-    def sym_arities(self) -> List[int]:
-        return list(zip(self._symbols, self._arities))
 
     def underlying_dsl(self) -> DSL:
         return self._dsl

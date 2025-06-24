@@ -115,12 +115,6 @@ class Environment:
             sorted((i, render_type(typ)) for i, typ in self._elements.items())
         )
 
-    def __getitem__(self, index):
-        """
-        Get the type at the given index.
-        """
-        return self._elements[index]
-
 
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:

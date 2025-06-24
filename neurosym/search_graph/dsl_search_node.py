@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from neurosym.dsl.dsl import DSL
 from neurosym.programs.s_expression import SExpression
 
 
@@ -16,5 +15,4 @@ class DSLSearchNode:
     """
 
     program: SExpression
-    dsl: DSL = field(hash=False)
     metadata: Dict[str, object] = field(hash=False)

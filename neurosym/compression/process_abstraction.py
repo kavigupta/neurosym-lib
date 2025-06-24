@@ -1,5 +1,4 @@
 import itertools
-import uuid
 from typing import List, Union
 
 import stitch_core
@@ -7,7 +6,7 @@ import stitch_core
 from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
-from ..programs.s_expression import SExpression, postorder
+from ..programs.s_expression import SExpression
 from ..programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -33,7 +32,7 @@ def _compute_abstraction_production(
     Returns an AbstractionProduction corresponding to the abstraction.
     """
     abstr_body = _inject_parameters(abstr_body)
-    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
+    usage = next(x for x in s_expression_using.postorder if x.symbol == abstr_name)
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
@@ -111,7 +110,7 @@ class _StitchLambdaRewriter:
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
         ) = _multi_lambda_to_single_lambda(dsl)
-        self.zero_arg_lambda_symbol = uuid.uuid4().hex
+        self.zero_arg_lambda_symbol = _next_symbol(dsl)
 
         self.first_single_to_multi = {
             single[0]: multi for multi, single in self.multi_to_single.items()
@@ -211,7 +210,7 @@ def single_step_compression(dsl: DSL, programs: List[SExpression]):
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
     )
     prod = _compute_abstraction_production(dsl, user, abstr.name, abstr_body)
-    dsl2 = dsl.add_productions(prod)
+    dsl2 = dsl.add_production(prod)
     return dsl2, rewritten
 
 
