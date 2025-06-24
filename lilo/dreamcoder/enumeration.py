@@ -15,6 +15,7 @@ import subprocess
 import numpy as np
 import time as time
 import torch
+import re
 
 DEFAULT_SOLVER_DIRECTORY = "."
 
@@ -174,6 +175,9 @@ def parse_abstraction_dc_to_ns(abstraction: str, primitive_list: list[str]) -> n
             else:
                 return ns.InitializedSExpression(abstraction, (), {})
 
+def neurosym_to_dreamcoder(s: str):
+    return re.sub(r'\$([0-9]{1})_([0-9]{1})', r'$\1', s.replace("lam", "lambda"))
+
 def multicoreEnumeration(
     g,
     tasks,
@@ -208,9 +212,10 @@ def multicoreEnumeration(
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
     dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
-    dslf.prune_to("i")
+    dslf.lambdas()
+    dslf.prune_to("(i) -> i")
     max_arity = 1
-    num_productions = 4 # make sure to include root in this count
+    num_productions = 6 # make sure to include root in this count
     dsl = dslf.finalize()
     primitive_list = [prod[0] for prod in dslf._concrete_productions]
     
@@ -290,7 +295,7 @@ def multicoreEnumeration(
                     if actual == None or actual != target:
                         likelihood = float("-inf")
                         break
-                dreamcoder_prog = Program.parse(render_s_expression(ns_prog))
+                dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(ns_prog)))
                 log_prob = float(format(prob_fraction, '.10g'))
                 dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logPrior = log_prob, logLikelihood=likelihood)
                 parsed_enumerations.append(dreamcoder_entry)
