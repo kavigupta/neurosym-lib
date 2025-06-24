@@ -6,6 +6,7 @@ from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
 from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
 from dreamcoder.neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from dreamcoder.neurosym.programs.s_expression_render import render_s_expression
 from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.program import Program
 import os
@@ -13,6 +14,7 @@ import traceback
 import subprocess
 import numpy as np
 import time as time
+import torch
 
 DEFAULT_SOLVER_DIRECTORY = "."
 
@@ -196,7 +198,7 @@ def multicoreEnumeration(
     if not isinstance(g, dict):
         g = {t: g for t in tasks}
     task2grammar = g
-    print(f"task2grammar: {task2grammar}")
+    #print(f"task2grammar: {task2grammar}")
     for t in tasks:
         print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
         break
@@ -210,7 +212,7 @@ def multicoreEnumeration(
     max_arity = 1
     num_productions = 4 # make sure to include root in this count
     dsl = dslf.finalize()
-    primitive_list = [prod[0] for prod in dslf._parameterized_productions]
+    primitive_list = [prod[0] for prod in dslf._concrete_productions]
     
     for task in g.keys():
         for k, v in task2grammar[task].expression2likelihood.items():
@@ -233,7 +235,7 @@ def multicoreEnumeration(
     #Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
     family = ns.BigramProgramDistributionFamily(dsl)
     print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
-    frontiers = []
+    frontiers = {}
     dist_dict = {task: np.zeros((num_productions, max_arity, num_productions), dtype=np.float32) for task in tasks}
     for t in tasks:
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
@@ -252,7 +254,11 @@ def multicoreEnumeration(
                 for arity in range(max_arity):
                     dist[prod_ind][arity][production_ind] = v
         #Filter the productions out that are impossible to reach
-        dist_dict[t] = ns.BigramProgramDistribution(dist_fam = family, distribution = dist * family._valid_mask)
+        
+        tensor_dist = torch.tensor(dist)
+        reshaped_tensor_dist = tensor_dist.reshape(tuple(list(tensor_dist.shape) + [1]))
+        normalized_dist = family._normalize_parameters(reshaped_tensor_dist)
+        dist_dict[t] = ns.BigramProgramDistribution(dist_fam = family, distribution = normalized_dist.numpy())
     
     min_likelihood_dict = {task: 0.0 for task in tasks}
     enumerations = {task: [] for task in tasks}
@@ -270,12 +276,27 @@ def multicoreEnumeration(
             #Here we attempt to parse enumerated programs to DreamCoder-style programs to create DreamCoder Frontier Entries
             for ns_prog_tuple in current_generations:
                 ns_prog, prob_fraction = ns_prog_tuple
-                dreamcoder_prog = Program.parse(ns_prog)
-                log_prob = math.log(float(format(prob_fraction, '.10g')))
-                dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logLikelihood=log_prob)
+                actual_ns_function = dsl.compute(dsl.initialize(ns_prog))
+                target_outputs = []
+                actual_outputs = []
+                for example in job.examples:
+                    target_outputs.append(example[1])
+                    try:
+                        actual_outputs.append(actual_ns_function(*example[0]))
+                    except Exception as e:
+                        actual_outputs.append(None) 
+                likelihood = 0.0
+                for actual, target in zip(actual_outputs, target_outputs):
+                    if actual == None or actual != target:
+                        likelihood = float("-inf")
+                        break
+                dreamcoder_prog = Program.parse(render_s_expression(ns_prog))
+                log_prob = float(format(prob_fraction, '.10g'))
+                dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logPrior = log_prob, logLikelihood=likelihood)
                 parsed_enumerations.append(dreamcoder_entry)
-            min_likelihood_dict[job] += bi
+            min_likelihood_dict[job] -= bi
             if time.time() - starting > enumerationTimeout:
+                print(f"Final min_likelihood for job {job} is {min_likelihood_dict[job]}, enumerated {len(parsed_enumerations)} programs.")
                 break
         frontiers[job] = Frontier(parsed_enumerations, task=t)        
     

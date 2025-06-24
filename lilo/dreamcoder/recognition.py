@@ -1176,7 +1176,8 @@ class RecognitionModel(nn.Module):
                     tokens=e.tokens,
                     test=e.program,
                 )
-            except:
+            except Exception as ex:
+                print(f"Error in closedLikelihoodSummary for {e.program}: {ex}")
                 return None
 
         frontier_summaries = [make_entry(e) for e in frontier]
