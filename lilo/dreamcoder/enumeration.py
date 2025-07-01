@@ -260,9 +260,9 @@ def multicoreEnumeration(
                     dist[prod_ind][arity][production_ind] = v
         #Filter the productions out that are impossible to reach
         
-        tensor_dist = torch.tensor(dist)
-        reshaped_tensor_dist = tensor_dist.reshape(tuple(list(tensor_dist.shape) + [1]))
-        normalized_dist = family._normalize_parameters(reshaped_tensor_dist)
+	tensor_dist = torch.tensor(dist)
+        reshaped_tensor_dist = tensor_dist.reshape(tuple([1] + list(tensor_dist.shape)))
+	normalized_dist = family._normalize_parameters(reshaped_tensor_dist)
         dist_dict[t] = ns.BigramProgramDistribution(dist_fam = family, distribution = normalized_dist.numpy())
     
     min_likelihood_dict = {task: 0.0 for task in tasks}
