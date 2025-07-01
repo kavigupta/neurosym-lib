@@ -1564,8 +1564,9 @@ class RecognitionModel(nn.Module):
                 if dreaming:
                     try:
                         frontier = getHelmholtz()
-                    except:
-                        continue  # Just use the training frontier.
+                    except Exception as e:
+                        print("Error in hemholtz, skipping:", e)
+                        pass # Just use the training frontier.
                 self.zero_grad()
                 loss, classificationLoss = (
                     self.frontierBiasOptimal(
