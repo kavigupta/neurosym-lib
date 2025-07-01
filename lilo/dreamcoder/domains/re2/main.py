@@ -18,6 +18,8 @@ class StringFeatureExtractor(RecurrentFeatureExtractor):
 
     def tokenize(self, examples):
         def tokenize_example(xs, y):
+            xs = [str(x) if isinstance(x, int) else x for x in xs]
+            y = str(y) if isinstance(y, int) else y
             x_chars = [list(word) for word in xs]
             y_chars = list(y)
             return x_chars, y_chars
