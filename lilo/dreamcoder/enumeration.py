@@ -202,7 +202,6 @@ def multicoreEnumeration(
     if not isinstance(g, dict):
         g = {t: g for t in tasks}
     task2grammar = g
-    #print(f"task2grammar: {task2grammar}")
     for t in tasks:
         print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
         break
@@ -213,7 +212,7 @@ def multicoreEnumeration(
     dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
     dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
     dslf.lambdas()
-    dslf.prune_to("(i) -> i")
+    dslf.prune_to("i -> i")
     max_arity = 1
     num_productions = 6 # make sure to include root in this count
     dsl = dslf.finalize()
@@ -294,7 +293,11 @@ def multicoreEnumeration(
                     if actual == None or actual != target:
                         likelihood = float("-inf")
                         break
-                dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(ns_prog)))
+                try:
+                    dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(ns_prog)))
+                except Exception as e:
+                    print(f"Exception {e} for {render_s_expression(ns_prog)}")
+                    raise e
                 log_prob = float(format(prob_fraction, '.10g'))
                 dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logPrior = log_prob, logLikelihood=likelihood)
                 parsed_enumerations.append(dreamcoder_entry)
@@ -302,6 +305,7 @@ def multicoreEnumeration(
             if time.time() - starting > enumerationTimeout:
                 print(f"Final min_likelihood for job {job} is {min_likelihood_dict[job]}, enumerated {len(parsed_enumerations)} programs.")
                 break
+        print(f"Task {job} done")
         frontiers[job] = Frontier(parsed_enumerations, task=t)        
     
     bestSearchTime = {t: None for t in task2grammar}
