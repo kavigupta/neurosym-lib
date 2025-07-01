@@ -306,8 +306,8 @@ def multicoreEnumeration(
                 print(f"Final min_likelihood for job {job} is {min_likelihood_dict[job]}, enumerated {len(parsed_enumerations)} programs.")
                 break
         print(f"Task {job} done")
-        frontiers[job] = Frontier(parsed_enumerations, task=t)        
-    
+        frontiers[job] = Frontier(parsed_enumerations, task=job)
+
     bestSearchTime = {t: None for t in task2grammar}
     return [frontiers[t] for t in tasks], bestSearchTime
 
