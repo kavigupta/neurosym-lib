@@ -24,6 +24,20 @@ _excluded_python_tags = [
     "pattern",
     # trystar
     "TryStar",
+    # type aliases
+    "TypeAlias",
+    "ParamSpec",
+    "TypeVar",
+    "TypeVarTuple",
+    "type_param",
+    # Deprecated features. These are older Python features that are no longer
+    # recommended or have been replaced by newer features.
+    "Ellipsis",
+    "_ast_Ellipsis",  # no clue what this is but it's just an alias for Ellipsis
+    "Bytes",
+    "Str",
+    "NameConstant",
+    "Num",
 ]
 
 
@@ -40,7 +54,6 @@ _python_transitions = frozendict(
                 "returns": "TA",
                 "type_comment": "TC",
                 "keywords": "[K]",
-                "type_params": "[TP]",
             },
             ast.Return: {"value": "E"},
             ast.Delete: {"targets": "[L]"},
