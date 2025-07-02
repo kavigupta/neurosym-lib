@@ -24,6 +24,8 @@ _excluded_python_tags = [
     "pattern",
     # trystar
     "TryStar",
+    # type_params
+    "type_params",
 ]
 
 
@@ -40,7 +42,6 @@ _python_transitions = frozendict(
                 "returns": "TA",
                 "type_comment": "TC",
                 "keywords": "[K]",
-                "type_params": "[TP]",
             },
             ast.Return: {"value": "E"},
             ast.Delete: {"targets": "[L]"},
