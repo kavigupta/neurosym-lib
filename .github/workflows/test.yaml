@@ -12,10 +12,93 @@ jobs:
         - id: set-matrix
           run: echo "matrix=$((find tests -name '*_test.py'; find tests -name 'test_*.py') | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
 
-  test:
-
+  setup-python-3.10:
     runs-on: ubuntu-latest
-    needs: [list-tests]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Upload Python environment
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-3.10-env
+          path: |
+            ${{ env.PYTHONPATH }}
+            ${{ env.PIP_CACHE_DIR }}
+
+  setup-python-3.11:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Upload Python environment
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-3.11-env
+          path: |
+            ${{ env.PYTHONPATH }}
+            ${{ env.PIP_CACHE_DIR }}
+
+  setup-python-3.12:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Upload Python environment
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-3.12-env
+          path: |
+            ${{ env.PYTHONPATH }}
+            ${{ env.PIP_CACHE_DIR }}
+
+  setup-python-3.13:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Upload Python environment
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-3.13-env
+          path: |
+            ${{ env.PYTHONPATH }}
+            ${{ env.PIP_CACHE_DIR }}
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [list-tests, setup-python-3.10, setup-python-3.13]
     strategy:
       matrix:
         python-version: ["3.10", "3.13"]
@@ -28,6 +111,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+      - name: Download Python environment
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-env
+          path: python-env
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -37,8 +125,8 @@ jobs:
           pytest ${{ matrix.test-file }} || pytest ${{ matrix.test-file }} --lf
 
   test-multiversion-fast:
-
     runs-on: ubuntu-latest
+    needs: [setup-python-3.10, setup-python-3.11, setup-python-3.12, setup-python-3.13]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -51,6 +139,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+      - name: Download Python environment
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-env
+          path: python-env
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -61,6 +154,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    needs: [setup-python-3.10, setup-python-3.11, setup-python-3.12]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -71,6 +165,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Download Python environment
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-env
+          path: python-env
       - name: Install dependencies
         run: |
           pip install -r requirements.txt pylint==3.2.7 black==24.4.2 isort==5.13.2
@@ -83,8 +182,19 @@ jobs:
  
   check-docs:
     runs-on: ubuntu-latest
+    needs: [setup-python-3.10]
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: 'pip'
+      - name: Download Python environment
+        uses: actions/download-artifact@v3
+        with:
+          name: python-3.10-env
+          path: python-env
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
