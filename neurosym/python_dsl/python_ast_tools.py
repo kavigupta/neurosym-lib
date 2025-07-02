@@ -7,6 +7,8 @@ from neurosym.types.type_string_repr import parse_type
 
 # types we do not care about, so just send them to the same state
 pruned_python_dfa_states = ["TA"]
+# see neurosym.python_dsl._excluded_python_tags's comment for more details
+_excluded_python_fields = ["type_params", "type_param"]
 
 
 def fields_for_node(node: Union[type, str]) -> List[str]:
@@ -18,7 +20,7 @@ def fields_for_node(node: Union[type, str]) -> List[str]:
         node = node.split(PYTHON_DSL_SEPARATOR)[0]
         node = getattr(ast, node)
 
-    return node._fields
+    return [x for x in node._fields if x not in _excluded_python_fields]
 
 
 def field_is_body(node_type: type, field_name: str) -> bool:

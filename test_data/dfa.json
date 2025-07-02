@@ -459,9 +459,6 @@
       "TA"
     ],
     "Break": [],
-    "Bytes": [
-      "TA"
-    ],
     "Call": [
       "TA",
       "TA",
@@ -498,7 +495,6 @@
       "TA"
     ],
     "Div": [],
-    "Ellipsis": [],
     "Eq": [],
     "ExceptHandler": [
       "TA",
@@ -602,10 +598,6 @@
       "TA",
       "TA"
     ],
-    "NameConstant": [
-      "TA",
-      "TA"
-    ],
     "NamedExpr": [
       "TA",
       "TA"
@@ -616,9 +608,6 @@
     "Not": [],
     "NotEq": [],
     "NotIn": [],
-    "Num": [
-      "TA"
-    ],
     "Or": [],
     "Param": [],
     "Pass": [],
@@ -648,9 +637,6 @@
       "TA"
     ],
     "Store": [],
-    "Str": [
-      "TA"
-    ],
     "Sub": [],
     "Subscript": [
       "TA",
