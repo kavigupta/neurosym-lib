@@ -1,4 +1,5 @@
 import copy
+
 import torch
 
 from neurosym.datasets.load_data import DatasetWrapper
@@ -105,8 +106,6 @@ class ValidationCost(NearValidationHeuristic):
         return model
 
 
-
-
 def default_near_cost(
     *,
     trainer_cfg: NEARTrainerConfig,
@@ -149,7 +148,7 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
     best_val = float("inf")
     epochs_no_improve = 0
     best_weights = None
-    
+
     optimizer, schedulers = schedule_optimizer(
         trainer_cfg.optimizer(
             model.parameters(),
@@ -173,7 +172,6 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
             for sch in schedulers:
                 sch.step()
 
-
         if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
             model.eval()
             val_loss_sum, val_cnt = 0.0, 0
@@ -181,7 +179,9 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
                 for batch in datamodule.val_dataloader():
                     batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
                     x, y = batch["inputs"], batch["outputs"]
-                    val_loss_sum += trainer_cfg.loss_callback(model(x, environment=()), y).item()
+                    val_loss_sum += trainer_cfg.loss_callback(
+                        model(x, environment=()), y
+                    ).item()
                     val_cnt += 1
             val_loss = val_loss_sum / val_cnt
 
