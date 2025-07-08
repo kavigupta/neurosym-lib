@@ -134,6 +134,7 @@ reasonable_classifications = [
     ("list", "[alias]"),
     ("list", "[NameStr]"),
     ("list", "[TI]"),
+    ("list", "[TP]"),
     ("/seq", "seqS"),
     ("withitem", "W"),
     ("const-None", "E"),
