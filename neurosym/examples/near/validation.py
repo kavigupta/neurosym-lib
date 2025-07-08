@@ -1,3 +1,4 @@
+import copy
 import torch
 
 from neurosym.datasets.load_data import DatasetWrapper
@@ -104,6 +105,8 @@ class ValidationCost(NearValidationHeuristic):
         return model
 
 
+
+
 def default_near_cost(
     *,
     trainer_cfg: NEARTrainerConfig,
@@ -142,38 +145,57 @@ def default_near_cost(
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
+    torch.manual_seed(trainer_cfg.seed)
+    best_val = float("inf")
+    epochs_no_improve = 0
+    best_weights = None
+    
     optimizer, schedulers = schedule_optimizer(
         trainer_cfg.optimizer(
-            model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
+            model.parameters(),
+            lr=trainer_cfg.lr,
+            weight_decay=trainer_cfg.weight_decay,
         ),
         trainer_cfg.scheduler,
         len(datamodule.train),
         n_epochs,
     )
-    torch.manual_seed(trainer_cfg.seed)
-    model = model.train()
     model = model.to(trainer_cfg.accelerator)
-    for _ in range(n_epochs):
+    for epoch in range(n_epochs):
+        model.train()
         for batch in datamodule.train_dataloader():
+            optimizer.zero_grad()
             batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
             x, y = batch["inputs"], batch["outputs"]
-            optimizer.zero_grad()
             loss = trainer_cfg.loss_callback(model(x, environment=()), y)
             loss.backward()
             optimizer.step()
-            for scheduler in schedulers:
-                scheduler.step()
+            for sch in schedulers:
+                sch.step()
 
-    model = model.eval()
-    val_loss_sum = 0
-    val_loss_count = 0
-    for batch in datamodule.val_dataloader():
-        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-        x, y = batch["inputs"], batch["outputs"]
-        with torch.no_grad():
-            val_loss_sum += trainer_cfg.loss_callback(
-                model(x, environment=()), y
-            ).item()
-        val_loss_count += 1
-    model = model.train().cpu()
-    return val_loss_sum / val_loss_count
+
+        if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
+            model.eval()
+            val_loss_sum, val_cnt = 0.0, 0
+            with torch.no_grad():
+                for batch in datamodule.val_dataloader():
+                    batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+                    x, y = batch["inputs"], batch["outputs"]
+                    val_loss_sum += trainer_cfg.loss_callback(model(x, environment=()), y).item()
+                    val_cnt += 1
+            val_loss = val_loss_sum / val_cnt
+
+            if trainer_cfg.early_stopping:
+                if val_loss < best_val - trainer_cfg.early_stopping_min_delta:
+                    best_val = val_loss
+                    best_weights = copy.deepcopy(model.state_dict())
+                    epochs_no_improve = 0
+                else:
+                    epochs_no_improve += 1
+                    if epochs_no_improve >= trainer_cfg.early_stopping_patience:
+                        break
+
+    if best_weights is not None:
+        model.load_state_dict(best_weights)
+    model.cpu()
+    return best_val
