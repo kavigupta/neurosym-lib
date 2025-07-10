@@ -157,10 +157,10 @@ reasonable_classifications = [
     ("const-[&g].*", "NullableName"),
     ("const-None", "NullableName"),
     ("const-s.*", "NameStr"),
-    ("const-[&g].*", "NameStr"),  # imports
+    ("const-g.*", "NameStr"),  # imports
     ("const-s.*", "NullableNameStr"),
     ("const-None", "NullableNameStr"),
-    ("const-[&g].*", "NullableNameStr"),
+    ("const-g.*", "NullableNameStr"),
     # values
     ("const-None", "Const"),
     ("const-True", "Const"),
@@ -371,6 +371,9 @@ class DFATest(unittest.TestCase):
         self.classify_elements_in_code("from x import y")
         self.classify_elements_in_code("from x import y as z")
         self.classify_elements_in_code("from . import x")
+
+    def test_import_not_top_level(self):
+        self.classify_elements_in_code("x = 2; import os")
 
     def test_global_nonlocal(self):
         self.classify_elements_in_code("global x")

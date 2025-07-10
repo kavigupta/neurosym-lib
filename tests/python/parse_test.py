@@ -8,6 +8,26 @@ from parameterized import parameterized
 import neurosym as ns
 
 
+class ParseTest(unittest.TestCase):
+    def test_basic_parse(self):
+        code = "x = 2"
+        parsed = ns.python_to_s_exp(code)
+        print(parsed)
+        self.assertEqual(
+            parsed,
+            "(Module (/seq (Assign (list (Name &x:0 Store)) (Constant i2 None) None)) nil)",
+        )
+
+    def test_basic_import_parse(self):
+        code = "import os"
+        parsed = ns.python_to_s_exp(code)
+        print(parsed)
+        self.assertEqual(
+            parsed,
+            "(Module (/seq (Import (list (alias g_os None)))) nil)",
+        )
+
+
 class ParseUnparseInverseTest(unittest.TestCase):
     def canonicalize(self, python_code):
         return ast.unparse(ast.parse(python_code))
@@ -86,6 +106,20 @@ class ParseUnparseInverseTest(unittest.TestCase):
         self.assertEqual(
             ns.python_to_s_exp("import os", renderer_kwargs=dict(columns=80)),
             "(Module (/seq (Import (list (alias g_os None)))) nil)",
+        )
+
+    def test_imports_are_globals(self):
+        self.maxDiff = None
+        result = ns.python_to_s_exp("os = 2; import os; y = lambda os: os")
+        print(result)
+        self.assertEqual(
+            result,
+            "(Module (/seq "
+            "(Assign (list (Name g_os:0 Store)) (Constant i2 None) None)"
+            " "
+            "(Import (list (alias g_os:0 None)))"
+            " "
+            "(Assign (list (Name &y:0 Store)) (Lambda (arguments nil (list (arg &os:1 None None)) None nil nil None nil) (Name &os:1 Load)) None)) nil)",
         )
 
     def test_builtins(self):
