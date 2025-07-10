@@ -185,7 +185,7 @@ _python_transitions = frozendict(
         "EH": {
             ast.ExceptHandler: {
                 "type": "E",
-                "name": "NullableName",
+                "name": "Name",
                 "body": "seqS",
             }
         },

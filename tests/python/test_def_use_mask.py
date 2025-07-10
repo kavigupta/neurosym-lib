@@ -422,7 +422,7 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
                 """
                 try:
                     x?Exception$e = 2
-                except Exception?x as e:
+                except Exception?x as e?Exception$x:
                     x?Exception$e = e?Exception$x
                 """
             ).strip(),

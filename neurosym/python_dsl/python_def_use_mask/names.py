@@ -5,10 +5,10 @@ from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 NAME_REGEX = re.compile(
     r"const-(?P<typ>&)(?P<name>\w+|\*):(?P<scope>\d+)"
     + PYTHON_DSL_SEPARATOR
-    + r"(?P<dfa_sym>Name|NullableName|NameStr|NullableNameStr)$"
+    + r"(?P<dfa_sym>Name|NameStr|NullableNameStr)$"
 )
 GLOBAL_REGEX = re.compile(
-    r"const-(?P<typ>g)_(?P<name>\w+|\*)(:\d+)?~(Name|NullableName|NameStr|NullableNameStr)"
+    r"const-(?P<typ>g)_(?P<name>\w+|\*)(:\d+)?~(Name|NameStr|NullableNameStr)"
 )
 
 
