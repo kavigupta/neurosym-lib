@@ -32,7 +32,7 @@ class PythonSymbol:
         valid = (
             isinstance(scope, str)
             and scope.isdigit()
-            or isinstance(scope, (int, nonsymbol_scope_id))
+            or isinstance(scope, (int, _nonsymbol_scope_id))
         )
         assert valid, (
             f"Invalid scope {scope} for symbol {self.name}. "
@@ -52,34 +52,33 @@ class PythonSymbol:
             x = x[2:]
             if ":" in x:
                 name, scope = x.split(":")
-                return cls(name, nonsymbol_scope_id(int(scope)))
-            return cls(x, nonsymbol_scope_id(None))
+                return cls(name, _nonsymbol_scope_id(int(scope)))
+            return cls(x, _nonsymbol_scope_id(None))
         return None
 
     def render_symbol(self):
         """
         Render this symbol with scope information.
         """
-        if isinstance(self.scope, nonsymbol_scope_id):
-            return f"g_{self.name}{self.scope.render()}"
+        if isinstance(self.scope, _nonsymbol_scope_id):
+            return f"g_{self.name}{self.scope._render()}"
         return f"&{self.name}:{self.scope}"
 
 
-@internal_only
 @dataclass(frozen=True)
-class nonsymbol_scope_id:
+class _nonsymbol_scope_id:
     scope: Union[int, None]
 
     def __post_init__(self):
         assert self.scope is None or isinstance(self.scope, int)
 
     @classmethod
-    def wrap(cls, scope):
+    def _wrap(cls, scope):
         if isinstance(scope, cls):
             return scope
         return cls(scope)
 
-    def render(self):
+    def _render(self):
         """
         Render this scope id.
         """
@@ -106,7 +105,7 @@ def create_descoper(code):
     for node in ast.walk(code):
         if node in annot:
             if node in globs:
-                results[node] = nonsymbol_scope_id(None)
+                results[node] = _nonsymbol_scope_id(None)
                 continue
             if annot[node] not in scopes:
                 scopes.append(annot[node])
@@ -126,7 +125,7 @@ def create_descoper(code):
     # Make the changes to all nodes that are the same as one that is imported
     for node, idx_scope in node_to_id_scope.items():
         if idx_scope in import_node_ids:
-            results[node] = nonsymbol_scope_id.wrap(results[node])
+            results[node] = _nonsymbol_scope_id._wrap(results[node])
     return results
 
 
