@@ -8,7 +8,7 @@ NAME_REGEX = re.compile(
     + r"(?P<dfa_sym>Name|NullableName|NameStr|NullableNameStr)$"
 )
 GLOBAL_REGEX = re.compile(
-    r"const-(?P<typ>g)_(?P<name>\w+|\*)~(Name|NullableName|NameStr|NullableNameStr)"
+    r"const-(?P<typ>g)_(?P<name>\w+|\*)(:\d+)?~(Name|NullableName|NameStr|NullableNameStr)"
 )
 
 
