@@ -166,14 +166,19 @@ def is_initialized_s_expression(p):
     return hasattr(p, "all_state_values")
 
 
-def postorder(s_exp: SExpression | InitializedSExpression):
+def postorder(s_exp: SExpression | InitializedSExpression | str, *, leaves=True):
     """
     Traverse an SExpression/InitializedSExpression in postorder.
 
     :param s_exp: The expression to traverse.
 
     :return: An iterator over the expression in postorder.
+    :param leaves: Whether to include leaves in the traversal.
     """
+    if isinstance(s_exp, str):
+        if leaves:
+            yield s_exp
+        return
     for x in s_exp.children:
-        yield from postorder(x)
+        yield from postorder(x, leaves=leaves)
     yield s_exp
