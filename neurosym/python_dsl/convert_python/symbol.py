@@ -32,8 +32,7 @@ class PythonSymbol:
         valid = (
             isinstance(scope, str)
             and scope.isdigit()
-            or isinstance(scope, int)
-            or isinstance(scope, nonsymbol_scope_id)
+            or isinstance(scope, (int, nonsymbol_scope_id))
         )
         assert valid, (
             f"Invalid scope {scope} for symbol {self.name}. "
