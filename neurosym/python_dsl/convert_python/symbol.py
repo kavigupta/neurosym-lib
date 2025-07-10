@@ -61,7 +61,7 @@ class PythonSymbol:
         Render this symbol with scope information.
         """
         if isinstance(self.scope, _nonsymbol_scope_id):
-            return f"g_{self.name}{self.scope._render()}"
+            return f"g_{self.name}{self.scope.render()}"
         return f"&{self.name}:{self.scope}"
 
 
@@ -73,12 +73,14 @@ class _nonsymbol_scope_id:
         assert self.scope is None or isinstance(self.scope, int)
 
     @classmethod
-    def _wrap(cls, scope):
+    @internal_only
+    def wrap(cls, scope):
         if isinstance(scope, cls):
             return scope
         return cls(scope)
 
-    def _render(self):
+    @internal_only
+    def render(self):
         """
         Render this scope id.
         """
@@ -125,7 +127,7 @@ def create_descoper(code):
     # Make the changes to all nodes that are the same as one that is imported
     for node, idx_scope in node_to_id_scope.items():
         if idx_scope in import_node_ids:
-            results[node] = _nonsymbol_scope_id._wrap(results[node])
+            results[node] = _nonsymbol_scope_id.wrap(results[node])
     return results
 
 
