@@ -154,8 +154,8 @@ reasonable_classifications = [
     ("Del", "Ctx"),
     # name
     ("const-[&g].*", "Name"),
-    ("const-[&g].*", "NullableName"),
-    ("const-None", "NullableName"),
+    ("const-[&g].*", "Name"),
+    ("const-None", "Name"), # exceptions
     ("const-s.*", "NameStr"),
     ("const-g.*", "NameStr"),  # imports
     ("const-s.*", "NullableNameStr"),
