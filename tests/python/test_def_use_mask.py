@@ -465,7 +465,7 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
             code.strip(),
             cwq(
                 """
-                x: List[Dict[str, int]] = []
+                x?Dict$List$int$str: List?Dict$int$str[Dict?List$int$str[str?Dict$List$int, int?Dict$List$str]] = []
                 """
             ).strip(),
         )

@@ -144,7 +144,6 @@ reasonable_classifications = [
     # vararg
     ("const-None", "A"),
     # type
-    (".*", "TA"),
     ("const-None", "TC"),
     # left value
     ("const-None", "L"),
