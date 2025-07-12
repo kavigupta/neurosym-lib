@@ -10,9 +10,9 @@ class TestBasicAnnotation(unittest.TestCase):
             [(ns.render_s_expression(node), state) for node, state in result], expected
         )
 
-    def assertDisambiguatingTypeTags(self, dfa, prog, start_state, expected):
+    def assertDisambiguatingTypeTags(self, dfa, prog, start_state, expected, **kwargs):
         result = ns.add_disambiguating_type_tags(
-            dfa, ns.parse_s_expression(prog), start_state
+            dfa, ns.parse_s_expression(prog), start_state, **kwargs
         )
         self.assertEqual(ns.render_s_expression(result), expected)
 
@@ -75,4 +75,20 @@ class TestBasicAnnotation(unittest.TestCase):
             "(a (list (b) (b) (b)))",
             "start",
             "(a~start (list~_state1_~3 (b~state1) (b~state1) (b~state1)))",
+        )
+
+        self.assertDisambiguatingTypeTags(
+            dfa,
+            "(a (list (b) (b) (b)))",
+            "start",
+            "(a~start (list~_state1_~3 (b) (b) (b)))",
+            only_for_nodes={"a", "list"},
+        )
+
+        self.assertDisambiguatingTypeTags(
+            dfa,
+            "(a (list (b) (b) (b)))",
+            "start",
+            "(a~start (list (b) (b) (b)))",
+            only_for_nodes={"a"},
         )
