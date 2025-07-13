@@ -144,7 +144,10 @@ class DefUseChainPreorderMask(PreorderMask):
         :param symbol: The symbol of the node.
         """
         popped = self.handlers.pop()
-        undo_pop = lambda: self.handlers.append(popped)
+
+        def undo_pop():
+            return self.handlers.append(popped)
+
         if not self.handlers:
             assert position == symbol == 0
             return undo_pop

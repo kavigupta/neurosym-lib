@@ -58,12 +58,11 @@ def running_agg_torch(
     :param full_window: If True, the function will only return the full window aggregates.
     """
     # @TODO: The only reason we aren't allowing 2D is because I don't know how to dynmaically switch between arr[s:e] and arr[:, s:e]
-    assert len(seq.shape) == 3, (
-        f"Expected 3D tensor with shape (N, L, D), got {seq.shape}"
-    )
+    assert (
+        len(seq.shape) == 3
+    ), f"Expected 3D tensor with shape (N, L, D), got {seq.shape}"
     N, L, D = seq.shape
     device = seq.device
-    dtype = seq.dtype
 
     # -- 1. build start / end index tensors on the CPU, then move once to GPU
     idxs = torch.arange(L)
@@ -76,15 +75,17 @@ def running_agg_torch(
     # -- 2. cumulative sum: S[t] = sum_{0..t} seq
     #        shape: (N, L, D)
     cumsum = torch.cumsum(seq, dim=1)
-    expand = lambda v: v.view(1, -1, 1).expand(N, -1, D)
 
-    end_sum   = cumsum.gather(1, expand(e_idx))
+    def expand(v):
+        return v.view(1, -1, 1).expand(N, -1, D)
+
+    end_sum = cumsum.gather(1, expand(e_idx))
     start_sum = cumsum.gather(1, expand((s_idx - 1).clamp(min=0)))
 
     # zero the prefix when the window starts at 0  ↓↓↓
-    start_sum = torch.where((s_idx == 0).view(1, -1, 1),
-                            torch.zeros_like(start_sum),
-                            start_sum)
+    start_sum = torch.where(
+        (s_idx == 0).view(1, -1, 1), torch.zeros_like(start_sum), start_sum
+    )
 
     # -- 4. average over each window
     win_len = (e_idx - s_idx + 1).float().view(1, -1, 1)
