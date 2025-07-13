@@ -47,8 +47,8 @@ class NEARTrainerConfig:
     seed: int = 44
     scheduler: str = "cosine"
     accelerator: str = "cpu"
-    validation_interval: int = 5
-    early_stopping: bool = True
+    validation_interval: int = 10_000_000
+    early_stopping: bool = False
     early_stopping_patience: int = 2
     early_stopping_min_delta: float = 1e-4
     # This is necessary for some unfathomable reason. I assume that torch.optim.Adam
