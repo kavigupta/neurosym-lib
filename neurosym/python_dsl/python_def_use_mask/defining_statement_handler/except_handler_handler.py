@@ -19,7 +19,7 @@ class ExceptHandlerHandler(ConstructHandler):
     ) -> Tuple[Handler, Callable[[], None]]:
         undos = []
         if self.is_defining(position):
-            if self.mask.id_to_name(symbol) != "const-None~NullableName":
+            if self.mask.id_to_name(symbol) != "const-None~Name":
                 self.defined_production_idxs.append(symbol)
                 undos.append(self.defined_production_idxs.pop)
         handler, undo = super().on_child_enter(position, symbol)

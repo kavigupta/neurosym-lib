@@ -51,7 +51,7 @@ _python_transitions = frozendict(
                 "bases": "[E]",
                 "name": "Name",
                 "args": "As",
-                "returns": "TA",
+                "returns": "E",
                 "type_comment": "TC",
                 "keywords": "[K]",
             },
@@ -63,7 +63,7 @@ _python_transitions = frozendict(
                 "target": "L",
                 "type_comment": "TC",
                 "op": "O",
-                "annotation": "TA",
+                "annotation": "E",
                 "simple": "bool",
             },
             (
@@ -166,7 +166,7 @@ _python_transitions = frozendict(
             }
         },
         "A": {
-            ast.arg: {"annotation": "TA", "arg": "Name", "type_comment": "TC"},
+            ast.arg: {"annotation": "E", "arg": "Name", "type_comment": "TC"},
         },
         "F": {
             ast.FormattedValue: {"value": "E", "format_spec": "F", "conversion": "int"},
@@ -185,7 +185,7 @@ _python_transitions = frozendict(
         "EH": {
             ast.ExceptHandler: {
                 "type": "E",
-                "name": "NullableName",
+                "name": "Name",
                 "body": "seqS",
             }
         },
@@ -218,7 +218,7 @@ _python_transitions = frozendict(
             },
         },
         "[NameStr]": {"list": "NameStr"},
-        "TA": {all: {all: "TA"}, "list": "TA"},
+        # "E": {all: {all: "TA"}, "list": "TA"},
         "[F]": {"list": "F"},
         "[A]": {"list": "A"},
         "[C]": {"list": "C"},

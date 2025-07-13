@@ -42,7 +42,6 @@ def create_target_handler(
 
     if symbol.startswith("const") and symbol.split(PYTHON_DSL_SEPARATOR)[-1] in {
         "Name",
-        "NullableName",
         "NameStr",
         "NullableNameStr",
     }:

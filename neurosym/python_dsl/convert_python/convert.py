@@ -1,5 +1,5 @@
 import ast
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Set, Union
 
 from frozendict import frozendict
 
@@ -46,7 +46,11 @@ def s_exp_to_python(
 
 
 def to_type_annotated_ns_s_exp(
-    code: PythonAST, dfa: dict, start_state: str
+    code: PythonAST,
+    dfa: dict,
+    start_state: str,
+    no_leaves: bool = True,
+    only_for_nodes: Union[None, Set[str]] = None,
 ) -> SExpression:
     """
     Converts a python AST to an s-expression with type annotations.
@@ -57,8 +61,29 @@ def to_type_annotated_ns_s_exp(
 
     :return: The s-expression, as a string.
     """
-    return add_disambiguating_type_tags(
-        dfa, code.to_ns_s_exp(dict(no_leaves=True)), start_state
+    if not no_leaves and only_for_nodes:
+        only_for_nodes = only_for_nodes | {f"const-{x}" for x in only_for_nodes}
+    result = add_disambiguating_type_tags(
+        dfa,
+        code.to_ns_s_exp(dict(no_leaves=True)),
+        start_state,
+        only_for_nodes=only_for_nodes,
+    )
+    if not no_leaves:
+        result = _inline_leaves(result)
+    return result
+
+
+def _inline_leaves(s_exp: SExpression) -> SExpression:
+    assert isinstance(s_exp, SExpression), f"expected SExpression, got {type(s_exp)}"
+    if s_exp.symbol.startswith("const-"):
+        assert len(s_exp.children) == 0
+        return s_exp.symbol[len("const-") :]
+    if s_exp.symbol == "list" and not s_exp.children:
+        return "nil"
+    return SExpression(
+        s_exp.symbol,
+        [_inline_leaves(child) for child in s_exp.children],
     )
 
 
@@ -95,7 +120,11 @@ def python_statements_to_python_ast(code: Union[str, ast.AST]) -> SequenceAST:
 
 
 def python_to_type_annotated_ns_s_exp(
-    code: str, dfa: dict = None, start_state: str = "M"
+    code: str,
+    dfa: dict = None,
+    start_state: str = "M",
+    no_leaves: bool = True,
+    only_for_nodes: Union[None, Set[str]] = None,
 ) -> SExpression:
     """
     Converts python code to an s-expression with type annotations.
@@ -108,4 +137,10 @@ def python_to_type_annotated_ns_s_exp(
     """
     if dfa is None:
         dfa = python_dfa()
-    return to_type_annotated_ns_s_exp(python_to_python_ast(code), dfa, start_state)
+    return to_type_annotated_ns_s_exp(
+        python_to_python_ast(code),
+        dfa,
+        start_state,
+        no_leaves=no_leaves,
+        only_for_nodes=only_for_nodes,
+    )
