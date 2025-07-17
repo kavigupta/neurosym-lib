@@ -7,6 +7,7 @@ from typing import List
 from frozendict import frozendict
 
 from neurosym.programs.s_expression import SExpression
+from neurosym.python_dsl.dfa import COMPOUND_EXPRESSION_KINDS, MULTI_LINE_STATEMENT_KINDS
 
 from .splice import Splice
 from .symbol import PythonSymbol
@@ -98,13 +99,7 @@ class NodeAST(PythonAST):
             ast.FunctionDef,
             ast.AsyncFunctionDef,
             ast.ClassDef,
-            ast.For,
-            ast.AsyncFor,
-            ast.While,
-            ast.If,
-            ast.With,
-            ast.AsyncWith,
-            ast.Try,
+            *MULTI_LINE_STATEMENT_KINDS,
             ast.ExceptHandler,
         }:
             return True
@@ -141,14 +136,7 @@ class NodeAST(PythonAST):
             ast.Compare,
             ast.NamedExpr,
             ast.Lambda,
-            ast.IfExp,
-            ast.Dict,
-            ast.Set,
-            ast.List,
-            ast.Tuple,
-            ast.Await,
-            ast.Yield,
-            ast.YieldFrom,
+            *COMPOUND_EXPRESSION_KINDS,
             ast.ListComp,
             ast.SetComp,
             ast.DictComp,
@@ -180,10 +168,6 @@ class NodeAST(PythonAST):
             ast.AugStore,
             ast.Param,
             ast.TypeIgnore,
-            ast.TypeAlias,
-            ast.TypeVar,
-            ast.TypeVarTuple,
-            ast.ParamSpec,
         }:
             return False
 
