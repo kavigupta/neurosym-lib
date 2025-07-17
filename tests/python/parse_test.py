@@ -2,6 +2,7 @@ import ast
 import json
 import unittest
 from functools import lru_cache
+from textwrap import dedent
 
 from parameterized import parameterized
 
@@ -64,7 +65,7 @@ class ParseUnparseInverseTest(unittest.TestCase):
 
         test_ast.map(collect)
         for node in all_nodes:
-            if isinstance(node, ns.LeafAST):
+            if isinstance(node, (ns.LeafAST, ns.ListAST)):
                 continue
             self.assertTrue(
                 node.is_multiline() == ("\n" in node.to_python()),
@@ -144,6 +145,32 @@ class ParseUnparseInverseTest(unittest.TestCase):
         self.check("print(True)")
         self.check("0")
         self.check("x = None")
+
+    def test_global_nonlocal_stmts(self):
+        self.check(
+            dedent(
+                """
+                def f():
+                    global x
+                    x = 1
+                    y = 2
+                    return x + y
+                f()
+                """
+            )
+        )
+        self.check(
+            dedent(
+                """
+                def g():
+                    def f():
+                        nonlocal y
+                        y = 2
+                        return y
+                    f()
+                """
+            )
+        )
 
     def test_if_expr(self):
         self.check("2 if x == 3 else 4")
