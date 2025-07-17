@@ -51,6 +51,13 @@ class PythonAST(ABC):
         i.e., run on all the children and then on the new object.
         """
 
+    @abstractmethod
+    def is_multiline(self) -> bool:
+        """
+        Check if this PythonAST is multiline. This is used to determine whether
+        it can be used in a single-line context or not.
+        """
+
 
 @dataclass
 class NodeAST(PythonAST):
@@ -79,6 +86,143 @@ class NodeAST(PythonAST):
 
     def map(self, fn):
         return fn(NodeAST(self.typ, [x.map(fn) for x in self.children]))
+
+    def is_multiline(self) -> bool:
+        # If any child is multiline, this node is multiline
+        if any(child.is_multiline() for child in self.children):
+            return True
+
+        # Explicit handling for every node type
+        # Block/compound statement nodes are always multiline
+        if self.typ in {
+            ast.FunctionDef,
+            ast.AsyncFunctionDef,
+            ast.ClassDef,
+            ast.For,
+            ast.AsyncFor,
+            ast.While,
+            ast.If,
+            ast.With,
+            ast.AsyncWith,
+            ast.Try,
+            ast.ExceptHandler,
+        }:
+            return True
+
+        # A module is only multiline if its children are multiline
+        if self.typ is ast.Module:
+            return False
+
+        # Simple statement nodes are never multiline (unless children are)
+        if self.typ in {
+            ast.Return,
+            ast.Delete,
+            ast.Assign,
+            ast.AugAssign,
+            ast.AnnAssign,
+            ast.Raise,
+            ast.Assert,
+            ast.Import,
+            ast.ImportFrom,
+            ast.Global,
+            ast.Nonlocal,
+            ast.Expr,
+            ast.Pass,
+            ast.Break,
+            ast.Continue,
+        }:
+            return False
+
+        # Expression nodes are never multiline (unless children are)
+        if self.typ in {
+            ast.BoolOp,
+            ast.BinOp,
+            ast.UnaryOp,
+            ast.Compare,
+            ast.NamedExpr,
+            ast.Lambda,
+            ast.IfExp,
+            ast.Dict,
+            ast.Set,
+            ast.List,
+            ast.Tuple,
+            ast.Await,
+            ast.Yield,
+            ast.YieldFrom,
+            ast.ListComp,
+            ast.SetComp,
+            ast.DictComp,
+            ast.GeneratorExp,
+            ast.Call,
+            ast.JoinedStr,
+            ast.Constant,
+            ast.Name,
+            ast.Attribute,
+            ast.Subscript,
+            ast.Starred,
+            ast.Slice,
+        }:
+            return False
+
+        # Context and utility nodes are never multiline
+        if self.typ in {
+            ast.arguments,
+            ast.arg,
+            ast.FormattedValue,
+            ast.comprehension,
+            ast.keyword,
+            ast.withitem,
+            ast.alias,
+            ast.Load,
+            ast.Store,
+            ast.Del,
+            ast.AugLoad,
+            ast.AugStore,
+            ast.Param,
+            ast.TypeIgnore,
+            ast.TypeAlias,
+            ast.TypeVar,
+            ast.TypeVarTuple,
+            ast.ParamSpec,
+        }:
+            return False
+
+        # Operators and comparators are never multiline
+        if self.typ in {
+            ast.Add,
+            ast.Sub,
+            ast.Mult,
+            ast.Div,
+            ast.Mod,
+            ast.Pow,
+            ast.LShift,
+            ast.RShift,
+            ast.BitOr,
+            ast.BitXor,
+            ast.BitAnd,
+            ast.FloorDiv,
+            ast.MatMult,
+            ast.And,
+            ast.Or,
+            ast.Not,
+            ast.Invert,
+            ast.UAdd,
+            ast.USub,
+            ast.Eq,
+            ast.NotEq,
+            ast.Lt,
+            ast.LtE,
+            ast.Gt,
+            ast.GtE,
+            ast.Is,
+            ast.IsNot,
+            ast.In,
+            ast.NotIn,
+        }:
+            return False
+
+        # If you hit this, add an explicit case above
+        raise RuntimeError(f"is_multiline: unhandled node type: {self.typ}")
 
 
 @dataclass
@@ -114,6 +258,9 @@ class SequenceAST(PythonAST):
     def map(self, fn):
         return fn(SequenceAST(self.head, [x.map(fn) for x in self.elements]))
 
+    def is_multiline(self) -> bool:
+        return len(self.elements) > 1 or any(x.is_multiline() for x in self.elements)
+
 
 @dataclass
 class ListAST(PythonAST):
@@ -136,6 +283,9 @@ class ListAST(PythonAST):
 
     def map(self, fn):
         return fn(ListAST([x.map(fn) for x in self.children]))
+
+    def is_multiline(self) -> bool:
+        return any(x.is_multiline() for x in self.children)
 
 
 @dataclass
@@ -195,6 +345,9 @@ class LeafAST(PythonAST):
     def map(self, fn):
         return fn(LeafAST(self.leaf))
 
+    def is_multiline(self) -> bool:
+        return False
+
 
 @dataclass
 class SliceElementAST(PythonAST):
@@ -244,6 +397,9 @@ class SliceElementAST(PythonAST):
     def map(self, fn):
         return fn(SliceElementAST(self.content.map(fn)))
 
+    def is_multiline(self) -> bool:
+        return False
+
 
 @dataclass
 class StarrableElementAST(PythonAST):
@@ -266,6 +422,9 @@ class StarrableElementAST(PythonAST):
 
     def map(self, fn):
         return fn(StarrableElementAST(self.content.map(fn)))
+
+    def is_multiline(self) -> bool:
+        return False
 
 
 @dataclass
@@ -291,3 +450,6 @@ class SpliceAST(PythonAST):
 
     def map(self, fn):
         return fn(SpliceAST(self.content.map(fn)))
+
+    def is_multiline(self) -> bool:
+        return False

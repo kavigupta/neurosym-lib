@@ -55,10 +55,29 @@ class ParseUnparseInverseTest(unittest.TestCase):
             ns.render_s_expression(parsed.to_ns_s_exp(dict(no_leaves=no_leaves))),
         )
 
+    def check_multiline(self, test_ast):
+        all_nodes = []
+
+        def collect(node):
+            all_nodes.append(node)
+            return node
+
+        test_ast.map(collect)
+        for node in all_nodes:
+            if isinstance(node, ns.LeafAST):
+                continue
+            self.assertTrue(
+                node.is_multiline() == ("\n" in node.to_python()),
+                f"{node.to_python()!r}; {node}",
+            )
+
     def check_with_args(self, test_code, no_leaves=False):
         test_code = self.canonicalize(test_code)
         python_ast = ns.python_to_python_ast(test_code)
-        s_exp = ns.render_s_expression(python_ast.to_ns_s_exp(dict(no_leaves=no_leaves)))
+        self.check_multiline(python_ast)
+        s_exp = ns.render_s_expression(
+            python_ast.to_ns_s_exp(dict(no_leaves=no_leaves))
+        )
         self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
         self.check_s_exp(s_exp, no_leaves=no_leaves)
         s_exp_parsed = ns.s_exp_to_python_ast(s_exp, {})
