@@ -2,6 +2,7 @@ import ast
 import json
 import unittest
 from functools import lru_cache
+from textwrap import dedent
 
 from parameterized import parameterized
 
@@ -55,10 +56,28 @@ class ParseUnparseInverseTest(unittest.TestCase):
             ns.render_s_expression(parsed.to_ns_s_exp(dict(no_leaves=no_leaves))),
         )
 
+    def check_multiline(self, test_ast):
+        all_nodes = []
+
+        def collect(node):
+            all_nodes.append(node)
+            return node
+
+        test_ast.map(collect)
+        for node in all_nodes:
+            if isinstance(node, (ns.LeafAST, ns.ListAST)):
+                continue
+            self.assertTrue(
+                node.is_multiline() == ("\n" in node.to_python()),
+                f"{node.to_python()!r}; {node}",
+            )
+
     def check_with_args(self, test_code, no_leaves=False):
         test_code = self.canonicalize(test_code)
-        s_exp = ns.python_to_s_exp(
-            test_code, renderer_kwargs=dict(columns=80), no_leaves=no_leaves
+        python_ast = ns.python_to_python_ast(test_code)
+        self.check_multiline(python_ast)
+        s_exp = ns.render_s_expression(
+            python_ast.to_ns_s_exp(dict(no_leaves=no_leaves))
         )
         self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
         self.check_s_exp(s_exp, no_leaves=no_leaves)
@@ -126,6 +145,32 @@ class ParseUnparseInverseTest(unittest.TestCase):
         self.check("print(True)")
         self.check("0")
         self.check("x = None")
+
+    def test_global_nonlocal_stmts(self):
+        self.check(
+            dedent(
+                """
+                def f():
+                    global x
+                    x = 1
+                    y = 2
+                    return x + y
+                f()
+                """
+            )
+        )
+        self.check(
+            dedent(
+                """
+                def g():
+                    def f():
+                        nonlocal y
+                        y = 2
+                        return y
+                    f()
+                """
+            )
+        )
 
     def test_if_expr(self):
         self.check("2 if x == 3 else 4")
