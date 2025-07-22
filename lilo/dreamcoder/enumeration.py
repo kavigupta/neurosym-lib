@@ -6,6 +6,7 @@ from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
 from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
 from dreamcoder.neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl
 from dreamcoder.neurosym.programs.s_expression_render import render_s_expression
 from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.program import Program
@@ -219,14 +220,17 @@ def multicoreEnumeration(
     dslf = ns.DSLFactory()
     
     #Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
+    """
     dslf.concrete("1", "() -> i", lambda: 1)
     dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
     dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
     dslf.lambdas()
     dslf.prune_to("i -> i")
-    max_arity = 1
-    num_productions = 6 # make sure to include root in this count
     dsl = dslf.finalize()
+    """
+    dsl = list_dsl("[i] -> i")
+    max_arity = 3 # for toy 1
+    num_productions = 31 # for toy 6 # make sure to include root in this count
     primitive_list = [prod[0] for prod in dslf._concrete_productions]
     
     for task in g.keys():

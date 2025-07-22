@@ -162,6 +162,15 @@ def get_domain_metadata(domain: str, use_folder: bool = False) -> dict:
             "n_tasks_train": 198,
             "n_tasks_test": 86,
         },
+        "list": {
+            "tasks_loader": "list",
+            "task_language_loader": "list",
+            "ocaml_special_handler": "list",
+            "dsl_description_prefix": "This is a domain-specific language for list DreamCoder domain.",
+            "global_batch_sizes": [5, 10, 15, 25, 50, 100, 105],
+            "n_tasks_train": 80,
+            "n_tasks_test": 25,
+        },
         "re2": {
             "tasks_loader": "re2",
             "task_language_loader": "re2_synthetic",
