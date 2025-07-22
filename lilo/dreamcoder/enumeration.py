@@ -201,10 +201,21 @@ def multicoreEnumeration(
     
     if not isinstance(g, dict):
         g = {t: g for t in tasks}
-    task2grammar = g
+    
     for t in tasks:
-        print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
+        if isinstance(g[t], ContextualGrammar):
+            print(f"Productions: {g[t].productions}")
+            print(f"Primitives: {g[t].primitives}")
+            print(f"Library: {g[t].library}")
+            print(f"noParent: {g[t].noParent}")
+            print(f"variableParent: {g[t].variableParent}")
+            library_list = {tx: g[tx].library for tx in tasks}
+        elif isinstance(g[t], Grammar):
+            task2grammar = g
+            print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
+            library_list =  {tx: task2grammar[tx].expression2likelihood for tx in tasks}
         break
+    
     dslf = ns.DSLFactory()
     
     #Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
@@ -219,7 +230,7 @@ def multicoreEnumeration(
     primitive_list = [prod[0] for prod in dslf._concrete_productions]
     
     for task in g.keys():
-        for k, v in task2grammar[task].expression2likelihood.items():
+        for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != '$':
                 #This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
                 parsed_abstraction = parse_abstraction_dc_to_ns(str(k), primitive_list)
@@ -241,9 +252,10 @@ def multicoreEnumeration(
     print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
     frontiers = {}
     dist_dict = {task: np.zeros((num_productions, max_arity, num_productions), dtype=np.float32) for task in tasks}
+
     for t in tasks:
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
-        likelihood_dict = task2grammar[t].expression2likelihood
+        likelihood_dict = library_list[t] #task2grammar[t].expression2likelihood
         dreamcoder_ns_mapping = {}
         #Automatically maps dreamcoder primitive name to corresponding neurosym index
         ordered_symbols = dsl.ordered_symbols(include_root=True)
@@ -254,9 +266,24 @@ def multicoreEnumeration(
                 production_ind = dreamcoder_ns_mapping["<root>"]
             else:
                 production_ind = dreamcoder_ns_mapping[str(k)]
-            for prod_ind in range(num_productions):
-                for arity in range(max_arity):
-                    dist[prod_ind][arity][production_ind] = v
+            if isinstance(g[t], ContextualGrammar):
+                if len(v) > 0:
+                    bigram_row = v[0].expression2likelihood
+                    for child, likelihood in bigram_row.items():
+                        if str(child) == "$0":
+                            child_ind = dreamcoder_ns_mapping["<root>"]
+                        else:
+                            child_ind = dreamcoder_ns_mapping[str(child)]
+                    for arity in range(max_arity):
+                        dist[production_ind][arity][child_ind] = likelihood
+                else:
+                    for child_ind in range(num_productions):
+                        for arity in range(max_arity):
+                            dist[production_ind][arity][child_ind] = 1/num_productions
+            elif isinstance(g[t], Grammar):
+                for prod_ind in range(num_productions):
+                    for arity in range(max_arity):
+                        dist[prod_ind][arity][production_ind] = v
         #Filter the productions out that are impossible to reach
         tensor_dist = torch.tensor(dist)
         reshaped_tensor_dist = tensor_dist.reshape(tuple([1] + list(tensor_dist.shape)))
@@ -271,7 +298,8 @@ def multicoreEnumeration(
     for job in min_likelihood_dict.keys():
         starting = time.time()
         parsed_enumerations = []
-        while True:
+        solved = False
+        while not solved:
             bi = budgetIncrement(min_likelihood_dict[job])
             current_generations = list(family.enumerate(dist = dist_dict[job], min_likelihood = min_likelihood_dict[job], chunk_size = bi))
             enumerations[job] += current_generations
@@ -293,6 +321,8 @@ def multicoreEnumeration(
                     if actual == None or actual != target:
                         likelihood = float("-inf")
                         break
+                if likelihood == 0.0:
+                    solved = True
                 try:
                     dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(ns_prog)))
                 except Exception as e:
@@ -308,7 +338,7 @@ def multicoreEnumeration(
         print(f"Task {job} done")
         frontiers[job] = Frontier(parsed_enumerations, task=job)
 
-    bestSearchTime = {t: None for t in task2grammar}
+    bestSearchTime = {t: None for t in tasks}
     return [frontiers[t] for t in tasks], bestSearchTime
 
     #use expression2likelihood for bigram in dsl
