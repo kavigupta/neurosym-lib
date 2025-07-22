@@ -36,6 +36,9 @@ from data.clevr.encoder import *
 from data.toy.make_tasks import *
 from data.toy.grammar import *
 from data.toy.encoder import *
+from data.list.make_tasks import *
+from data.list.grammar import *
+from data.list.encoder import *
 
 """zyzzyva@ - Temporarily disable the LAX domains. These incorrectly overwrite the global int primitives to floats, breaking
 backward compatability with the DC domains that rely on integers.
