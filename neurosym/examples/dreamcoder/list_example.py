@@ -3,7 +3,7 @@ from functools import reduce
 from neurosym.dsl.dsl_factory import DSLFactory
 
 
-def list_dsl(*output_types):
+def list_dslf(*output_types):
     """
     The List DSL from the DreamCoder repository.
     """
@@ -19,12 +19,12 @@ def list_dsl(*output_types):
     dslf.concrete(
         "mapi",
         "((i, #T) -> #R, [#T]) -> [#R]",
-        lambda f: lambda x: [f(i, x) for i, x in enumerate(x)],
+        lambda f, x: [f(i, x) for i, x in enumerate(x)],
     )
     dslf.concrete(
         "reducei",
         "((i, #R, #T) -> #R, #R, [#T]) -> #R",
-        lambda f: lambda x: lambda y: reduce(lambda x, y: f(i, x, y), x, y),
+        lambda f, x, y: reduce(lambda x, y: f(i, x, y), x, y),
     )
 
     dslf.concrete("true", "() -> b", lambda: True)
@@ -52,13 +52,13 @@ def list_dsl(*output_types):
     dslf.concrete(
         "all",
         "((#T) -> b, [#T]) -> b",
-        lambda f: lambda x: all(f(i) for i in x),
+        lambda f, x: all(f(i) for i in x),
     )
     # (lambda (lambda (reduce (lambda (lambda (and $0 $1))) false (map $1 $0))))
     dslf.concrete(
         "any",
         "((#T) -> b, [#T]) -> b",
-        lambda f: lambda x: any(f(i) for i in x),
+        lambda f, x: any(f(i) for i in x),
     )
     # (lambda (lambda (reduce (lambda (lambda (or $0 $1))) true (map $1 $0))))
     dslf.concrete("index", "(i, [#T]) -> #T", lambda x, y: y[x])
@@ -66,14 +66,14 @@ def list_dsl(*output_types):
     dslf.concrete(
         "filter",
         "((#T) -> b, [#T]) -> [#T]",
-        lambda f: lambda x: [i for i in x if f(i)],
+        lambda f , x: [i for i in x if f(i)],
     )
     # (lambda (lambda
     #   (reduce
     #       (lambda (lambda (++ $1 (if ($3 $0) (singleton $0) empty))))
     #       empty
     #       $0)))
-    dslf.concrete("slice", "(i, i, [#T]) -> [#T]", lambda x: lambda y: lambda z: z[x:y])
+    dslf.concrete("slice", "(i, i, [#T]) -> [#T]", lambda x, y, z: z[x:y])
     # (lambda (lambda (lambda
     #   (reducei
     #     (lambda (lambda (lambda
@@ -92,5 +92,11 @@ def list_dsl(*output_types):
 
     dslf.lambdas(max_type_depth=3)
     dslf.prune_to(*output_types, prune_variables=False)
+    return dslf
 
+
+def list_dsl(*output_types):
+    """The List DSL from the DreamCoder repository.
+    """
+    dslf = list_dslf(*output_types)
     return dslf.finalize()

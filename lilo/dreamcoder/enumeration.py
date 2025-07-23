@@ -6,7 +6,7 @@ from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
 from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
 from dreamcoder.neurosym.types.type_with_environment import Environment, TypeWithEnvironment
-from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl
+from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
 from dreamcoder.neurosym.programs.s_expression_render import render_s_expression
 from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.program import Program
@@ -228,11 +228,12 @@ def multicoreEnumeration(
     dslf.prune_to("i -> i")
     dsl = dslf.finalize()
     """
-    dsl = list_dsl("[i] -> i")
+    dslf = list_dslf("[i] -> i")
+    dsl = dslf.finalize()
     max_arity = 3 # for toy 1
     num_productions = 31 # for toy 6 # make sure to include root in this count
     primitive_list = [prod[0] for prod in dslf._concrete_productions]
-    
+    print(primitive_list)
     for task in g.keys():
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != '$':
@@ -265,6 +266,7 @@ def multicoreEnumeration(
         ordered_symbols = dsl.ordered_symbols(include_root=True)
         for p in range(len(ordered_symbols)):
             dreamcoder_ns_mapping[ordered_symbols[p]] = p
+        print(list(dreamcoder_ns_mapping))
         for k, v in likelihood_dict.items():
             if str(k) == "$0":
                 production_ind = dreamcoder_ns_mapping["<root>"]
