@@ -231,8 +231,8 @@ def multicoreEnumeration(
     dslf = list_dslf("[i] -> i")
     dsl = dslf.finalize()
     max_arity = 3 # for toy 1
-    num_productions = 31 # for toy 6 # make sure to include root in this count
-    primitive_list = [prod[0] for prod in dslf._concrete_productions]
+    num_productions = 110 # for toy 6 # make sure to include root in this count
+    primitive_list = [prod.symbol() for prod in dsl.productions]
     print(primitive_list)
     for task in g.keys():
         for k, _val in library_list[task].items():
@@ -256,7 +256,7 @@ def multicoreEnumeration(
     family = ns.BigramProgramDistributionFamily(dsl)
     print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
     frontiers = {}
-    dist_dict = {task: np.zeros((num_productions, max_arity, num_productions), dtype=np.float32) for task in tasks}
+    dist_dict = {}
 
     for t in tasks:
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
@@ -313,7 +313,11 @@ def multicoreEnumeration(
             #Here we attempt to parse enumerated programs to DreamCoder-style programs to create DreamCoder Frontier Entries
             for ns_prog_tuple in current_generations:
                 ns_prog, prob_fraction = ns_prog_tuple
-                actual_ns_function = dsl.compute(dsl.initialize(ns_prog))
+                try:
+                    actual_ns_function = dsl.compute(dsl.initialize(ns_prog))
+                except Exception as e:
+                    print(f"Exception {e} for {render_s_expression(ns_prog)}")
+                    continue
                 target_outputs = []
                 actual_outputs = []
                 for example in job.examples:
