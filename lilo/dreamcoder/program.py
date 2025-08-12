@@ -179,7 +179,7 @@ class Program(object):
                 if e[0] == "#":
                     assert len(e) == 2
                     return Invented(p(e[1]))
-                if e[0] == "lambda":
+                if str(e[0]).startswith("lambda"):
                     assert len(e) == 2
                     return Abstraction(p(e[1]))
                 f = p(e[0])
@@ -188,7 +188,8 @@ class Program(object):
                 return f
             assert isinstance(e, str)
             if e[0] == "$":
-                return Index(int(e[1:]))
+                f = e.split("_")[0]
+                return Index(int(f[1:]))
 
             if e in Primitive.GLOBALS:
                 return Primitive.GLOBALS[e]
