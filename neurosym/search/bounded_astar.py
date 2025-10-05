@@ -10,21 +10,23 @@ X = TypeVar("X")
 
 
 def bounded_astar(
-    g: SearchGraph[X], max_depth: int, max_iterations: Union[int, NoneType] = None
+    g: SearchGraph[X], max_depth: int, max_iterations: Union[int, NoneType] = None, frontier_capacity: int = 0
 ) -> Iterable[X]:
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
     the order it was visited. See ``astar`` for more details.
 
     :param g: Search graph to search over
-    :param cost_plus_heuristic: An admissible cost heuristic.
     :param max_depth: Maximum depth to search to.
-    :param depth_computer: Strategy to calculate program depth.
-        Default strategy is to uniformly increment depth by one for each node.
+    :param max_iterations: Maximum number of iterations to perform. If None, no limit is applied.
+    :param frontier_capacity: Maximum number of nodes to keep in the fringe. If 0, no limit is applied.
+    :return: An iterable of goal nodes in the order they were visited.
+    
+    :raises AssertionError: If `max_depth` is not greater than 0.
     """
     assert max_depth > 0
     visited = set()
-    fringe = queue.PriorityQueue()
+    fringe = queue.PriorityQueue(maxsize=frontier_capacity)
 
     def add_to_fringe(node, depth):
         fringe.put(BoundedAStarNode(g.cost(node), node, depth))
