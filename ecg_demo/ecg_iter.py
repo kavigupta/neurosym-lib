@@ -83,7 +83,8 @@ def create_dataset_factory(train_seed, is_regression, num_workers):
 
 datamodule = create_dataset_factory(train_seed=42, is_regression=False, num_workers=0)
 # Retrieve input and output dimensions from the training dataset
-input_dim, output_dim = datamodule.train.get_io_dims()
+# Use is_regression=True to get actual output dimension from shape (targets are one-hot)
+input_dim, output_dim = datamodule.train.get_io_dims(is_regression=True)
 
 
 def subset_selector_all_feat(x, channel, typ):
@@ -205,23 +206,17 @@ print(dsl.render())
 neural_dsl = near.NeuralDSL.from_dsl(
     dsl=dsl,
     neural_hole_filler=near.UnionNeuralHoleFiller(
-        {
-            # MLP for various transformations
-            **near.create_modules(
-                [
-                    dsl_type_env("($fInp) -> $fInp"),
-                    dsl_type_env("($fInp) -> $fOut"),
-                    dsl_type_env("($fInp) -> $fFeat"),
-                    dsl_type_env("($fInp) -> {f, 1}"),
-                ],
-                near.mlp_factory(hidden_size=10),
-            ).hole_fillers,
-            # Selector for channel selection
-            **near.create_modules(
-                [dsl_type_env("() -> channel")],
-                near.selector_factory(input_dim=12),  # 12 channels
-            ).hole_fillers,
-        }
+        # MLP for various transformations
+        near.create_modules(
+            [
+                dsl_type_env("($fInp) -> $fInp"),
+                dsl_type_env("($fInp) -> $fOut"),
+                dsl_type_env("($fInp) -> $fFeat"),
+                dsl_type_env("($fInp) -> {f, 1}"),
+                dsl_type_env("() -> channel"),  # Use MLP for channel selection too
+            ],
+            near.mlp_factory(hidden_size=10),
+        ),
     ),
 )
 

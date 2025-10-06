@@ -87,7 +87,7 @@ def _train_model_with_metrics(model, datamodule, *, n_epochs, trainer_cfg: ECGTr
     val_loss = _train_model(model, datamodule, n_epochs=n_epochs, trainer_cfg=trainer_cfg)
 
     # Compute additional ECG metrics on validation set
-    model = model.eval()
+    model = model.eval().to(trainer_cfg.accelerator)
     all_predictions = []
     all_targets = []
 
