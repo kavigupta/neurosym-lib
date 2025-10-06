@@ -3,7 +3,6 @@ import re
 import unittest
 from textwrap import dedent
 
-from increase_recursionlimit import increase_recursionlimit
 from parameterized import parameterized
 
 import neurosym as ns
@@ -135,6 +134,7 @@ reasonable_classifications = [
     ("list", "[alias]"),
     ("list", "[NameStr]"),
     ("list", "[TI]"),
+    ("list", "[TP]"),
     ("/seq", "seqS"),
     ("withitem", "W"),
     ("const-None", "E"),
@@ -144,7 +144,6 @@ reasonable_classifications = [
     # vararg
     ("const-None", "A"),
     # type
-    (".*", "TA"),
     ("const-None", "TC"),
     # left value
     ("const-None", "L"),
@@ -154,13 +153,13 @@ reasonable_classifications = [
     ("Del", "Ctx"),
     # name
     ("const-[&g].*", "Name"),
-    ("const-[&g].*", "NullableName"),
-    ("const-None", "NullableName"),
+    ("const-[&g].*", "Name"),
+    ("const-None", "Name"),  # exceptions
     ("const-s.*", "NameStr"),
-    ("const-[&g].*", "NameStr"),  # imports
+    ("const-g.*", "NameStr"),  # imports
     ("const-s.*", "NullableNameStr"),
     ("const-None", "NullableNameStr"),
-    ("const-[&g].*", "NullableNameStr"),
+    ("const-g.*", "NullableNameStr"),
     # values
     ("const-None", "Const"),
     ("const-True", "Const"),
@@ -231,22 +230,21 @@ class DFATest(unittest.TestCase):
         self.fail(f"Unknown classification {tag_to_check} {state_to_check}")
 
     def classify_elements_in_code_with_config(self, code, **kwargs):
-        with increase_recursionlimit():
-            print("#" * 80)
-            print(code)
-            code = ns.python_to_python_ast(code).to_ns_s_exp(kwargs)
-            print(ns.render_s_expression(code))
-            classified = ns.run_dfa_on_program(dfa, code, "M")
-            result = sorted(
-                {
-                    (x.symbol, state)
-                    for (x, state) in classified
-                    if isinstance(x, ns.SExpression)
-                }
-            )
-            print(code)
-            for x, state in result:
-                self.check_reasonable_classification(x, state)
+        print("#" * 80)
+        print(code)
+        code = ns.python_to_python_ast(code).to_ns_s_exp(kwargs)
+        print(ns.render_s_expression(code))
+        classified = ns.run_dfa_on_program(dfa, code, "M")
+        result = sorted(
+            {
+                (x.symbol, state)
+                for (x, state) in classified
+                if isinstance(x, ns.SExpression)
+            }
+        )
+        print(code)
+        for x, state in result:
+            self.check_reasonable_classification(x, state)
 
     def classify_elements_in_code(self, code):
         self.classify_elements_in_code_with_config(code)
@@ -373,6 +371,9 @@ class DFATest(unittest.TestCase):
         self.classify_elements_in_code("from x import y as z")
         self.classify_elements_in_code("from . import x")
 
+    def test_import_not_top_level(self):
+        self.classify_elements_in_code("x = 2; import os")
+
     def test_global_nonlocal(self):
         self.classify_elements_in_code("global x")
         self.classify_elements_in_code("nonlocal x")
@@ -398,18 +399,15 @@ class DFATest(unittest.TestCase):
 
 class TestExprNodeValidity(unittest.TestCase):
     def e_nodes(self, code):
-        with increase_recursionlimit():
-            print("#" * 80)
-            print(code)
-            code = ns.python_to_python_ast(code)
-            e_nodes = [
-                ns.render_s_expression(x)
-                for x, state in ns.run_dfa_on_program(
-                    dfa, code.to_ns_s_exp(dict()), "M"
-                )
-                if state == "E" and isinstance(x, ns.SExpression)
-            ]
-            return e_nodes
+        print("#" * 80)
+        print(code)
+        code = ns.python_to_python_ast(code)
+        e_nodes = [
+            ns.render_s_expression(x)
+            for x, state in ns.run_dfa_on_program(dfa, code.to_ns_s_exp(dict()), "M")
+            if state == "E" and isinstance(x, ns.SExpression)
+        ]
+        return e_nodes
 
     def assertENodeReal(self, node):
         print(node)

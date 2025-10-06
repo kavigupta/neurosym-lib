@@ -1,112 +1,181 @@
-import torch
-import tqdm.auto as tqdm
+from typing import Tuple
 
-from neurosym.examples.near.methods.near_example_trainer import NEARTrainer
+import torch
+
+from neurosym.datasets.load_data import DatasetWrapper
+from neurosym.dsl.dsl import DSL
+from neurosym.examples.near.cost import (
+    IdentityProgramEmbedding,
+    MinimalStepsNearStructuralCost,
+    NearCost,
+    NearValidationHeuristic,
+    ProgramEmbedding,
+    UninitializableProgramError,
+)
+from neurosym.examples.near.methods.base_trainer import schedule_optimizer
+from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
-from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
+from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
 
 
-# callback that updates a progress bar once per epoch
-class ProgressBar(pl.callbacks.Callback):
-    def __init__(self, num_epochs, progress_bar):
-        self.num_epochs = num_epochs
-        self.progress_bar = progress_bar
+class ValidationCost(NearValidationHeuristic):
+    """
+    A class that computes the validation cost of a program using a neural DSL.
+    This is epsilon-admissible heuristic: https://arxiv.org/abs/2007.12101
 
-    def on_train_epoch_end(self, trainer, pl_module):
-        self.progress_bar.update(1)
-        # set train and val loss in progress bar
-        self.progress_bar.set_postfix(
-            train_loss=trainer.callback_metrics["train_loss"].item(),
-            val_loss=trainer.callback_metrics["val_loss"].item(),
-        )
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
+        The scale of the validation cost (float) and structural_cost (int) can
+        vary so it's important to tune this for each new problem.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
 
-
-class ValidationCost:
     def __init__(
         self,
         *,
-        neural_dsl,
-        trainer_cfg,
-        datamodule,
-        error_loss=10000,
+        trainer_cfg: NEARTrainerConfig,
+        datamodule: DatasetWrapper,
         progress_by_epoch=False,
-        callbacks=(),
-        **kwargs
+        n_epochs=None,
     ):
-        self.neural_dsl = neural_dsl
         self.trainer_cfg = trainer_cfg
         self.datamodule = datamodule
-        self.error_loss = error_loss
-        self.kwargs = kwargs
         self.progress_by_epoch = progress_by_epoch
-        self.callbacks = list(callbacks)
+        self.n_epochs = n_epochs
 
-    def __call__(self, node: DSLSearchNode) -> float:
-        trainer, pbar = self.get_trainer_and_pbar(
-            label=render_s_expression(node.program)
+    def with_n_epochs(self, n_epochs: int) -> "ValidationCost":
+        """
+        Returns a new ValidationCost object with a different number of epochs.
+        """
+        return ValidationCost(
+            trainer_cfg=self.trainer_cfg,
+            datamodule=self.datamodule,
+            progress_by_epoch=self.progress_by_epoch,
+            n_epochs=n_epochs,
         )
-        try:
-            initialized_p = self.neural_dsl.initialize(node.program)
-        except PartialProgramNotFoundError:
-            return self.error_loss
 
-        model = self.neural_dsl.compute(initialized_p)
-        if not isinstance(model, torch.nn.Module):
-            del initialized_p
-            model = TorchProgramModule(dsl=self.neural_dsl, program=node.program)
-        self.fit_trainer(trainer, model, pbar)
-        return trainer.callback_metrics["val_loss"].item()
+    def compute_cost(
+        self, dsl: DSL, model: InitializedSExpression, embedding: ProgramEmbedding
+    ) -> Tuple[InitializedSExpression, float]:
+        """
+        Initializes a TorchProgramModule and trains it. Returns the trained module, and the
+        validation loss.
 
-    @staticmethod
-    def duplicate(callbacks):
+        :param program: The program to validate.
+
+        :returns: A tuple containing the trained TorchProgramModule and the validation loss.
         """
-        Reinitialize all callbacks to avoid sharing state between different validation runs.
+        log(f"Training {render_s_expression(model.uninitialize())}")
+
+        model = self.program_to_module(dsl, model, embedding)
+
+        val_loss = _train_model(
+            model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
+        )
+
+        return val_loss
+
+    def program_to_module(
+        self, dsl: DSL, program: InitializedSExpression, embedding: ProgramEmbedding
+    ) -> torch.nn.Module:
         """
-        out = []
-        for cb in callbacks:
-            out.append(
-                cb.__class__(
-                    **{
-                        k: getattr(cb, k)
-                        for k in cb.__init__.__code__.co_varnames
-                        if hasattr(cb, k)
-                    }
-                )
+        Convert a program to a TorchProgramModule, which can then be trained.
+        This can be overriden in subclasses to provide custom behavior, e.g.,
+        integrating the program module into a larger model.
+
+        :param program: The program to convert.
+        :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
+            These should share weights, so that training the model also trains the program.
+        """
+        program_module = TorchProgramModule(dsl, program)
+
+        model = embedding.embed_initialized_program(program_module)
+
+        if len([x for x in model.parameters() if x.requires_grad]) == 0:
+            raise UninitializableProgramError(
+                f"No parameters in program {render_s_expression(program)}"
             )
-        return out
+        return model
 
-    def get_trainer_and_pbar(self, label=None):
-        callbacks = list(self.callbacks)
-        callbacks = self.duplicate(self.callbacks)
-        if self.progress_by_epoch:
-            print("training", label if label else "")
-            pbar = tqdm.tqdm(total=self.trainer_cfg.n_epochs, desc="Training")
-            callbacks.append(ProgressBar(self.trainer_cfg.n_epochs, pbar))
-        else:
-            pbar = None
 
-        trainer = pl.Trainer(
-            max_epochs=self.trainer_cfg.n_epochs,
-            devices="auto",
-            accelerator="cpu",
-            enable_checkpointing=False,
-            logger=False,
-            **self.kwargs,
-            callbacks=callbacks,
-        )
-        return trainer, pbar
+def default_near_cost(
+    *,
+    trainer_cfg: NEARTrainerConfig,
+    datamodule: DatasetWrapper,
+    progress_by_epoch=False,
+    embedding: ProgramEmbedding = IdentityProgramEmbedding(),
+    structural_cost_weight: float = 0.5,
+    symbol_costs=None,
+    **kwargs,
+):
+    """
+    Default NearCost. This is, by default, a 50/50 blend of structural cost and validation cost,
+    with the given parameters.
 
-    def fit_trainer(self, trainer, model, pbar):
-        pl_model = NEARTrainer(model, config=self.trainer_cfg)
-        trainer.fit(
-            pl_model,
-            self.datamodule.train_dataloader(),
-            self.datamodule.val_dataloader(),
-        )
-        if self.progress_by_epoch:
-            pbar.close()
+    :param neural_dsl: The neural DSL to use.
+    :param trainer_cfg: The configuration for the trainer.
+    :param datamodule: The data module to use.
+    :param progress_by_epoch: Whether to display progress by epoch.
+    :param embedding: The embedding to use.
+    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
+    :param kwargs: Additional arguments to pass to the trainer.
+    """
+    return NearCost(
+        structural_cost=MinimalStepsNearStructuralCost(symbol_costs=symbol_costs or {}),
+        validation_heuristic=ValidationCost(
+            trainer_cfg=trainer_cfg,
+            datamodule=datamodule,
+            progress_by_epoch=progress_by_epoch,
+            **kwargs,
+        ),
+        structural_cost_weight=structural_cost_weight,
+        embedding=embedding,
+    )
+
+
+def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
+    if n_epochs is None:
+        n_epochs = trainer_cfg.n_epochs
+    optimizer, schedulers = schedule_optimizer(
+        trainer_cfg.optimizer(
+            model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
+        ),
+        trainer_cfg.scheduler,
+        len(datamodule.train),
+        n_epochs,
+    )
+    torch.manual_seed(trainer_cfg.seed)
+    model = model.train()
+    model = model.to(trainer_cfg.accelerator)
+    for _ in range(n_epochs):
+        for batch in datamodule.train_dataloader():
+            batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+            x, y = batch["inputs"], batch["outputs"]
+            optimizer.zero_grad()
+            loss = trainer_cfg.loss_callback(model(x, environment=()), y)
+            loss.backward()
+            optimizer.step()
+            for scheduler in schedulers:
+                scheduler.step()
+
+    model = model.eval()
+    val_loss_sum = 0
+    val_loss_count = 0
+    for batch in datamodule.val_dataloader():
+        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+        x, y = batch["inputs"], batch["outputs"]
+        with torch.no_grad():
+            val_loss_sum += trainer_cfg.loss_callback(
+                model(x, environment=()), y
+            ).item()
+        val_loss_count += 1
+    model = model.train().cpu()
+    return val_loss_sum / val_loss_count

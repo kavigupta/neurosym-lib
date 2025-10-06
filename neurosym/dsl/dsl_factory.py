@@ -1,21 +1,21 @@
 import copy
-from typing import Dict, List
+import warnings
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
-from ..types.type import ArrowType, AtomicType, TypeVariable
+from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
-    expansions,
-    signature_expansions,
-    type_universe,
+    _signature_expansions,
+    _type_universe,
+    type_expansions,
 )
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
-    ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
@@ -28,20 +28,22 @@ class DSLFactory:
     A factory for creating DSLs.
 
     Example usage:
-    ```
-    factory = DSLFactory()
-    factory.typedef("fn", "(i) -> i")
-    factory.concrete("inc", "$fn", lambda x: x + 1)
-    factory.concrete("const_0", "$fn", lambda x: 0)
-    factory.concrete("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
-    factory.finalize()
+
+    .. highlight:: python
+    .. code-block:: python
+
+        dslf = DSLFactory()
+        dslf.typedef("fn", "(i) -> i")
+        dslf.production("inc", "$fn", lambda x: x + 1)
+        dslf.production("const_0", "$fn", lambda x: 0)
+        dslf.production("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
+        dslf.finalize()
     """
 
     def __init__(
         self, max_expansion_steps=np.inf, max_env_depth=4, max_overall_depth=6, **env
     ):
         self.t = TypeDefiner(**env)
-        self._concrete_productions = []
         self._parameterized_productions = []
         self._signatures = []
         self._known_types = []
@@ -55,21 +57,40 @@ class DSLFactory:
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
 
-    def typedef(self, key, type_str):
+    def typedef(self, key: str, type_str: str):
         """
-        Define a type.
+        Define a type with the given type string.
+        The key will be used to refer to the type in future calls
+        with a $ prefix. E.g.,
+
+        .. highlight:: python
+        .. code-block:: python
+
+            dslf.typedef("fn", "(i) -> i")
+            dslf.production("inc", "$fn", lambda x: x + 1)
         """
         self.t.typedef(key, type_str)
 
-    def filtered_type_variable(self, key, type_filter):
+    def filtered_type_variable(self, key, type_filter: Callable[[Type], bool]):
         """
-        Define a filtered type variable.
+        Define a filtered type variable. This is a type variable that can only be
+        instantiated with types that satisfy the given filter. The key will be used to
+        refer to the type in future calls with a % prefix. E.g.,
+
+        .. highlight:: python
+        .. code-block:: python
+
+            dslf.filtered_type_variable(
+                "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
+            )
+            dslf.production("+", "%num -> %num -> %num", lambda x: x)
         """
         self.t.filtered_type_variable(key, type_filter)
 
-    def known_types(self, *types):
+    def known_types(self, *types: Tuple[str, ...]):
         """
-        Add known types to the DSL.
+        Make this DSLFactory aware of the given types. These types will be used to
+        generate expansions for any productions need to be template-expanded.
         """
         self._known_types.extend(self.t(typ) for typ in types)
 
@@ -81,7 +102,13 @@ class DSLFactory:
 
     def lambdas(self, max_arity=2, max_type_depth=4, max_env_depth=4):
         """
-        Define a type.
+        Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
+        productions for each argument type/arity combination, as well as
+        ($i_j) productions for each variable de bruijn index i and type j.
+
+        :param max_arity: The maximum arity of lambda functions to generate.
+        :param max_type_depth: The maximum depth of types to generate.
+        :param max_env_depth: The maximum depth of the environment to generate.
         """
         self.lambda_parameters = dict(
             max_arity=max_arity,
@@ -89,30 +116,57 @@ class DSLFactory:
             max_env_depth=max_env_depth,
         )
 
-    def concrete(self, symbol, type_str, fn):
+    def concrete(self, symbol: str, type_str: str, semantics: object):
         """
-        Add a concrete production to the DSL.
+        Deprecated alias of :py:meth:`production`.
         """
-        sig = self.t.sig(type_str)
-        self._concrete_productions.append(
-            (
-                symbol,
-                sig,
-                fn,
-            )
+        warnings.warn(
+            "The method concrete is deprecated. Use production instead.",
+            DeprecationWarning,
         )
-        self._signatures.append(sig)
+        self.production(symbol, type_str, semantics, {})
 
-    def parameterized(self, symbol, type_str, fn, parameters):
+    def parameterized(
+        self,
+        symbol: str,
+        type_str: str,
+        semantics: object,
+        parameters: Dict[str, Callable[[], object]],
+    ):
+        """
+        Deprecated alias of :py:meth:`production`.
+        """
+        warnings.warn(
+            "The method parameterized is deprecated. Use production instead.",
+            DeprecationWarning,
+        )
+        self.production(symbol, type_str, semantics, parameters)
+
+    def production(
+        self,
+        symbol: str,
+        type_str: str,
+        semantics: object,
+        parameters: Dict[str, Callable[[], object]] = None,
+    ):
         """
         Add a parameterized production to the DSL.
+
+        :param symbol: The symbol for the production.
+        :param type_str: The type string for the production.
+        :param semantics: The semantics to use for the production. This should have
+            a type corresponding to ``type_str``. Note: *this is not checked*.
+        :param parameters: A dictionary mapping parameter names to functions that
+            generate initial parameter values.
         """
+        if parameters is None:
+            parameters = {}
         sig = self.t.sig(type_str)
         self._parameterized_productions.append(
             (
                 symbol,
                 sig,
-                fn,
+                semantics,
                 parameters,
             )
         )
@@ -120,13 +174,13 @@ class DSLFactory:
 
     def prune_to(
         self,
-        *target_types,
+        *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
     ):
         """
-        Prune the DSL to only include productions that can be constructed from the given
-        target types.
+        Direct the current DSLFactory to prune any productions p such that there does not exist some
+        program s and type t in target_types such that s :: t and s contains p as a production.
         """
         self.prune = True
         self.target_types = [self.t(x) for x in target_types]
@@ -134,12 +188,12 @@ class DSLFactory:
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def _expansions_for_single_production(
-        self, terminals, type_constructors, constructor, symbol, sig, *args
+        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
     ):
         sigs = list(
-            signature_expansions(
+            _signature_expansions(
                 sig,
-                terminals,
+                type_atoms,
                 type_constructors,
                 max_expansion_steps=self.max_expansion_steps,
                 max_overall_depth=self.max_overall_depth,
@@ -148,19 +202,21 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         prods = [
-            constructor(symbol, FunctionTypeSignature.from_type(expansion), *args)
+            production_constructor(
+                symbol, FunctionTypeSignature.from_type(expansion), *args
+            )
             for expansion in sigs
         ]
 
         return {symbol: Production.reindex(prods)}
 
     def _expansions_for_all_productions(
-        self, expand_to, terminals, type_constructors, args
+        self, type_atoms, type_constructors, production_constructor, args
     ):
         result = {}
         for arg in args:
             for_prod = self._expansions_for_single_production(
-                expand_to, terminals, type_constructors, *arg
+                type_atoms, type_constructors, production_constructor, *arg
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
@@ -173,31 +229,28 @@ class DSLFactory:
                 result.update(for_prod)
         return result
 
-    def finalize(self):
+    def finalize(self) -> DSL:
         """
-        Finalize the DSL.
+        Produce the DSL from this factory. This will generate all productions and
+        potentially raise errors if there were issues with the way the DSL was
+        constructed.
         """
 
         known_types = [x.astype() for x in self._signatures] + self._known_types
 
-        universe = type_universe(known_types, no_zeroadic=self._no_zeroadic)
+        universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
-                *universe, ConcreteProduction, self._concrete_productions
-            )
-        )
-        sym_to_productions.update(
-            self._expansions_for_all_productions(
-                *universe, ParameterizedProduction, self._parameterized_productions
+                *universe, ParameterizedProduction.of, self._parameterized_productions
             )
         )
 
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
-            types, constructors_lambda = type_universe(
+            types, constructors_lambda = _type_universe(
                 known_types,
                 require_arity_up_to=self.lambda_parameters["max_arity"],
                 no_zeroadic=self._no_zeroadic,
@@ -212,7 +265,7 @@ class DSLFactory:
             top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
             expanded = []
             for top_level in top_levels:
-                expanded += expansions(
+                expanded += type_expansions(
                     top_level,
                     types,
                     constructors_lambda,
@@ -245,7 +298,7 @@ class DSLFactory:
 
         if self.prune:
             assert self.target_types is not None
-            sym_to_productions = prune(
+            sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
                 care_about_variables=False,
@@ -255,7 +308,7 @@ class DSLFactory:
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
             if self.prune_variables:
-                sym_to_productions = prune(
+                sym_to_productions = _prune(
                     sym_to_productions,
                     self.target_types,
                     care_about_variables=True,
@@ -265,10 +318,10 @@ class DSLFactory:
                     tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
                 )
         if "<variable>" in sym_to_productions:
-            sym_to_productions["<variable>"] = clean_variables(
+            sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = make_dsl(
+        dsl = _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
             self.max_overall_depth,
@@ -277,7 +330,7 @@ class DSLFactory:
         return dsl
 
 
-def clean_variables(variable_productions):
+def _clean_variables(variable_productions):
     type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
     type_to_idx = {t: i for i, t in enumerate(sorted(type_to_idx, key=str))}
     variable_productions = [
@@ -287,7 +340,7 @@ def clean_variables(variable_productions):
     return variable_productions
 
 
-def make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
+def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
         valid_root_types,
@@ -296,7 +349,7 @@ def make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth
     )
 
 
-def prune(
+def _prune(
     sym_to_productions,
     target_types,
     *,
@@ -306,7 +359,7 @@ def prune(
     stable_symbols,
     tolerate_pruning_entire_productions,
 ):
-    dsl = make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
+    dsl = _make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
     symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():

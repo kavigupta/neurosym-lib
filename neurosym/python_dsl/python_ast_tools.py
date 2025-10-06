@@ -1,4 +1,5 @@
 import ast
+from typing import List, Union
 
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 from neurosym.types.type import AtomicType, ListType
@@ -6,27 +7,28 @@ from neurosym.types.type_string_repr import parse_type
 
 # types we do not care about, so just send them to the same state
 pruned_python_dfa_states = ["TA"]
+# see neurosym.python_dsl._excluded_python_tags's comment for more details
+_excluded_python_fields = ["type_params", "type_param"]
 
 
-def fields_for_node(node):
+def fields_for_node(node: Union[type, str]) -> List[str]:
     """
-    Get the fields for a node. If the node is a string, get the
-        segment before the python dsl separator
+    Get the fields for a node, which can be represented as a subtype of ast.AST or a string.
+    :param node: The node to get the fields for.
     """
     if isinstance(node, str):
         node = node.split(PYTHON_DSL_SEPARATOR)[0]
         node = getattr(ast, node)
 
-    return node._fields
+    return [x for x in node._fields if x not in _excluded_python_fields]
 
 
-def field_is_body(node_type: type, field_name: str):
+def field_is_body(node_type: type, field_name: str) -> bool:
     """
     Returns whether a field is a body field.
 
-    Args:
-        node_type: The type of the node.
-        field_name: The name of the field.
+    :param node_type: The type of the node.
+    :param field_name: The name of the field.
 
     Returns:
         Whether the field is a body field.
@@ -39,16 +41,14 @@ def field_is_body(node_type: type, field_name: str):
     return field_name in {"body", "orelse", "finalbody"}
 
 
-def field_is_starrable(node_type, field_name):
+def field_is_starrable(node_type: type, field_name: str) -> bool:
     """
-    Field is starrable if it is a list of elements or a call with args.
+    A field is starrable if it is a list of elements or a call with args.
 
-    Args:
-        node_type: The type of the node.
-        field_name: The name of the field.
+    :param node_type: The type of the node.
+    :param field_name: The name of the field.
 
-    Returns:
-        Whether the field is starrable.
+    :return: Whether the field is starrable.
     """
     if field_name == "elts":
         assert node_type in {
@@ -60,9 +60,9 @@ def field_is_starrable(node_type, field_name):
     return node_type == ast.Call and field_name == "args"
 
 
-def name_field(node: ast.AST):
+def name_field(node: ast.AST) -> str:
     """
-    Find the name field for a node.
+    Find the name field for a node. This is the field that contains the name of the node.
     """
     t = type(node)
     if t == ast.Name:
@@ -84,7 +84,7 @@ def name_field(node: ast.AST):
     raise NotImplementedError(f"Unexpected type: {t}")
 
 
-def is_sequence_type(x):
+def _is_sequence_type(x: str) -> bool:
     """
     Returns whether a type is a sequence type.
     Sequence types are either lists or seqS.
@@ -97,41 +97,46 @@ def is_sequence_type(x):
     return x.name == "seqS"
 
 
-def is_sequence_symbol(x):
+def _is_sequence_symbol(x: str) -> bool:
     """
     Returns whether a symbol is a sequence symbol.
     """
     return x in ["/seq", "/subseq", "list", "/choiceseq"]
 
 
-def is_sequence(type_name, head_symbol):
+def is_sequence(type_name: str, head_symbol: str) -> bool:
     """
     Returns whether a given type and head symbol correspond to a sequence.
-        If there is a mismatch between the type and the head symbol, this function
-        errors.
+    If there is a mismatch between the type and the head symbol, this returns
+    False, unless the type is in ``pruned_python_dfa_states``.
 
-    Args:
-        type_name: The type name.
-        head_symbol: The head symbol.
+    :param type_name: The type name. E.g., ``[A]``.
+    :param head_symbol: The head symbol. E.g., ``list``.
     """
 
-    seq_type = is_sequence_type(type_name)
-    seq_symbol = is_sequence_symbol(head_symbol)
+    seq_type = _is_sequence_type(type_name)
+    seq_symbol = _is_sequence_symbol(head_symbol)
     if type_name in pruned_python_dfa_states:
         return seq_symbol
     return seq_type and seq_symbol
 
 
-def clean_type(x):
+def clean_type(x: str) -> str:
     """
-    Replace [] with __ in the type name
+    Replace ``[]`` with ``__`` in the type name.
+
+    :param x: The type name, e.g., ``[A]``.
+    :return: The cleaned type name, e.g., ``__A__``.
     """
     return x.replace("[", "_").replace("]", "_")
 
 
 def unclean_type(x):
     """
-    Replace __ with [] in the type name
+    Replace ``__`` with ``[]`` in the type name.
+
+    :param x: The type name, e.g., ``__A__``.
+    :return: The uncleaned type name, e.g., ``[A]``.
     """
     if "_" not in x:
         return x

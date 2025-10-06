@@ -4,9 +4,6 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="neurosym",
-    version="0.0.60",
-    author="Kavi Gupta, Atharva Sehgal, Maddy Bowers, Armando Solar-Lezama",
     author_email="kavig+neurosym@mit.edu",
     description="Neurosymbolic library.",
     long_description=long_description,
@@ -16,6 +13,7 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10",
@@ -28,12 +26,11 @@ setuptools.setup(
         "lightning",
         "permacache",
         "requests",
-        "stitch-core==0.1.25",
+        "stitch-core==0.1.27",
         "scikit-learn",
-        "pandas",
-        "s-exp-parser==1.3.1",
-        "increase_recursionlimit==1.0.0",
+        "s-exp-parser==1.4.0",
         "no_toplevel_code==1.0.0",
-        "ast-scope==0.4.3",
+        "ast-scope==0.5.2",
+        "pathos==0.3.2",
     ],
 )

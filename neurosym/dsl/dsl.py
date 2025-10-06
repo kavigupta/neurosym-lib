@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from types import NoneType
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, Iterator, List, Tuple, Union
 
 import numpy as np
+from frozendict import frozendict
 
+from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_with_environment import (
     Environment,
     PermissiveEnvironmment,
@@ -14,6 +16,7 @@ from neurosym.utils.tree_trie import TreeTrie
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
+from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
 
 ROOT_SYMBOL = "<root>"
@@ -21,6 +24,10 @@ ROOT_SYMBOL = "<root>"
 
 @dataclass
 class DSL:
+    """
+    Represents a domain-specific language (DSL) for generating programs.
+    """
+
     # list of productions
     productions: List[Production]
     # list of types that can be used as the root of a program. If None, all types can be
@@ -50,10 +57,20 @@ class DSL:
                 is_wildcard_predicate=lambda x: isinstance(x, GenericTypeVariable),
             )
 
+        self._minimum_type_computer = {}
+
     def symbols(self):
+        """
+        Returns a set of all the symbols in the DSL.
+        """
         return self._production_by_symbol.keys()
 
     def ordered_symbols(self, *, include_root=False):
+        """
+        Returns a list of all the symbols in the DSL, ordered by symbol.
+
+        :param include_root: Whether to include the root symbol in the list.
+        """
         symbols = sorted(self.symbols())
         if include_root:
             symbols = [ROOT_SYMBOL] + symbols
@@ -67,7 +84,14 @@ class DSL:
 
     def productions_for_type(
         self, typ: TypeWithEnvironment
-    ) -> List[Tuple[Production, List[TypeWithEnvironment]]]:
+    ) -> Iterator[Tuple[Production, List[TypeWithEnvironment]]]:
+        """
+        Compute all the productions that can be applied to the given type.
+
+        Returns a generator of tuples of the form ``(production, arg_types)``, where
+        ``production`` is a production that can be applied to the given type, and ``arg_types``
+        is a list of types to fill in the holes of the production.
+        """
         for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
             production = self.productions[idx]
             arg_types = production.type_signature().unify_return(typ)
@@ -78,8 +102,10 @@ class DSL:
         """
         Possible expansions for the given type.
 
-        An expansion is an SExpression with holes in it. The holes can be filled in with
-        other SExpressions to produce a complete SExpression.
+        An expansion is an :py:class:`ns.SExpression` with holes in it. The holes can be filled in with
+        other ``SExpressions`` to produce a complete ``SExpression``.
+
+        :param typ: The type to expand.
         """
         return [
             SExpression(
@@ -92,6 +118,8 @@ class DSL:
     def get_production(self, symbol: str) -> Production:
         """
         Return the production with the given symbol.
+
+        :param symbol: The symbol of the production to return.
         """
         assert isinstance(symbol, str), f"Expected string, got {type(symbol)}: {symbol}"
         return self._production_by_symbol[symbol]
@@ -102,6 +130,8 @@ class DSL:
 
         Returns a new program with the same structure, but with all the productions
         initialized.
+
+        :param program: The program to initialize.
         """
         if hasattr(program, "__initialize__"):
             return program.__initialize__(self)
@@ -112,11 +142,20 @@ class DSL:
             prod.initialize(self),
         )
 
-    def compute(self, program: InitializedSExpression):
+    def compute(
+        self,
+        program: InitializedSExpression,
+        environment: Tuple[TypeAnnotatedObject] = (),
+    ):
+        """
+        Compute the value of the given program.
+        """
         if hasattr(program, "__compute_value__"):
-            return program.__compute_value__(self)
+            return program.__compute_value__(self, environment)
         prod = self.get_production(program.symbol)
-        return prod.apply(self, program.state, program.children)
+        return prod.apply(
+            self, program.state, program.children, environment=environment
+        )
 
     def all_rules(
         self, care_about_variables, valid_root_types=None
@@ -128,6 +167,18 @@ class DSL:
         list of types that can be used to expand the given type.
 
         This is useful for generating a PCFG.
+
+        :param care_about_variables: Whether to care about variables when enumerating rules.
+        :param valid_root_types: The types that can be used as the root of a program. If None,
+            we use the valid_root_types of the DSL.
+
+        :return: A dictionary of rules. If care_about_variables is False, the keys are
+            the types that can be expanded, and the values are a list of tuples of the form
+            (symbol, types), where symbol is the symbol of the production, and types is a
+            list of types that can be used to expand the given type. If care_about_variables
+            is True, the keys are TypeWithEnvironment objects, and the values are lists of
+            tuples of the form (symbol, TypeWithEnvironment), where symbol is the symbol of
+            the production, and TypeWithEnvironment is the type of the production.
         """
         if valid_root_types is None:
             if self.valid_root_types is not None:
@@ -173,6 +224,12 @@ class DSL:
     def constructible_symbols(self, care_about_variables, valid_root_types=None):
         """
         Returns all the symbols that can be constructed from the given target types.
+
+        :param care_about_variables: Whether to care about variables when computing constructible symbols.
+        :param valid_root_types: The types that can be used as the root of a program. If None,
+            we use the valid_root_types of the DSL.
+
+        :return: A set of symbols that can be constructed from the given target types.
         """
         type_to_rules = self.all_rules(
             care_about_variables=care_about_variables,
@@ -199,6 +256,28 @@ class DSL:
             if all(t in constructible for t in in_t)
         }
 
+    def minimal_term_size_for_type(
+        self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int] = None
+    ) -> int:
+        """
+        Minimal term size for the given type.
+
+        :param typ: The type to compute the minimal term size for.
+        :param symbol_costs: A dictionary of symbol costs. If None, all symbols have a cost of 1.
+
+        :return: The minimal term size for the given type, as a sum of symbol costs
+            for the symbols in the tree. If the type is not constructible, returns
+            float('inf').
+        """
+        if symbol_costs is None:
+            symbol_costs = {}
+        key = frozendict(symbol_costs)
+        if key not in self._minimum_type_computer:
+            self._minimum_type_computer[key] = MinimalTermSizeForTypeComputer(
+                self, symbol_costs
+            )
+        return self._minimum_type_computer[key].compute(typ)
+
     def compute_type(
         self,
         program: SExpression,
@@ -206,6 +285,11 @@ class DSL:
     ) -> TypeWithEnvironment:
         """
         Computes the type of the given program.
+
+        :param program: The program to compute the type of.
+        :param lookup: A function that can be used to look up the type of a program. This
+            is useful for handling special caes. If the function returns None, we compute
+            the type of the program using the DSL.
         """
         if lookup is not None:
             res = lookup(program)
@@ -222,15 +306,25 @@ class DSL:
         """
         return "\n".join(production.render() for production in self.productions)
 
-    def add_production(self, prod):
+    def add_productions(self, *prods):
+        """
+        Add a production to the DSL.
+        """
+        symbols = set(self._production_by_symbol.keys())
+        for prod in prods:
+            assert prod.symbol() not in symbols, f"Duplicate symbol {prod.symbol()}"
+            symbols.add(prod.symbol())
         return DSL(
-            self.productions + [prod],
+            self.productions + list(prods),
             self.valid_root_types,
             self.max_type_depth,
             self.max_env_depth,
         )
 
     def with_valid_root_types(self, valid_root_types):
+        """
+        Return a copy of this DSL with the given valid root types.
+        """
         return DSL(
             self.productions,
             valid_root_types,
@@ -240,8 +334,8 @@ class DSL:
 
     def create_smoothing_mask(self, dsl_subset):
         """
-        Create a mask that can be used to smooth the output of a model that uses the full DSL
-            to the subset DSL.
+        Create a mask that can be used to smooth a distribution over the full DSL
+        without adding weight to symbols that are not in the subset.
         """
         symbols_full = self.ordered_symbols(include_root=True)
         symbols_subset = set(dsl_subset.ordered_symbols(include_root=True))

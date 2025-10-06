@@ -18,13 +18,13 @@ from .utils import (
 
 def get_dsl(with_vars=False, with_3=False):
     dslf = ns.DSLFactory()
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("2", "() -> i", lambda: 2)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("2", "() -> i", lambda: 2)
     if with_3:
-        dslf.concrete("3", "() -> i", lambda: 3)
+        dslf.production("3", "() -> i", lambda: 3)
     if with_vars:
-        dslf.concrete("call", "(i -> i, i) -> i", lambda f, x: f(x))
+        dslf.production("call", "(i -> i, i) -> i", lambda f, x: f(x))
         dslf.lambdas()
     dslf.prune_to("i")
     return dslf.finalize()
@@ -32,23 +32,23 @@ def get_dsl(with_vars=False, with_3=False):
 
 def get_dsl_for_ordering():
     dslf = ns.DSLFactory()
-    dslf.concrete("+", "(i, i, i) -> t", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("2", "() -> i", lambda: 2)
-    dslf.concrete("3", "() -> i", lambda: 2)
+    dslf.production("+", "(i, i, i) -> t", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
+    dslf.production("2", "() -> i", lambda: 2)
+    dslf.production("3", "() -> i", lambda: 2)
     dslf.prune_to("t")
     return dslf.finalize()
 
 
 def get_more_complex_dsl():
     dslf = ns.DSLFactory()
-    dslf.concrete("0", "() -> i", lambda: 0)
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("*", "(f, f) -> f", lambda x, y: x + y)
-    dslf.concrete("sqrt", "i -> f", np.sqrt)
-    dslf.concrete(">", "(f, f) -> b", np.sqrt)
-    dslf.concrete("<", "(i, i) -> b", np.sqrt)
-    dslf.concrete("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
+    dslf.production("0", "() -> i", lambda: 0)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("*", "(f, f) -> f", lambda x, y: x + y)
+    dslf.production("sqrt", "i -> f", np.sqrt)
+    dslf.production(">", "(f, f) -> b", np.sqrt)
+    dslf.production("<", "(i, i) -> b", np.sqrt)
+    dslf.production("ite", "(b, f, f) -> f", lambda cond, x, y: x if cond else y)
     dslf.lambdas()
     dslf.prune_to("f -> f")
     return dslf.finalize()
@@ -1009,6 +1009,61 @@ class BigramEnumerationTest(unittest.TestCase):
                 (
                     "(lam (sqrt (+ (0) (+ (+ (0) (+ (+ (+ (0) (0)) (+ (0) (+ (0) (0)))) (+ (0) (0)))) (0)))))",
                     Fraction(12, 25165825),
+                ),
+            ],
+        )
+
+    def test_enumeration_more_complex_get_even_more_even_more(self):
+        dist = fam_more_complex.uniform()
+        large_set = sorted(
+            enumerate_dsl(fam_more_complex, dist, -17, max_denominator=10**8),
+            key=lambda x: (-x[1], x[0]),
+        )
+        self.assertEqual(len(large_set), 103_258)
+        print(large_set[::10000])
+        self.assertEqual(
+            large_set[::10000],
+            [
+                ("(lam ($0_0))", Fraction(1, 4)),
+                (
+                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0_0) (sqrt (+ (0) (0)))) (sqrt (0))))",
+                    Fraction(12, 25165825),
+                ),
+                (
+                    "(lam (* (* ($0_0) (sqrt (0))) (* (sqrt (+ (0) (+ (0) (+ (0) (0))))) ($0_0))))",
+                    Fraction(17, 71303171),
+                ),
+                (
+                    "(lam (* ($0_0) (* (sqrt (0)) (* ($0_0) (ite (< (0) (0)) (sqrt (0)) ($0_0))))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (ite (< (+ (+ (0) (+ (0) (+ (0) (0)))) (0)) (0)) (sqrt (+ (+ (0) (0)) (0))) (sqrt (0))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (+ (+ (+ (0) (0)) (+ (+ (0) (+ (0) (0))) (0))) (+ (0) (+ (0) (0)))) (0)) (0))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (sqrt (+ (+ (0) (0)) (+ (+ (0) (+ (+ (+ (0) (+ (0) (0))) (0)) (+ (0) (0)))) (+ (0) (0))))))",
+                    Fraction(11, 92274692),
+                ),
+                (
+                    "(lam (* (* ($0_0) (sqrt (0))) (ite (< (+ (+ (0) (0)) (0)) (+ (0) (0))) ($0_0) ($0_0))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (* (sqrt (+ (0) (+ (0) (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))) (sqrt (+ (0) (+ (0) (0))))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (ite (< (+ (0) (0)) (0)) ($0_0) (ite (> (sqrt (0)) ($0_0)) (sqrt (+ (0) (0))) ($0_0))))",
+                    Fraction(4, 67108867),
+                ),
+                (
+                    "(lam (ite (> (* (* ($0_0) ($0_0)) (sqrt (0))) ($0_0)) (sqrt (+ (0) (0))) (sqrt (0))))",
+                    Fraction(4, 67108867),
                 ),
             ],
         )

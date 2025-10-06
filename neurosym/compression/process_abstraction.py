@@ -1,10 +1,13 @@
 import itertools
-from typing import Union
+import uuid
+from typing import List, Union
 
 import stitch_core
 
+from neurosym.dsl.dsl import DSL
+
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
-from ..programs.s_expression import SExpression
+from ..programs.s_expression import SExpression, postorder
 from ..programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
@@ -13,7 +16,7 @@ from ..programs.s_expression_render import (
 from ..types.type_signature import FunctionTypeSignature
 
 
-def compute_abstraction_production(
+def _compute_abstraction_production(
     dsl,
     s_expression_using: SExpression,
     abstr_name: str,
@@ -29,8 +32,8 @@ def compute_abstraction_production(
 
     Returns an AbstractionProduction corresponding to the abstraction.
     """
-    abstr_body = inject_parameters(abstr_body)
-    usage = next(x for x in s_expression_using.postorder if x.symbol == abstr_name)
+    abstr_body = _inject_parameters(abstr_body)
+    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
     type_arguments = [dsl.compute_type(x) for x in usage.children]
     type_out = dsl.compute_type(
         abstr_body,
@@ -45,7 +48,7 @@ def compute_abstraction_production(
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
 
 
-def inject_parameters(s_expression: Union[SExpression, str]):
+def _inject_parameters(s_expression: Union[SExpression, str]):
     """
     Inject parameters into an SExpression, replacing leaves of the form #N with
     AbstractionIndexParameter(N).
@@ -55,11 +58,11 @@ def inject_parameters(s_expression: Union[SExpression, str]):
         return AbstractionIndexParameter(int(s_expression[1:]))
     return SExpression(
         s_expression.symbol,
-        tuple(inject_parameters(x) for x in s_expression.children),
+        tuple(_inject_parameters(x) for x in s_expression.children),
     )
 
 
-def next_symbol(dsl):
+def _next_symbol(dsl):
     """
     Next free symbol of the form __N0 in the DSL.
 
@@ -73,7 +76,7 @@ def next_symbol(dsl):
     return f"__{number}"
 
 
-def multi_lambda_to_single_lambda(dsl):
+def _multi_lambda_to_single_lambda(dsl):
     lams = [x for x in dsl.productions if x.base_symbol() == "lam"]
     if not lams:
         return 0, {}
@@ -93,7 +96,7 @@ def multi_lambda_to_single_lambda(dsl):
     return zero_arg_lambda, multi_to_single
 
 
-class StitchLambdaRewriter:
+class _StitchLambdaRewriter:
     """
     Rewrites a DSL to use only single-argument lambdas.
 
@@ -107,8 +110,8 @@ class StitchLambdaRewriter:
         (
             self.zero_arg_lambda_index_original,
             self.multi_to_single,
-        ) = multi_lambda_to_single_lambda(dsl)
-        self.zero_arg_lambda_symbol = next_symbol(dsl)
+        ) = _multi_lambda_to_single_lambda(dsl)
+        self.zero_arg_lambda_symbol = uuid.uuid4().hex
 
         self.first_single_to_multi = {
             single[0]: multi for multi, single in self.multi_to_single.items()
@@ -172,12 +175,18 @@ class StitchLambdaRewriter:
         )
 
 
-def single_step_compression(dsl, programs):
+def single_step_compression(dsl: DSL, programs: List[SExpression]):
     """
-    Run a single step of compression on a list of programs.
+    Run single step of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+
+    :return: The DSL with up to 1 additional abstraction, and the programs
+        rewritten to use the new abstractions.
     """
     programs_orig = programs
-    rewriter = StitchLambdaRewriter(dsl)
+    rewriter = _StitchLambdaRewriter(dsl)
     programs = [rewriter.to_stitch(prog) for prog in programs]
     rendered = [render_s_expression(prog, for_stitch=True) for prog in programs]
     res = stitch_core.compress(
@@ -186,7 +195,7 @@ def single_step_compression(dsl, programs):
         no_curried_bodies=True,
         no_curried_metavars=True,
         fused_lambda_tags=rewriter.fused_lambda_tags,
-        abstraction_prefix=next_symbol(dsl),
+        abstraction_prefix=_next_symbol(dsl),
     )
     if not res.abstractions:
         return dsl, programs_orig
@@ -201,14 +210,21 @@ def single_step_compression(dsl, programs):
     abstr_body = rewriter.from_stitch(
         parse_s_expression(abstr.body, should_not_be_leaf={abstr.name}, for_stitch=True)
     )
-    prod = compute_abstraction_production(dsl, user, abstr.name, abstr_body)
-    dsl2 = dsl.add_production(prod)
+    prod = _compute_abstraction_production(dsl, user, abstr.name, abstr_body)
+    dsl2 = dsl.add_productions(prod)
     return dsl2, rewritten
 
 
-def multi_step_compression(dsl, programs, iterations):
+def multi_step_compression(dsl: DSL, programs: List[SExpression], iterations: int):
     """
     Run multiple steps of compression on a list of programs.
+
+    :param dsl: The DSL the programs are written in.
+    :param programs: The programs to compress.
+    :param iterations: The number of iterations to run.
+
+    :return: The DSL with up to `iterations` new abstraction productions, and the programs
+        rewritten to use the new abstractions.
     """
     for _ in range(iterations):
         dsl, programs = single_step_compression(dsl, programs)

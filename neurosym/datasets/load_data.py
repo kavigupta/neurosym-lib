@@ -1,5 +1,7 @@
 import io
 import os
+from multiprocessing import get_context
+from typing import Callable
 
 import numpy as np
 import requests
@@ -10,7 +12,7 @@ from neurosym.utils.imports import import_pytorch_lightning
 pl = import_pytorch_lightning()
 
 
-def get_raw_url(github_folder, filename):
+def _get_raw_url(github_folder, filename):
     """
     Get the raw url for a file in a github folder.
 
@@ -33,38 +35,46 @@ def get_raw_url(github_folder, filename):
     return raw_url
 
 
-def load_npy(path_or_url):
+def _load_npy(array_descriptor):
     """
     Load a numpy file from a path or url.
 
     Parameters
     ----------
-    path_or_url : str
-        The path or url of the numpy file.
+    array_descriptor : np.ndarray or str
+        Either a numpy array or the path or url of the numpy file.
 
     Returns
     -------
     data : np.ndarray
         The data in the numpy file.
     """
+    if isinstance(array_descriptor, np.ndarray):
+        return array_descriptor
+    if not isinstance(array_descriptor, str):
+        raise ValueError("path_or_url must be a string, if it is not an array.")
     # pylint: disable=missing-timeout
-    if os.path.exists(path_or_url):
+    if os.path.exists(array_descriptor):
         # Load from local path
-        data = np.load(path_or_url)
+        data = np.load(array_descriptor)
     else:
-        data = requests.get(path_or_url).content
+        data = requests.get(array_descriptor).content
         data = np.load(io.BytesIO(data))
     return data
 
 
 class DatasetFromNpy(torch.utils.data.Dataset):
     """
-    A dataset from an array, loaded from a url.
+    A dataset from an array, either passed in or loaded from a url/path.
 
-    TODO test/val split
+    :param input_descriptor: the descriptor of the inputs. This is either an array, a local path, or a url.
+    :param output_input_descriptor: the descriptor of the outputs.
+    :param seed: the seed for the random permutation of the dataset.
     """
 
-    def __init__(self, input_url, output_url, seed, is_regression=False):
+    # TODO test/val split
+
+    def __init__(self, input_descriptor, output_descriptor, seed, is_regression=False):
         """
         Parameters
         ----------
@@ -72,9 +82,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             The url of the numpy file.
         """
         self.is_regression = is_regression
-        self.inputs = load_npy(input_url)
-        self.outputs = load_npy(output_url)
-        # conver float64 to float32
+        self.inputs = _load_npy(input_descriptor)
+        self.outputs = _load_npy(output_descriptor)
+        # convert float64 to float32
         if np.issubdtype(self.inputs.dtype, np.float64):
             self.inputs = self.inputs.astype(np.float32)
 
@@ -90,6 +100,9 @@ class DatasetFromNpy(torch.utils.data.Dataset):
             self.ordering = np.arange(len(self.inputs))
 
     def get_io_dims(self, is_regression=False):
+        """
+        Get the input/output dimensions of the dataset.
+        """
         out = self.outputs.shape[-1] if is_regression else len(np.unique(self.outputs))
         return self.inputs.shape[-1], out
 
@@ -103,83 +116,88 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         )
 
 
-class DatasetWrapper(L.LightningDataModule):
+class DatasetWrapper(pl.LightningDataModule):
+    """
+    Dataset wrapper for PyTorch Lightning, with a train/test split. Wraps two
+        torch.utils.data.Dataset objects.
+    """
+
     def __init__(
         self,
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
         batch_size: int = 32,
-        n_workers: int = 0,
+        num_workers: int = 0,
     ):
         super().__init__()
         self.train = train
         self.test = test
         self.batch_size = batch_size
-        self.n_workers = n_workers
-        self.pin_memory = True
+        self.num_workers = num_workers
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train,
             batch_size=self.batch_size,
-            num_workers=self.n_workers,
-            pin_memory=self.pin_memory,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test,
             batch_size=self.batch_size,
-            num_workers=self.n_workers,
-            pin_memory=self.pin_memory,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test,
             batch_size=self.batch_size,
-            num_workers=self.n_workers,
-            pin_memory=self.pin_memory,
+            num_workers=self.num_workers,
+            pin_memory=(self.num_workers > 0),
+            multiprocessing_context=(
+                get_context("loky") if (self.num_workers > 0) else None
+            ),
         )
 
 
 def numpy_dataset_from_github(
-    github_url,
-    train_input_path,
-    train_output_path,
-    test_input_path,
-    test_output_path,
-):
+    github_url: str,
+    train_input_path: str,
+    train_output_path: str,
+    test_input_path: str,
+    test_output_path: str,
+    **kwargs,
+) -> Callable[[int], DatasetWrapper]:
     """
     Load a dataset from a github url.
 
-    Parameters
-    ----------
-    github_url : str
-        The url of the github folder containing the data.
-    train_input_path : str
-        The path to the training input data.
-    train_output_path : str
-        The path to the training output data.
-    test_input_path : str
-        The path to the test input data.
-    test_output_path : str
-        The path to the test output data.
+    :param github_url: the url of the github folder containing the data.
+    :param train_input_path: the path to the training input data.
+    :param train_output_path: the path to the training output data.
+    :param test_input_path: the path to the test input data.
+    :param test_output_path: the path to the test output data
 
-    Returns
-    -------
-    dataset : function seed -> DatasetWrapper
-        The dataset, as a function of the seed.
+    :return: a function that takes a seed and returns a DatasetWrapper.
     """
     return lambda train_seed: DatasetWrapper(
         DatasetFromNpy(
-            get_raw_url(github_url, train_input_path),
-            get_raw_url(github_url, train_output_path),
+            _get_raw_url(github_url, train_input_path),
+            _get_raw_url(github_url, train_output_path),
             train_seed,
         ),
         DatasetFromNpy(
-            get_raw_url(github_url, test_input_path),
-            get_raw_url(github_url, test_output_path),
+            _get_raw_url(github_url, test_input_path),
+            _get_raw_url(github_url, test_output_path),
             None,
         ),
+        **kwargs,
     )

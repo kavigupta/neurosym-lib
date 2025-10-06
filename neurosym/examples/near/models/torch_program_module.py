@@ -1,20 +1,30 @@
 from torch import nn
-from neurosym.programs.s_expression_render import render_s_expression
+
+from neurosym.programs.s_expression import (
+    InitializedSExpression,
+    is_initialized_s_expression,
+)
 
 
 class TorchProgramModule(nn.Module):
-    def __init__(self, dsl, program):
+    """
+    Module that wraps a program into a torch.nn.Module. The program is initialized,
+    and the contained modules are added to the module list.
+
+    :param dsl: The DSL that the program is written in.
+    :param initialized_program: The initialized program to wrap.
+    """
+
+    def __init__(self, dsl, initialized_program: InitializedSExpression):
         super().__init__()
+        assert is_initialized_s_expression(initialized_program), type(
+            initialized_program
+        )
         self.dsl = dsl
-        self.program = program
-        self.initialized_program = dsl.initialize(program)
+        self.initialized_program = initialized_program
         self.contained_modules = nn.ModuleList(
             list(self.initialized_program.all_state_values())
         )
 
-    def forward(self, *args):
-        return self.dsl.compute(self.initialized_program)(*args)
-
-    def __repr__(self):
-        super_rep = super().__repr__()
-        return f"{super_rep}\n w/ SExpr: {render_s_expression(self.program)}"
+    def forward(self, *args, environment):
+        return self.dsl.compute(self.initialized_program, environment)(*args)

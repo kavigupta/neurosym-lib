@@ -20,18 +20,23 @@ class TestNeuralModels(unittest.TestCase):
         cfg = near.MLPConfig("mlp", self.input_dim, self.hidden_dim, self.output_dim)
         mlp = near.MLP(cfg)
         x = torch.randn(self.bs, self.traj_len, self.input_dim)
-        self.assertEqual(mlp(x).shape, (self.bs, self.traj_len, self.output_dim))
+        self.assertEqual(
+            mlp(x, environment=[]).shape, (self.bs, self.traj_len, self.output_dim)
+        )
 
     def test_seq2class_rnn(self):
         cfg = near.RNNConfig("rnn", self.input_dim, self.hidden_dim, self.output_dim)
         seq2class_rnn = near.Seq2ClassRNN(cfg)
         x = torch.randn(self.bs, self.traj_len, self.input_dim)
-        self.assertEqual(seq2class_rnn(x).shape, (self.bs, self.output_dim))
+        self.assertEqual(
+            seq2class_rnn(x, environment=[]).shape, (self.bs, self.output_dim)
+        )
 
     def test_seq2seq_rnn(self):
         cfg = near.RNNConfig("rnn", self.input_dim, self.hidden_dim, self.output_dim)
         seq2seq_rnn = near.Seq2SeqRNN(cfg)
         x = torch.randn(self.bs, self.traj_len, self.input_dim)
         self.assertEqual(
-            seq2seq_rnn(x).shape, (self.bs, self.traj_len, self.output_dim)
+            seq2seq_rnn(x, environment=[]).shape,
+            (self.bs, self.traj_len, self.output_dim),
         )

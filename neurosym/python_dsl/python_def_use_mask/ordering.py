@@ -2,7 +2,7 @@ from neurosym.program_dist.tree_distribution.ordering import DictionaryNodeOrder
 from neurosym.python_dsl.python_ast_tools import fields_for_node
 
 
-def field_order(node, fields):
+def _field_order(node, fields):
     """
     Get the order of the given fields in a node.
     """
@@ -14,8 +14,8 @@ def field_order(node, fields):
 def python_ordering_dictionary():
     """
     The ordering dictionary for Python nodes. This is a dictionary that maps node types
-        to a list of integers. The integers are the indices of the fields in the node
-        that should be visited in order.
+    to a list of integers. The integers are the indices of the fields in the node
+    that should be visited in order.
     """
     fields = [
         ("ListComp~E", ["generators", "elt"]),
@@ -26,13 +26,15 @@ def python_ordering_dictionary():
 
     result = {}
     for node, fields in fields:
-        result[node] = field_order(node, fields)
+        result[node] = _field_order(node, fields)
     return result
 
 
 class PythonNodeOrdering(DictionaryNodeOrdering):
     """
     Orders the subnodes of a node according to a dictionary.
+
+    :param dist: The ``TreeDistribution`` that the ordering is applied to.
     """
 
     def __init__(self, dist):

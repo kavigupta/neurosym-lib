@@ -158,7 +158,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_1(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[#a] -> #b"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -182,7 +182,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_2(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("([#a], [#b]) -> #c"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -218,7 +218,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_nested_expansion_3(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[([#a], [#b]) -> #c]]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -229,7 +229,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_1(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[#a] -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -247,7 +247,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_step_expansion_2(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -265,7 +265,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_all_variables(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("[[[[#a] -> #a]]]"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -277,7 +277,7 @@ class TestTypeRegresion(unittest.TestCase):
 
     def test_exclude_just_one(self):
         self.assertExpansions(
-            ns.expansions(
+            ns.type_expansions(
                 ns.parse_type("(#a, #b) -> #a"),
                 terminals=[ns.parse_type(x) for x in ["b", "i"]],
                 constructors=[(2, lambda x, y: ns.ArrowType((x,), y))],
@@ -298,8 +298,8 @@ class TestTypeRegresion(unittest.TestCase):
 class TestDSLExpand(unittest.TestCase):
     def test_basic_expand(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("+", "i -> i -> i", lambda x: lambda y: x + y)
-        dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
+        dslf.production("+", "i -> i -> i", lambda x: lambda y: x + y)
+        dslf.production("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
         assertDSL(
             self,
@@ -348,8 +348,8 @@ class TestDSLExpand(unittest.TestCase):
 
     def test_basic_expand_two(self):
         dslf = ns.DSLFactory(max_overall_depth=3)
-        dslf.concrete("even?", "i -> b", lambda x: lambda y: x + y)
-        dslf.concrete("first", "(#a, #b) -> #a", lambda x: x)
+        dslf.production("even?", "i -> b", lambda x: lambda y: x + y)
+        dslf.production("first", "(#a, #b) -> #a", lambda x: x)
         dsl = dslf.finalize()
         assertDSL(
             self,
@@ -363,8 +363,8 @@ class TestDSLExpand(unittest.TestCase):
 
     def test_larger_expand(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda: 1)
-        dslf.concrete("ite", "(b, #b, #a, #a) -> #a", lambda x: x)
+        dslf.production("1", "() -> i", lambda: 1)
+        dslf.production("ite", "(b, #b, #a, #a) -> #a", lambda x: x)
         dsl = dslf.finalize()
         assertDSL(
             self,
@@ -416,12 +416,12 @@ class TestDSLExpand(unittest.TestCase):
 
     def test_filtered_variable(self):
         dslf = ns.DSLFactory()
-        dslf.concrete("1", "() -> i", lambda: 1)
-        dslf.concrete("1f", "() -> f", lambda: 1)
+        dslf.production("1", "() -> i", lambda: 1)
+        dslf.production("1f", "() -> f", lambda: 1)
         dslf.filtered_type_variable(
             "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
         )
-        dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
+        dslf.production("+", "%num -> %num -> %num", lambda x: x)
         dsl = dslf.finalize()
         assertDSL(
             self,

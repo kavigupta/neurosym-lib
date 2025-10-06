@@ -2,11 +2,31 @@ import ast
 import json
 import unittest
 from functools import lru_cache
+from textwrap import dedent
 
-from increase_recursionlimit import increase_recursionlimit
 from parameterized import parameterized
 
 import neurosym as ns
+
+
+class ParseTest(unittest.TestCase):
+    def test_basic_parse(self):
+        code = "x = 2"
+        parsed = ns.python_to_s_exp(code)
+        print(parsed)
+        self.assertEqual(
+            parsed,
+            "(Module (/seq (Assign (list (Name &x:0 Store)) (Constant i2 None) None)) nil)",
+        )
+
+    def test_basic_import_parse(self):
+        code = "import os"
+        parsed = ns.python_to_s_exp(code)
+        print(parsed)
+        self.assertEqual(
+            parsed,
+            "(Module (/seq (Import (list (alias g_os None)))) nil)",
+        )
 
 
 class ParseUnparseInverseTest(unittest.TestCase):
@@ -30,20 +50,36 @@ class ParseUnparseInverseTest(unittest.TestCase):
         self.maxDiff = None
         parsed = ns.s_exp_to_python_ast(s_exp)
         print(parsed)
-        with increase_recursionlimit():
-            s_exp_update = ns.render_s_expression(ns.parse_s_expression(s_exp))
+        s_exp_update = ns.render_s_expression(ns.parse_s_expression(s_exp))
         self.assertEqual(
             s_exp_update,
             ns.render_s_expression(parsed.to_ns_s_exp(dict(no_leaves=no_leaves))),
         )
 
+    def check_multiline(self, test_ast):
+        all_nodes = []
+
+        def collect(node):
+            all_nodes.append(node)
+            return node
+
+        test_ast.map(collect)
+        for node in all_nodes:
+            if isinstance(node, (ns.LeafAST, ns.ListAST)):
+                continue
+            self.assertTrue(
+                node.is_multiline() == ("\n" in node.to_python()),
+                f"{node.to_python()!r}; {node}",
+            )
+
     def check_with_args(self, test_code, no_leaves=False):
         test_code = self.canonicalize(test_code)
-        s_exp = ns.python_to_s_exp(
-            test_code, renderer_kwargs=dict(columns=80), no_leaves=no_leaves
+        python_ast = ns.python_to_python_ast(test_code)
+        self.check_multiline(python_ast)
+        s_exp = ns.render_s_expression(
+            python_ast.to_ns_s_exp(dict(no_leaves=no_leaves))
         )
-        with increase_recursionlimit():
-            self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
+        self.assert_valid_s_exp(ns.parse_s_expression(s_exp), no_leaves=no_leaves)
         self.check_s_exp(s_exp, no_leaves=no_leaves)
         s_exp_parsed = ns.s_exp_to_python_ast(s_exp, {})
         print(repr(s_exp_parsed))
@@ -91,10 +127,50 @@ class ParseUnparseInverseTest(unittest.TestCase):
             "(Module (/seq (Import (list (alias g_os None)))) nil)",
         )
 
+    def test_imports_are_globals(self):
+        self.maxDiff = None
+        result = ns.python_to_s_exp("os = 2; import os; y = lambda os: os")
+        print(result)
+        self.assertEqual(
+            result,
+            "(Module (/seq "
+            "(Assign (list (Name g_os:0 Store)) (Constant i2 None) None)"
+            " "
+            "(Import (list (alias g_os:0 None)))"
+            " "
+            "(Assign (list (Name &y:0 Store)) (Lambda (arguments nil (list (arg &os:1 None None)) None nil nil None nil) (Name &os:1 Load)) None)) nil)",
+        )
+
     def test_builtins(self):
         self.check("print(True)")
         self.check("0")
         self.check("x = None")
+
+    def test_global_nonlocal_stmts(self):
+        self.check(
+            dedent(
+                """
+                def f():
+                    global x
+                    x = 1
+                    y = 2
+                    return x + y
+                f()
+                """
+            )
+        )
+        self.check(
+            dedent(
+                """
+                def g():
+                    def f():
+                        nonlocal y
+                        y = 2
+                        return y
+                    f()
+                """
+            )
+        )
 
     def test_if_expr(self):
         self.check("2 if x == 3 else 4")

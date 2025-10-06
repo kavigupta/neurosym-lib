@@ -1,9 +1,12 @@
 from typing import Callable, Tuple
 
+from neurosym.utils.documentation import internal_only
+
 from ..handler import ConstructHandler, Handler
 from .defining_statement_handler import DefiningStatementHandler
 
 
+@internal_only
 class ComprehensionExpressionHandler(ConstructHandler):
     """
     Handles comprehensions. This isn't a DefiningStatementHandler because
@@ -32,22 +35,27 @@ class ComprehensionExpressionHandler(ConstructHandler):
         return False
 
 
+@internal_only
 class ListComprehensionHandler(ComprehensionExpressionHandler):
     name = "ListComp~E"
 
 
+@internal_only
 class SetComprehensionHandler(ListComprehensionHandler):
     name = "SetComp~E"
 
 
+@internal_only
 class GeneratorExprHandler(ListComprehensionHandler):
     name = "GeneratorExp~E"
 
 
+@internal_only
 class DictComprehensionHandler(ComprehensionExpressionHandler):
     name = "DictComp~E"
 
 
+@internal_only
 class GeneratorsHandler(Handler):
     """
     Handles a list of generators, each treated as a defining statement.
@@ -65,6 +73,7 @@ class GeneratorsHandler(Handler):
         return False
 
 
+@internal_only
 class ComprehensionHandler(DefiningStatementHandler):
     name = "comprehension~C"
     targeted = ["target"]

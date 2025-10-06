@@ -12,7 +12,7 @@ class PreorderMask(ABC):
     Represents a mask on symbols that is updated during a preorder traversal of the tree.
 
     This can be used to implement such features as type checking and other constraints
-        during enumeration, sampling, likelihood computation, and counting.
+    during enumeration, sampling, likelihood computation, and counting.
     """
 
     def __init__(self, tree_dist):
@@ -63,7 +63,7 @@ class PreorderMask(ABC):
 
 class NoopPreorderMask(PreorderMask):
     """
-    A mask that does nothing.
+    A preorder mask that does nothing.
     """
 
     def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
@@ -81,11 +81,16 @@ class NoopPreorderMask(PreorderMask):
 
 class ConjunctionPreorderMask(PreorderMask):
     """
-    A mask that is the conjunction of multiple masks.
+    A preorder mask that is the conjunction of multiple masks, which
+    means that a symbol is allowed iff it is allowed by all masks.
     """
 
     @classmethod
     def of(cls, tree_dist, masks):
+        """
+        Construct a conjunction of masks. If there are no masks, a noop mask is returned,
+        and if there is only one mask, that mask is returned.
+        """
         if len(masks) == 0:
             return NoopPreorderMask(tree_dist)
         if len(masks) == 1:

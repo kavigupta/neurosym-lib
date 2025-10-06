@@ -133,30 +133,35 @@ class TestRender(unittest.TestCase):
 
 class TestLex(unittest.TestCase):
     def test_tensor(self):
-        self.assertEqual(ns.lex("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"])
+        self.assertEqual(
+            ns.lex_type("{int, 3, 4}"), ["{", "int", ",", "3", ",", "4", "}"]
+        )
 
     def test_list(self):
-        self.assertEqual(ns.lex("[int]"), ["[", "int", "]"])
+        self.assertEqual(ns.lex_type("[int]"), ["[", "int", "]"])
 
     def test_arrow(self):
         self.assertEqual(
-            ns.lex("(int, float) -> bool"),
+            ns.lex_type("(int, float) -> bool"),
             ["(", "int", ",", "float", ")", "->", "bool"],
         )
 
     def test_no_args(self):
-        self.assertEqual(ns.lex("() -> bool"), ["(", ")", "->", "bool"])
+        self.assertEqual(ns.lex_type("() -> bool"), ["(", ")", "->", "bool"])
 
     def test_dollar(self):
-        self.assertEqual(ns.lex("$x"), ["$x"])
+        self.assertEqual(ns.lex_type("$x"), ["$x"])
 
     def test_dollar_arrow(self):
-        self.assertEqual(ns.lex("$fL -> $fL"), ["$fL", "->", "$fL"])
+        self.assertEqual(ns.lex_type("$fL -> $fL"), ["$fL", "->", "$fL"])
 
 
 class TestParse(unittest.TestCase):
     def test_atomic(self):
         self.assertEqual(ns.parse_type("int"), ns.AtomicType("int"))
+
+    def test_atomic_parenthesized(self):
+        self.assertEqual(ns.parse_type("(int)"), ns.AtomicType("int"))
 
     def test_tensor(self):
         self.assertEqual(
@@ -177,6 +182,12 @@ class TestParse(unittest.TestCase):
     def test_arrow_single_arg(self):
         self.assertEqual(
             ns.parse_type("int -> bool"),
+            ns.ArrowType((ns.AtomicType("int"),), ns.AtomicType("bool")),
+        )
+
+    def test_arrow_single_arg_paren(self):
+        self.assertEqual(
+            ns.parse_type("(int) -> bool"),
             ns.ArrowType((ns.AtomicType("int"),), ns.AtomicType("bool")),
         )
 
@@ -229,6 +240,10 @@ class TestParse(unittest.TestCase):
     def test_unparenthesized_arrow_inside_argument(self):
         t = "(i -> b, [i]) -> [i]"
         self.assertEqual(ns.render_type(ns.parse_type(t)), t)
+
+    def test_parenthesized_return(self):
+        t = "(a -> b) -> ([a] -> [b])"
+        self.assertEqual(ns.render_type(ns.parse_type(t)), "(a -> b) -> [a] -> [b]")
 
     def test_bad_parse(self):
         self.assertRaises(Exception, lambda: ns.render_type(ns.parse_type("f -> f]")))

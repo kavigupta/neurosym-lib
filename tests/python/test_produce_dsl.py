@@ -72,8 +72,14 @@ class ProduceDslTest(unittest.TestCase):
         print(ns.render_s_expression(program.to_ns_s_exp()))
         subset = ns.PythonDSLSubset.from_programs(self.dfa, program, root="M")
         dsl = ns.create_python_dsl(ns.python_dfa(), subset, "M")
-        ta_lines = {x.strip() for x in dsl.render().split("\n") if "list~TA" in x}
-        self.assertEqual(ta_lines, {"list~TA~2 :: (TA, TA) -> TA"})
+        list_lines = {x.strip() for x in dsl.render().split("\n") if "list" in x}
+        self.assertEqual(
+            list_lines,
+            {
+                "list~_SliceRoot_~2 :: (SliceRoot, SliceRoot) -> [SliceRoot]",
+                "list~_TI_~0 :: () -> [TI]",
+            },
+        )
 
     def test_create_dsl_with_type_annot(self):
         # just check it doesn't crash

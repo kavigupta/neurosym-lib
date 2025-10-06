@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Union
+from typing import List, Union
 
 from neurosym.types.type import (
     ArrowType,
@@ -7,6 +7,7 @@ from neurosym.types.type import (
     FilteredTypeVariable,
     ListType,
     TensorType,
+    Type,
     TypeVariable,
 )
 from neurosym.types.type_signature import FunctionTypeSignature
@@ -15,31 +16,72 @@ SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]
 
 
 class TypeDefiner:
+    """
+    A class that facilitates in parsing type strings, allowing for the definition of
+        variables and filters that can be used to parse type strings.
+
+    :param env: A dictionary that maps type variable names to objects, which
+        can be types, sizes, etc.
+    """
+
     def __init__(self, **env):
         self.env = env
         self.filters = {}
 
-    def __call__(self, type_str):
+    def __call__(self, type_str: str) -> Type:
+        """
+        Parse a type string into a type.
+
+        :param type_str: The type string to parse
+        """
         return parse_type(type_str, self)
 
-    def sig(self, type_str):
+    def sig(self, type_str: str) -> FunctionTypeSignature:
+        """
+        Parse a type string into a function type signature. This is
+        the same as :py:meth:`__call__`, but returns a :py:class:`FunctionTypeSignature`
+        """
         typ = self(type_str)
         return FunctionTypeSignature(list(typ.input_type), typ.output_type)
 
-    def typedef(self, key, type_str):
+    def typedef(self, key: str, type_str: str):
+        """
+        Define a type alias, which can be used to look up types later.
+
+        E.g., ``typedef("fL", "{f, L}")`` defines a type alias ``$fL`` that can be used
+        in other type strings.
+        """
+        if key[0] == "$":
+            key = key[1:]
         self.env[key] = self(type_str)
 
     def filtered_type_variable(self, key, type_filter):
+        """
+        Set up a type variable with a filter. The type variable will be prefixed with a '%'
+        instead of a '#'. The filter should be a function that takes a type and returns
+        whether or not the variable can be instantiated with that type.
+        """
         self.filters[key] = type_filter
 
-    def lookup_type(self, key):
+    def lookup_type(self, key: str):
+        """
+        Look up a type definition.
+        """
         return self.env[key]
 
-    def lookup_filter(self, key):
+    def lookup_filter(self, key: str):
+        """
+        Look up a filter definition.
+        """
         return self.filters[key]
 
 
-def render_type(t):
+def render_type(t: Type) -> str:
+    """
+    Render a type into a human-readable string. Inverse of ``parse_type``.
+
+    :param t: The type to render
+    """
     if isinstance(t, AtomicType):
         return t.name
     if isinstance(t, TypeVariable):
@@ -62,7 +104,7 @@ def render_type(t):
     raise NotImplementedError(f"Unknown type {t}")
 
 
-def parse_type_from_buf(reversed_buf, env: TypeDefiner):
+def _parse_non_arrow_type(reversed_buf, env: TypeDefiner):
     assert isinstance(env, TypeDefiner)
     first_tok = reversed_buf.pop()
     if first_tok.isnumeric():
@@ -70,36 +112,32 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
     if first_tok.startswith("$"):
         return env.lookup_type(first_tok[1:])
     if first_tok == "{":
-        internal_type = parse_type_from_buf(reversed_buf, env)
+        internal_type = _parse_non_arrow_type(reversed_buf, env)
         shape = []
         while True:
             tok = reversed_buf.pop()
             if tok == "}":
                 break
             assert tok == ",", f"Expected ',' but got {tok}"
-            size = parse_type_from_buf(reversed_buf, env)
+            size = _parse_non_arrow_type(reversed_buf, env)
             shape.append(size)
         return TensorType(internal_type, tuple(shape))
     if first_tok == "[":
-        internal_type = parse_type_from_buf_multi(reversed_buf, env)
+        internal_type = _parse_potential_arrow_type(reversed_buf, env)
         close_bracket = reversed_buf.pop()
         assert close_bracket == "]", f"Expected ']' but got {close_bracket}"
         return ListType(internal_type)
     if first_tok == "(":
-        input_types = []
-        while True:
-            if reversed_buf[-1] == ")":
-                reversed_buf.pop()
-                break
-            input_types.append(parse_type_from_buf_multi(reversed_buf, env))
-            tok = reversed_buf.pop()
-            if tok == ")":
-                break
-            assert tok == ",", f"Expected ',' but got {tok}"
-        tok = reversed_buf.pop()
-        assert tok == "->", f"Expected '->' but got {tok}"
-        output_type = parse_type_from_buf_multi(reversed_buf, env)
-        return ArrowType(tuple(input_types), output_type)
+        res = _parse_delimited_list(
+            reversed_buf,
+            env,
+            delimiter=",",
+            terminator=")",
+            sub_parser=_parse_potential_arrow_type,
+        )
+        if len(res) == 1:
+            return res[0]
+        return res
     if first_tok.startswith("#"):
         return TypeVariable(first_tok[1:])
     if first_tok.startswith("%"):
@@ -108,18 +146,48 @@ def parse_type_from_buf(reversed_buf, env: TypeDefiner):
     return AtomicType(first_tok)
 
 
-def parse_type_from_buf_multi(reversed_buf, env):
-    t_head = parse_type_from_buf(reversed_buf, env)
-    if not reversed_buf:
-        return t_head
-    if reversed_buf and reversed_buf[-1] != "->":
-        return t_head
+def _parse_potential_arrow_type(reversed_buf, env):
+    elements = _parse_delimited_list(
+        reversed_buf,
+        env,
+        delimiter="->",
+        terminator=None,
+        sub_parser=_parse_non_arrow_type,
+    )
+    typ = elements[-1]
+    for t_head in elements[:-1][::-1]:
+        if not isinstance(t_head, tuple):
+            assert isinstance(t_head, Type)
+            t_head = (t_head,)
+        typ = ArrowType(t_head, typ)
+    return typ
+
+
+def _parse_delimited_list(reversed_buf, env, *, delimiter, terminator, sub_parser):
+    if reversed_buf and reversed_buf[-1] == terminator:
+        reversed_buf.pop()
+        return ()
+    t_head = sub_parser(reversed_buf, env)
+    if reversed_buf and reversed_buf[-1] == terminator:
+        reversed_buf.pop()
+        return (t_head,)
+    if terminator is None and (not reversed_buf or reversed_buf[-1] != delimiter):
+        return (t_head,)
     reversed_buf.pop()
-    t_tail = parse_type_from_buf_multi(reversed_buf, env)
-    return ArrowType((t_head,), t_tail)
+    t_tail = _parse_delimited_list(
+        reversed_buf,
+        env,
+        delimiter=delimiter,
+        terminator=terminator,
+        sub_parser=sub_parser,
+    )
+    return (t_head,) + t_tail
 
 
-def lex(s):
+def lex_type(s: str) -> List[str]:
+    """
+    Lex a type string into tokens.
+    """
     buf = []
     for c in s:
         if c in SPECIAL_CHARS:
@@ -134,11 +202,41 @@ def lex(s):
     return [tok for tok in buf if tok != ""]
 
 
-def parse_type(s, env: Union[TypeDefiner, NoneType] = None):
+def parse_type(s, env: Union[TypeDefiner, NoneType] = None) -> Type:
+    """
+    Parse the given string into a type. The string should be in the format of the
+    type string representation. The type string representation is a string that
+    represents a type in a human-readable format.
+
+    See the documentation for each Type subclass for more information on the
+    type string representation for that type. A few edge cases for the ``ArrowType``
+    are worth mentioning:
+
+    If the input type is a single type, the parentheses are optional, unless the
+    input type is another ``ArrowType``. So the parentheses are optional in the
+    following cases
+
+        .. code-block:: python
+
+            (a) -> b
+            ([a]) -> b
+            ({a, 2}) -> b
+            ([a -> b]) -> c
+
+    but are required in the following cases
+
+        .. code-block:: python
+
+            (a, b) -> c
+            (a -> b) -> c
+
+    :param s: The string to parse
+    :param env: The environment to use for looking up types and filters
+    """
     if env is None:
         env = TypeDefiner()
     assert isinstance(env, TypeDefiner)
-    buf = lex(s)[::-1]
-    t = parse_type_from_buf_multi(buf, env)
+    buf = lex_type(s)[::-1]
+    t = _parse_potential_arrow_type(buf, env)
     assert buf == [], f"Extra tokens {buf[::-1]}"
     return t

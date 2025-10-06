@@ -4,6 +4,7 @@ from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
     remove_last_n_elements,
 )
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
+from neurosym.utils.documentation import internal_only
 
 from .handler import ConstructHandler, Handler
 
@@ -13,7 +14,13 @@ def create_target_handler(
 ):
     """
     Create a target handler for the given root symbol. A target handler collects
-        the assigned targets in the given expression.
+    the assigned targets in the given expression.
+
+    :param position: The position of the child in the parent.
+    :param root_symbol: The root symbol of the expression.
+    :param mask: The mask.
+    :param defined_production_idxs: The defined production indices.
+    :param config: The configuration.
     """
     targets_map = {
         "Name~L": NameTargetHandler,
@@ -35,7 +42,6 @@ def create_target_handler(
 
     if symbol.startswith("const") and symbol.split(PYTHON_DSL_SEPARATOR)[-1] in {
         "Name",
-        "NullableName",
         "NameStr",
         "NullableNameStr",
     }:
@@ -58,7 +64,11 @@ def create_target_handler(
 
 class TargetHandler(Handler):
     """
-    Handler that collects targets, stored in defined_symbols.
+    Handler that collects targets, stored in defined_symbols. This is used for
+    LHS values that define symbols. It collects targets from any child frame
+    by default.
+
+    :field defined_symbols: The symbols defined by the construct.
     """
 
     def __init__(self, mask, defined_production_idxs, config):
@@ -77,12 +87,14 @@ class TargetHandler(Handler):
         return lambda: None
 
 
+@internal_only
 class TargetConstructHandler(TargetHandler, ConstructHandler):
     def __init__(self, mask, defined_production_idxs, config):
         TargetHandler.__init__(self, mask, defined_production_idxs, config)
         ConstructHandler.__init__(self, mask, defined_production_idxs, config)
 
 
+@internal_only
 class PassthroughLHSHandler(TargetHandler):
     """
     Pass through handler that does not collect any information,
@@ -102,6 +114,7 @@ class PassthroughLHSHandler(TargetHandler):
         return True
 
 
+@internal_only
 class PassthroughLHSConstructHandler(PassthroughLHSHandler, TargetConstructHandler):
     """
     Pass through handler that is also a construct handler.
@@ -119,6 +132,7 @@ class PassthroughLHSConstructHandler(PassthroughLHSHandler, TargetConstructHandl
         return self.indices is None or position in self.indices
 
 
+@internal_only
 class NonCollectingTargetHandler(PassthroughLHSHandler):
     """
     This is for LHS values where nothing is actually being defined
@@ -129,6 +143,7 @@ class NonCollectingTargetHandler(PassthroughLHSHandler):
         return False
 
 
+@internal_only
 class SymbolTargetHandler(TargetHandler):
     """
     Target handler for symbols. Since symbols have no children, this takes in the symbol
@@ -156,6 +171,7 @@ class SymbolTargetHandler(TargetHandler):
         return True
 
 
+@internal_only
 class StarredHandler(PassthroughLHSConstructHandler):
     """
     Handles starred expressions.
@@ -165,6 +181,7 @@ class StarredHandler(PassthroughLHSConstructHandler):
     use_fields = ["value"]
 
 
+@internal_only
 class ArgumentsHandler(PassthroughLHSConstructHandler):
     """
     Handles arguments.
@@ -174,6 +191,7 @@ class ArgumentsHandler(PassthroughLHSConstructHandler):
     use_fields = ("posonlyargs", "args", "vararg", "kwonlyargs", "kwarg")
 
 
+@internal_only
 class TupleLHSHandler(PassthroughLHSConstructHandler):
     """
     This is for LHS values where nothing is actually being defined
@@ -184,6 +202,7 @@ class TupleLHSHandler(PassthroughLHSConstructHandler):
     use_fields = ["elts"]
 
 
+@internal_only
 class ListLHSHandler(TupleLHSHandler):
     """
     Handler for list LHS values.
@@ -192,6 +211,7 @@ class ListLHSHandler(TupleLHSHandler):
     name = "List~L"
 
 
+@internal_only
 class NameTargetHandler(TargetConstructHandler):
     """
     Handler for Name values, as well as other constructs containing symbols.
@@ -222,11 +242,13 @@ class NameTargetHandler(TargetConstructHandler):
         return any(position == self.child_fields[x] for x in self.name_nodes)
 
 
+@internal_only
 class ArgTargetHandler(NameTargetHandler):
     name = "arg~arg"
     name_nodes = {"arg"}
 
 
+@internal_only
 class AliasTargetHandler(NameTargetHandler):
     name = "alias~alias"
     name_nodes = {"name", "asname"}

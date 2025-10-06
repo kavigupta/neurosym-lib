@@ -35,8 +35,9 @@ class TestNEARSimpleDSL(unittest.TestCase):
             dsl,
             ns.parse_type("f"),
             is_goal=lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
+            cost=lambda x: 0,
         )
-        node = next(ns.search.bfs(g)).program
+        node = next(ns.search.bfs(g))
         self.assertEqual(
             str(node),
             str(
@@ -81,14 +82,21 @@ class TestNEARSimpleDSL(unittest.TestCase):
                 return torch.all(torch.eq(xx, fours))
             return False
 
-        g = near.near_graph(dsl, ns.parse_type("{f, 10}"), is_goal=checker)
-
         def cost(x):
             if isinstance(x.program, ns.SExpression) and x.program.children:
                 return len(str(x.program.children[0]))
             return 0
 
-        node = next(ns.search.bounded_astar(g, cost, max_depth=7)).program
+        max_depth = 7
+        g = near.near_graph(
+            dsl,
+            ns.parse_type("{f, 10}"),
+            max_depth=max_depth,
+            is_goal=checker,
+            cost=cost,
+        )
+
+        node = next(ns.search.bounded_astar(g, max_depth=max_depth))
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):

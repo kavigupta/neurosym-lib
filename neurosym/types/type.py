@@ -2,22 +2,16 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, Iterator, List, Tuple
 
 import numpy as np
 
 
 class Type(ABC):
-    @abstractmethod
-    def walk_type_nodes(self):
-        """
-        Walk the type tree and yield all nodes.
-        """
-        raise NotImplementedError
-
     def node_summary(self):
         """
-        Return a summary of the node.
+        Return a summary of this node, excluding children. This is useful
+        for caching in certain contexts, such as the TreeTrie.
         """
         summary_dict = {
             "_type": self.__class__.__name__,
@@ -30,7 +24,7 @@ class Type(ABC):
     def inherent_parameters(self):
         """
         Return a list of inherent parameters of the type, i.e., all parameters not associated
-            with the children.
+        with the children.
         """
         raise NotImplementedError
 
@@ -48,10 +42,11 @@ class Type(ABC):
         """
         Unify this type with another type. Returns a dictionary of substitutions.
 
-        Raise UnificationError if the types cannot be unified.
+        :param other: the other type to unify with.
+        :param already_tried_other_direction: then we have already tried to unify
+            the other direction and failed, so we should not try again.
 
-        If already_tried_other_direction is True, then we have already tried to unify
-        the other direction and failed, so we should not try again.
+        :raises UnificationError: if the types cannot be unified.
         """
         raise NotImplementedError
 
@@ -113,20 +108,35 @@ class Type(ABC):
         depth = max(children + [0]) + np.log2(len(children) + 1)
         return depth
 
+    def walk_type_nodes(self) -> Iterator["Type"]:
+        """
+        Walk the type tree and yield all children nodes.
+        """
+        yield self
+        for child in self.children():
+            yield from child.walk_type_nodes()
+
 
 class UnificationError(Exception):
-    pass
+    """
+    Raised when two types cannot be unified.
+    """
 
 
 @dataclass(frozen=True, eq=True)
 class AtomicType(Type):
+    """
+    An atomic type is a type that cannot be further decomposed. It is a leaf node in the
+    type tree. Examples of atomic types are integers, floats, and strings. These types
+    are rendered as strings of their name, e.g., ``AtomicType("f")`` is rendered as ``"f"``.
+
+    :field name: the name of the atomic type.
+    """
+
     name: str
 
     def __post_init__(self):
         assert self.name.isidentifier(), f"{self.name} is not a valid identifier"
-
-    def walk_type_nodes(self):
-        yield self
 
     def inherent_parameters(self):
         return dict(name=self.name)
@@ -152,15 +162,16 @@ class AtomicType(Type):
 @dataclass(frozen=True, eq=True)
 class TensorType(Type):
     """
-    A tensor is a type that represents a tensor of a given shape.
+    A tensor is a type that represents a tensor of a given shape. These types are rendered
+    as strings of the form ``{dtype, *shape}``, e.g., ``TensorType(ns.AtomicType("f"), (3, 4))`` is
+    rendered as ``"{f, 3, 4}"``.
+
+    :field dtype: the data type of the tensor (usually ``ns.AtomicType("f")``).
+    :field shape: the shape of the tensor.
     """
 
     dtype: Type
     shape: Tuple[int]
-
-    def walk_type_nodes(self):
-        # is atomic. we do not consider the dtype and shape as nodes.
-        yield self
 
     def inherent_parameters(self):
         return dict(dtype=self.dtype, shape=self.shape)
@@ -188,14 +199,13 @@ class TensorType(Type):
 @dataclass(frozen=True, eq=True)
 class ListType(Type):
     """
-    A list type is a type of the form [t] where t is a type.
+    Represents a list of elements of a given type. These types are rendered as strings of
+    the form ``[element_type]``, e.g., ``ListType(ns.AtomicType("f"))`` is rendered as ``"[f]"``.
+
+    :field element_type: the type of the elements in the list.
     """
 
     element_type: Type
-
-    def walk_type_nodes(self):
-        yield self
-        yield from self.element_type.walk_type_nodes()
 
     def inherent_parameters(self):
         return dict()
@@ -219,7 +229,14 @@ class ListType(Type):
 @dataclass(frozen=True, eq=True)
 class ArrowType(Type):
     """
-    An arrow type is a type of the form t1 -> t2 where t1 and t2 are types.
+    An arrow type represents a function type. It is a type that takes a tuple of input
+    types and returns an output type. These types are rendered as strings of the form
+    ``(input_type1, input_type2, ...) -> (output_type)``, e.g.,
+    ``ArrowType((ns.AtomicType("f"), ns.AtomicType("f")), ns.AtomicType("f"))`` is rendered
+    as ``"(f, f) -> f"``.
+
+    :field input_type: a tuple of input types.
+    :field output_type: the output type.
     """
 
     input_type: Tuple[Type]
@@ -233,12 +250,6 @@ class ArrowType(Type):
             tuple(t.subst_type_vars(subst) for t in self.input_type),
             self.output_type.subst_type_vars(subst),
         )
-
-    def walk_type_nodes(self):
-        yield self
-        for t in self.input_type:
-            yield from t.walk_type_nodes()
-        yield from self.output_type.walk_type_nodes()
 
     def inherent_parameters(self):
         return dict()
@@ -273,6 +284,11 @@ class ArrowType(Type):
 
 @dataclass(frozen=True, eq=True)
 class GenericTypeVariable(Type):
+    """
+    Base class for type variables. See ``TypeVariable`` and ``FilteredTypeVariable`` for
+    concrete implementations and documentation
+    """
+
     name: str
 
     @classmethod
@@ -288,9 +304,6 @@ class GenericTypeVariable(Type):
     def subst_type_vars(self, subst: Dict[str, Type]):
         return subst.get(self.name, self)
 
-    def walk_type_nodes(self):
-        yield self
-
     def inherent_parameters(self):
         return dict()
 
@@ -304,11 +317,29 @@ class GenericTypeVariable(Type):
 
 
 class TypeVariable(GenericTypeVariable):
-    pass
+    """
+    A type variable is a type that can be unified with any other type, but must be
+    unified with the same type throughout the type tree. Type variables are used to
+    represent generic types in the type system. These types are rendered as strings of
+    the form ``#name``, e.g., ``TypeVariable("x")`` is rendered as ``#x``.
+
+    :field name: the name of the type variable.
+    """
 
 
 @dataclass(frozen=True, eq=True)
 class FilteredTypeVariable(GenericTypeVariable):
+    """
+    A filtered type variable is a type variable (see ``TypeVariable``) that can only be
+    unified with types that satisfy a given predicate. These types are rendered as
+    strings of the form ``%name``, e.g., ``FilteredTypeVariable("x", lambda t: isinstance(t, ns.AtomicType))``
+    is rendered as ``%x``.
+
+    :field name: the name of the type variable.
+    :field type_filter: a predicate that takes a type and returns True if the type can be unifie
+        with the type variable.
+    """
+
     type_filter: Callable[[Type], bool]
 
     def unify(

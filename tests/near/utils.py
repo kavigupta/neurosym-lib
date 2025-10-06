@@ -10,16 +10,16 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
     def checker(x):
         """Initialize and return True always"""
         x = x.program
-        _ = dsl.compute(dsl.initialize(x))
+        dsl.compute(dsl.initialize(x))
         return True
-
-    g = near.near_graph(dsl, t(out_t), is_goal=checker)
 
     def cost(x):
         if isinstance(x.program, ns.SExpression) and x.program.children:
             return len(str(x.program.children[0]))
         return 0
 
+    g = near.near_graph(dsl, t(out_t), max_depth=max_depth, is_goal=checker, cost=cost)
+
     # should not raise StopIteration.
-    for _ in ns.search.bounded_astar(g, cost, max_depth=max_depth):
+    for _ in ns.search.bounded_astar(g, max_depth=max_depth):
         pass

@@ -5,9 +5,12 @@ from dataclasses import dataclass
 from typing import List
 
 from frozendict import frozendict
-from increase_recursionlimit import increase_recursionlimit
 
 from neurosym.programs.s_expression import SExpression
+from neurosym.python_dsl.dfa import (
+    COMPOUND_EXPRESSION_KINDS,
+    MULTI_LINE_STATEMENT_KINDS,
+)
 
 from .splice import Splice
 from .symbol import PythonSymbol
@@ -15,41 +18,210 @@ from .symbol import PythonSymbol
 
 class PythonAST(ABC):
     """
-    Represents a Parsed AST.
+    Represents a Python AST. This is a tree-like structure that can be converted to and from
+    Python ASTs and s-expressions.
     """
 
     @abstractmethod
     def to_ns_s_exp(self, config=frozendict()) -> SExpression:
         """
-        Convert this PythonAST into a pair s-expression.
+        Convert this PythonAST into an SExpression object
+
+        :param config: A configuration dictionary. This can contain the key
+            ``no_leaves``: If True, then leaf nodes will be replaced with a placeholder.
         """
 
     def to_python(self) -> str:
         """
         Convert this PythonAST into python code.
         """
-        with increase_recursionlimit():
-            code = self.to_python_ast()
-            if isinstance(code, Splice):
-                code = code.target
-            return ast.unparse(code)
+        code = self.to_python_ast()
+        if isinstance(code, Splice):
+            code = code.target
+        if code is None:
+            return "None"
+        return ast.unparse(code)
 
     @abstractmethod
     def to_python_ast(self) -> ast.AST:
         """
-        Convert this PythonAST into a python AST.
+        Convert this PythonAST into an ast.AST object.
         """
 
     @abstractmethod
     def map(self, fn):
         """
         Map the given function over this PythonAST. fn is run in post-order,
-            i.e., run on all the children and then on the new object.
+        i.e., run on all the children and then on the new object.
+        """
+
+    @abstractmethod
+    def is_multiline(self) -> bool:
+        """
+        Check if this PythonAST is multiline. This is used to determine whether
+        it can be used in a single-line context or not.
         """
 
 
 @dataclass
+class NodeAST(PythonAST):
+    """
+    The NodeAST represents a node in the Python AST. It has a type and a list of children.
+
+    :param typ: The type of the node, which should be a subclass of ast.AST.
+    :param children: The children of the node.
+    """
+
+    typ: type
+    children: List[PythonAST]
+
+    def to_ns_s_exp(self, config=frozendict()):
+        if not self.children and not config.get("no_leaves", False):
+            return self.typ.__name__
+
+        return SExpression(
+            self.typ.__name__, [x.to_ns_s_exp(config) for x in self.children]
+        )
+
+    def to_python_ast(self):
+        out = self.typ(*[x.to_python_ast() for x in self.children])
+        out.lineno = 0
+        return out
+
+    def map(self, fn):
+        return fn(NodeAST(self.typ, [x.map(fn) for x in self.children]))
+
+    def is_multiline(self) -> bool:
+        # If any child is multiline, this node is multiline
+        if any(child.is_multiline() for child in self.children):
+            return True
+
+        # Explicit handling for every node type
+        # Block/compound statement nodes are always multiline
+        if self.typ in {
+            ast.FunctionDef,
+            ast.AsyncFunctionDef,
+            ast.ClassDef,
+            *MULTI_LINE_STATEMENT_KINDS,
+            ast.ExceptHandler,
+        }:
+            return True
+
+        # A module is only multiline if its children are multiline
+        if self.typ is ast.Module:
+            return False
+
+        # Simple statement nodes are never multiline (unless children are)
+        if self.typ in {
+            ast.Return,
+            ast.Delete,
+            ast.Assign,
+            ast.AugAssign,
+            ast.AnnAssign,
+            ast.Raise,
+            ast.Assert,
+            ast.Import,
+            ast.ImportFrom,
+            ast.Global,
+            ast.Nonlocal,
+            ast.Expr,
+            ast.Pass,
+            ast.Break,
+            ast.Continue,
+        }:
+            return False
+
+        # Expression nodes are never multiline (unless children are)
+        if self.typ in {
+            ast.BoolOp,
+            ast.BinOp,
+            ast.UnaryOp,
+            ast.Compare,
+            ast.NamedExpr,
+            ast.Lambda,
+            *COMPOUND_EXPRESSION_KINDS,
+            ast.ListComp,
+            ast.SetComp,
+            ast.DictComp,
+            ast.GeneratorExp,
+            ast.Call,
+            ast.JoinedStr,
+            ast.Constant,
+            ast.Name,
+            ast.Attribute,
+            ast.Subscript,
+            ast.Starred,
+            ast.Slice,
+        }:
+            return False
+
+        # Context and utility nodes are never multiline
+        if self.typ in {
+            ast.arguments,
+            ast.arg,
+            ast.FormattedValue,
+            ast.comprehension,
+            ast.keyword,
+            ast.withitem,
+            ast.alias,
+            ast.Load,
+            ast.Store,
+            ast.Del,
+            ast.AugLoad,
+            ast.AugStore,
+            ast.Param,
+            ast.TypeIgnore,
+        }:
+            return False
+
+        # Operators and comparators are never multiline
+        if self.typ in {
+            ast.Add,
+            ast.Sub,
+            ast.Mult,
+            ast.Div,
+            ast.Mod,
+            ast.Pow,
+            ast.LShift,
+            ast.RShift,
+            ast.BitOr,
+            ast.BitXor,
+            ast.BitAnd,
+            ast.FloorDiv,
+            ast.MatMult,
+            ast.And,
+            ast.Or,
+            ast.Not,
+            ast.Invert,
+            ast.UAdd,
+            ast.USub,
+            ast.Eq,
+            ast.NotEq,
+            ast.Lt,
+            ast.LtE,
+            ast.Gt,
+            ast.GtE,
+            ast.Is,
+            ast.IsNot,
+            ast.In,
+            ast.NotIn,
+        }:
+            return False
+
+        # If you hit this, add an explicit case above
+        raise RuntimeError(f"is_multiline: unhandled node type: {self.typ}")
+
+
+@dataclass
 class SequenceAST(PythonAST):
+    """
+    Represents a sequence within the PythonAST, to represent a sequence of statements
+    in a body.
+
+    :param head: The head of the sequence (either /seq or /subseq)
+    :param elements: The elements of the sequence.
+    """
+
     head: str
     elements: List[PythonAST]
 
@@ -73,31 +245,18 @@ class SequenceAST(PythonAST):
     def map(self, fn):
         return fn(SequenceAST(self.head, [x.map(fn) for x in self.elements]))
 
-
-@dataclass
-class NodeAST(PythonAST):
-    typ: type
-    children: List[PythonAST]
-
-    def to_ns_s_exp(self, config=frozendict()):
-        if not self.children and not config.get("no_leaves", False):
-            return self.typ.__name__
-
-        return SExpression(
-            self.typ.__name__, [x.to_ns_s_exp(config) for x in self.children]
-        )
-
-    def to_python_ast(self):
-        out = self.typ(*[x.to_python_ast() for x in self.children])
-        out.lineno = 0
-        return out
-
-    def map(self, fn):
-        return fn(NodeAST(self.typ, [x.map(fn) for x in self.children]))
+    def is_multiline(self) -> bool:
+        return len(self.elements) > 1 or any(x.is_multiline() for x in self.elements)
 
 
 @dataclass
 class ListAST(PythonAST):
+    """
+    Represents a list in the Python AST that is not a sequence.
+
+    :param children: The children of the list.
+    """
+
     children: List[PythonAST]
 
     def to_ns_s_exp(self, config=frozendict()):
@@ -112,21 +271,30 @@ class ListAST(PythonAST):
     def map(self, fn):
         return fn(ListAST([x.map(fn) for x in self.children]))
 
+    def is_multiline(self) -> bool:
+        return any(x.is_multiline() for x in self.children)
+
 
 @dataclass
 class LeafAST(PythonAST):
+    """
+    Represents a leaf in the Python AST. This is a leaf node that is not an ast.AST object.
+
+    :param leaf: The leaf object.
+    """
+
     leaf: object
 
     def __post_init__(self):
         assert not isinstance(self.leaf, PythonAST)
 
     def to_ns_s_exp(self, config=frozendict()):
-        leaf_as_string = self.render_leaf_as_string()
+        leaf_as_string = self._render_leaf_as_string()
         if not config.get("no_leaves", False):
             return leaf_as_string
         return SExpression("const-" + leaf_as_string, [])
 
-    def render_leaf_as_string(self):
+    def _render_leaf_as_string(self):
         if (
             self.leaf is True
             or self.leaf is False
@@ -135,7 +303,7 @@ class LeafAST(PythonAST):
         ):
             return str(self.leaf)
         if isinstance(self.leaf, PythonSymbol):
-            return self.leaf.render()
+            return self.leaf.render_symbol()
         if isinstance(self.leaf, float):
             return f"f{self.leaf}"
         if isinstance(self.leaf, int):
@@ -164,9 +332,20 @@ class LeafAST(PythonAST):
     def map(self, fn):
         return fn(LeafAST(self.leaf))
 
+    def is_multiline(self) -> bool:
+        return False
+
 
 @dataclass
 class SliceElementAST(PythonAST):
+    """
+    Represents a slice element, which is an expression inside a slice.
+        This needs to be a separate class because some expressions are
+        only valid inside slices.
+
+    :param content: The content of the slice element.
+    """
+
     content: PythonAST
 
     @classmethod
@@ -205,9 +384,18 @@ class SliceElementAST(PythonAST):
     def map(self, fn):
         return fn(SliceElementAST(self.content.map(fn)))
 
+    def is_multiline(self) -> bool:
+        return False
+
 
 @dataclass
 class StarrableElementAST(PythonAST):
+    """
+    Represents a starrable element, which is an expression that can be starred.
+
+    :param content: The content of the starrable element.
+    """
+
     content: PythonAST
 
     def to_ns_s_exp(self, config=frozendict()):
@@ -222,9 +410,23 @@ class StarrableElementAST(PythonAST):
     def map(self, fn):
         return fn(StarrableElementAST(self.content.map(fn)))
 
+    def is_multiline(self) -> bool:
+        return False
+
 
 @dataclass
 class SpliceAST(PythonAST):
+    """
+    Represents a splice in the Python AST. This is a special node that is used to splice
+    the children of the node into the parent, which must be a sequence.
+
+    :param content: The content of the splice. This is either a sequence itself, or a node
+        representing something that is a sequence but not explicitly represented as such (e.g.,
+        an abstraction that returns a sequence).
+
+    :param content: The content to splice.
+    """
+
     content: PythonAST
 
     def to_ns_s_exp(self, config=frozendict()):
@@ -235,3 +437,6 @@ class SpliceAST(PythonAST):
 
     def map(self, fn):
         return fn(SpliceAST(self.content.map(fn)))
+
+    def is_multiline(self) -> bool:
+        return False
