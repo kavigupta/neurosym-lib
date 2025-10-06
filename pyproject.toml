@@ -52,7 +52,9 @@ test = [
   "sphobjinv",
 ]
 lint = [
-  "ruff>=0.11.5",
+  "pylint==3.2.7",
+  "black==23.9.1",
+  "isort==5.12.0",
   "sphobjinv",
 ]
 docs = [
