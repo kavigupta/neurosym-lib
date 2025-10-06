@@ -298,6 +298,4 @@ import pickle
 with open("best_program_nodes.pkl", "wb") as f:
     pickle.dump(best_program_nodes, f)
 
-import IPython
-
-IPython.embed()
+import IPython; IPython.embed()
