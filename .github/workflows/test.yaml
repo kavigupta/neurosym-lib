@@ -78,7 +78,7 @@ jobs:
           uv sync --group test --group lint
       - name: Lint with pylint
         run: |
-          uv run pylint --rcfile=.pylintrc neurosym setup.py tests
+          uv run pylint --rcfile=.pylintrc neurosym tests
           uv run isort neurosym tests
           uv run black neurosym tests
           bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
