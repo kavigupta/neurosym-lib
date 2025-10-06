@@ -75,7 +75,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group lint
+          uv sync --group test --group lint
       - name: Lint with pylint
         run: |
           uv run pylint --rcfile=.pylintrc neurosym setup.py tests
@@ -95,7 +95,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group docs
+          uv sync --group test --group docs
       - name: Check that the docs build
         run: |
           cd docs && uv run make html
