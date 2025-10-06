@@ -93,8 +93,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             symbol="linear_bool",
             refined_dsl=predicate_dsl(),
             typ=ns.parse_type("([{f, 4}]) -> [{f, 4}]"),
-            validation_cost_creator=lambda embedding,
-            symbol_costs: near.default_near_cost(
+            validation_cost_creator=lambda embedding, symbol_costs: near.default_near_cost(
                 trainer_cfg=near.NEARTrainerConfig(
                     lr=0.1,
                     n_epochs=100,

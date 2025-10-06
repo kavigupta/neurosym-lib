@@ -50,6 +50,6 @@ class NEARTrainerConfig:
     # pylint: disable=unnecessary-lambda
     optimizer: str = lambda *args, **kwargs: torch.optim.Adam(*args, **kwargs)
 
-    loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = (
-        classification_mse_loss
-    )
+    loss_callback: Callable[
+        [torch.Tensor, torch.Tensor], torch.Tensor
+    ] = classification_mse_loss
