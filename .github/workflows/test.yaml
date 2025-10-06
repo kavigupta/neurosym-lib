@@ -31,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group test
+          uv sync --all-groups
       - name: Test with pytest
         run: |
           uv run pytest ${{ matrix.test-file }} || uv run pytest ${{ matrix.test-file }} --lf
@@ -54,7 +54,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group test
+          uv sync --all-groups
       - name: Test with pytest
         run: |
           uv run pytest ${{ matrix.test-file }} || uv run pytest ${{ matrix.test-file }} --lf
@@ -75,7 +75,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group test --group lint
+          uv sync --all-groups
       - name: Lint with pylint
         run: |
           uv run pylint --rcfile=.pylintrc neurosym tests
@@ -95,7 +95,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
       - name: Install dependencies
         run: |
-          uv sync --group test --group docs
+          uv sync --all-groups
       - name: Check that the docs build
         run: |
           cd docs && uv run make html
