@@ -25,8 +25,13 @@ from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .dsls.simple_constants_dsl import simple_constants_dsl
 from .interface import NEAR
 from .methods.base_trainer import TrainingError
-from .methods.ecg_example_trainer import ECGTrainer, ECGTrainerConfig
+from .methods.ecg_example_trainer import (
+    ECGTrainerConfig,
+    compute_ecg_metrics,
+    ecg_cross_entropy_loss,
+)
 from .methods.near_example_trainer import NEARTrainerConfig, classification_mse_loss
+from .validation_ecg import ECGValidationCost
 from .models.mlp import MLP, MLPConfig, mlp_factory
 from .models.rnn import (
     RNNConfig,

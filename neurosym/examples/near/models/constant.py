@@ -30,8 +30,14 @@ class Constant(nn.Module):
         if config.sample_categorical:
             self.probs = torch.nn.Parameter(torch.ones(config.size) / config.size)
 
-    def forward(self, x=None):
-        dims = x.shape[:-1] + (1,)
+    def forward(self, x=None, environment=()):
+        """Forward pass for Constant module.
+
+        :param x: Optional input tensor (only used for shape inference)
+        :param environment: Environment parameter (required by new API, not used)
+        """
+        del environment  # Not used
+        dims = x.shape[:-1] + (1,) if x is not None else (1,)
         if self.config.sample_categorical:
             out = torch.multinomial(
                 self.probs, num_samples=prod(dims), replacement=True

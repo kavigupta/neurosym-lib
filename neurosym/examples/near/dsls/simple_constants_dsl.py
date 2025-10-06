@@ -21,16 +21,16 @@ def simple_constants_dsl(length):
     constant_dslf = DSLFactory(L=length, max_overall_depth=5)
     constant_dslf.typedef("fL", "{f, $L}")
     constant_dslf.concrete("ones", "() -> $fL", lambda: torch.ones(length))
-    constant_dslf.concrete("add", "() -> ($fL, $fL) -> $fL", lambda: lambda x, y: x + y)
+    constant_dslf.concrete("add", "($fL, $fL) -> $fL", lambda x, y: x + y)
     constant_dslf.parameterized(
         "constant",
         "() -> $fL",
-        lambda const: const,
+        lambda const: lambda environment: const,
         dict(
             const=lambda: Constant(
                 ConstantConfig(model_name="constant", size=length, init="random")
             )
         ),
     )
-    # constant_dslf.prune_to("() -> $fL")
+    constant_dslf.prune_to("() -> $fL")
     return constant_dslf.finalize()

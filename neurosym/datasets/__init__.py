@@ -1,1 +1,2 @@
+from .const_data_example import const_data_example
 from .near_data_example import near_data_example

@@ -4,8 +4,6 @@ import warnings
 import numpy as np
 import torch
 import torch.nn as nn
-from lightning import Trainer
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 import neurosym as ns
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
@@ -51,7 +49,7 @@ def filter_multilabel(split):
     np.save(y_fname.replace(f"{split}", f"{split}_filtered"), y)
 
 
-def create_dataset_factory(train_seed, is_regression, n_workers):
+def create_dataset_factory(train_seed, is_regression, num_workers):
     """Creates a dataset factory for generating training and testing datasets.
 
     This factory function wraps the training and testing datasets with the
@@ -59,7 +57,7 @@ def create_dataset_factory(train_seed, is_regression, n_workers):
 
     Args:
         train_seed (int): The seed for random operations in the training dataset.
-        is_regression (ool): Whether the dataset follows a regression or classification task.
+        is_regression (bool): Whether the dataset follows a regression or classification task.
 
     Returns:
         DatasetWrapper: An instance of `DatasetWrapper` containing both the
@@ -79,11 +77,11 @@ def create_dataset_factory(train_seed, is_regression, n_workers):
             is_regression=is_regression,
         ),
         batch_size=1000,
-        n_workers=n_workers,
+        num_workers=num_workers,
     )
 
 
-datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_workers=0)
+datamodule = create_dataset_factory(train_seed=42, is_regression=False, num_workers=0)
 # Retrieve input and output dimensions from the training dataset
 input_dim, output_dim = datamodule.train.get_io_dims()
 
@@ -119,32 +117,15 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
     dslf.typedef("fOut", "{f, $O}")
     dslf.typedef("fFeat", "{f, $F}")
 
-    # "add(select_interval(channel_2), select_amplitude(channel_8))
-    # "add(select_interval_channel_2, select_amplitude_channel_8)
-    # "add(??, ??)"
-
     for i in range(12):
         dslf.concrete(
             f"channel_{i}",
             "() -> () -> channel",
-            # onehot vector where the ith element is 1
-            # lambda: lambda x: torch.full(
-            #     tuple(x.shape[:-1] + (1,)), i, device=x.device
-            # ),
             lambda: lambda x: torch.nn.functional.one_hot(
                 torch.full(tuple(x.shape[:-1]), i, device=x.device, dtype=torch.long),
                 num_classes=12,
             ),
         )
-
-    # for i in range(6):
-    #     dslf.concrete(
-    #         f"feature_{i}",
-    #         "() -> () -> feature",
-    #         lambda: lambda x: torch.full(
-    #             tuple(x.shape[:-1] + (1,)), i, device=x.device
-    #         ),
-    #     )
 
     dslf.concrete(
         "select_interval",
@@ -179,12 +160,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
             case _:
                 return True
 
-    def filter_same_type(x):
-
-        raise NotImplementedError
-
     dslf.filtered_type_variable("num", lambda x: filter_constants(x))
-    dslf.filtered_type_variable("num", lambda x: filter_same_type(x))
     dslf.concrete(
         "add",
         "(%num, %num) -> %num",
@@ -195,13 +171,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         "(%num, %num) -> %num",
         lambda x, y: guard_callables(fn=lambda x, y: x * y, x=x, y=y),
     )
-    # dslf.concrete(
-    #     "sub",
-    #     "(%num, %num) -> %num",
-    #     lambda x, y: guard_callables(fn=lambda x, y: x - y, x=x, y=y),
-    # )
 
-    # dslf.parameterized("linear_bool", "() -> $fFeat -> $fFeat", lambda lin: lin, dict(lin=lambda: nn.Linear(input_dim, 1)))
     dslf.parameterized(
         "linear",
         "(($fInp) -> $fFeat) -> $fInp -> {f, 1}",
@@ -216,16 +186,11 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
         dict(lin=lambda: nn.Linear(feature_dim, output_dim)),
     )
 
-    # dslf.concrete("iteA", "(#a -> $fFeat, #a -> #a, #a -> #a) -> #a -> #a", lambda cond, fx, fy: ite_torch(cond, fx, fy))
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
-        # lambda cond, fx, fy: guard_callables(fn=partial(ite_torch, condition=cond), if_true=fx, if_else=fy),
     )
-    # dslf.concrete("map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x))
-    # dslf.concrete("compose", "(#a -> #b, #b -> #c) -> #a -> #c", lambda f, g: lambda x: g(f(x)))
-    # dslf.concrete("fold", "((#a, #a) -> #a) -> [#a] -> #a", lambda f: lambda x: fold_torch(f, x))
 
     dslf.prune_to("($fInp) -> $fOut")
     return dslf.finalize(), dslf.t
@@ -235,122 +200,59 @@ print("input_dim", input_dim, "output_dim", output_dim)
 dsl, dsl_type_env = ecg_dsl(input_dim, output_dim, max_overall_depth=6)
 print("DSL")
 print(dsl.render())
-# t = ns.TypeDefiner(I=input_dim, O=output_dim)
-# t.typedef("fI", "{f, $I}")
-# t.typedef("fO", "{f, $O}")
+
+# Create neural DSL with the new API
 neural_dsl = near.NeuralDSL.from_dsl(
     dsl=dsl,
-    modules={
-        **near.create_modules(
-            "mlp",
-            [
-                dsl_type_env("($fInp) -> $fInp"),
-                dsl_type_env("($fInp) -> $fOut"),
-                dsl_type_env("($fInp) -> $fFeat"),
-                dsl_type_env("($fInp) -> {f, 1}"),
-                #  t("([$fI]) -> [$fI]"), t("([$fI]) -> [$fO]")
-            ],
-            near.mlp_factory(hidden_size=10),
-        ),
-        **near.create_modules(
-            "constant_int",
-            [dsl_type_env("() -> channel")],
-            near.selector_factory(input_dim=input_dim),
-            known_atom_shapes=dict(channel=(12,), feature=(6,)),
-        ),
-    },
+    neural_hole_filler=near.UnionNeuralHoleFiller(
+        {
+            # MLP for various transformations
+            **near.create_modules(
+                [
+                    dsl_type_env("($fInp) -> $fInp"),
+                    dsl_type_env("($fInp) -> $fOut"),
+                    dsl_type_env("($fInp) -> $fFeat"),
+                    dsl_type_env("($fInp) -> {f, 1}"),
+                ],
+                near.mlp_factory(hidden_size=10),
+            ).hole_fillers,
+            # Selector for channel selection
+            **near.create_modules(
+                [dsl_type_env("() -> channel")],
+                near.selector_factory(input_dim=12),  # 12 channels
+            ).hole_fillers,
+        }
+    ),
 )
 
 
-# Configuration for NEARTrainer
+# Configuration for ECG Trainer - using new simplified API
 trainer_cfg = near.ECGTrainerConfig(
     lr=1e-3,
-    max_seq_len=100,
     n_epochs=100,
     num_labels=output_dim,
-    train_steps=len(datamodule.train),
-    loss_fn="CrossEntropyLoss",
+    loss_callback=near.ecg_cross_entropy_loss,
     scheduler="cosine",
-    optimizer="adam",
     is_regression=False,
     is_multilabel=False,
+    accelerator="cuda" if torch.cuda.is_available() else "cpu",
 )
 
 
-def validation_cost(node):
-    """Calculate the validation cost for a given node using NEARTrainer.
+# Create ECG-specific validation cost
+validation_cost = near.ECGValidationCost(
+    trainer_cfg=trainer_cfg,
+    datamodule=datamodule,
+    progress_by_epoch=False,
+)
 
-    Args:
-        node: The node for which to calculate the validation cost.
-
-    Returns:
-        The validation cost as a float. Returns a high cost if the partial
-        program is not found.
-
-    Raises:
-        near.PartialProgramNotFoundError: If the partial program is not found.
-    """
-    # Initialize the trainer with the given configuration
-
-    early_stop_callback = EarlyStopping(
-        monitor="train_acc", min_delta=1e-3, patience=5, verbose=False, mode="max"
-    )
-    trainer = Trainer(
-        max_epochs=trainer_cfg.n_epochs,
-        devices="auto",
-        # accelerator="cpu",
-        accelerator="gpu",
-        enable_checkpointing=False,
-        enable_model_summary=False,
-        logger=False,
-        callbacks=[early_stop_callback],
-        enable_progress_bar=False,
-    )
-    try:
-        # Initialize the program
-        initialized_p = neural_dsl.initialize(node.program)
-    except near.PartialProgramNotFoundError:
-        print("Partial program not found\n", render_s_expression(node.program))
-        import IPython
-
-        IPython.embed()
-        # Return a high cost if the partial program is not found
-        return 10000.0, (0.0, 0.0)
-
-    # Compute the model from the initialized program
-    if initialized_p.symbol.startswith(neural_dsl.neural_fn_tag):
-        model = neural_dsl.compute(initialized_p)
-    else:
-        del initialized_p
-        model = near.TorchProgramModule(dsl=neural_dsl, program=node.program)
-
-    # Initialize NEARTrainer with the model and configuration
-    pl_model = near.ECGTrainer(model, config=trainer_cfg)
-
-    try:
-        trainer.fit(pl_model, datamodule.train_dataloader())
-        trainer.validate(pl_model, datamodule.val_dataloader(), verbose=False)
-    except near.TrainingError as e:
-        print("Training error\n", e, "\n", render_s_expression(node.program))
-        return 10000.0, (0.0, 0.0)
-
-    # Return the validation loss
-    metrics = (
-        # trainer.callback_metrics['val_acc'].item(),
-        trainer.callback_metrics["val_weighted_avg_f1"].item(),
-        trainer.callback_metrics["val_auroc"].item(),
-    )
-    return trainer.callback_metrics["val_acc"].item(), metrics
-
-
-# penalty = 0.01
-def cost_plus_heuristic(node):
-    cost, metrics = validation_cost(node)  # accuracy [0, 1]
-    n_holes = len(list(ns.all_holes(node.program)))
-    # edge_cost = penalty * n_holes
-    # tot_cost = edge_cost - cost
-    tot_cost = 1 - cost
-    return tot_cost, metrics
+# Create NEAR cost with validation
+cost_function = near.NearCost(
+    structural_cost=near.MinimalStepsNearStructuralCost(symbol_costs={}),
+    validation_heuristic=validation_cost,
+    structural_cost_weight=0.5,
+    embedding=near.IdentityProgramEmbedding(),
+)
 
 
 def checker(node):
@@ -370,20 +272,21 @@ g = near.near_graph(
     ),
     max_depth=max_depth,
     is_goal=checker,
-)
-iterator = ns.search.bounded_astar_async(
-    g, cost_plus_heuristic, max_depth=max_depth, max_workers=32
+    cost=cost_function,
 )
 
-# iterator = ns.search.bounded_astar(
-#     g, cost_plus_heuristic, max_depth=15, verbose=True
-# )
+# Use bounded_astar_async with the new API
+iterator = ns.search.bounded_astar_async(
+    g, max_depth=max_depth, max_workers=32
+)
+
 count = 0
 best_program_nodes = []
 for node in iterator:
-    cost = validation_cost(node)
-    best_program_nodes.append((node, cost))
-    print("Found a program node with cost", cost)
+    # Compute final cost with full metrics
+    final_cost = cost_function.compute_cost(node)
+    best_program_nodes.append((node, final_cost))
+    print(f"Found program with cost {final_cost}: {render_s_expression(node.program)}")
     count += 1
     if count > 10:
         break
@@ -394,10 +297,7 @@ import pickle
 
 with open("best_program_nodes.pkl", "wb") as f:
     pickle.dump(best_program_nodes, f)
+
 import IPython
 
 IPython.embed()
-
-
-# Depth: 0, Cost: -0.4897, Program: ??::<{f, 144} -> {f, 9}>: : 0it [0Depth: 0, Cost: -0.4897, Program:Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 2it [00:11,  6.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:11,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 6it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -Depth: 3, Cost: -0.5749, Program: (output (select_ampDepth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_Depth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_6))) : : 14558it [Depth: 6, CostDepth: 8, Cost: -0.602, ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it]
-# ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it]
