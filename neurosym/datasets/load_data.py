@@ -74,15 +74,23 @@ class DatasetFromNpy(torch.utils.data.Dataset):
 
     # TODO test/val split
 
-    def __init__(self, inut_descriptor, output_descriptor, seed):
+    def __init__(self, input_descriptor, output_descriptor, seed, is_regression=False):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
-        self.inputs = _load_npy(inut_descriptor)
+        self.is_regression = is_regression
+        self.inputs = _load_npy(input_descriptor)
         self.outputs = _load_npy(output_descriptor)
+        # convert float64 to float32
+        if np.issubdtype(self.inputs.dtype, np.float64):
+            self.inputs = self.inputs.astype(np.float32)
+
+        if np.issubdtype(self.outputs.dtype, np.float64):
+            self.outputs = self.outputs.astype(np.float32)
+
         assert len(self.inputs) == len(self.outputs)
         if seed is not None:
             self.ordering = np.random.RandomState(seed=seed).permutation(

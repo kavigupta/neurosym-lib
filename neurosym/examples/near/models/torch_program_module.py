@@ -21,10 +21,10 @@ class TorchProgramModule(nn.Module):
             initialized_program
         )
         self.dsl = dsl
-        self.initalized_program = initialized_program
+        self.initialized_program = initialized_program
         self.contained_modules = nn.ModuleList(
-            list(self.initalized_program.all_state_values())
+            list(self.initialized_program.all_state_values())
         )
 
     def forward(self, *args, environment):
-        return self.dsl.compute(self.initalized_program, environment)(*args)
+        return self.dsl.compute(self.initialized_program, environment)(*args)

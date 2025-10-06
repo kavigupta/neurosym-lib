@@ -6,23 +6,27 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-# read $(dirname $0)/../setup.cfg
-
 import os
-import configparser
+import sys
 
+# Import tomllib for Python 3.11+ or tomli for older versions
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
-config = configparser.ConfigParser()
-with open(os.path.join(os.path.dirname(__file__), "..", "..", "setup.cfg")) as f:
-    config.read_file(f)
-config = config["metadata"]
+# Read pyproject.toml
+pyproject_path = os.path.join(os.path.dirname(__file__), "..", "..", "pyproject.toml")
+with open(pyproject_path, "rb") as f:
+    config = tomllib.load(f)
 
+project_config = config["project"]
 
-project = config["name"]
-author = config["author"]
+project = project_config["name"]
+author = project_config["authors"][0]["name"]
 copyright = "2024, " + author
 
-release = version = config["version"]
+release = version = project_config["version"]
 
 # -- General configuration
 

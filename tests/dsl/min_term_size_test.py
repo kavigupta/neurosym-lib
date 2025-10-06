@@ -7,7 +7,6 @@ from neurosym.examples import near
 
 
 class TestMinimalTermSize(unittest.TestCase):
-
     def instrumentDSL(self, dsl):
         count = 0
         original_expansions_for_type = dsl.expansions_for_type
@@ -70,7 +69,7 @@ class TestMinimalTermSize(unittest.TestCase):
         for i in range(1, self.num_nesting):
             for c in "fg":
                 dslf.production(
-                    f"{c}_{i}", f"(t{i-1}, t{i-1}) -> t{i}", lambda x, y: x + y
+                    f"{c}_{i}", f"(t{i - 1}, t{i - 1}) -> t{i}", lambda x, y: x + y
                 )
         return dslf.finalize()
 
@@ -92,7 +91,7 @@ class TestMinimalTermSize(unittest.TestCase):
         dslf = ns.DSLFactory()
         dslf.production("1", "() -> t0", lambda x: x)
         for i in range(1, self.num_linear_nesting):
-            dslf.production(f"f_{i}", f"(t{i-1}) -> t{i}", lambda x: x)
+            dslf.production(f"f_{i}", f"(t{i - 1}) -> t{i}", lambda x: x)
         return dslf.finalize()
 
     @parameterized.expand([(i,) for i in range(1, num_linear_nesting, 10)])
@@ -180,7 +179,7 @@ class TestMinimalTermSize(unittest.TestCase):
             for sym in "ab":
                 dslf.production(
                     f"{sym}_{i}",
-                    f"({sym}{i-1}, {sym}{i-1}) -> {sym}{i}",
+                    f"({sym}{i - 1}, {sym}{i - 1}) -> {sym}{i}",
                     lambda x, y: x + y,
                 )
         dslf.production("done_a", f"a{self.num_nesting - 1} -> t", lambda x: x)
