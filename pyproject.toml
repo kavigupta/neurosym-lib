@@ -49,11 +49,13 @@ test = [
   "pytest",
   "parameterized",
   "matplotlib", # needed for tutorial test
+  "sphobjinv",
 ]
 lint = [
   "pylint==3.2.7",
   "black==23.9.1",
   "isort==5.12.0",
+  "sphobjinv",
 ]
 docs = [
   "sphinx==7.1.2",

@@ -6,7 +6,7 @@ from torch import nn
 import neurosym as ns
 from neurosym.examples import near
 
-dataset_factory = lambda train_seed: ns.DatasetWrapper(
+dataset_factory = lambda train_seed: ns.DatasetWrapper(  # noqa: E731
     ns.DatasetFromNpy(
         "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
         "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
@@ -74,7 +74,6 @@ def predicate_dsl():
 
 
 class TestHierarchicalBouncingBall(unittest.TestCase):
-
     def check_ground_bounce(self, node):
         cond, cons, alt = node.children
         cond = cond.children[0].state["lin"]
@@ -94,7 +93,8 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             symbol="linear_bool",
             refined_dsl=predicate_dsl(),
             typ=ns.parse_type("([{f, 4}]) -> [{f, 4}]"),
-            validation_cost_creator=lambda embedding, symbol_costs: near.default_near_cost(
+            validation_cost_creator=lambda embedding,
+            symbol_costs: near.default_near_cost(
                 trainer_cfg=near.NEARTrainerConfig(
                     lr=0.1,
                     n_epochs=100,

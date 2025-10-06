@@ -43,7 +43,6 @@ class TestSearch(unittest.TestCase):
         )
 
     def test_astar(self):
-
         def cost(x):
             if isinstance(x.program, ns.SExpression) and x.program.children:
                 return len(str(x.program.children[0]))

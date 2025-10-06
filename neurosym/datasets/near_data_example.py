@@ -13,5 +13,5 @@ def near_data_example(train_seed, **kwargs) -> DatasetWrapper:
         "train_ex_labels.npy",
         "test_ex_data.npy",
         "test_ex_labels.npy",
-        **kwargs
+        **kwargs,
     )(train_seed)

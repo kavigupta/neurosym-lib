@@ -76,12 +76,10 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-groups
-      - name: Lint with pylint
+      - name: Lint with ruff
         run: |
-          uv run pylint --rcfile=.pylintrc neurosym tests
-          uv run isort neurosym tests
-          uv run black neurosym tests
-          bash -c '[ $(git status --porcelain --untracked-files=no | wc -c) -eq 0 ]  || (git status; git diff; exit 1)'
+          uv run ruff check --exit-non-zero-on-fix neurosym tests
+          uv run ruff format --check neurosym tests
 
   check-docs:
     runs-on: ubuntu-latest

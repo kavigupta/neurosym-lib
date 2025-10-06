@@ -51,9 +51,9 @@ class NearTransformer(nn.Module):
     def _project_input(self, type_shape, x):
         x = self._flatten_tensor_axes(type_shape, x)
         # add more axes if necessary
-        assert (
-            x.shape[-1] <= self.max_tensor_size
-        ), f"Input tensor too large: {x.shape[-1]} > {self.max_tensor_size}"
+        assert x.shape[-1] <= self.max_tensor_size, (
+            f"Input tensor too large: {x.shape[-1]} > {self.max_tensor_size}"
+        )
         x = torch.cat(
             [
                 x,
@@ -73,9 +73,9 @@ class NearTransformer(nn.Module):
         output_typ: Type,
         *inputs: Tuple[TypeAnnotatedObject, ...],
     ):
-        assert isinstance(
-            output_typ, Type
-        ), f"Expected Type, but received {type(output_typ)}"
+        assert isinstance(output_typ, Type), (
+            f"Expected Type, but received {type(output_typ)}"
+        )
         type_shape, output_shape = infer_output_shape(
             [x.object_type for x in inputs],
             [x.object_value.shape for x in inputs],
@@ -102,10 +102,9 @@ class NearTransformer(nn.Module):
         return out
 
     def forward(self, *args, environment, **kwargs):
-
-        assert (
-            not kwargs
-        ), f"No keyword arguments are allowed, but received {' '.join(repr(x) for x in kwargs)}"
+        assert not kwargs, (
+            f"No keyword arguments are allowed, but received {' '.join(repr(x) for x in kwargs)}"
+        )
 
         if not isinstance(self.typ, ArrowType):
             assert len(args) == 0
@@ -148,7 +147,6 @@ class BasicMultiDimensionalPositionalEncoding(nn.Module):
         )
 
     def _get_positional_encoding(self, max_len, d_model):
-
         position = torch.arange(max_len).unsqueeze(1)
         div_term = torch.exp(
             torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)

@@ -29,9 +29,9 @@ def _classify_type(typ):
     Classifies a type as either a tensor or a sequence of tensors. These are the only types supported by the MLP/RNN.
     """
     if isinstance(typ, ListType):
-        assert isinstance(
-            typ.element_type, TensorType
-        ), f"Expected a list of tensors, but received {render_type(typ)}"
+        assert isinstance(typ.element_type, TensorType), (
+            f"Expected a list of tensors, but received {render_type(typ)}"
+        )
         # return "sequence", typ.element_type.shape
         return _MLPRNNInput(is_sequence=True, shape=typ.element_type.shape)
     if isinstance(typ, TensorType):
@@ -53,7 +53,6 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
     def initialize_module(
         self, type_with_environment: TypeWithEnvironment
     ) -> nn.Module | None:
-
         typ = type_with_environment.typ
         input_types = []
         if isinstance(typ, ArrowType):
@@ -87,7 +86,6 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
 
 
 class _GenericMLPRNNModule(nn.Module):
-
     def __init__(
         self,
         hidden_size,

@@ -174,7 +174,6 @@ objects = get_objects()
 
 
 class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         subprocess.run(["make", "html"], cwd="docs", check=True)
