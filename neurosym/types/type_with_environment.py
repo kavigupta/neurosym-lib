@@ -57,6 +57,41 @@ class Environment:
         }
         return Environment(frozendict(result))
 
+    def attempt_insert(self, index: int, typ: Type) -> "Environment | None":
+        """
+        Attempt to insert the given type at the given index, shifting other types
+        up by one. If the index is beyond the current length of the environment,
+        this will fail and return None.
+        """
+        if index > len(self):
+            return None
+        result = {}
+        for i, existing_typ in self._elements.items():
+            if i < index:
+                result[i] = existing_typ
+            else:
+                result[i + 1] = existing_typ
+        result[index] = typ
+        return Environment(frozendict(result))
+
+    def attempt_remove(self, index: int, typ: Type) -> "Environment | None":
+        """
+        Attempt to remove the given type at the given index, shifting other types
+        down by one. If the index is beyond the current length of the environment,
+        or if the type at the index does not match, this will fail and return None.
+        """
+        if index >= len(self):
+            return None
+        if index not in self._elements or self._elements[index] != typ:
+            return None
+        result = {}
+        for i, existing_typ in self._elements.items():
+            if i < index:
+                result[i] = existing_typ
+            elif i > index:
+                result[i - 1] = existing_typ
+        return Environment(frozendict(result))
+
     def merge(self, other: "Environment"):
         """
         Merge two environments, asserting that they agree on the same indices.
@@ -144,6 +179,20 @@ class PermissiveEnvironmment:
         del new_types
         return self
 
+    def attempt_insert(self, index: int, typ: Type):
+        """
+        Just return self, since any types are allowed.
+        """
+        del index, typ
+        return self
+
+    def attempt_remove(self, index: int, typ: Type):
+        """
+        Just return self, since any types are allowed.
+        """
+        del index, typ
+        return self
+
     def contains_type_at(self, typ: Type, index: int):
         """
         Just return True, since any types are allowed.
@@ -153,7 +202,7 @@ class PermissiveEnvironmment:
 
     def __len__(self):
         """
-        The number of elements in this environment is 0, just a placeholder.
+        The number of elements in this environment is infinity, just a placeholder.
         """
         return 0
 

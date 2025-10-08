@@ -5,6 +5,7 @@ from typing import Callable, Dict, Union
 from torch import NoneType
 
 from ..types.type_signature import (
+    DropTypeSignature,
     LambdaTypeSignature,
     TypeSignature,
     VariableTypeSignature,
@@ -208,6 +209,41 @@ class LambdaProduction(Production):
 
         [body] = children
         return LambdaFunction.of(dsl, body, self._type_signature, environment)
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class DropProduction(Production):
+    """
+    This production represents a lambda function. This is added automatically
+    to the DSL by the :py:class:`neurosym.DSLFactory` when :py:meth:`neurosym.DSLFactory.lambdas`
+    is called.
+    """
+
+    _unique_id: int
+    _type_signature: DropTypeSignature
+
+    def base_symbol(self):
+        return f"drop{self._type_signature.index_in_env}"
+
+    def get_index(self):
+        return self._unique_id
+
+    def with_index(self, index):
+        return DropProduction(index, self._type_signature)
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def apply(self, dsl, state, children, environment):
+        print(environment)
+        raise NotImplementedError()
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"

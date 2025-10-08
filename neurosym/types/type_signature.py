@@ -20,7 +20,11 @@ from neurosym.types.type import (
     TypeVariable,
     UnificationError,
 )
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import (
+    Environment,
+    PermissiveEnvironmment,
+    TypeWithEnvironment,
+)
 
 
 class TypeSignature(ABC):
@@ -201,6 +205,54 @@ class LambdaTypeSignature(TypeSignature):
             return None
         parent = twes[0].env.parent(self.input_types)
         return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
+
+
+@dataclass
+class DropTypeSignature(TypeSignature):
+    """
+    Represents the type signature of the drop production. A drop operation
+    drops a variable of a given type at a given index in the environment.
+
+    :param index_in_env: The index of the variable in the environment.
+    :param drop_type: The type of the variable to drop.
+    """
+
+    index_in_env: int
+    drop_type: Type
+
+    def arity(self) -> int:
+        # just the body
+        return 1
+
+    def render(self) -> str:
+        # pylint: disable=cyclic-import
+        from neurosym.types.type_string_repr import render_type
+
+        body = TypeVariable("body")
+
+        return f"D<{render_type(body)} - ${self.index_in_env}::{render_type(self.drop_type)}> -> {render_type(body)}"
+
+    def unify_return(
+        self, twe: TypeWithEnvironment
+    ) -> Union[List[TypeWithEnvironment], NoneType]:
+        new_env = twe.env.attempt_insert(self.index_in_env, self.drop_type)
+        if new_env is None:
+            return None
+        return [TypeWithEnvironment(twe.typ, new_env)]
+
+    def return_type_template(self) -> Type:
+        return TypeVariable("body")
+
+    def unify_arguments(
+        self, twes: List[TypeWithEnvironment]
+    ) -> Union[TypeWithEnvironment, NoneType]:
+        if len(twes) != 1:
+            return None
+        twe = twes[0]
+        new_env = twe.env.attempt_remove(self.index_in_env, self.drop_type)
+        if new_env is None:
+            return None
+        return TypeWithEnvironment(twe.typ, new_env)
 
 
 @dataclass
