@@ -30,7 +30,7 @@ dependencies = [
   "lightning",
   "permacache",
   "requests",
-  "stitch-core==0.1.27",
+  "stitch-core==0.1.28",
   "scikit-learn",
   "s-exp-parser==1.4.0",
   "no_toplevel_code==1.0.0",
