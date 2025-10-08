@@ -55,7 +55,9 @@ simple_test_graph = StringContentsSearchGraph(
 
 
 class TestSearch(unittest.TestCase):
+
     def test_astar_basic_1(self):
+
         g = simple_test_graph
 
         node = next(ns.search.astar(g))

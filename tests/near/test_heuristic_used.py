@@ -11,6 +11,7 @@ from neurosym.examples import near
 
 
 class TestNeuralModels(unittest.TestCase):
+
     def test_doesnt_work_no_heuristic_combinator(self):
         self.assertNearReturns(
             6,

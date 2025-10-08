@@ -4,6 +4,7 @@ import neurosym as ns
 
 
 class TestSkipAhead(unittest.TestCase):
+
     def dslGraph(self, dsl, target_type):
         return ns.DSLSearchGraph(
             dsl,
@@ -35,6 +36,7 @@ class TestSkipAhead(unittest.TestCase):
         )
 
     def test_do_skip(self):
+
         g = self.dslGraph(self.basicSkipAheadDSL(), "g")
 
         self.assertNodes(

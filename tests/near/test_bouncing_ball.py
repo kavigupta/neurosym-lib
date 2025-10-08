@@ -6,7 +6,7 @@ from torch import nn
 import neurosym as ns
 from neurosym.examples import near
 
-dataset_factory = lambda train_seed: ns.DatasetWrapper(  # noqa: E731
+dataset_factory = lambda train_seed: ns.DatasetWrapper(
     ns.DatasetFromNpy(
         "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
         "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
@@ -74,6 +74,7 @@ def predicate_dsl():
 
 
 class TestHierarchicalBouncingBall(unittest.TestCase):
+
     def check_ground_bounce(self, node):
         cond, cons, alt = node.children
         cond = cond.children[0].state["lin"]

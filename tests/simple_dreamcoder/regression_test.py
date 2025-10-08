@@ -25,11 +25,9 @@ class SimpleDreamcoderRegressionTest(unittest.TestCase):
                 "outputs/simple_dreamcoder_test", **kwargs
             )
         )
-        (
-            timings_c,
-            val_errors_c,
-            test_errors_c,
-        ) = simple_dreamcoder.compute_learning_curve_for_default_experiment(**kwargs)
+        timings_c, val_errors_c, test_errors_c = (
+            simple_dreamcoder.compute_learning_curve_for_default_experiment(**kwargs)
+        )
         print(result_s)
         self.assertEqual(result_s["val_errors"], val_errors_c)
         self.assertEqual(result_s["test_errors"], test_errors_c)

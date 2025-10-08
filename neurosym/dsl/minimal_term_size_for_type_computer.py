@@ -6,6 +6,7 @@ from neurosym.utils.documentation import internal_only
 
 @internal_only
 class MinimalTermSizeForTypeComputer:
+
     def __init__(self, dsl, symbol_costs: Dict[str, int]):
         self.dsl = dsl
         self._value = {}

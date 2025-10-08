@@ -116,6 +116,7 @@ def get_neural_dsl(dsl):
 def get_validation_cost(
     dataset, embedding=near.IdentityProgramEmbedding(), symbol_costs=None
 ):
+
     if symbol_costs is None:
         symbol_costs = {}
 
@@ -135,7 +136,9 @@ def get_validation_cost(
 
 
 class TestPiecewiseLinear(unittest.TestCase):
+
     def near_graph(self, neural_dsl, validation_cost):
+
         return near.validated_near_graph(
             neural_dsl,
             ns.parse_type("{f, 2} -> {f, 1}"),
@@ -146,6 +149,7 @@ class TestPiecewiseLinear(unittest.TestCase):
         )
 
     def search(self, g, count=3):
+
         iterator = ns.search.bounded_astar(g, max_depth=10000, max_iterations=100)
 
         return list(itertools.islice(iterator, count))

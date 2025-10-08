@@ -53,6 +53,7 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
     def initialize_module(
         self, type_with_environment: TypeWithEnvironment
     ) -> nn.Module | None:
+
         typ = type_with_environment.typ
         input_types = []
         if isinstance(typ, ArrowType):
@@ -86,6 +87,7 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
 
 
 class _GenericMLPRNNModule(nn.Module):
+
     def __init__(
         self,
         hidden_size,
