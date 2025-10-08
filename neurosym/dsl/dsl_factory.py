@@ -309,6 +309,7 @@ class DSLFactory:
                     for type_id, variable_type in enumerate(variable_types)
                     for index_in_env in range(self.lambda_parameters["max_env_depth"])
                 ]
+                stable_symbols.add("<drop>")
 
         if self.prune:
             assert self.target_types is not None

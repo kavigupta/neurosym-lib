@@ -242,8 +242,12 @@ class DropProduction(Production):
         return {}
 
     def apply(self, dsl, state, children, environment):
-        print(environment)
-        raise NotImplementedError()
+        assert len(children) == 1
+        return dsl.compute(
+            children[0],
+            environment[: self._type_signature.index_in_env]
+            + environment[self._type_signature.index_in_env + 1 :],
+        )
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
