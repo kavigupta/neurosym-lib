@@ -20,11 +20,7 @@ from neurosym.types.type import (
     TypeVariable,
     UnificationError,
 )
-from neurosym.types.type_with_environment import (
-    Environment,
-    PermissiveEnvironmment,
-    TypeWithEnvironment,
-)
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 
 class TypeSignature(ABC):
