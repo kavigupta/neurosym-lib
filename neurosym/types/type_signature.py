@@ -235,7 +235,7 @@ class DropTypeSignature(TypeSignature):
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        new_env = twe.env.attempt_insert(self.index_in_env, self.drop_type)
+        new_env = twe.env.attempt_remove(self.index_in_env, self.drop_type)
         if new_env is None:
             return None
         return [TypeWithEnvironment(twe.typ, new_env)]
@@ -249,7 +249,7 @@ class DropTypeSignature(TypeSignature):
         if len(twes) != 1:
             return None
         twe = twes[0]
-        new_env = twe.env.attempt_remove(self.index_in_env, self.drop_type)
+        new_env = twe.env.attempt_insert(self.index_in_env, self.drop_type)
         if new_env is None:
             return None
         return TypeWithEnvironment(twe.typ, new_env)
