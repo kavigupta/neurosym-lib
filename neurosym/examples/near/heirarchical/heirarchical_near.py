@@ -22,7 +22,7 @@ def heirarchical_near_graph(
         [Callable[[TorchProgramModule], nn.Module], Dict[str, float]], NearCost
     ],
     neural_hole_filler: NeuralHoleFiller,
-    **near_params
+    **near_params,
 ):
     r"""
     Runs NEAR heirarchically. First finds a program using the high_level_dsl, then
