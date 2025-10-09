@@ -209,6 +209,9 @@ class DropTypeSignature(TypeSignature):
     Represents the type signature of the drop production. A drop operation
     drops a variable of a given type at a given index in the environment.
 
+    This is parameterized by the type of the variable being removed, so
+    we can infer forward typing.
+
     :param index_in_env: The index of the variable in the environment.
     :param drop_type: The type of the variable to drop.
     """

@@ -217,9 +217,14 @@ class LambdaProduction(Production):
 @dataclass
 class DropProduction(Production):
     """
-    This production represents a lambda function. This is added automatically
+    This production represents a drop operation. This is added automatically
     to the DSL by the :py:class:`neurosym.DSLFactory` when :py:meth:`neurosym.DSLFactory.lambdas`
-    is called.
+    is called with `include_drops=True`.
+
+    `dropk` removes variable `k` from the environment.
+
+    :param _unique_id: the unique id of this drop production
+    :param _type_signature: the type signature of this drop production
     """
 
     _unique_id: int

@@ -37,6 +37,7 @@ Type Signatures
 .. autoclass:: neurosym.VariableTypeSignature
 .. autoclass:: neurosym.LambdaTypeSignature
     :members: function_arity
+.. autoclass:: neurosym.DropTypeSignature
 
 Utilities for handling tensor shapes
 ------------------------------------------

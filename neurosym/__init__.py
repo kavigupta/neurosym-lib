@@ -11,6 +11,7 @@ from neurosym.dsl.abstraction import (
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     ConcreteProduction,
+    DropProduction,
     FunctionLikeProduction,
     LambdaProduction,
     ParameterizedProduction,
@@ -120,6 +121,7 @@ from .types.type import (
     UnificationError,
 )
 from .types.type_signature import (
+    DropTypeSignature,
     FunctionTypeSignature,
     LambdaTypeSignature,
     TypeSignature,
