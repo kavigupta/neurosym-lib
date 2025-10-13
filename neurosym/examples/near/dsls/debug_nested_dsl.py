@@ -75,7 +75,7 @@ def get_variable_dsl(nesting):
         dslf.production(f"correct_{i}", typ, _expand_last_axis)
         dslf.production(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
 
-    dslf.lambdas(max_arity=1)
+    dslf.lambdas(require_arities=[1])
     dslf.prune_to("{f, 1} -> {f, %s}" % (nesting + 1))
     return dslf.finalize()
 
