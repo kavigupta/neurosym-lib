@@ -100,20 +100,18 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(self, max_arity=2, max_type_depth=4, max_env_depth=4):
+    def lambdas(self, require_arities=(1, 2), max_type_depth=4):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
         ($i_j) productions for each variable de bruijn index i and type j.
 
-        :param max_arity: The maximum arity of lambda functions to generate.
+        :param require_arities: Arities of lambdas to include.
         :param max_type_depth: The maximum depth of types to generate.
-        :param max_env_depth: The maximum depth of the environment to generate.
         """
         self.lambda_parameters = dict(
-            max_arity=max_arity,
+            require_arities=require_arities,
             max_type_depth=max_type_depth,
-            max_env_depth=max_env_depth,
         )
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
@@ -252,7 +250,7 @@ class DSLFactory:
         if self.lambda_parameters is not None:
             types, constructors_lambda = _type_universe(
                 known_types,
-                require_arity_up_to=self.lambda_parameters["max_arity"],
+                require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
             top_levels = [
@@ -291,7 +289,7 @@ class DSLFactory:
                     type_id, VariableTypeSignature(variable_type, index_in_env)
                 )
                 for type_id, variable_type in enumerate(variable_types)
-                for index_in_env in range(self.lambda_parameters["max_env_depth"])
+                for index_in_env in range(self.max_env_depth)
             ]
             # don't prune and reindex variables
             stable_symbols.add("<variable>")

@@ -11,10 +11,10 @@ class EnumerationRegressionTest(unittest.TestCase):
             {line.strip() for line in expected.strip().split("\n")},
         )
 
-    def rendered_dsl(self, lambdas_kwargs=None):
+    def rendered_dsl(self, lambdas_kwargs=None, **kwargs):
         if lambdas_kwargs is None:
             lambdas_kwargs = {}
-        dslf = ns.DSLFactory()
+        dslf = ns.DSLFactory(**kwargs)
         dslf.known_types("i")
         dslf.lambdas(**lambdas_kwargs)
         return dslf.finalize().render()
@@ -52,7 +52,7 @@ class EnumerationRegressionTest(unittest.TestCase):
 
     def test_limited_arity(self):
         self.assertRenderingEqual(
-            self.rendered_dsl(lambdas_kwargs=dict(max_arity=1)),
+            self.rendered_dsl(lambdas_kwargs=dict(require_arities=(1,))),
             """
             lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
             lam_1 :: L<#body|i> -> i -> #body
@@ -87,7 +87,7 @@ class EnumerationRegressionTest(unittest.TestCase):
 
     def test_limited_type_depth_env_depth(self):
         self.assertRenderingEqual(
-            self.rendered_dsl(lambdas_kwargs=dict(max_type_depth=3.5, max_env_depth=2)),
+            self.rendered_dsl(lambdas_kwargs=dict(max_type_depth=3.5), max_env_depth=2),
             """
             lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
             lam_1 :: L<#body|i;i> -> (i, i) -> #body
