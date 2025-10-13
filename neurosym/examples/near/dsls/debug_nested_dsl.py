@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torch import nn
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
@@ -33,12 +32,11 @@ def get_combinator_dsl(nesting):
     dslf = DSLFactory()
     dslf.production(
         "terminal",
-        "() -> {f, 1} -> {f, 2}",
-        lambda lin: lin,
-        dict(lin=lambda: nn.Linear(1, 2)),
+        "() -> {f, 1} -> {f, 1}",
+        lambda: lambda x: x,
     )
 
-    for i in range(2, nesting + 1):
+    for i in range(1, nesting + 1):
         typ = "({f, 1} -> {f, %s}) -> {f, 1} -> {f, %s}" % (i, i + 1)
         dslf.production(
             f"correct_{i}",
@@ -63,14 +61,8 @@ def get_variable_dsl(nesting):
     a variable
     """
     dslf = DSLFactory()
-    dslf.production(
-        "terminal",
-        "{f, 1} -> {f, 2}",
-        lambda x, *, lin: lin(x),
-        dict(lin=lambda: nn.Linear(1, 2)),
-    )
 
-    for i in range(2, nesting + 1):
+    for i in range(1, nesting + 1):
         typ = "{f, %s} -> {f, %s}" % (i, i + 1)
         dslf.production(f"correct_{i}", typ, _expand_last_axis)
         dslf.production(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
