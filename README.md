@@ -21,3 +21,8 @@ $ uv sync --all-groups
 $ uv run pre-commit install
 $ uv pip install -e .
 ```
+
+
+## Reproducibility for NEAR
+
+[Reproducibility for NEAR](notebooks/report.md)
