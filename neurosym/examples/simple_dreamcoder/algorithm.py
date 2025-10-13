@@ -71,7 +71,7 @@ def compute_best_fits_for_each(
     family: ProgramDistributionFamily,
     dist: ProgramDistribution,
     *,
-    count: int = 5000
+    count: int = 5000,
 ):
     """
     Compute the best fits for each sequence in the dataset. This is done by ensuring
