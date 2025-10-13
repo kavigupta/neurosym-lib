@@ -86,7 +86,6 @@ Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
 .. autofunction:: neurosym.examples.near.schedule_optimizer
-.. autoclass:: neurosym.examples.near.UninitializableProgramError
 
 For testing and demonstration purposes
 --------------------------------------------
