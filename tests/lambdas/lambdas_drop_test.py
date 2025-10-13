@@ -3,6 +3,8 @@ import unittest
 import numpy as np
 from torch import nn
 
+from parameterized import parameterized
+
 import neurosym as ns
 from neurosym.examples import near
 
@@ -55,7 +57,10 @@ class TestSearchGraphDrops(unittest.TestCase):
             metadata_computer=ns.NoMetadataComputer(),
         )
         path = [
-            ["??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>", ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"]],
+            [
+                "??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>",
+                ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"],
+            ],
             [
                 "(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)",
                 [
@@ -104,14 +109,22 @@ class TestSearchGraphDrops(unittest.TestCase):
             print("\t", ns.render_s_expression(node.program))
 
 
-class TestDropInterface(unittest.TestCase):
-    def test_sequential_dsl_astar_interface(self):
-        """
-        Test sequential_dsl with Astar in the NEARInterface
-        """
-        datamodule = near.with_drops.add_variables_domain_datamodule()
+count = 14
 
-        original_dsl = near.with_drops.basic_drop_dsl(10, is_vectorized=True, include_drops=True)
+
+class TestDropInterface(unittest.TestCase):
+
+    indices_all = [
+        (np.random.default_rng(10 + i).choice(count, size=3, replace=False).tolist(),)
+        for i in range(5)
+    ]
+
+    def run_search(self, indices, include_drops, cost, max_iterations):
+        datamodule = near.with_drops.add_variables_domain_datamodule(count, indices)
+
+        original_dsl = near.with_drops.basic_drop_dsl(
+            count, is_vectorized=True, include_drops=include_drops
+        )
         print(original_dsl.render())
         interface = near.NEAR(n_epochs=2, max_depth=None, lr=0.01)
 
@@ -129,14 +142,36 @@ class TestDropInterface(unittest.TestCase):
             search_strategy=near.with_drops.osg_astar,
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
-                cost=near.with_drops.MinimalStepsNearStructuralCostWithDrops,
+                cost=cost,
                 structural_cost_weight=0.1,
             ),
             is_goal=is_goal,
         )
-        [result] = interface.fit(
+        return interface.fit(
             datamodule=datamodule,
-            program_signature="{f, 10} -> {f, 1}",
+            program_signature="{f, %s} -> {f, 1}" % count,
             n_programs=1,
+            max_iterations=max_iterations,
         )
-        print(result)
+
+    @parameterized.expand(indices_all)
+    def test_with_drops_works(self, indices):
+        result = self.run_search(
+            indices,
+            include_drops=True,
+            cost=near.with_drops.MinimalStepsNearStructuralCostWithDrops,
+            max_iterations=1000,
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_without_drops_occassionally_catastrophically_fails(self):
+        for [index] in self.indices_all:
+            result = self.run_search(
+                index,
+                include_drops=False,
+                cost=near.MinimalStepsNearStructuralCost,
+                max_iterations=10000,
+            )
+            if len(result) == 0:
+                return
+        self.fail("Expected at least one failure without drops")

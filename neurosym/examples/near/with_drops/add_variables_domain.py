@@ -4,11 +4,11 @@ from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
 
 
-def add_variables_domain_datamodule():
+def add_variables_domain_datamodule(count, indices):
     rng = np.random.default_rng(0)
-    fn = lambda x: x[:, [1]] + x[:, [2]] + x[:, [3]]
-    x_train = rng.standard_normal((1000, 10)).astype(np.float32)
-    x_test = rng.standard_normal((200, 10)).astype(np.float32)
+    fn = lambda x: sum(x[:, [i]] for i in indices)
+    x_train = rng.standard_normal((1000, count)).astype(np.float32)
+    x_test = rng.standard_normal((200, count)).astype(np.float32)
 
     datamodule = DatasetWrapper(
         DatasetFromNpy(
