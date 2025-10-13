@@ -308,8 +308,7 @@ class DSLFactory:
                 stable_symbols.add("<drop>")
 
         if self.prune:
-            # assert self.max_env_depth == 5
-            # assert self.target_types is not None
+            assert self.target_types is not None
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
