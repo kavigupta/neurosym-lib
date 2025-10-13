@@ -1,2 +1,3 @@
 from .add_variables_domain import add_variables_domain_datamodule, basic_drop_dsl
 from .cost import MinimalStepsNearStructuralCostWithDrops
+from .osg_astar import osg_astar

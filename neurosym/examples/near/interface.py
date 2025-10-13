@@ -30,7 +30,7 @@ class NEAR:
 
     def __init__(
         self,
-        max_depth: int,
+        max_depth: Union[int, NoneType] = None,
         lr: float = 1e-4,
         n_epochs: int = 10,
         accelerator: str = "cpu",
@@ -133,7 +133,11 @@ class NEAR:
         )
 
         iterator = self.search_strategy(
-            g, max_depth=self.max_depth, max_iterations=max_iterations
+            g,
+            max_iterations=max_iterations,
+            **(
+                dict(max_depth=self.max_depth) if self.max_depth is not None else dict()
+            ),
         )
 
         sexprs = list(itertools.islice(iterator, n_programs))

@@ -1,5 +1,4 @@
 import unittest
-from functools import partial
 
 import numpy as np
 from torch import nn
@@ -114,7 +113,7 @@ class TestDropInterface(unittest.TestCase):
 
         original_dsl = near.with_drops.basic_drop_dsl(10, is_vectorized=True)
         print(original_dsl.render())
-        interface = near.NEAR(n_epochs=20, max_depth=1000)
+        interface = near.NEAR(n_epochs=20, max_depth=None)
 
         def is_goal(node):
             f2 = original_dsl.compute(original_dsl.initialize(node.program))
@@ -127,7 +126,7 @@ class TestDropInterface(unittest.TestCase):
             dsl=original_dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=100),
-            search_strategy=partial(ns.search.bounded_astar, max_depth=3),
+            search_strategy=near.with_drops.osg_astar,
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=near.with_drops.MinimalStepsNearStructuralCostWithDrops,
