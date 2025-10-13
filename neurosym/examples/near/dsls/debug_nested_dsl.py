@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torch import nn
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
