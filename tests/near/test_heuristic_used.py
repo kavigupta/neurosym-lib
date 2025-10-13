@@ -88,13 +88,13 @@ class TestNeuralModels(unittest.TestCase):
 
     def compute_combinator_soln(self, nesting):
         expected = ns.SExpression("terminal", ())
-        for i in range(2, nesting + 1):
+        for i in range(1, nesting + 1):
             expected = ns.SExpression(f"correct_{i}", (expected,))
         return ns.render_s_expression(expected)
 
     def compute_variable_soln(self, nesting):
-        expected = ns.SExpression("terminal", (ns.SExpression("$0_0", ()),))
-        for i in range(2, nesting + 1):
+        expected = ns.SExpression("$0_0", ())
+        for i in range(1, nesting + 1):
             expected = ns.SExpression(f"correct_{i}", (expected,))
         expected = ns.SExpression("lam", (expected,))
         return ns.render_s_expression(expected)
