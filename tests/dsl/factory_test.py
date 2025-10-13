@@ -8,10 +8,7 @@ from ..utils import assertDSL
 class TestDuplicateProduction(unittest.TestCase):
     def test_basic_duplicate(self):
         dslf = ns.DSLFactory()
-
-        def ident(x):
-            return x
-
+        ident = lambda x: x
         dslf.production("1", "() -> i", ident)
         dslf.production("1", "() -> f", ident)
         self.assertRaisesRegex(
@@ -22,10 +19,7 @@ class TestDuplicateProduction(unittest.TestCase):
 
     def test_exact_duplicate_allowed(self):
         dslf = ns.DSLFactory()
-
-        def ident(x):
-            return x
-
+        ident = lambda x: x
         dslf.production("1", "() -> i", ident)
         dslf.production("1", "() -> i", ident)
         dsl = dslf.finalize()

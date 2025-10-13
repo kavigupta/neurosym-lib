@@ -155,9 +155,7 @@ class _StitchLambdaRewriter:
     def from_stitch(self, s_exp):
         if isinstance(s_exp, str):
             return s_exp
-
-        def children():
-            return tuple(self.from_stitch(x) for x in s_exp.children)
+        children = lambda: tuple(self.from_stitch(x) for x in s_exp.children)
 
         if s_exp.symbol == self.zero_arg_lambda_symbol:
             return SExpression(

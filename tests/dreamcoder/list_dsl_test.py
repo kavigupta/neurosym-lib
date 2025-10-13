@@ -32,7 +32,7 @@ class TestListDSL(unittest.TestCase):
                 if fn([0, 7, 3, 5]) != 7:
                     return False
                 return True
-            except:  # pylint: disable=bare-except  # noqa: E722
+            except:  # pylint: disable=bare-except
                 return False
 
         g = near.near_graph(
