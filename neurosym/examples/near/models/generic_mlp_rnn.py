@@ -7,7 +7,7 @@ from torch import nn
 from neurosym.examples.near.models.mlp import MLP, MLPConfig
 from neurosym.examples.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
-from neurosym.types.type import ArrowType, ListType, TensorType
+from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_shape import infer_output_shape
 from neurosym.types.type_string_repr import render_type
@@ -37,6 +37,8 @@ def _classify_type(typ):
     if isinstance(typ, TensorType):
         # return "tensor", typ.shape
         return _MLPRNNInput(is_sequence=False, shape=typ.shape)
+    if isinstance(typ, AtomicType):
+        return _MLPRNNInput(is_sequence=False, shape=())
     return None
 
 
@@ -66,15 +68,18 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
 
         input_classifications = [_classify_type(x) for x in input_types]
         output_classification = _classify_type(typ)
+        # print(input_classifications, "->", output_classification)
         if (
             any(x is None for x in input_classifications)
             or output_classification is None
         ):
+            raise ValueError
             # If any of the types are not supported, return None.
             return None
         if output_classification.is_sequence and not any(
             x.is_sequence for x in input_classifications
         ):
+            raise ValueError
             # If the output is a sequence, but none of the inputs are sequences, return None.
             return None
         return _GenericMLPRNNModule(
@@ -135,7 +140,9 @@ class _GenericMLPRNNModule(nn.Module):
             )
         output = self.output_projection(output)
         output = type_shape.unsquash_batch_axis(output)
-        assert output.shape == output_shape
+        assert (
+            output.shape == output_shape
+        ), f"Expected output shape {output_shape}, but got {output.shape}"
         return output
 
 

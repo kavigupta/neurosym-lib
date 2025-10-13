@@ -1,40 +1,29 @@
 import unittest
+from functools import partial
 
 import numpy as np
+from torch import nn
 
 import neurosym as ns
-
-
-def basic_drop_dsl():
-    dslf = ns.DSLFactory()
-
-    dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
-    dslf.lambdas(include_drops=True, max_env_depth=5, max_arity=5)
-    dslf.prune_to("(f, f, f) -> f")
-    dsl = dslf.finalize()
-
-    # assert "lam :: L<#body|f;f;f> -> (f, f, f) -> #body" in dsl.render()
-    # assert "drop0_3 :: D<#body - $0::f> -> #body" in dsl.render()
-    # assert "$0_1 :: V<f@0>" in dsl.render()
-
-    return dsl
+from neurosym.examples import near
 
 
 class TestDSLWithDrops(unittest.TestCase):
     def test_basic_dsl_with_drops(self):
-        dsl = basic_drop_dsl()
+        dsl = near.with_drops.basic_drop_dsl(3)
         result = dsl.render().split("\n")
+        print(result)
         self.assertEqual(
             result,
             [
-                "              + :: (f, f) -> f",
-                "            lam :: L<#body|f;f;f> -> (f, f, f) -> #body",
-                "           $0_0 :: V<f@0>",
-                "           $1_0 :: V<f@1>",
-                "           $2_0 :: V<f@2>",
-                "        drop0_3 :: D<#body - $0::f> -> #body",
-                "        drop1_3 :: D<#body - $1::f> -> #body",
-                "        drop2_3 :: D<#body - $2::f> -> #body",
+                "              + :: ({f, 1}, {f, 1}) -> {f, 1}",
+                "            lam :: L<#body|{f, 1};{f, 1};{f, 1}> -> ({f, 1}, {f, 1}, {f, 1}) -> #body",
+                "           $0_0 :: V<{f, 1}@0>",
+                "           $1_0 :: V<{f, 1}@1>",
+                "           $2_0 :: V<{f, 1}@2>",
+                "        drop0_0 :: D<#body - $0::{f, 1}> -> #body",
+                "        drop1_0 :: D<#body - $1::{f, 1}> -> #body",
+                "        drop2_0 :: D<#body - $2::{f, 1}> -> #body",
             ],
         )
 
@@ -50,57 +39,57 @@ class TestEvaluateDrops(unittest.TestCase):
             self.assertEqual(result1(*v), result2(*v))
 
     def test_basic_drop(self):
-        dsl = basic_drop_dsl()
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop0_3 ($0_0)))", dsl)
-        self.assertEquivalence("(lam ($2_0))", "(lam (drop0_3 ($1_0)))", dsl)
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop2_3 ($1_0)))", dsl)
+        dsl = near.with_drops.basic_drop_dsl(3)
+        self.assertEquivalence("(lam ($1_0))", "(lam (drop0_0 ($0_0)))", dsl)
+        self.assertEquivalence("(lam ($2_0))", "(lam (drop0_0 ($1_0)))", dsl)
+        self.assertEquivalence("(lam ($1_0))", "(lam (drop2_0 ($1_0)))", dsl)
 
 
 class TestSearchGraphDrops(unittest.TestCase):
     def test_search_graph_with_drops(self):
-        dsl = basic_drop_dsl()
+        dsl = near.with_drops.basic_drop_dsl(3)
         sg = ns.DSLSearchGraph(
             dsl,
             hole_set_chooser=ns.ChooseAll(),
             test_predicate=lambda node: True,
-            target_type=ns.parse_type("(f, f, f) -> f"),
+            target_type=ns.parse_type("({f, 1}, {f, 1}, {f, 1}) -> {f, 1}"),
             metadata_computer=ns.NoMetadataComputer(),
         )
         path = [
-            ["??::<(f, f, f) -> f>", ["(lam ??::<f|0=f,1=f,2=f>)"]],
+            ["??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>", ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"]],
             [
-                "(lam ??::<f|0=f,1=f,2=f>)",
+                "(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)",
                 [
-                    "(lam (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (drop0_3 ??::<f|0=f,1=f>))",
-                    "(lam (drop1_3 ??::<f|0=f,1=f>))",
-                    "(lam (drop2_3 ??::<f|0=f,1=f>))",
+                    "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 ],
             ],
             [
-                "(lam (drop0_3 ??::<f|0=f,1=f>))",
+                "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 [
-                    "(lam (drop0_3 (+ ??::<f|0=f,1=f> ??::<f|0=f,1=f>)))",
-                    "(lam (drop0_3 ($0_0)))",
-                    "(lam (drop0_3 ($1_0)))",
-                    "(lam (drop0_3 (drop0_3 ??::<f|0=f>)))",
-                    "(lam (drop0_3 (drop1_3 ??::<f|0=f>)))",
+                    "(lam (drop0_0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (drop0_0 ($0_0)))",
+                    "(lam (drop0_0 ($1_0)))",
+                    "(lam (drop0_0 (drop0_0 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (drop0_0 (drop1_0 ??::<{f, 1}|0={f, 1}>)))",
                 ],
             ],
             [
-                "(lam (drop0_3 (drop1_3 ??::<f|0=f>)))",
+                "(lam (drop0_0 (drop1_0 ??::<{f, 1}|0={f, 1}>)))",
                 [
-                    "(lam (drop0_3 (drop1_3 (+ ??::<f|0=f> ??::<f|0=f>))))",
-                    "(lam (drop0_3 (drop1_3 ($0_0))))",
-                    "(lam (drop0_3 (drop1_3 (drop0_3 ??::<f>))))",
+                    "(lam (drop0_0 (drop1_0 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
+                    "(lam (drop0_0 (drop1_0 ($0_0))))",
+                    "(lam (drop0_0 (drop1_0 (drop0_0 ??::<{f, 1}>))))",
                 ],
             ],
             [
-                "(lam (drop0_3 (drop1_3 (drop0_3 ??::<f>))))",
-                ["(lam (drop0_3 (drop1_3 (drop0_3 (+ ??::<f> ??::<f>)))))"],
+                "(lam (drop0_0 (drop1_0 (drop0_0 ??::<{f, 1}>))))",
+                ["(lam (drop0_0 (drop1_0 (drop0_0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
             ],
         ]
         nodes = [sg.initial_node()]
@@ -114,3 +103,41 @@ class TestSearchGraphDrops(unittest.TestCase):
         print("Final node:", ns.render_s_expression(node.program))
         for node in sg.expand_node(node):
             print("\t", ns.render_s_expression(node.program))
+
+
+class TestDropInterface(unittest.TestCase):
+    def test_sequential_dsl_astar_interface(self):
+        """
+        Test sequential_dsl with Astar in the NEARInterface
+        """
+        datamodule = near.with_drops.add_variables_domain_datamodule()
+
+        original_dsl = near.with_drops.basic_drop_dsl(10, is_vectorized=True)
+        print(original_dsl.render())
+        interface = near.NEAR(n_epochs=20, max_depth=1000)
+
+        def is_goal(node):
+            f2 = original_dsl.compute(original_dsl.initialize(node.program))
+            delta = (
+                (f2(datamodule.train.inputs) - datamodule.train.outputs) ** 2
+            ).mean()
+            return delta < 0.01
+
+        interface.register_search_params(
+            dsl=original_dsl,
+            type_env=ns.TypeDefiner(),
+            neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=100),
+            search_strategy=partial(ns.search.bounded_astar, max_depth=3),
+            loss_callback=nn.functional.mse_loss,
+            validation_params=dict(
+                cost=near.with_drops.MinimalStepsNearStructuralCostWithDrops,
+                structural_cost_weight=0.1,
+            ),
+            is_goal=is_goal,
+        )
+        [result] = interface.fit(
+            datamodule=datamodule,
+            program_signature="{f, 10} -> {f, 1}",
+            n_programs=1,
+        )
+        print(result)

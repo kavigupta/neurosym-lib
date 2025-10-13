@@ -124,9 +124,13 @@ class NearCost:
         struct_cost = self.structural_cost.compute_structural_cost(
             self.embedding.embed_program(model.uninitialize()), dsl
         )
-        return (
+        result = (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
+        print(
+            "Overall cost:", result, " (val:", val_loss, ", struct:", struct_cost, ")"
+        )
+        return result
 
     def __call__(
         self,

@@ -98,11 +98,6 @@ class ValidationCost(NearValidationHeuristic):
         program_module = TorchProgramModule(dsl, program)
 
         model = embedding.embed_initialized_program(program_module)
-
-        if len([x for x in model.parameters() if x.requires_grad]) == 0:
-            raise UninitializableProgramError(
-                f"No parameters in program {render_s_expression(program)}"
-            )
         return model
 
 
@@ -114,6 +109,7 @@ def default_near_cost(
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
     structural_cost_weight: float = 0.5,
     symbol_costs=None,
+    cost=MinimalStepsNearStructuralCost,
     **kwargs,
 ):
     """
@@ -129,7 +125,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=MinimalStepsNearStructuralCost(symbol_costs=symbol_costs or {}),
+        structural_cost=cost(symbol_costs=symbol_costs or {}),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,
@@ -144,27 +140,32 @@ def default_near_cost(
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
-    optimizer, schedulers = schedule_optimizer(
-        trainer_cfg.optimizer(
-            model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
-        ),
-        trainer_cfg.scheduler,
-        len(datamodule.train),
-        n_epochs,
-    )
-    torch.manual_seed(trainer_cfg.seed)
-    model = model.train()
-    model = model.to(trainer_cfg.accelerator)
-    for _ in range(n_epochs):
-        for batch in datamodule.train_dataloader():
-            batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-            x, y = batch["inputs"], batch["outputs"]
-            optimizer.zero_grad()
-            loss = trainer_cfg.loss_callback(model(x, environment=()), y)
-            loss.backward()
-            optimizer.step()
-            for scheduler in schedulers:
-                scheduler.step()
+    if any(
+        p.requires_grad for p in model.parameters()
+    ):  # only train if there are parameters to train
+        optimizer, schedulers = schedule_optimizer(
+            trainer_cfg.optimizer(
+                model.parameters(),
+                lr=trainer_cfg.lr,
+                weight_decay=trainer_cfg.weight_decay,
+            ),
+            trainer_cfg.scheduler,
+            len(datamodule.train),
+            n_epochs,
+        )
+        torch.manual_seed(trainer_cfg.seed)
+        model = model.train()
+        model = model.to(trainer_cfg.accelerator)
+        for _ in range(n_epochs):
+            for batch in datamodule.train_dataloader():
+                batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+                x, y = batch["inputs"], batch["outputs"]
+                optimizer.zero_grad()
+                loss = trainer_cfg.loss_callback(model(x, environment=()), y)
+                loss.backward()
+                optimizer.step()
+                for scheduler in schedulers:
+                    scheduler.step()
 
     model = model.eval()
     val_loss_sum = 0

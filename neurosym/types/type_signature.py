@@ -433,12 +433,12 @@ def type_expansions(
         yield sig.subst_type_vars(remap)
 
 
-def _type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=False):
+def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
     """
     Produce a type universe from the given types.
 
     :param types: The types to use.
-    :param require_arity_up_to: If specified, include all constructors up to this arity,
+    :param require_arities: If specified, include all constructors with this arity,
         even if they are not present in the types.
     :param no_zeroadic: If True, do not include zero-arity constructors.
 
@@ -460,8 +460,8 @@ def _type_universe(types: List[Type], require_arity_up_to=None, no_zeroadic=Fals
             if isinstance(t, ListType):
                 has_list = True
     atomic_types = sorted(atomic_types, key=str)
-    if require_arity_up_to is not None:
-        num_arrow_args |= set(range(1, require_arity_up_to + 1))
+    if require_arities is not None:
+        num_arrow_args |= set(require_arities)
     if no_zeroadic:
         num_arrow_args -= {0}
     num_arrow_args = sorted(num_arrow_args)

@@ -4,6 +4,8 @@ from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
+from neurosym.types.type_string_repr import render_type
+
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
     DropTypeSignature,
@@ -102,22 +104,18 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(
-        self, max_arity=2, max_type_depth=4, max_env_depth=4, *, include_drops=False
-    ):
+    def lambdas(self, require_arities=(1, 2), max_type_depth=4, *, include_drops=False):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
         ($i_j) productions for each variable de bruijn index i and type j.
 
-        :param max_arity: The maximum arity of lambda functions to generate.
+        :param require_arities: Arities of lambdas to include.
         :param max_type_depth: The maximum depth of types to generate.
-        :param max_env_depth: The maximum depth of the environment to generate.
         """
         self.lambda_parameters = dict(
-            max_arity=max_arity,
+            require_arities=require_arities,
             max_type_depth=max_type_depth,
-            max_env_depth=max_env_depth,
             include_drops=include_drops,
         )
 
@@ -255,11 +253,14 @@ class DSLFactory:
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
+            print(known_types)
             types, constructors_lambda = _type_universe(
                 known_types,
-                require_arity_up_to=self.lambda_parameters["max_arity"],
+                require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
+            print("Types", types)
+            print("Constructors", constructors_lambda)
             top_levels = [
                 constructor(
                     *[TypeVariable.fresh() for _ in range(arity - 1)],
@@ -296,7 +297,7 @@ class DSLFactory:
                     type_id, VariableTypeSignature(variable_type, index_in_env)
                 )
                 for type_id, variable_type in enumerate(variable_types)
-                for index_in_env in range(self.lambda_parameters["max_env_depth"])
+                for index_in_env in range(self.max_env_depth)
             ]
             # don't prune and reindex variables
             stable_symbols.add("<variable>")
@@ -307,12 +308,13 @@ class DSLFactory:
                         type_id, DropTypeSignature(index_in_env, variable_type)
                     )
                     for type_id, variable_type in enumerate(variable_types)
-                    for index_in_env in range(self.lambda_parameters["max_env_depth"])
+                    for index_in_env in range(self.max_env_depth)
                 ]
                 stable_symbols.add("<drop>")
 
         if self.prune:
-            assert self.target_types is not None
+            # assert self.max_env_depth == 5
+            # assert self.target_types is not None
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
@@ -336,6 +338,7 @@ class DSLFactory:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
+        # assert self.max_env_depth == 5
         dsl = _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
@@ -356,6 +359,7 @@ def _clean_variables(variable_productions):
 
 
 def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
+    # assert max_env_depth == 5, max_env_depth
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
         valid_root_types,
