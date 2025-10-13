@@ -4,8 +4,6 @@ from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
-from neurosym.types.type_string_repr import render_type
-
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
     DropTypeSignature,

@@ -1,9 +1,9 @@
+import queue
 from types import NoneType
 from typing import Iterable, Union
-import queue
 
+from neurosym.search.astar_search import X, _AStarNode
 from neurosym.search_graph.search_graph import SearchGraph
-from neurosym.search.astar_search import _AStarNode, X
 
 
 def osg_astar(

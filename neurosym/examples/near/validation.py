@@ -10,7 +10,6 @@ from neurosym.examples.near.cost import (
     NearCost,
     NearValidationHeuristic,
     ProgramEmbedding,
-    UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig

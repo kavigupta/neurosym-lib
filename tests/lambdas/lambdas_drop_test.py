@@ -1,9 +1,8 @@
 import unittest
 
 import numpy as np
-from torch import nn
-
 from parameterized import parameterized
+from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
