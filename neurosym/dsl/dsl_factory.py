@@ -333,7 +333,6 @@ class DSLFactory:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        # assert self.max_env_depth == 5
         dsl = _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
@@ -354,7 +353,6 @@ def _clean_variables(variable_productions):
 
 
 def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
-    # assert max_env_depth == 5, max_env_depth
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
         valid_root_types,

@@ -202,7 +202,7 @@ class PermissiveEnvironmment:
 
     def __len__(self):
         """
-        The number of elements in this environment is infinity, just a placeholder.
+        The number of elements in this environment is 0, just a placeholder.
         """
         return 0
 
