@@ -251,14 +251,11 @@ class DSLFactory:
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
-            print(known_types)
             types, constructors_lambda = _type_universe(
                 known_types,
                 require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
-            print("Types", types)
-            print("Constructors", constructors_lambda)
             top_levels = [
                 constructor(
                     *[TypeVariable.fresh() for _ in range(arity - 1)],

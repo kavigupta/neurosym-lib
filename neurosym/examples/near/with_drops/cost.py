@@ -18,7 +18,7 @@ class MinimalStepsNearStructuralCostWithDrops(PerNodeNearStructuralCost):
 
     symbol_costs: dict[str, int]
 
-    def extra_node_cost(self, node: SExpression, dsl: DSL) -> float:
+    def _extra_node_cost(self, node: SExpression, dsl: DSL) -> float:
         del dsl
         if not isinstance(node, Hole):
             return 0
@@ -27,4 +27,4 @@ class MinimalStepsNearStructuralCostWithDrops(PerNodeNearStructuralCost):
     def compute_node_cost(self, node: SExpression, dsl: DSL) -> float:
         return MinimalStepsNearStructuralCost.compute_node_cost(
             self, node, dsl
-        ) + self.extra_node_cost(node, dsl)
+        ) + self._extra_node_cost(node, dsl)

@@ -10,7 +10,7 @@ from neurosym.examples import near
 
 class TestDSLWithDrops(unittest.TestCase):
     def test_basic_dsl_with_drops(self):
-        dsl = near.with_drops.basic_drop_dsl(3)
+        dsl = near.with_drops.add_variables_domain_dsl(3)
         result = dsl.render().split("\n")
         print(result)
         self.assertEqual(
@@ -39,7 +39,7 @@ class TestEvaluateDrops(unittest.TestCase):
             self.assertEqual(result1(*v), result2(*v))
 
     def test_basic_drop(self):
-        dsl = near.with_drops.basic_drop_dsl(3)
+        dsl = near.with_drops.add_variables_domain_dsl(3)
         self.assertEquivalence("(lam ($1_0))", "(lam (drop0_0 ($0_0)))", dsl)
         self.assertEquivalence("(lam ($2_0))", "(lam (drop0_0 ($1_0)))", dsl)
         self.assertEquivalence("(lam ($1_0))", "(lam (drop2_0 ($1_0)))", dsl)
@@ -47,7 +47,7 @@ class TestEvaluateDrops(unittest.TestCase):
 
 class TestSearchGraphDrops(unittest.TestCase):
     def test_search_graph_with_drops(self):
-        dsl = near.with_drops.basic_drop_dsl(3)
+        dsl = near.with_drops.add_variables_domain_dsl(3)
         sg = ns.DSLSearchGraph(
             dsl,
             hole_set_chooser=ns.ChooseAll(),
@@ -121,7 +121,7 @@ class TestDropInterface(unittest.TestCase):
     def run_search(self, indices, include_drops, cost, max_iterations):
         datamodule = near.with_drops.add_variables_domain_datamodule(count, indices)
 
-        original_dsl = near.with_drops.basic_drop_dsl(
+        original_dsl = near.with_drops.add_variables_domain_dsl(
             count, is_vectorized=True, include_drops=include_drops
         )
         print(original_dsl.render())

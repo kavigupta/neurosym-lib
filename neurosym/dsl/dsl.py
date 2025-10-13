@@ -204,7 +204,6 @@ class DSL:
             if twe in rules:
                 continue
             if twe.typ.depth > self.max_type_depth or len(twe.env) > self.max_env_depth:
-                print("pruning", twe, len(twe.env), self.max_env_depth)
                 continue
             rules[twe] = []
             for prod, twes in self.productions_for_type(twe):
@@ -236,8 +235,6 @@ class DSL:
             care_about_variables=care_about_variables,
             valid_root_types=valid_root_types,
         )
-
-        print(type_to_rules)
 
         constructible = set()
 

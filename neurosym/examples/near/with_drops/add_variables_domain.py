@@ -5,6 +5,13 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 
 def add_variables_domain_datamodule(count, indices):
+    """
+    Datamodule for the "add variables" domain with drop functions. The task is to
+    sum a subset of the input variables.
+
+    :param count: The total number of input variables.
+    :param indices: The indices of the variables to sum.
+    """
     rng = np.random.default_rng(0)
     fn = lambda x: sum(x[:, [i]] for i in indices)
     x_train = rng.standard_normal((1000, count)).astype(np.float32)
@@ -25,7 +32,15 @@ def add_variables_domain_datamodule(count, indices):
     return datamodule
 
 
-def basic_drop_dsl(amount, is_vectorized=False, include_drops=True):
+def add_variables_domain_dsl(amount, is_vectorized=False, include_drops=True):
+    """
+    A basic DSL for the "add variables" domain with drop functions. The DSL includes a
+    function to add two numbers, lambda abstractions, and optionally drop functions.
+
+    :param amount: The number of input variables.
+    :param is_vectorized: Whether to include a vectorized dispatch function.
+    :param include_drops: Whether to include drop functions in the DSL.
+    """
     dslf = DSLFactory(max_env_depth=amount + 1)
 
     dslf.typedef("f1", "{f, 1}")
