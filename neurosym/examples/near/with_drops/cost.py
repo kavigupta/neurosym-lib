@@ -1,16 +1,14 @@
 from dataclasses import dataclass
+from typing import Iterable
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.cost import (
-    MinimalStepsNearStructuralCost,
-    PerNodeNearStructuralCost,
-)
+from neurosym.examples.near.cost import NearStructuralCost
 from neurosym.programs.hole import Hole
 from neurosym.programs.s_expression import SExpression
 
 
 @dataclass
-class MinimalStepsNearStructuralCostWithDrops(PerNodeNearStructuralCost):
+class MinimalStepsNearStructuralCostWithDrops(NearStructuralCost):
     """
     Structural cost that counts the minimal number of steps needed to fill
     each hole in a program.
@@ -18,13 +16,15 @@ class MinimalStepsNearStructuralCostWithDrops(PerNodeNearStructuralCost):
 
     symbol_costs: dict[str, int]
 
-    def _extra_node_cost(self, node: SExpression, dsl: DSL) -> float:
-        del dsl
-        if not isinstance(node, Hole):
-            return 0
-        return len(node.twe.env)
+    def all_holes(self, model: SExpression) -> Iterable[Hole]:
+        if isinstance(model, Hole):
+            yield model
+            return
+        for child in model.children:
+            yield from self.all_holes(child)
 
-    def compute_node_cost(self, node: SExpression, dsl: DSL) -> float:
-        return MinimalStepsNearStructuralCost.compute_node_cost(
-            self, node, dsl
-        ) + self._extra_node_cost(node, dsl)
+    def compute_structural_cost(self, model: SExpression, dsl: DSL) -> float:
+        sizes_twes = [len(hole.twe.env) for hole in self.all_holes(model)]
+        if not sizes_twes:
+            return 0
+        return sum(sizes_twes) / len(sizes_twes) + len(sizes_twes)

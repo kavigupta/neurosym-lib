@@ -114,7 +114,7 @@ count = 14
 class TestDropInterface(unittest.TestCase):
 
     indices_all = [
-        (np.random.default_rng(10 + i).choice(count, size=3, replace=False).tolist(),)
+        (np.random.default_rng(i).choice(count, size=4, replace=False).tolist(),)
         for i in range(5)
     ]
 
@@ -142,7 +142,7 @@ class TestDropInterface(unittest.TestCase):
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=cost,
-                structural_cost_weight=0.1,
+                structural_cost_weight=0.05,
             ),
             is_goal=is_goal,
         )
