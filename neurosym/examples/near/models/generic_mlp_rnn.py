@@ -73,13 +73,11 @@ class GenericMLPRNNNeuralHoleFiller(NeuralHoleFiller):
             any(x is None for x in input_classifications)
             or output_classification is None
         ):
-            raise ValueError
             # If any of the types are not supported, return None.
             return None
         if output_classification.is_sequence and not any(
             x.is_sequence for x in input_classifications
         ):
-            raise ValueError
             # If the output is a sequence, but none of the inputs are sequences, return None.
             return None
         return _GenericMLPRNNModule(
