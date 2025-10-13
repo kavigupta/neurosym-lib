@@ -4,7 +4,6 @@ from types import NoneType
 from typing import Iterable, TypeVar, Union
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
 
 X = TypeVar("X")
@@ -27,25 +26,20 @@ def bounded_astar(
     visited = set()
     fringe = queue.PriorityQueue()
 
-    def add_to_fringe(node, cost, depth):
-        fringe.put(BoundedAStarNode(cost, node, depth))
+    def add_to_fringe(node, depth):
+        fringe.put(BoundedAStarNode(g.cost(node), node, depth))
 
-    add_to_fringe(g.initial_node(), 0, 0)
+    add_to_fringe(g.initial_node(), 0)
     iterations = 0
     while not fringe.empty():
-        # print("Fringe:")
-        # fringe_sorted = sorted(fringe.queue)
-        # for n in fringe_sorted[:10]:
-        #     print(f"  {n.short_repr()}")
         fringe_var = fringe.get()
         node, depth = fringe_var.node, fringe_var.depth
-        cost = g.cost(node)
         if node in visited or depth > max_depth:
             continue
         visited.add(node)
         yield from g.yield_goal_node(node)
         for child in g.expand_node(node):
-            add_to_fringe(child, cost, depth + 1)
+            add_to_fringe(child, depth + 1)
         iterations += 1
         if max_iterations is not None and iterations >= max_iterations:
             break
@@ -60,8 +54,3 @@ class BoundedAStarNode:
     cost: float
     node: SExpression = field(compare=False)
     depth: int = field(compare=True)
-
-    def short_repr(self):
-        return (
-            f"({self.cost}, d={self.depth}, {render_s_expression(self.node.program)})"
-        )
