@@ -111,9 +111,9 @@ class TestDropInterface(unittest.TestCase):
         """
         datamodule = near.with_drops.add_variables_domain_datamodule()
 
-        original_dsl = near.with_drops.basic_drop_dsl(10, is_vectorized=True)
+        original_dsl = near.with_drops.basic_drop_dsl(10, is_vectorized=True, include_drops=True)
         print(original_dsl.render())
-        interface = near.NEAR(n_epochs=20, max_depth=None)
+        interface = near.NEAR(n_epochs=2, max_depth=None, lr=0.01)
 
         def is_goal(node):
             f2 = original_dsl.compute(original_dsl.initialize(node.program))

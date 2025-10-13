@@ -25,7 +25,7 @@ def add_variables_domain_datamodule():
     return datamodule
 
 
-def basic_drop_dsl(amount, is_vectorized=False):
+def basic_drop_dsl(amount, is_vectorized=False, include_drops=True):
     dslf = DSLFactory(max_env_depth=amount + 1)
 
     dslf.typedef("f1", "{f, 1}")
@@ -35,7 +35,7 @@ def basic_drop_dsl(amount, is_vectorized=False):
 
     dslf.production("+", "($f1, $f1) -> $f1", lambda x, y: x + y)
     dslf.lambdas(
-        include_drops=True,
+        include_drops=include_drops,
         max_type_depth=np.log2(amount) + 1,
         require_arities=[amount],
     )

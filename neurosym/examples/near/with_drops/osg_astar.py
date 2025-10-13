@@ -29,6 +29,7 @@ def osg_astar(
         if max_iterations is not None and iterations >= max_iterations:
             break
         iterations += 1
+        print("Iteration:", iterations)
         node = fringe.get().node
         if node in visited:
             continue
