@@ -46,6 +46,7 @@ class TestEvaluateDrops(unittest.TestCase):
 
 
 class TestSearchGraphDrops(unittest.TestCase):
+
     def test_search_graph_with_drops(self):
         dsl = near.with_drops.add_variables_domain_dsl(3)
         sg = ns.DSLSearchGraph(
@@ -93,6 +94,76 @@ class TestSearchGraphDrops(unittest.TestCase):
             [
                 "(lam (drop0_0 (drop1_0 (drop0_0 ??::<{f, 1}>))))",
                 ["(lam (drop0_0 (drop1_0 (drop0_0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
+            ],
+        ]
+        nodes = [sg.initial_node()]
+        for target, expansions in path:
+            [node] = [n for n in nodes if ns.render_s_expression(n.program) == target]
+            nodes = list(sg.expand_node(node))
+            known_expansions = [ns.render_s_expression(n.program) for n in nodes]
+            print("Expanding:", target)
+            print("\t", known_expansions)
+            self.assertEqual(expansions, known_expansions)
+        print("Final node:", ns.render_s_expression(node.program))
+        for node in sg.expand_node(node):
+            print("\t", ns.render_s_expression(node.program))
+
+    def test_search_graph_with_drops_inside_func(self):
+        dsl = near.with_drops.add_variables_domain_dsl(3)
+        sg = ns.DSLSearchGraph(
+            dsl,
+            hole_set_chooser=ns.ChooseAll(),
+            test_predicate=lambda node: True,
+            target_type=ns.parse_type("({f, 1}, {f, 1}, {f, 1}) -> {f, 1}"),
+            metadata_computer=ns.NoMetadataComputer(),
+        )
+        path = [
+            [
+                "??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>",
+                ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"],
+            ],
+            [
+                "(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)",
+                [
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam ($0_0))",
+                    "(lam ($1_0))",
+                    "(lam ($2_0))",
+                    "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                ],
+            ],
+            [
+                "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                [
+                    "(lam (+ (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ($0_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ($2_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($0_0)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($1_0)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($2_0)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                ],
+            ],
+            [
+                "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                [
+                    "(lam (+ ($1_0) (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
+                    "(lam (+ ($1_0) ($0_0)))",
+                    "(lam (+ ($1_0) ($1_0)))",
+                    "(lam (+ ($1_0) ($2_0)))",
+                    "(lam (+ ($1_0) (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                ],
             ],
         ]
         nodes = [sg.initial_node()]
