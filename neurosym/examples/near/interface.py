@@ -14,6 +14,7 @@ from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.examples.near.validation import default_near_cost
+from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.types.type_string_repr import TypeDefiner, parse_type
 from neurosym.utils.imports import import_pytorch_lightning
 
@@ -68,9 +69,7 @@ class NEAR:
             [torch.Tensor, torch.Tensor], torch.Tensor
         ] = classification_mse_loss,
         validation_params: dict = frozendict(),
-        is_goal: Callable[
-            [pl.LightningDataModule, DSL, SExpression], bool
-        ] = lambda _: True,
+        is_goal: Callable[[DSLSearchNode], bool] = lambda _: True,
     ):
         """
         Registers the parameters for the program search.
