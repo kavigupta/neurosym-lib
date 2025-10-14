@@ -16,15 +16,15 @@ class MinimalStepsNearStructuralCostWithDrops(NearStructuralCost):
 
     symbol_costs: dict[str, int]
 
-    def all_holes(self, model: SExpression) -> Iterable[Hole]:
+    def _all_holes(self, model: SExpression) -> Iterable[Hole]:
         if isinstance(model, Hole):
             yield model
             return
         for child in model.children:
-            yield from self.all_holes(child)
+            yield from self._all_holes(child)
 
     def compute_structural_cost(self, model: SExpression, dsl: DSL) -> float:
-        sizes_twes = [len(hole.twe.env) for hole in self.all_holes(model)]
+        sizes_twes = [len(hole.twe.env) for hole in self._all_holes(model)]
         if not sizes_twes:
             return 0
         return sum(sizes_twes) / len(sizes_twes) + len(sizes_twes)
