@@ -6,7 +6,7 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 def add_variables_domain_datamodule(count, indices):
     """
-    Datamodule for the "add variables" domain with drop functions. The task is to
+    Datamodule for the "add variables" domain with shield functions. The task is to
     sum a subset of the input variables.
 
     :param count: The total number of input variables.
@@ -32,14 +32,14 @@ def add_variables_domain_datamodule(count, indices):
     return datamodule
 
 
-def add_variables_domain_dsl(amount, is_vectorized=False, include_drops=True):
+def add_variables_domain_dsl(amount, is_vectorized=False, include_shield=True):
     """
-    A basic DSL for the "add variables" domain with drop functions. The DSL includes a
-    function to add two numbers, lambda abstractions, and optionally drop functions.
+    A basic DSL for the "add variables" domain with shield functions. The DSL includes a
+    function to add two numbers, lambda abstractions, and optionally shield functions.
 
     :param amount: The number of input variables.
     :param is_vectorized: Whether to include a vectorized dispatch function.
-    :param include_drops: Whether to include drop functions in the DSL.
+    :param include_shield: Whether to include shield functions in the DSL.
     """
     dslf = DSLFactory(max_env_depth=amount + 1)
 
@@ -50,7 +50,7 @@ def add_variables_domain_dsl(amount, is_vectorized=False, include_drops=True):
 
     dslf.production("+", "($f1, $f1) -> $f1", lambda x, y: x + y)
     dslf.lambdas(
-        include_drops=include_drops,
+        include_shield=include_shield,
         max_type_depth=np.log2(amount) + 1,
         require_arities=[amount],
     )

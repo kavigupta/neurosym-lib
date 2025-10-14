@@ -6,9 +6,9 @@ import numpy as np
 
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
-    DropTypeSignature,
     FunctionTypeSignature,
     LambdaTypeSignature,
+    ShieldTypeSignature,
     VariableTypeSignature,
     _signature_expansions,
     _type_universe,
@@ -17,10 +17,10 @@ from ..types.type_signature import (
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
-    DropProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
+    ShieldProduction,
     VariableProduction,
 )
 
@@ -102,7 +102,9 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(self, require_arities=(1, 2), max_type_depth=4, *, include_drops=False):
+    def lambdas(
+        self, require_arities=(1, 2), max_type_depth=4, *, include_shield=False
+    ):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
@@ -114,7 +116,7 @@ class DSLFactory:
         self.lambda_parameters = dict(
             require_arities=require_arities,
             max_type_depth=max_type_depth,
-            include_drops=include_drops,
+            include_shield=include_shield,
         )
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
@@ -297,12 +299,12 @@ class DSLFactory:
             # don't prune and reindex variables
             stable_symbols.add("<variable>")
 
-            if self.lambda_parameters["include_drops"]:
-                sym_to_productions["<drop>"] = [
-                    DropProduction(DropTypeSignature(index_in_env))
+            if self.lambda_parameters["include_shield"]:
+                sym_to_productions["<shield>"] = [
+                    ShieldProduction(ShieldTypeSignature(index_in_env))
                     for index_in_env in range(self.max_env_depth)
                 ]
-                stable_symbols.add("<drop>")
+                stable_symbols.add("<shield>")
 
         if self.prune:
             assert self.target_types is not None

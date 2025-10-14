@@ -8,7 +8,7 @@ from neurosym.programs.s_expression import SExpression
 
 
 @dataclass
-class MinimalStepsNearStructuralCostWithDrops(NearStructuralCost):
+class MinimalStepsNearStructuralCostWithShield(NearStructuralCost):
     """
     Structural cost that counts the minimal number of steps needed to fill
     each hole in a program.

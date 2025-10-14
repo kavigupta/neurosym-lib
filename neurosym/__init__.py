@@ -11,11 +11,11 @@ from neurosym.dsl.abstraction import (
 from neurosym.dsl.dsl import DSL
 from neurosym.dsl.production import (
     ConcreteProduction,
-    DropProduction,
     FunctionLikeProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
+    ShieldProduction,
     VariableProduction,
 )
 from neurosym.examples.near.search_graph import FilterUnexpandableNodes
@@ -121,9 +121,9 @@ from .types.type import (
     UnificationError,
 )
 from .types.type_signature import (
-    DropTypeSignature,
     FunctionTypeSignature,
     LambdaTypeSignature,
+    ShieldTypeSignature,
     TypeSignature,
     VariableTypeSignature,
     bottom_up_enumerate_types,

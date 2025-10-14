@@ -8,9 +8,9 @@ import neurosym as ns
 from neurosym.examples import near
 
 
-class TestDSLWithDrops(unittest.TestCase):
-    def test_basic_dsl_with_drops(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+class TestDSLWithShield(unittest.TestCase):
+    def test_basic_dsl_with_shield(self):
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         result = dsl.render().split("\n")
         print(result)
         self.assertEqual(
@@ -21,14 +21,14 @@ class TestDSLWithDrops(unittest.TestCase):
                 "           $0_0 :: V<{f, 1}@0>",
                 "           $1_0 :: V<{f, 1}@1>",
                 "           $2_0 :: V<{f, 1}@2>",
-                "          drop0 :: D<#body, $0> -> #body",
-                "          drop1 :: D<#body, $1> -> #body",
-                "          drop2 :: D<#body, $2> -> #body",
+                "        shield0 :: D<#body, $0> -> #body",
+                "        shield1 :: D<#body, $1> -> #body",
+                "        shield2 :: D<#body, $2> -> #body",
             ],
         )
 
 
-class TestEvaluateDrops(unittest.TestCase):
+class TestEvaluateShields(unittest.TestCase):
     def assertEquivalence(self, expr1, expr2, dsl):
         expr1, expr2 = ns.parse_s_expression(expr1), ns.parse_s_expression(expr2)
         result1 = dsl.compute(dsl.initialize(expr1))
@@ -38,17 +38,17 @@ class TestEvaluateDrops(unittest.TestCase):
             v = rng.random(3)
             self.assertEqual(result1(*v), result2(*v))
 
-    def test_basic_drop(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop0 ($0_0)))", dsl)
-        self.assertEquivalence("(lam ($2_0))", "(lam (drop0 ($1_0)))", dsl)
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop2 ($1_0)))", dsl)
+    def test_basic_shield(self):
+        dsl = near.with_shield.add_variables_domain_dsl(3)
+        self.assertEquivalence("(lam ($1_0))", "(lam (shield0 ($0_0)))", dsl)
+        self.assertEquivalence("(lam ($2_0))", "(lam (shield0 ($1_0)))", dsl)
+        self.assertEquivalence("(lam ($1_0))", "(lam (shield2 ($1_0)))", dsl)
 
 
-class TestSearchGraphDrops(unittest.TestCase):
+class TestSearchGraphShield(unittest.TestCase):
 
-    def test_search_graph_with_drops(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+    def test_search_graph_with_shield(self):
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         sg = ns.DSLSearchGraph(
             dsl,
             hole_set_chooser=ns.ChooseAll(),
@@ -68,32 +68,32 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 ],
             ],
             [
-                "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 [
-                    "(lam (drop0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (drop0 ($0_0)))",
-                    "(lam (drop0 ($1_0)))",
-                    "(lam (drop0 (drop0 ??::<{f, 1}|0={f, 1}>)))",
-                    "(lam (drop0 (drop1 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (shield0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (shield0 ($0_0)))",
+                    "(lam (shield0 ($1_0)))",
+                    "(lam (shield0 (shield0 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (shield0 (shield1 ??::<{f, 1}|0={f, 1}>)))",
                 ],
             ],
             [
-                "(lam (drop0 (drop1 ??::<{f, 1}|0={f, 1}>)))",
+                "(lam (shield0 (shield1 ??::<{f, 1}|0={f, 1}>)))",
                 [
-                    "(lam (drop0 (drop1 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
-                    "(lam (drop0 (drop1 ($0_0))))",
-                    "(lam (drop0 (drop1 (drop0 ??::<{f, 1}>))))",
+                    "(lam (shield0 (shield1 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
+                    "(lam (shield0 (shield1 ($0_0))))",
+                    "(lam (shield0 (shield1 (shield0 ??::<{f, 1}>))))",
                 ],
             ],
             [
-                "(lam (drop0 (drop1 (drop0 ??::<{f, 1}>))))",
-                ["(lam (drop0 (drop1 (drop0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
+                "(lam (shield0 (shield1 (shield0 ??::<{f, 1}>))))",
+                ["(lam (shield0 (shield1 (shield0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
             ],
         ]
         nodes = [sg.initial_node()]
@@ -108,8 +108,8 @@ class TestSearchGraphDrops(unittest.TestCase):
         for node in sg.expand_node(node):
             print("\t", ns.render_s_expression(node.program))
 
-    def test_search_graph_with_drops_inside_func(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+    def test_search_graph_with_shield_inside_func(self):
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         sg = ns.DSLSearchGraph(
             dsl,
             hole_set_chooser=ns.ChooseAll(),
@@ -129,9 +129,9 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 ],
             ],
             [
@@ -141,16 +141,16 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam (+ ($0_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ($2_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($0_0)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($1_0)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($2_0)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
                 ],
             ],
             [
@@ -160,9 +160,9 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam (+ ($1_0) ($0_0)))",
                     "(lam (+ ($1_0) ($1_0)))",
                     "(lam (+ ($1_0) ($2_0)))",
-                    "(lam (+ ($1_0) (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
                 ],
             ],
         ]
@@ -179,14 +179,14 @@ class TestSearchGraphDrops(unittest.TestCase):
             print("\t", ns.render_s_expression(node.program))
 
     def test_forward_type_computation(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
             "<{f, 1}|1={f, 1}>",
             dsl.compute_type(ns.parse_s_expression("($1_0)")).short_repr(),
         )
         self.assertEqual(
             "<{f, 1}|2={f, 1}>",
-            dsl.compute_type(ns.parse_s_expression("(drop0 ($1_0))")).short_repr(),
+            dsl.compute_type(ns.parse_s_expression("(shield0 ($1_0))")).short_repr(),
         )
         self.assertEqual(
             "<{f, 1}|0={f, 1},2={f, 1}>",
@@ -194,20 +194,20 @@ class TestSearchGraphDrops(unittest.TestCase):
         )
 
     def test_forward_type_computation_nofree(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
             "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
             dsl.compute_type(
-                ns.parse_s_expression("(lam (drop0 ($1_0)))")
+                ns.parse_s_expression("(lam (shield0 ($1_0)))")
             ).short_repr(),
         )
 
     def test_forward_type_computation_nested(self):
-        dsl = near.with_drops.add_variables_domain_dsl(3)
+        dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
             "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
             dsl.compute_type(
-                ns.parse_s_expression("(lam (drop0 ($1_0)))")
+                ns.parse_s_expression("(lam (shield0 ($1_0)))")
             ).short_repr(),
         )
 
@@ -215,18 +215,18 @@ class TestSearchGraphDrops(unittest.TestCase):
 count = 14
 
 
-class TestDropInterface(unittest.TestCase):
+class TestShieldInterface(unittest.TestCase):
 
     indices_all = [
         (np.random.default_rng(i).choice(count, size=4, replace=False).tolist(),)
         for i in range(5)
     ]
 
-    def run_search(self, indices, include_drops, cost, max_iterations):
-        datamodule = near.with_drops.add_variables_domain_datamodule(count, indices)
+    def run_search(self, indices, include_shield, cost, max_iterations):
+        datamodule = near.with_shield.add_variables_domain_datamodule(count, indices)
 
-        original_dsl = near.with_drops.add_variables_domain_dsl(
-            count, is_vectorized=True, include_drops=include_drops
+        original_dsl = near.with_shield.add_variables_domain_dsl(
+            count, is_vectorized=True, include_shield=include_shield
         )
         print(original_dsl.render())
         interface = near.NEAR(n_epochs=2, max_depth=None, lr=0.01)
@@ -242,7 +242,7 @@ class TestDropInterface(unittest.TestCase):
             dsl=original_dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=100),
-            search_strategy=near.with_drops.osg_astar,
+            search_strategy=near.with_shield.osg_astar,
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=cost,
@@ -258,23 +258,23 @@ class TestDropInterface(unittest.TestCase):
         )
 
     @parameterized.expand(indices_all)
-    def test_with_drops_works(self, indices):
+    def test_with_shield_works(self, indices):
         result = self.run_search(
             indices,
-            include_drops=True,
-            cost=near.with_drops.MinimalStepsNearStructuralCostWithDrops,
+            include_shield=True,
+            cost=near.with_shield.MinimalStepsNearStructuralCostWithShield,
             max_iterations=1000,
         )
         self.assertEqual(len(result), 1)
 
-    def test_without_drops_occassionally_catastrophically_fails(self):
+    def test_without_shield_occassionally_catastrophically_fails(self):
         for [index] in self.indices_all:
             result = self.run_search(
                 index,
-                include_drops=False,
+                include_shield=False,
                 cost=near.MinimalStepsNearStructuralCost,
                 max_iterations=10000,
             )
             if len(result) == 0:
                 return
-        self.fail("Expected at least one failure without drops")
+        self.fail("Expected at least one failure without shield")

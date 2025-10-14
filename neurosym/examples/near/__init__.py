@@ -15,7 +15,7 @@ from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import ValidationCost, default_near_cost
 
-from . import with_drops
+from . import with_shield
 from .dsls import debug_nested_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl

@@ -5,8 +5,8 @@ from typing import Callable, Dict, Union
 from torch import NoneType
 
 from ..types.type_signature import (
-    DropTypeSignature,
     LambdaTypeSignature,
+    ShieldTypeSignature,
     TypeSignature,
     VariableTypeSignature,
 )
@@ -215,28 +215,28 @@ class LambdaProduction(Production):
 
 
 @dataclass
-class DropProduction(Production):
+class ShieldProduction(Production):
     """
-    This production represents a drop operation. This is added automatically
+    This production represents a shield operation. This is added automatically
     to the DSL by the :py:class:`neurosym.DSLFactory` when :py:meth:`neurosym.DSLFactory.lambdas`
-    is called with `include_drops=True`.
+    is called with `include_shield=True`.
 
-    `dropk` removes variable `k` from the environment.
+    `shieldk` removes variable `k` from the environment.
 
-    :param _type_signature: the type signature of this drop production
+    :param _type_signature: the type signature of this shield production
     """
 
-    _type_signature: DropTypeSignature
+    _type_signature: ShieldTypeSignature
 
     def base_symbol(self):
-        return f"drop{self._type_signature.index_in_env}"
+        return f"shield{self._type_signature.index_in_env}"
 
     def get_index(self):
         return None
 
     def with_index(self, index):
         assert index == 0
-        return DropProduction(self._type_signature)
+        return ShieldProduction(self._type_signature)
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature

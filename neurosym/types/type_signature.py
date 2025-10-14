@@ -204,10 +204,10 @@ class LambdaTypeSignature(TypeSignature):
 
 
 @dataclass
-class DropTypeSignature(TypeSignature):
+class ShieldTypeSignature(TypeSignature):
     """
-    Represents the type signature of the drop production. A drop operation
-    drops a variable of a given type at a given index in the environment.
+    Represents the type signature of the shield production. A shield operation
+    shields its argument from the particular variable in the environment.
 
     This is parameterized by the type of the variable being removed, so
     we can infer forward typing.
