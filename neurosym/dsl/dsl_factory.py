@@ -299,10 +299,7 @@ class DSLFactory:
 
             if self.lambda_parameters["include_drops"]:
                 sym_to_productions["<drop>"] = [
-                    DropProduction(
-                        type_id, DropTypeSignature(index_in_env, variable_type)
-                    )
-                    for type_id, variable_type in enumerate(variable_types)
+                    DropProduction(DropTypeSignature(index_in_env))
                     for index_in_env in range(self.max_env_depth)
                 ]
                 stable_symbols.add("<drop>")

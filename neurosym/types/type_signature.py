@@ -213,11 +213,9 @@ class DropTypeSignature(TypeSignature):
     we can infer forward typing.
 
     :param index_in_env: The index of the variable in the environment.
-    :param drop_type: The type of the variable to drop.
     """
 
     index_in_env: int
-    drop_type: Type
 
     def arity(self) -> int:
         # just the body
@@ -229,12 +227,12 @@ class DropTypeSignature(TypeSignature):
 
         body = TypeVariable("body")
 
-        return f"D<{render_type(body)} - ${self.index_in_env}::{render_type(self.drop_type)}> -> {render_type(body)}"
+        return f"D<{render_type(body)}, ${self.index_in_env}> -> {render_type(body)}"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        new_env = twe.env.attempt_remove(self.index_in_env, self.drop_type)
+        new_env = twe.env.attempt_remove(self.index_in_env)
         if new_env is None:
             return None
         return [TypeWithEnvironment(twe.typ, new_env)]
@@ -248,7 +246,7 @@ class DropTypeSignature(TypeSignature):
         if len(twes) != 1:
             return None
         twe = twes[0]
-        new_env = twe.env.attempt_insert(self.index_in_env, self.drop_type)
+        new_env = twe.env.attempt_insert(self.index_in_env)
         if new_env is None:
             return None
         return TypeWithEnvironment(twe.typ, new_env)

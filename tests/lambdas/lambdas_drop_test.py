@@ -21,9 +21,9 @@ class TestDSLWithDrops(unittest.TestCase):
                 "           $0_0 :: V<{f, 1}@0>",
                 "           $1_0 :: V<{f, 1}@1>",
                 "           $2_0 :: V<{f, 1}@2>",
-                "        drop0_0 :: D<#body - $0::{f, 1}> -> #body",
-                "        drop1_0 :: D<#body - $1::{f, 1}> -> #body",
-                "        drop2_0 :: D<#body - $2::{f, 1}> -> #body",
+                "          drop0 :: D<#body, $0> -> #body",
+                "          drop1 :: D<#body, $1> -> #body",
+                "          drop2 :: D<#body, $2> -> #body",
             ],
         )
 
@@ -40,9 +40,9 @@ class TestEvaluateDrops(unittest.TestCase):
 
     def test_basic_drop(self):
         dsl = near.with_drops.add_variables_domain_dsl(3)
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop0_0 ($0_0)))", dsl)
-        self.assertEquivalence("(lam ($2_0))", "(lam (drop0_0 ($1_0)))", dsl)
-        self.assertEquivalence("(lam ($1_0))", "(lam (drop2_0 ($1_0)))", dsl)
+        self.assertEquivalence("(lam ($1_0))", "(lam (drop0 ($0_0)))", dsl)
+        self.assertEquivalence("(lam ($2_0))", "(lam (drop0 ($1_0)))", dsl)
+        self.assertEquivalence("(lam ($1_0))", "(lam (drop2 ($1_0)))", dsl)
 
 
 class TestSearchGraphDrops(unittest.TestCase):
@@ -68,32 +68,32 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 ],
             ],
             [
-                "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 [
-                    "(lam (drop0_0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (drop0_0 ($0_0)))",
-                    "(lam (drop0_0 ($1_0)))",
-                    "(lam (drop0_0 (drop0_0 ??::<{f, 1}|0={f, 1}>)))",
-                    "(lam (drop0_0 (drop1_0 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (drop0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (drop0 ($0_0)))",
+                    "(lam (drop0 ($1_0)))",
+                    "(lam (drop0 (drop0 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (drop0 (drop1 ??::<{f, 1}|0={f, 1}>)))",
                 ],
             ],
             [
-                "(lam (drop0_0 (drop1_0 ??::<{f, 1}|0={f, 1}>)))",
+                "(lam (drop0 (drop1 ??::<{f, 1}|0={f, 1}>)))",
                 [
-                    "(lam (drop0_0 (drop1_0 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
-                    "(lam (drop0_0 (drop1_0 ($0_0))))",
-                    "(lam (drop0_0 (drop1_0 (drop0_0 ??::<{f, 1}>))))",
+                    "(lam (drop0 (drop1 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
+                    "(lam (drop0 (drop1 ($0_0))))",
+                    "(lam (drop0 (drop1 (drop0 ??::<{f, 1}>))))",
                 ],
             ],
             [
-                "(lam (drop0_0 (drop1_0 (drop0_0 ??::<{f, 1}>))))",
-                ["(lam (drop0_0 (drop1_0 (drop0_0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
+                "(lam (drop0 (drop1 (drop0 ??::<{f, 1}>))))",
+                ["(lam (drop0 (drop1 (drop0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
             ],
         ]
         nodes = [sg.initial_node()]
@@ -129,9 +129,9 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
                 ],
             ],
             [
@@ -141,16 +141,16 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam (+ ($0_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ($2_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($0_0)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($1_0)))",
                     "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($2_0)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
                 ],
             ],
             [
@@ -160,9 +160,9 @@ class TestSearchGraphDrops(unittest.TestCase):
                     "(lam (+ ($1_0) ($0_0)))",
                     "(lam (+ ($1_0) ($1_0)))",
                     "(lam (+ ($1_0) ($2_0)))",
-                    "(lam (+ ($1_0) (drop0_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (drop1_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (drop2_0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (drop0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (drop1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (drop2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
                 ],
             ],
         ]
@@ -185,8 +185,8 @@ class TestSearchGraphDrops(unittest.TestCase):
             dsl.compute_type(ns.parse_s_expression("($1_0)")).short_repr(),
         )
         self.assertEqual(
-            "<{f, 1}|0={f, 1},2={f, 1}>",
-            dsl.compute_type(ns.parse_s_expression("(drop0_0 ($1_0))")).short_repr(),
+            "<{f, 1}|2={f, 1}>",
+            dsl.compute_type(ns.parse_s_expression("(drop0 ($1_0))")).short_repr(),
         )
         self.assertEqual(
             "<{f, 1}|0={f, 1},2={f, 1}>",
@@ -198,7 +198,7 @@ class TestSearchGraphDrops(unittest.TestCase):
         self.assertEqual(
             "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
             dsl.compute_type(
-                ns.parse_s_expression("(lam (drop0_0 ($1_0)))")
+                ns.parse_s_expression("(lam (drop0 ($1_0)))")
             ).short_repr(),
         )
 
@@ -207,7 +207,7 @@ class TestSearchGraphDrops(unittest.TestCase):
         self.assertEqual(
             "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
             dsl.compute_type(
-                ns.parse_s_expression("(lam (drop0_0 ($1_0)))")
+                ns.parse_s_expression("(lam (drop0 ($1_0)))")
             ).short_repr(),
         )
 

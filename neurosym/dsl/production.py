@@ -223,21 +223,20 @@ class DropProduction(Production):
 
     `dropk` removes variable `k` from the environment.
 
-    :param _unique_id: the unique id of this drop production
     :param _type_signature: the type signature of this drop production
     """
 
-    _unique_id: int
     _type_signature: DropTypeSignature
 
     def base_symbol(self):
         return f"drop{self._type_signature.index_in_env}"
 
     def get_index(self):
-        return self._unique_id
+        return None
 
     def with_index(self, index):
-        return DropProduction(index, self._type_signature)
+        assert index == 0
+        return DropProduction(self._type_signature)
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature

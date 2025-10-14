@@ -57,7 +57,7 @@ class Environment:
         }
         return Environment(frozendict(result))
 
-    def attempt_insert(self, index: int, typ: Type) -> "Environment | None":
+    def attempt_insert(self, index: int) -> "Environment | None":
         """
         Attempt to insert the given type at the given index, shifting other types
         up by one. If the index is beyond the current length of the environment,
@@ -71,18 +71,17 @@ class Environment:
                 result[i] = existing_typ
             else:
                 result[i + 1] = existing_typ
-        result[index] = typ
         return Environment(frozendict(result))
 
-    def attempt_remove(self, index: int, typ: Type) -> "Environment | None":
+    def attempt_remove(self, index: int) -> "Environment | None":
         """
         Attempt to remove the given type at the given index, shifting other types
         down by one. If the index is beyond the current length of the environment,
-        or if the type at the index does not match, this will fail and return None.
+        this will fail and return None.
         """
         if index >= len(self):
             return None
-        if index not in self._elements or self._elements[index] != typ:
+        if index not in self._elements:
             return None
         result = {}
         for i, existing_typ in self._elements.items():
@@ -179,18 +178,18 @@ class PermissiveEnvironmment:
         del new_types
         return self
 
-    def attempt_insert(self, index: int, typ: Type):
+    def attempt_insert(self, index: int):
         """
         Just return self, since any types are allowed.
         """
-        del index, typ
+        del index
         return self
 
-    def attempt_remove(self, index: int, typ: Type):
+    def attempt_remove(self, index: int):
         """
         Just return self, since any types are allowed.
         """
-        del index, typ
+        del index
         return self
 
     def contains_type_at(self, typ: Type, index: int):
