@@ -124,3 +124,29 @@ class TestHeuristicUsedScalars(unittest.TestCase):
             self.run_model(dsl, 0, near.GenericMLPRNNNeuralHoleFiller(100)),
             ["(wrap (lam_0 (zero ($0_0))))"],
         )
+
+    def test_multiple_scalars(self):
+        dsl = dsl_with_scalars("f")
+        self.assertEqual(
+            self.run_model(dsl, 2**32, near.GenericMLPRNNNeuralHoleFiller(100)),
+            [
+                "(wrap (lam_0 (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double ($0_0)))))))))))))))))))))))))))))))))))"
+            ],
+        )
+
+    def test_multiple_scalars_transformer(self):
+        dsl = dsl_with_scalars("f")
+        self.assertEqual(
+            self.run_model(
+                dsl,
+                2**5,
+                near.TransformerNeuralHoleFiller(
+                    max_tensor_size=100,
+                    hidden_size=8,
+                    num_decoder_layers=1,
+                    num_encoder_layers=1,
+                    num_head=2,
+                ),
+            ),
+            ["(wrap (lam_0 (double (double (double (double (double ($0_0))))))))"],
+        )
