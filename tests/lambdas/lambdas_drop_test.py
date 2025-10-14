@@ -178,6 +178,39 @@ class TestSearchGraphDrops(unittest.TestCase):
         for node in sg.expand_node(node):
             print("\t", ns.render_s_expression(node.program))
 
+    def test_forward_type_computation(self):
+        dsl = near.with_drops.add_variables_domain_dsl(3)
+        self.assertEqual(
+            "<{f, 1}|1={f, 1}>",
+            dsl.compute_type(ns.parse_s_expression("($1_0)")).short_repr(),
+        )
+        self.assertEqual(
+            "<{f, 1}|0={f, 1},2={f, 1}>",
+            dsl.compute_type(ns.parse_s_expression("(drop0_0 ($1_0))")).short_repr(),
+        )
+        self.assertEqual(
+            "<{f, 1}|0={f, 1},2={f, 1}>",
+            dsl.compute_type(ns.parse_s_expression("(+ ($0_0) ($2_0))")).short_repr(),
+        )
+
+    def test_forward_type_computation_nofree(self):
+        dsl = near.with_drops.add_variables_domain_dsl(3)
+        self.assertEqual(
+            "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
+            dsl.compute_type(
+                ns.parse_s_expression("(lam (drop0_0 ($1_0)))")
+            ).short_repr(),
+        )
+
+    def test_forward_type_computation_nested(self):
+        dsl = near.with_drops.add_variables_domain_dsl(3)
+        self.assertEqual(
+            "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
+            dsl.compute_type(
+                ns.parse_s_expression("(lam (drop0_0 ($1_0)))")
+            ).short_repr(),
+        )
+
 
 count = 14
 

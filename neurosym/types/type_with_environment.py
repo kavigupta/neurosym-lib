@@ -234,3 +234,11 @@ class TypeWithEnvironment:
         from neurosym.types.type_string_repr import render_type
 
         return render_type(self.typ), self.env.unique_hash
+
+    def short_repr(self):
+        """
+        Produce a short representation of the type with environment.
+        """
+        from neurosym.types.type_string_repr import render_type
+
+        return f"<{render_type(self.typ)}|{self.env.short_repr()}>"
