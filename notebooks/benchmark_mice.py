@@ -332,19 +332,19 @@ def main():
     parser.add_argument(
         "--hidden-dim",
         type=int,
-        default=1,
+        default=16,
         help="Hidden dimension for DSL"
     )
     parser.add_argument(
         "--neural-hidden-size",
         type=int,
-        default=32,
+        default=16,
         help="Hidden size for neural hole filler"
     )
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=50,
+        default=2000,
         help="Training batch size"
     )
     parser.add_argument(
