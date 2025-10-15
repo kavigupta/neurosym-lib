@@ -39,7 +39,7 @@ def example_rnn_dsl(input_size, output_size):
     )
     dslf.production(
         "ite",
-        "(#a -> f, #a -> #a, #a -> #a) -> #a -> #a",
+        "(#a -> [f], #a -> #a, #a -> #a) -> #a -> #a",
         ite_torch,
     )
     dslf.production(
