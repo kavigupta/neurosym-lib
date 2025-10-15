@@ -18,7 +18,7 @@ def ite_torch(condition, if_true, if_else):
     :param if_else: A function that computes the value if the condition
         is false. This is expected to return a tensor of shape ``(N, *C2)``.
 
-    *Broadcasting here means that the condition tensor must have a shape
+    \\*Broadcasting here means that the condition tensor must have a shape
     that is a prefix of the shape of the other tensors, with potential 1s
     at the end. For example, if the condition has shape (N, 1), and the
     other tensors have shape (N, M), then the condition will be broadcast
