@@ -23,8 +23,20 @@ def ite_torch(condition, if_true, if_else):
         cond = torch.sigmoid(condition(*args))
         true_val = if_true(*args)
         false_val = if_else(*args)
+        if not (
+            true_val.shape == false_val.shape
+            and cond.shape[: len(true_val.shape) - 1] == true_val.shape[:-1]
+            and (
+                len(cond.shape) == len(true_val.shape)
+                and cond.shape[-1] == 1
+                or len(cond.shape) == len(true_val.shape) - 1
+            )
+        ):
+            raise ValueError(
+                f"Shapes do not match for ite: got {cond.shape}, {true_val.shape}, {false_val.shape}"
+            )
         if len(cond.shape) == len(true_val.shape) - 1:
-            cond = cond.unsqueeze(1)
+            cond = cond.unsqueeze(-1)
         cond = cond.expand_as(true_val)
         return cond * true_val + (1 - cond) * false_val
 
