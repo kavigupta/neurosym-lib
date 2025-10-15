@@ -25,7 +25,7 @@ def ite_torch(condition, if_true, if_else):
         false_val = if_else(*args)
         if not (
             true_val.shape == false_val.shape
-            and cond.shape[:len(true_val.shape) - 1] == true_val.shape[:-1]
+            and cond.shape[: len(true_val.shape) - 1] == true_val.shape[:-1]
             and (
                 len(cond.shape) == len(true_val.shape)
                 and cond.shape[-1] == 1
