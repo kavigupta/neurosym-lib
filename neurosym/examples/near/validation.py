@@ -166,8 +166,8 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
         model.train()
         for batch in datamodule.train_dataloader():
             optimizer.zero_grad()
-            batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-            x, y = batch["inputs"], batch["outputs"]
+            batch = [v.to(trainer_cfg.accelerator) for v in batch]
+            x, y = batch
             loss = trainer_cfg.loss_callback(model(x, environment=()), y)
             loss.backward()
             optimizer.step()
@@ -180,8 +180,8 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
             labels, predictions = [], []
             with torch.no_grad():
                 for batch in datamodule.val_dataloader():
-                    batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-                    x, y = batch["inputs"], batch["outputs"]
+                    batch = [v.to(trainer_cfg.accelerator) for v in batch]
+                    x, y = batch
                     pred_y = model(x, environment=())
                     val_loss_sum += trainer_cfg.loss_callback(pred_y, y).item()
                     val_cnt += 1

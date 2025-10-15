@@ -102,10 +102,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         return len(self.inputs)
 
     def __getitem__(self, idx):
-        return dict(
-            inputs=self.inputs[self.ordering[idx]],
-            outputs=self.outputs[self.ordering[idx]],
-        )
+        return self.inputs[self.ordering[idx]], self.outputs[self.ordering[idx]]
 
 
 class DatasetWrapper(pl.LightningDataModule):
@@ -127,39 +124,21 @@ class DatasetWrapper(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
+    def load_dataset(self, dataset):
+        for i in range(len(dataset) // self.batch_size + 1):
+            batch = dataset[i * self.batch_size : (i + 1) * self.batch_size]
+            if not batch:
+                continue
+            yield [torch.as_tensor(x) for x in batch]
+
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.train,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
+        return self.load_dataset(self.train)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
+        return self.load_dataset(self.test)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
-
+        return self.load_dataset(self.test)
 
 def numpy_dataset_from_github(
     github_url: str,

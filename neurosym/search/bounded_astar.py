@@ -1,7 +1,7 @@
-import queue
 from dataclasses import dataclass, field
 from types import NoneType
 from typing import Iterable, TypeVar, Union
+import heapq
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
@@ -21,20 +21,21 @@ def bounded_astar(
     :param max_iterations: Maximum number of iterations to perform. If None, no limit is applied.
     :param frontier_capacity: Maximum number of nodes to keep in the fringe. If 0, no limit is applied.
     :return: An iterable of goal nodes in the order they were visited.
-    
+
     :raises AssertionError: If `max_depth` is not greater than 0.
     """
     assert max_depth > 0
     visited = set()
-    fringe = queue.PriorityQueue(maxsize=frontier_capacity)
+    fringe = []
 
     def add_to_fringe(node, depth):
-        fringe.put(BoundedAStarNode(g.cost(node), node, depth))
+        cost = g.cost(node)
+        heapq.heappush(fringe, BoundedAStarNode(cost, node, depth))
 
     add_to_fringe(g.initial_node(), 0)
     iterations = 0
-    while not fringe.empty():
-        fringe_var = fringe.get()
+    while fringe:
+        fringe_var = heapq.heappop(fringe)
         node, depth = fringe_var.node, fringe_var.depth
         if node in visited or depth > max_depth:
             continue
