@@ -31,11 +31,10 @@ def _classify_type(typ):
     if isinstance(typ, AtomicType):
         return _MLPRNNInput(is_sequence=False, shape=())
     if isinstance(typ, ListType):
-        assert isinstance(
-            typ.element_type, TensorType
-        ), f"Expected a list of tensors, but received {render_type(typ)}"
-        # return "sequence", typ.element_type.shape
-        return _MLPRNNInput(is_sequence=True, shape=typ.element_type.shape)
+        subtyp = _classify_type(typ.element_type)
+        if subtyp is None or subtyp.is_sequence:
+            return None
+        return _MLPRNNInput(is_sequence=True, shape=subtyp.shape)
     if isinstance(typ, TensorType):
         # return "tensor", typ.shape
         return _MLPRNNInput(is_sequence=False, shape=typ.shape)
