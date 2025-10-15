@@ -1,5 +1,6 @@
 import itertools
 from dataclasses import dataclass
+from math import prod
 from typing import Tuple, Union
 
 from neurosym.types.type_string_repr import render_type
@@ -116,7 +117,7 @@ class TypeShape:
         tensor_shape = tensor.shape[self.num_batch_and_sequence_axes :]
         tensor = self.squash_batch_axis(tensor)
         if not self.sequence_lengths:
-            tensor = tensor.view((tensor.shape[0], 1, *tensor_shape))
+            tensor = tensor.view((tensor.shape[0], 1, prod(tensor_shape)))
         return tensor
 
 
