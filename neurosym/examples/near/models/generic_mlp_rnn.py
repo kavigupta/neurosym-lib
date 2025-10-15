@@ -10,7 +10,7 @@ from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_shape import infer_output_shape
-from neurosym.types.type_string_repr import parse_type, render_type
+from neurosym.types.type_string_repr import render_type
 from neurosym.types.type_with_environment import TypeWithEnvironment
 
 
