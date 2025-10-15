@@ -29,7 +29,7 @@ def ite_torch(condition, if_true, if_else):
         cond = torch.sigmoid(condition(*args))
         true_val = if_true(*args)
         false_val = if_else(*args)
-        cond = normalize_shapes(cond, true_val, false_val)
+        cond = _normalize_shapes(cond, true_val, false_val)
         if len(cond.shape) == len(true_val.shape) - 1:
             cond = cond.unsqueeze(-1)
         cond = cond.expand_as(true_val)
@@ -38,7 +38,7 @@ def ite_torch(condition, if_true, if_else):
     return _ite
 
 
-def normalize_shapes(cond, *tensors):
+def _normalize_shapes(cond, *tensors):
     """
     Broadcasts the condition tensor to the shape of the other tensors.
 
