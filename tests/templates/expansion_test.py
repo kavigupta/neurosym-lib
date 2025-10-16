@@ -306,18 +306,24 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
             + :: i -> i -> i
-            first_0 :: (#a, ((i, i) -> i, (i, i) -> i) -> (i, i) -> i) -> #a
-            first_1 :: (#a, ((i, i) -> i, i -> i) -> (i, i) -> i) -> #a
-            first_10 :: (#a, i -> i) -> #a
-            first_11 :: (#a, i) -> #a
-            first_2 :: (#a, ((i, i) -> i, i) -> (i, i) -> i) -> #a
-            first_3 :: (#a, (i -> i, (i, i) -> i) -> i -> i) -> #a
-            first_4 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
+            first_0 :: (#a, ((i, i) -> i) -> (i, i) -> i) -> #a
+            first_1 :: (#a, ((i, i) -> i) -> i -> i) -> #a
+            first_10 :: (#a, (i, i -> i) -> i -> i) -> #a
+            first_11 :: (#a, (i, i -> i) -> i) -> #a
+            first_12 :: (#a, (i, i) -> i -> i) -> #a
+            first_13 :: (#a, (i, i) -> i) -> #a
+            first_14 :: (#a, i -> (i, i) -> i) -> #a
+            first_15 :: (#a, i -> i -> i) -> #a
+            first_16 :: (#a, i -> i) -> #a
+            first_17 :: (#a, i) -> #a
+            first_2 :: (#a, ((i, i) -> i) -> i) -> #a
+            first_3 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
+            first_4 :: (#a, (i -> i, i -> i) -> i) -> #a
             first_5 :: (#a, (i -> i, i) -> i -> i) -> #a
-            first_6 :: (#a, (i, (i, i) -> i) -> i) -> #a
-            first_7 :: (#a, (i, i -> i) -> i) -> #a
-            first_8 :: (#a, (i, i) -> i) -> #a
-            first_9 :: (#a, i -> i -> i) -> #a
+            first_6 :: (#a, (i -> i, i) -> i) -> #a
+            first_7 :: (#a, (i -> i) -> (i, i) -> i) -> #a
+            first_8 :: (#a, (i -> i) -> i -> i) -> #a
+            first_9 :: (#a, (i -> i) -> i) -> #a
             """,
         )
 
