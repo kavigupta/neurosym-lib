@@ -23,18 +23,13 @@ class EnumerationRegressionTest(unittest.TestCase):
         self.assertRenderingEqual(
             self.rendered_dsl(),
             """
-            lam_0 :: L<#body|(i, i) -> i;(i, i) -> i> -> ((i, i) -> i, (i, i) -> i) -> #body
-            lam_1 :: L<#body|(i, i) -> i;i -> i> -> ((i, i) -> i, i -> i) -> #body
-            lam_2 :: L<#body|(i, i) -> i;i> -> ((i, i) -> i, i) -> #body
-            lam_3 :: L<#body|(i, i) -> i> -> ((i, i) -> i) -> #body
-            lam_4 :: L<#body|i -> i;(i, i) -> i> -> (i -> i, (i, i) -> i) -> #body
-            lam_5 :: L<#body|i -> i;i -> i> -> (i -> i, i -> i) -> #body
-            lam_6 :: L<#body|i -> i;i> -> (i -> i, i) -> #body
-            lam_7 :: L<#body|i -> i> -> (i -> i) -> #body
-            lam_8 :: L<#body|i;(i, i) -> i> -> (i, (i, i) -> i) -> #body
-            lam_9 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
-            lam_10 :: L<#body|i;i> -> (i, i) -> #body
-            lam_11 :: L<#body|i> -> i -> #body
+            lam_0 :: L<#body|(i, i) -> i> -> ((i, i) -> i) -> #body
+            lam_1 :: L<#body|i -> i;i -> i> -> (i -> i, i -> i) -> #body
+            lam_2 :: L<#body|i -> i;i> -> (i -> i, i) -> #body
+            lam_3 :: L<#body|i -> i> -> (i -> i) -> #body
+            lam_4 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
+            lam_5 :: L<#body|i;i> -> (i, i) -> #body
+            lam_6 :: L<#body|i> -> i -> #body
             $0_0 :: V<(i, i) -> i@0>
             $1_0 :: V<(i, i) -> i@1>
             $2_0 :: V<(i, i) -> i@2>

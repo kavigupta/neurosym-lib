@@ -306,43 +306,24 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
             + :: i -> i -> i
-            first_0 :: (#a, ((i, i) -> i, (i, i) -> i) -> (i, i) -> i) -> #a
-            first_1 :: (#a, ((i, i) -> i, (i, i) -> i) -> i -> i) -> #a
-            first_2 :: (#a, ((i, i) -> i, (i, i) -> i) -> i) -> #a
-            first_3 :: (#a, ((i, i) -> i, i -> i) -> (i, i) -> i) -> #a
-            first_4 :: (#a, ((i, i) -> i, i -> i) -> i -> i) -> #a
-            first_5 :: (#a, ((i, i) -> i, i -> i) -> i) -> #a
-            first_6 :: (#a, ((i, i) -> i, i) -> (i, i) -> i) -> #a
-            first_7 :: (#a, ((i, i) -> i, i) -> i -> i) -> #a
-            first_8 :: (#a, ((i, i) -> i, i) -> i) -> #a
-            first_9 :: (#a, ((i, i) -> i) -> (i, i) -> i) -> #a
-            first_10 :: (#a, ((i, i) -> i) -> i -> i) -> #a
-            first_11 :: (#a, ((i, i) -> i) -> i) -> #a
-            first_12 :: (#a, (i -> i, (i, i) -> i) -> (i, i) -> i) -> #a
-            first_13 :: (#a, (i -> i, (i, i) -> i) -> i -> i) -> #a
-            first_14 :: (#a, (i -> i, (i, i) -> i) -> i) -> #a
-            first_15 :: (#a, (i -> i, i -> i) -> (i, i) -> i) -> #a
-            first_16 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
-            first_17 :: (#a, (i -> i, i -> i) -> i) -> #a
-            first_18 :: (#a, (i -> i, i) -> (i, i) -> i) -> #a
-            first_19 :: (#a, (i -> i, i) -> i -> i) -> #a
-            first_20 :: (#a, (i -> i, i) -> i) -> #a
-            first_21 :: (#a, (i -> i) -> (i, i) -> i) -> #a
-            first_22 :: (#a, (i -> i) -> i -> i) -> #a
-            first_23 :: (#a, (i -> i) -> i) -> #a
-            first_24 :: (#a, (i, (i, i) -> i) -> (i, i) -> i) -> #a
-            first_25 :: (#a, (i, (i, i) -> i) -> i -> i) -> #a
-            first_26 :: (#a, (i, (i, i) -> i) -> i) -> #a
-            first_27 :: (#a, (i, i -> i) -> (i, i) -> i) -> #a
-            first_28 :: (#a, (i, i -> i) -> i -> i) -> #a
-            first_29 :: (#a, (i, i -> i) -> i) -> #a
-            first_30 :: (#a, (i, i) -> (i, i) -> i) -> #a
-            first_31 :: (#a, (i, i) -> i -> i) -> #a
-            first_32 :: (#a, (i, i) -> i) -> #a
-            first_33 :: (#a, i -> (i, i) -> i) -> #a
-            first_34 :: (#a, i -> i -> i) -> #a
-            first_35 :: (#a, i -> i) -> #a
-            first_36 :: (#a, i) -> #a
+            first_0 :: (#a, ((i, i) -> i) -> (i, i) -> i) -> #a
+            first_1 :: (#a, ((i, i) -> i) -> i -> i) -> #a
+            first_10 :: (#a, (i, i -> i) -> i -> i) -> #a
+            first_11 :: (#a, (i, i -> i) -> i) -> #a
+            first_12 :: (#a, (i, i) -> i -> i) -> #a
+            first_13 :: (#a, (i, i) -> i) -> #a
+            first_14 :: (#a, i -> (i, i) -> i) -> #a
+            first_15 :: (#a, i -> i -> i) -> #a
+            first_16 :: (#a, i -> i) -> #a
+            first_17 :: (#a, i) -> #a
+            first_2 :: (#a, ((i, i) -> i) -> i) -> #a
+            first_3 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
+            first_4 :: (#a, (i -> i, i -> i) -> i) -> #a
+            first_5 :: (#a, (i -> i, i) -> i -> i) -> #a
+            first_6 :: (#a, (i -> i, i) -> i) -> #a
+            first_7 :: (#a, (i -> i) -> (i, i) -> i) -> #a
+            first_8 :: (#a, (i -> i) -> i -> i) -> #a
+            first_9 :: (#a, (i -> i) -> i) -> #a
             """,
         )
 

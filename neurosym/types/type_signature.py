@@ -300,7 +300,7 @@ def bottom_up_enumerate_types(
                 current_with_depth.append(res)
         if len(current_with_depth) == 0:
             break
-    return sorted([t for t, _, _ in overall], key=str)
+    return sorted([t for t, _, _ in overall if t.depth < max_overall_depth], key=str)
 
 
 def _signature_expansions(
