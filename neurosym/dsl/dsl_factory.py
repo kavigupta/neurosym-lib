@@ -257,7 +257,6 @@ class DSLFactory:
         if self.lambda_parameters is not None:
             types, constructors_lambda = _type_universe(
                 known_types,
-                require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
             top_levels = types + [

@@ -390,13 +390,11 @@ def _all_available_types(types: List[Type]):
     return sorted(available_types, key=str)
 
 
-def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
+def _type_universe(types: List[Type], no_zeroadic=False):
     """
     Produce a type universe from the given types.
 
     :param types: The types to use.
-    :param require_arities: If specified, include all constructors with this arity,
-        even if they are not present in the types.
     :param no_zeroadic: If True, do not include zero-arity constructors.
 
     :return: A tuple of ``(atomic_types, constructors)``, where ``atomic_types``
@@ -407,31 +405,17 @@ def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
     """
     available_types = _all_available_types(types)
 
-    atomic_types = set()
-    num_arrow_args = set()
-    has_list = False
-    for t in available_types:
-        if t.is_atomic():
-            atomic_types.add(t)
-        if isinstance(t, ArrowType):
-            num_arrow_args.add(len(t.input_type))
-        if isinstance(t, ListType):
-            has_list = True
-    atomic_types = sorted(atomic_types, key=str)
-    if require_arities is not None:
-        num_arrow_args |= set(require_arities)
-    if no_zeroadic:
-        num_arrow_args -= {0}
-    num_arrow_args = sorted(num_arrow_args)
-
     constructors = []
-    if has_list:
-        constructors.append((1, ListType))
-    for n in num_arrow_args:
+    for t in available_types:
+        if isinstance(t, TypeVariable):
+            continue
+        if no_zeroadic and isinstance(t, ArrowType) and len(t.input_type) == 0:
+            continue
+        tv = t.get_type_vars()
         constructors.append(
-            (
-                n + 1,
-                lambda *args: ArrowType(tuple(args[:-1]), args[-1]),
-            )
+            (len(tv), lambda *args, t=t, tv=tv: t.subst_type_vars(dict(zip(tv, args))))
         )
-    return atomic_types, constructors
+
+    return [c() for count, c in constructors if count == 0], [
+        (count, c) for count, c in constructors if count > 0
+    ]
