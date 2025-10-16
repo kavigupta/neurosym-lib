@@ -16,11 +16,11 @@ class TestDSLWithShield(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                "              + :: ({f, 1}, {f, 1}) -> {f, 1}",
-                "            lam :: L<#body|{f, 1};{f, 1};{f, 1}> -> ({f, 1}, {f, 1}, {f, 1}) -> #body",
-                "           $0_0 :: V<{f, 1}@0>",
-                "           $1_0 :: V<{f, 1}@1>",
-                "           $2_0 :: V<{f, 1}@2>",
+                "              + :: (f, f) -> f",
+                "            lam :: L<#body|f;f;f> -> (f, f, f) -> #body",
+                "           $0_0 :: V<f@0>",
+                "           $1_0 :: V<f@1>",
+                "           $2_0 :: V<f@2>",
                 "        shield0 :: D<#body, $0> -> #body",
                 "        shield1 :: D<#body, $1> -> #body",
                 "        shield2 :: D<#body, $2> -> #body",
@@ -53,47 +53,47 @@ class TestSearchGraphShield(unittest.TestCase):
             dsl,
             hole_set_chooser=ns.ChooseAll(),
             test_predicate=lambda node: True,
-            target_type=ns.parse_type("({f, 1}, {f, 1}, {f, 1}) -> {f, 1}"),
+            target_type=ns.parse_type("(f, f, f) -> f"),
             metadata_computer=ns.NoMetadataComputer(),
         )
         path = [
             [
-                "??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>",
-                ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"],
+                "??::<(f, f, f) -> f>",
+                ["(lam ??::<f|0=f,1=f,2=f>)"],
             ],
             [
-                "(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)",
+                "(lam ??::<f|0=f,1=f,2=f>)",
                 [
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>))",
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield0 ??::<f|0=f,1=f>))",
+                    "(lam (shield1 ??::<f|0=f,1=f>))",
+                    "(lam (shield2 ??::<f|0=f,1=f>))",
                 ],
             ],
             [
-                "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                "(lam (shield0 ??::<f|0=f,1=f>))",
                 [
-                    "(lam (shield0 (+ ??::<{f, 1}|0={f, 1},1={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (shield0 (+ ??::<f|0=f,1=f> ??::<f|0=f,1=f>)))",
                     "(lam (shield0 ($0_0)))",
                     "(lam (shield0 ($1_0)))",
-                    "(lam (shield0 (shield0 ??::<{f, 1}|0={f, 1}>)))",
-                    "(lam (shield0 (shield1 ??::<{f, 1}|0={f, 1}>)))",
+                    "(lam (shield0 (shield0 ??::<f|0=f>)))",
+                    "(lam (shield0 (shield1 ??::<f|0=f>)))",
                 ],
             ],
             [
-                "(lam (shield0 (shield1 ??::<{f, 1}|0={f, 1}>)))",
+                "(lam (shield0 (shield1 ??::<f|0=f>)))",
                 [
-                    "(lam (shield0 (shield1 (+ ??::<{f, 1}|0={f, 1}> ??::<{f, 1}|0={f, 1}>))))",
+                    "(lam (shield0 (shield1 (+ ??::<f|0=f> ??::<f|0=f>))))",
                     "(lam (shield0 (shield1 ($0_0))))",
-                    "(lam (shield0 (shield1 (shield0 ??::<{f, 1}>))))",
+                    "(lam (shield0 (shield1 (shield0 ??::<f>))))",
                 ],
             ],
             [
-                "(lam (shield0 (shield1 (shield0 ??::<{f, 1}>))))",
-                ["(lam (shield0 (shield1 (shield0 (+ ??::<{f, 1}> ??::<{f, 1}>)))))"],
+                "(lam (shield0 (shield1 (shield0 ??::<f>))))",
+                ["(lam (shield0 (shield1 (shield0 (+ ??::<f> ??::<f>)))))"],
             ],
         ]
         nodes = [sg.initial_node()]
@@ -114,55 +114,55 @@ class TestSearchGraphShield(unittest.TestCase):
             dsl,
             hole_set_chooser=ns.ChooseAll(),
             test_predicate=lambda node: True,
-            target_type=ns.parse_type("({f, 1}, {f, 1}, {f, 1}) -> {f, 1}"),
+            target_type=ns.parse_type("(f, f, f) -> f"),
             metadata_computer=ns.NoMetadataComputer(),
         )
         path = [
             [
-                "??::<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}>",
-                ["(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)"],
+                "??::<(f, f, f) -> f>",
+                ["(lam ??::<f|0=f,1=f,2=f>)"],
             ],
             [
-                "(lam ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)",
+                "(lam ??::<f|0=f,1=f,2=f>)",
                 [
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>))",
                     "(lam ($0_0))",
                     "(lam ($1_0))",
                     "(lam ($2_0))",
-                    "(lam (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
-                    "(lam (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>))",
+                    "(lam (shield0 ??::<f|0=f,1=f>))",
+                    "(lam (shield1 ??::<f|0=f,1=f>))",
+                    "(lam (shield2 ??::<f|0=f,1=f>))",
                 ],
             ],
             [
-                "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                "(lam (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>))",
                 [
-                    "(lam (+ (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ ($0_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ ($2_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($0_0)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($1_0)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ($2_0)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ ($0_0) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ ($1_0) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ ($2_0) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ (shield0 ??::<f|0=f,1=f>) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ (shield1 ??::<f|0=f,1=f>) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ (shield2 ??::<f|0=f,1=f>) ??::<f|0=f,1=f,2=f>))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> ($0_0)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> ($1_0)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> ($2_0)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> (shield0 ??::<f|0=f,1=f>)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> (shield1 ??::<f|0=f,1=f>)))",
+                    "(lam (+ ??::<f|0=f,1=f,2=f> (shield2 ??::<f|0=f,1=f>)))",
                 ],
             ],
             [
-                "(lam (+ ($1_0) ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>))",
+                "(lam (+ ($1_0) ??::<f|0=f,1=f,2=f>))",
                 [
-                    "(lam (+ ($1_0) (+ ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}> ??::<{f, 1}|0={f, 1},1={f, 1},2={f, 1}>)))",
+                    "(lam (+ ($1_0) (+ ??::<f|0=f,1=f,2=f> ??::<f|0=f,1=f,2=f>)))",
                     "(lam (+ ($1_0) ($0_0)))",
                     "(lam (+ ($1_0) ($1_0)))",
                     "(lam (+ ($1_0) ($2_0)))",
-                    "(lam (+ ($1_0) (shield0 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (shield1 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
-                    "(lam (+ ($1_0) (shield2 ??::<{f, 1}|0={f, 1},1={f, 1}>)))",
+                    "(lam (+ ($1_0) (shield0 ??::<f|0=f,1=f>)))",
+                    "(lam (+ ($1_0) (shield1 ??::<f|0=f,1=f>)))",
+                    "(lam (+ ($1_0) (shield2 ??::<f|0=f,1=f>)))",
                 ],
             ],
         ]
@@ -181,22 +181,22 @@ class TestSearchGraphShield(unittest.TestCase):
     def test_forward_type_computation(self):
         dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
-            "<{f, 1}|1={f, 1}>",
+            "<f|1=f>",
             dsl.compute_type(ns.parse_s_expression("($1_0)")).short_repr(),
         )
         self.assertEqual(
-            "<{f, 1}|2={f, 1}>",
+            "<f|2=f>",
             dsl.compute_type(ns.parse_s_expression("(shield0 ($1_0))")).short_repr(),
         )
         self.assertEqual(
-            "<{f, 1}|0={f, 1},2={f, 1}>",
+            "<f|0=f,2=f>",
             dsl.compute_type(ns.parse_s_expression("(+ ($0_0) ($2_0))")).short_repr(),
         )
 
     def test_forward_type_computation_nofree(self):
         dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
-            "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
+            "<(f, f, f) -> f|>",
             dsl.compute_type(
                 ns.parse_s_expression("(lam (shield0 ($1_0)))")
             ).short_repr(),
@@ -205,7 +205,7 @@ class TestSearchGraphShield(unittest.TestCase):
     def test_forward_type_computation_nested(self):
         dsl = near.with_shield.add_variables_domain_dsl(3)
         self.assertEqual(
-            "<({f, 1}, {f, 1}, {f, 1}) -> {f, 1}|>",
+            "<(f, f, f) -> f|>",
             dsl.compute_type(
                 ns.parse_s_expression("(lam (shield0 ($1_0)))")
             ).short_repr(),
@@ -278,3 +278,6 @@ class TestShieldInterface(unittest.TestCase):
             if len(result) == 0:
                 return
         self.fail("Expected at least one failure without shield")
+
+
+TestShieldInterface().test_without_shield_occassionally_catastrophically_fails()

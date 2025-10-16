@@ -14,7 +14,7 @@ from ..types.type_signature import (
     _type_universe,
     type_expansions,
 )
-from ..types.type_string_repr import TypeDefiner
+from ..types.type_string_repr import TypeDefiner, render_type
 from .dsl import DSL
 from .production import (
     LambdaProduction,
@@ -268,6 +268,7 @@ class DSLFactory:
             top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
             expanded = []
             for top_level in top_levels:
+                print(render_type(top_level))
                 expanded += type_expansions(
                     top_level,
                     types,
@@ -275,6 +276,7 @@ class DSLFactory:
                     max_expansion_steps=self.max_expansion_steps,
                     max_overall_depth=self.lambda_parameters["max_type_depth"],
                 )
+                print(len(expanded))
             expanded = sorted(expanded, key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x.input_type))

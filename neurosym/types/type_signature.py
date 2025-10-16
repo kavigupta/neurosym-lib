@@ -446,6 +446,8 @@ def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
         constructor is a function that takes ``arity`` types and
         produces a new type.
     """
+    from neurosym.types.type_string_repr import render_type
+    print([render_type(t) for t in types])
     atomic_types = set()
     num_arrow_args = set()
     has_list = False

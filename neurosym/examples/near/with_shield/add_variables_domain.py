@@ -43,12 +43,10 @@ def add_variables_domain_dsl(amount, is_vectorized=False, include_shield=True):
     """
     dslf = DSLFactory(max_env_depth=amount + 1)
 
-    dslf.typedef("f1", "{f, 1}")
+    main_output = f"({', '.join(['f'] * amount)}) -> f"
+    vec_output = f"{{f, {amount}}} -> {{f, 1}}"
 
-    main_output = f"({', '.join(['$f1'] * amount)}) -> $f1"
-    vec_output = f"{{f, {amount}}} -> $f1"
-
-    dslf.production("+", "($f1, $f1) -> $f1", lambda x, y: x + y)
+    dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
     dslf.lambdas(
         include_shield=include_shield,
         max_type_depth=np.log2(amount) + 1,
