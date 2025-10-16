@@ -10,7 +10,6 @@ from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.types.type import ArrowType, ListType, TensorType
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_shape import infer_output_shape
-from neurosym.types.type_string_repr import render_type
 from neurosym.types.type_with_environment import TypeWithEnvironment
 
 
@@ -29,9 +28,8 @@ def _classify_type(typ):
     Classifies a type as either a tensor or a sequence of tensors. These are the only types supported by the MLP/RNN.
     """
     if isinstance(typ, ListType):
-        assert isinstance(
-            typ.element_type, TensorType
-        ), f"Expected a list of tensors, but received {render_type(typ)}"
+        if not isinstance(typ.element_type, TensorType):
+            return None
         # return "sequence", typ.element_type.shape
         return _MLPRNNInput(is_sequence=True, shape=typ.element_type.shape)
     if isinstance(typ, TensorType):
