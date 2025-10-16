@@ -9,8 +9,8 @@ ldsl = ns.examples.dreamcoder.list_dsl("[i] -> i")
 class TestListDSL(unittest.TestCase):
     def test_show_dsl(self):
         expected = """
-         lam_11 :: L<#body|[i]> -> [i] -> #body
-           $0_3 :: V<[i]@0>
+         lam_41 :: L<#body|[i]> -> [i] -> #body
+          $0_21 :: V<[i]@0>
         """
         actual = ldsl.render()
         print(actual)
@@ -45,5 +45,5 @@ class TestListDSL(unittest.TestCase):
         node = next(it)
         self.assertEqual(
             ns.render_s_expression(node),
-            "(lam_11 (index (1) ($0_3)))",
+            "(lam_41 (index (1) ($0_21)))",
         )
