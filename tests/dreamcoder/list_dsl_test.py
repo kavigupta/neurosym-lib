@@ -130,5 +130,5 @@ class TestListDSL(unittest.TestCase):
         node = next(it)
         self.assertEqual(
             ns.render_s_expression(node),
-            "(lam_11 (index (1) ($0_3)))",
+            "(lam_9 (index (1) ($0_3)))",
         )
