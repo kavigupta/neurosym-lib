@@ -382,6 +382,14 @@ def type_expansions(
         yield sig.subst_type_vars(remap)
 
 
+def _all_available_types(types: List[Type]):
+    available_types = set()
+    for typ in types:
+        for t in typ.walk_type_nodes():
+            available_types.add(t)
+    return sorted(available_types, key=str)
+
+
 def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
     """
     Produce a type universe from the given types.
@@ -397,17 +405,18 @@ def _type_universe(types: List[Type], require_arities=None, no_zeroadic=False):
         constructor is a function that takes ``arity`` types and
         produces a new type.
     """
+    available_types = _all_available_types(types)
+
     atomic_types = set()
     num_arrow_args = set()
     has_list = False
-    for typ in types:
-        for t in typ.walk_type_nodes():
-            if t.is_atomic():
-                atomic_types.add(t)
-            if isinstance(t, ArrowType):
-                num_arrow_args.add(len(t.input_type))
-            if isinstance(t, ListType):
-                has_list = True
+    for t in available_types:
+        if t.is_atomic():
+            atomic_types.add(t)
+        if isinstance(t, ArrowType):
+            num_arrow_args.add(len(t.input_type))
+        if isinstance(t, ListType):
+            has_list = True
     atomic_types = sorted(atomic_types, key=str)
     if require_arities is not None:
         num_arrow_args |= set(require_arities)
