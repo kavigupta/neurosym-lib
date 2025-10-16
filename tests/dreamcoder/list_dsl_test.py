@@ -21,49 +21,29 @@ class TestListDSL(unittest.TestCase):
         empty_0 :: () -> [b -> b]
         empty_1 :: () -> [(i, b) -> b]
         empty_2 :: () -> [(i, b) -> i]
-        empty_3 :: () -> [(i, b) -> [b]]
-        empty_4 :: () -> [(i, b) -> [i]]
-        empty_5 :: () -> [(i, b, b) -> b]
-        empty_6 :: () -> [(i, b, i) -> b]
-        empty_7 :: () -> [(i, i) -> b]
-        empty_8 :: () -> [(i, i) -> i]
-        empty_9 :: () -> [(i, i) -> [b]]
-       empty_10 :: () -> [(i, i) -> [i]]
-       empty_11 :: () -> [(i, i, b) -> i]
-       empty_12 :: () -> [(i, i, i) -> i]
-       empty_13 :: () -> [(i, [b]) -> b]
-       empty_14 :: () -> [(i, [b]) -> i]
-       empty_15 :: () -> [(i, [b]) -> [b]]
-       empty_16 :: () -> [(i, [b]) -> [i]]
-       empty_17 :: () -> [(i, [i]) -> b]
-       empty_18 :: () -> [(i, [i]) -> i]
-       empty_19 :: () -> [(i, [i]) -> [b]]
-       empty_20 :: () -> [(i, [i]) -> [i]]
-       empty_21 :: () -> [i -> b]
-       empty_22 :: () -> [[b] -> b]
-       empty_23 :: () -> [[i] -> b]
-       empty_24 :: () -> [[i] -> i]
-       empty_25 :: () -> [b]
-       empty_26 :: () -> [i]
-       empty_27 :: () -> [[b -> b]]
-       empty_28 :: () -> [[(i, b) -> b]]
-       empty_29 :: () -> [[(i, b) -> i]]
-       empty_30 :: () -> [[(i, i) -> b]]
-       empty_31 :: () -> [[(i, i) -> i]]
-       empty_32 :: () -> [[i -> b]]
-       empty_33 :: () -> [[b]]
-       empty_34 :: () -> [[i]]
-       empty_35 :: () -> [[[b]]]
-       empty_36 :: () -> [[[i]]]
-       empty_37 :: () -> [[[[b]]]]
-       empty_38 :: () -> [[[[i]]]]
+        empty_3 :: () -> [(i, b, b) -> b]
+        empty_4 :: () -> [(i, b, i) -> b]
+        empty_5 :: () -> [(i, i) -> b]
+        empty_6 :: () -> [(i, i) -> i]
+        empty_7 :: () -> [(i, i, b) -> i]
+        empty_8 :: () -> [(i, i, i) -> i]
+        empty_9 :: () -> [i -> b]
+       empty_10 :: () -> [[b] -> b]
+       empty_11 :: () -> [[i] -> b]
+       empty_12 :: () -> [[i] -> i]
+       empty_13 :: () -> [b]
+       empty_14 :: () -> [i]
+       empty_15 :: () -> [[b -> b]]
+       empty_16 :: () -> [[i -> b]]
+       empty_17 :: () -> [[b]]
+       empty_18 :: () -> [[i]]
+       empty_19 :: () -> [[[b]]]
+       empty_20 :: () -> [[[i]]]
       singleton :: #T -> [#T]
           range :: i -> [i]
              ++ :: ([#T], [#T]) -> [#T]
          mapi_0 :: ((i, b) -> #R, [b]) -> [#R]
          mapi_1 :: ((i, i) -> #R, [i]) -> [#R]
-         mapi_2 :: ((i, [b]) -> #R, [[b]]) -> [#R]
-         mapi_3 :: ((i, [i]) -> #R, [[i]]) -> [#R]
       reducei_0 :: ((i, #R, b) -> #R, #R, [b]) -> #R
       reducei_1 :: ((i, #R, i) -> #R, #R, [i]) -> #R
            true :: () -> b
@@ -100,11 +80,9 @@ class TestListDSL(unittest.TestCase):
           lam_4 :: L<#body|i;i> -> (i, i) -> #body
           lam_5 :: L<#body|i;i;b> -> (i, i, b) -> #body
           lam_6 :: L<#body|i;i;i> -> (i, i, i) -> #body
-          lam_7 :: L<#body|i;[b]> -> (i, [b]) -> #body
-          lam_8 :: L<#body|i;[i]> -> (i, [i]) -> #body
-          lam_9 :: L<#body|i> -> i -> #body
-         lam_10 :: L<#body|[b]> -> [b] -> #body
-         lam_11 :: L<#body|[i]> -> [i] -> #body
+          lam_7 :: L<#body|i> -> i -> #body
+          lam_8 :: L<#body|[b]> -> [b] -> #body
+          lam_9 :: L<#body|[i]> -> [i] -> #body
            $0_0 :: V<b@0>
            $1_0 :: V<b@1>
            $2_0 :: V<b@2>
