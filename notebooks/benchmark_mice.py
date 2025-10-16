@@ -393,7 +393,7 @@ def main():
         "num_programs": len(results),
         "programs": [
             {
-                "program": r["program"],
+                "program": str(r["program"]),
                 "time": r["time"],
                 "f1_score": r["report"]["f1_score"],
                 "hamming_accuracy": r["report"]["hamming_accuracy"],
