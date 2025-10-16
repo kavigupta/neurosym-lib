@@ -188,14 +188,17 @@ class DSLFactory:
     def _expansions_for_single_production(
         self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
     ):
-        sigs = list(
-            _signature_expansions(
-                sig,
-                type_atoms,
-                type_constructors,
-                max_expansion_steps=self.max_expansion_steps,
-                max_overall_depth=self.max_overall_depth,
-            )
+        sigs = sorted(
+            set(
+                _signature_expansions(
+                    sig,
+                    type_atoms,
+                    type_constructors,
+                    max_expansion_steps=self.max_expansion_steps,
+                    max_overall_depth=self.max_overall_depth,
+                )
+            ),
+            key=str,
         )
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
@@ -234,7 +237,11 @@ class DSLFactory:
         constructed.
         """
 
-        known_types = [x.astype() for x in self._signatures] + self._known_types
+        known_types = (
+            [x.astype() for x in self._signatures]
+            + self._known_types
+            + (self.target_types if self.target_types is not None else [])
+        )
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
@@ -253,14 +260,18 @@ class DSLFactory:
                 require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
-            top_levels = [
+            top_levels = types + [
                 constructor(
-                    *[TypeVariable.fresh() for _ in range(arity - 1)],
-                    AtomicType("output_type"),
+                    *[TypeVariable.fresh() for _ in range(arity)],
                 )
                 for arity, constructor in constructors_lambda
             ]
-            top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
+            top_levels = [
+                x.with_output_type(AtomicType("output_type"))
+                for x in top_levels
+                if isinstance(x, ArrowType)
+            ]
+            top_levels = sorted(set(top_levels), key=str)
             expanded = []
             for top_level in top_levels:
                 expanded += type_expansions(
@@ -270,7 +281,7 @@ class DSLFactory:
                     max_expansion_steps=self.max_expansion_steps,
                     max_overall_depth=self.lambda_parameters["max_type_depth"],
                 )
-            expanded = sorted(expanded, key=str)
+            expanded = sorted(set(expanded), key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x.input_type))
                 for i, x in enumerate(expanded)

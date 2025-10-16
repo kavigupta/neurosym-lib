@@ -251,6 +251,12 @@ class ArrowType(Type):
             self.output_type.subst_type_vars(subst),
         )
 
+    def with_output_type(self, new_output_type: Type):
+        return ArrowType(
+            self.input_type,
+            new_output_type,
+        )
+
     def inherent_parameters(self):
         return dict()
 
