@@ -102,7 +102,7 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(self, max_type_depth=4, include_shield=True):
+    def lambdas(self, max_type_depth=4, include_shield=False):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
