@@ -15,7 +15,6 @@ from torch import NoneType
 
 from neurosym.types.type import (
     ArrowType,
-    ListType,
     Type,
     TypeVariable,
     UnificationError,
