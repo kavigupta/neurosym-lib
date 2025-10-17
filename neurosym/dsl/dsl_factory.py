@@ -14,7 +14,7 @@ from ..types.type_signature import (
     _type_universe,
     type_expansions,
 )
-from ..types.type_string_repr import TypeDefiner, render_type
+from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
     LambdaProduction,
