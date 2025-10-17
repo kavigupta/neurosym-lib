@@ -468,36 +468,20 @@ class TestDSLExpand(unittest.TestCase):
                 1 :: () -> i
                 id :: #a -> #a
                 lam_0 :: L<#body|> -> () -> #body
-                lam_1 :: L<#body|() -> () -> i;() -> () -> i> -> (() -> () -> i, () -> () -> i) -> #body
-                lam_10 :: L<#body|() -> i;i -> i> -> (() -> i, i -> i) -> #body
-                lam_11 :: L<#body|() -> i;i> -> (() -> i, i) -> #body
-                lam_12 :: L<#body|() -> i> -> (() -> i) -> #body
-                lam_13 :: L<#body|(i, i) -> i;() -> () -> i> -> ((i, i) -> i, () -> () -> i) -> #body
-                lam_14 :: L<#body|(i, i) -> i;() -> i> -> ((i, i) -> i, () -> i) -> #body
-                lam_15 :: L<#body|(i, i) -> i;(i, i) -> i> -> ((i, i) -> i, (i, i) -> i) -> #body
-                lam_16 :: L<#body|(i, i) -> i;i -> i> -> ((i, i) -> i, i -> i) -> #body
-                lam_17 :: L<#body|(i, i) -> i;i> -> ((i, i) -> i, i) -> #body
-                lam_18 :: L<#body|(i, i) -> i> -> ((i, i) -> i) -> #body
-                lam_19 :: L<#body|i -> i;() -> () -> i> -> (i -> i, () -> () -> i) -> #body
-                lam_2 :: L<#body|() -> () -> i;() -> i> -> (() -> () -> i, () -> i) -> #body
-                lam_20 :: L<#body|i -> i;() -> i> -> (i -> i, () -> i) -> #body
-                lam_21 :: L<#body|i -> i;(i, i) -> i> -> (i -> i, (i, i) -> i) -> #body
-                lam_22 :: L<#body|i -> i;i -> i> -> (i -> i, i -> i) -> #body
-                lam_23 :: L<#body|i -> i;i> -> (i -> i, i) -> #body
-                lam_24 :: L<#body|i -> i> -> (i -> i) -> #body
-                lam_25 :: L<#body|i;() -> () -> i> -> (i, () -> () -> i) -> #body
-                lam_26 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
-                lam_27 :: L<#body|i;(i, i) -> i> -> (i, (i, i) -> i) -> #body
-                lam_28 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
-                lam_29 :: L<#body|i;i> -> (i, i) -> #body
-                lam_3 :: L<#body|() -> () -> i;(i, i) -> i> -> (() -> () -> i, (i, i) -> i) -> #body
-                lam_30 :: L<#body|i> -> i -> #body
-                lam_4 :: L<#body|() -> () -> i;i -> i> -> (() -> () -> i, i -> i) -> #body
-                lam_5 :: L<#body|() -> () -> i;i> -> (() -> () -> i, i) -> #body
-                lam_6 :: L<#body|() -> () -> i> -> (() -> () -> i) -> #body
-                lam_7 :: L<#body|() -> i;() -> () -> i> -> (() -> i, () -> () -> i) -> #body
-                lam_8 :: L<#body|() -> i;() -> i> -> (() -> i, () -> i) -> #body
-                lam_9 :: L<#body|() -> i;(i, i) -> i> -> (() -> i, (i, i) -> i) -> #body
+                lam_1 :: L<#body|() -> () -> i> -> (() -> () -> i) -> #body
+                lam_10 :: L<#body|i -> i> -> (i -> i) -> #body
+                lam_11 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
+                lam_12 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
+                lam_13 :: L<#body|i;i> -> (i, i) -> #body
+                lam_14 :: L<#body|i> -> i -> #body
+                lam_2 :: L<#body|() -> i;() -> i> -> (() -> i, () -> i) -> #body
+                lam_3 :: L<#body|() -> i;i -> i> -> (() -> i, i -> i) -> #body
+                lam_4 :: L<#body|() -> i;i> -> (() -> i, i) -> #body
+                lam_5 :: L<#body|() -> i> -> (() -> i) -> #body
+                lam_6 :: L<#body|(i, i) -> i> -> ((i, i) -> i) -> #body
+                lam_7 :: L<#body|i -> i;() -> i> -> (i -> i, () -> i) -> #body
+                lam_8 :: L<#body|i -> i;i -> i> -> (i -> i, i -> i) -> #body
+                lam_9 :: L<#body|i -> i;i> -> (i -> i, i) -> #body
             """,
         )
 
@@ -512,27 +496,21 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<() -> () -> i@0>
-                $0_1 :: V<() -> i@0>
-                $0_2 :: V<(i, i) -> i@0>
-                $0_3 :: V<i -> i@0>
-                $0_4 :: V<i@0>
-                $1_4 :: V<i@1>
-                $2_4 :: V<i@2>
-                $3_4 :: V<i@3>
+                $0_0 :: V<() -> i@0>
+                $0_1 :: V<i -> i@0>
+                $0_2 :: V<i@0>
+                $1_2 :: V<i@1>
+                $2_2 :: V<i@2>
+                $3_2 :: V<i@3>
                 1 :: () -> i
-                id_0 :: ((i, () -> () -> i) -> () -> () -> i) -> i
-                id_1 :: ((i, () -> i) -> () -> i) -> i
-                id_2 :: ((i, (i, i) -> i) -> (i, i) -> i) -> i
-                id_3 :: ((i, i -> i) -> i -> i) -> i
-                id_4 :: ((i, i) -> i) -> i
+                id_0 :: ((i, () -> i) -> () -> i) -> i
+                id_1 :: ((i, i -> i) -> i -> i) -> i
+                id_2 :: ((i, i) -> i) -> i
                 lam_0 :: L<#body|> -> () -> #body
-                lam_1 :: L<#body|i;() -> () -> i> -> (i, () -> () -> i) -> #body
-                lam_2 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
-                lam_3 :: L<#body|i;(i, i) -> i> -> (i, (i, i) -> i) -> #body
-                lam_4 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
-                lam_5 :: L<#body|i;i> -> (i, i) -> #body
-                lam_6 :: L<#body|i> -> i -> #body
+                lam_1 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
+                lam_2 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
+                lam_3 :: L<#body|i;i> -> (i, i) -> #body
+                lam_4 :: L<#body|i> -> i -> #body
             """,
         )
 
