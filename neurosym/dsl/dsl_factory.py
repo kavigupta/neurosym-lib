@@ -102,22 +102,15 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(
-        self, require_arities=(1, 2), max_type_depth=4, *, include_shield=False
-    ):
+    def lambdas(self, max_type_depth=4):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
         ($i_j) productions for each variable de bruijn index i and type j.
 
-        :param require_arities: Arities of lambdas to include.
         :param max_type_depth: The maximum depth of types to generate.
         """
-        self.lambda_parameters = dict(
-            require_arities=require_arities,
-            max_type_depth=max_type_depth,
-            include_shield=include_shield,
-        )
+        self.lambda_parameters = dict(max_type_depth=max_type_depth)
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
@@ -193,14 +186,17 @@ class DSLFactory:
     def _expansions_for_single_production(
         self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
     ):
-        sigs = list(
-            _signature_expansions(
-                sig,
-                type_atoms,
-                type_constructors,
-                max_expansion_steps=self.max_expansion_steps,
-                max_overall_depth=self.max_overall_depth,
-            )
+        sigs = sorted(
+            set(
+                _signature_expansions(
+                    sig,
+                    type_atoms,
+                    type_constructors,
+                    max_expansion_steps=self.max_expansion_steps,
+                    max_overall_depth=self.max_overall_depth,
+                )
+            ),
+            key=str,
         )
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
@@ -239,7 +235,11 @@ class DSLFactory:
         constructed.
         """
 
-        known_types = [x.astype() for x in self._signatures] + self._known_types
+        known_types = (
+            [x.astype() for x in self._signatures]
+            + self._known_types
+            + (self.target_types if self.target_types is not None else [])
+        )
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
@@ -255,17 +255,20 @@ class DSLFactory:
         if self.lambda_parameters is not None:
             types, constructors_lambda = _type_universe(
                 known_types,
-                require_arities=self.lambda_parameters["require_arities"],
                 no_zeroadic=self._no_zeroadic,
             )
-            top_levels = [
+            top_levels = types + [
                 constructor(
-                    *[TypeVariable.fresh() for _ in range(arity - 1)],
-                    AtomicType("output_type"),
+                    *[TypeVariable.fresh() for _ in range(arity)],
                 )
                 for arity, constructor in constructors_lambda
             ]
-            top_levels = [x for x in top_levels if isinstance(x, ArrowType)]
+            top_levels = [
+                x.with_output_type(AtomicType("output_type"))
+                for x in top_levels
+                if isinstance(x, ArrowType)
+            ]
+            top_levels = sorted(set(top_levels), key=str)
             expanded = []
             for top_level in top_levels:
                 print(render_type(top_level))
@@ -276,8 +279,7 @@ class DSLFactory:
                     max_expansion_steps=self.max_expansion_steps,
                     max_overall_depth=self.lambda_parameters["max_type_depth"],
                 )
-                print(len(expanded))
-            expanded = sorted(expanded, key=str)
+            expanded = sorted(set(expanded), key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x.input_type))
                 for i, x in enumerate(expanded)
