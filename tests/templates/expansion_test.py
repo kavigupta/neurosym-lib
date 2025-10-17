@@ -456,7 +456,7 @@ class TestDSLExpand(unittest.TestCase):
         dslf = ns.DSLFactory(max_env_depth=level)
         dslf.production("1", "() -> i", lambda: 1)
         dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
-        dslf.lambdas(require_arities=[level], max_type_depth=6)
+        dslf.lambdas(max_type_depth=6)
         dslf.prune_to(
             ns.render_type(
                 ns.ArrowType((ns.AtomicType("i"),) * level, ns.AtomicType("i"))
@@ -480,7 +480,7 @@ class TestDSLExpand(unittest.TestCase):
         dslf = ns.DSLFactory(max_env_depth=level)
         dslf.production("1", "() -> i", lambda: 1)
         dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
-        dslf.lambdas(require_arities=[level], max_type_depth=5)
+        dslf.lambdas(max_type_depth=5)
         dslf.prune_to(
             ns.render_type(
                 ns.ArrowType((ns.AtomicType("i"),) * level, ns.AtomicType("i"))

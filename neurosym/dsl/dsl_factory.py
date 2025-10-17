@@ -100,19 +100,15 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(self, require_arities=(1, 2), max_type_depth=4):
+    def lambdas(self, max_type_depth=4):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
         ($i_j) productions for each variable de bruijn index i and type j.
 
-        :param require_arities: Arities of lambdas to include.
         :param max_type_depth: The maximum depth of types to generate.
         """
-        self.lambda_parameters = dict(
-            require_arities=require_arities,
-            max_type_depth=max_type_depth,
-        )
+        self.lambda_parameters = dict(max_type_depth=max_type_depth)
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
