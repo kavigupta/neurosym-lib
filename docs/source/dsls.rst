@@ -18,6 +18,7 @@ Productions
 .. autoclass:: neurosym.VariableProduction
 .. autoclass:: neurosym.LambdaProduction
     :members: apply
+.. autoclass:: neurosym.ShieldProduction
 .. autoclass:: neurosym.AbstractionProduction
 .. autoclass:: neurosym.AbstractionIndexParameter
     :members: apply

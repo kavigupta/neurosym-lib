@@ -57,6 +57,40 @@ class Environment:
         }
         return Environment(frozendict(result))
 
+    def attempt_insert(self, index: int) -> "Environment | None":
+        """
+        Attempt to insert the given type at the given index, shifting other types
+        up by one. If the index is beyond the current length of the environment,
+        this will fail and return None.
+        """
+        if index > len(self):
+            return None
+        result = {}
+        for i, existing_typ in self._elements.items():
+            if i < index:
+                result[i] = existing_typ
+            else:
+                result[i + 1] = existing_typ
+        return Environment(frozendict(result))
+
+    def attempt_remove(self, index: int) -> "Environment | None":
+        """
+        Attempt to remove the given type at the given index, shifting other types
+        down by one. If the index is beyond the current length of the environment,
+        this will fail and return None.
+        """
+        if index >= len(self):
+            return None
+        if index not in self._elements:
+            return None
+        result = {}
+        for i, existing_typ in self._elements.items():
+            if i < index:
+                result[i] = existing_typ
+            elif i > index:
+                result[i - 1] = existing_typ
+        return Environment(frozendict(result))
+
     def merge(self, other: "Environment"):
         """
         Merge two environments, asserting that they agree on the same indices.
@@ -144,6 +178,20 @@ class PermissiveEnvironmment:
         del new_types
         return self
 
+    def attempt_insert(self, index: int):
+        """
+        Just return self, since any types are allowed.
+        """
+        del index
+        return self
+
+    def attempt_remove(self, index: int):
+        """
+        Just return self, since any types are allowed.
+        """
+        del index
+        return self
+
     def contains_type_at(self, typ: Type, index: int):
         """
         Just return True, since any types are allowed.
@@ -185,3 +233,11 @@ class TypeWithEnvironment:
         from neurosym.types.type_string_repr import render_type
 
         return render_type(self.typ), self.env.unique_hash
+
+    def short_repr(self):
+        """
+        Produce a short representation of the type with environment.
+        """
+        from neurosym.types.type_string_repr import render_type
+
+        return f"<{render_type(self.typ)}|{self.env.short_repr()}>"

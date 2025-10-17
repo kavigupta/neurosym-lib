@@ -6,6 +6,7 @@ from torch import NoneType
 
 from ..types.type_signature import (
     LambdaTypeSignature,
+    ShieldTypeSignature,
     TypeSignature,
     VariableTypeSignature,
 )
@@ -208,6 +209,49 @@ class LambdaProduction(Production):
 
         [body] = children
         return LambdaFunction.of(dsl, body, self._type_signature, environment)
+
+    def render(self):
+        return f"{self.symbol():>15} :: {self._type_signature.render()}"
+
+
+@dataclass
+class ShieldProduction(Production):
+    """
+    This production represents a shield operation. This is added automatically
+    to the DSL by the :py:class:`neurosym.DSLFactory` when :py:meth:`neurosym.DSLFactory.lambdas`
+    is called with `include_shield=True`.
+
+    `shieldk` removes variable `k` from the environment.
+
+    :param _type_signature: the type signature of this shield production
+    """
+
+    _type_signature: ShieldTypeSignature
+
+    def base_symbol(self):
+        return f"shield{self._type_signature.index_in_env}"
+
+    def get_index(self):
+        return None
+
+    def with_index(self, index):
+        assert index == 0
+        return ShieldProduction(self._type_signature)
+
+    def type_signature(self) -> TypeSignature:
+        return self._type_signature
+
+    def initialize(self, dsl) -> Dict[str, object]:
+        del dsl
+        return {}
+
+    def apply(self, dsl, state, children, environment):
+        assert len(children) == 1
+        return dsl.compute(
+            children[0],
+            environment[: self._type_signature.index_in_env]
+            + environment[self._type_signature.index_in_env + 1 :],
+        )
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"

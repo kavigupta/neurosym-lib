@@ -108,6 +108,7 @@ def default_near_cost(
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
     structural_cost_weight: float = 0.5,
     symbol_costs=None,
+    cost=MinimalStepsNearStructuralCost,
     **kwargs,
 ):
     """
@@ -123,7 +124,7 @@ def default_near_cost(
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=MinimalStepsNearStructuralCost(symbol_costs=symbol_costs or {}),
+        structural_cost=cost(symbol_costs=symbol_costs or {}),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,

@@ -103,7 +103,8 @@ def near_graph(
         cost,
         skip_ahead=True,
     )
-    graph = FilterUnexpandableNodes(graph, max_depth=max_depth)
+    if max_depth is not None:
+        graph = FilterUnexpandableNodes(graph, max_depth=max_depth)
     graph = LimitEdgesGraph(graph, max_num_edges)
     return graph
 
