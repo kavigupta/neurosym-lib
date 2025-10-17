@@ -273,7 +273,6 @@ class DSLFactory:
             top_levels = sorted(set(top_levels), key=str)
             expanded = []
             for top_level in top_levels:
-                print(render_type(top_level))
                 expanded += type_expansions(
                     top_level,
                     types,
