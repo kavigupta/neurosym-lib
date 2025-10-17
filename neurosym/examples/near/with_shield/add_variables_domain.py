@@ -50,7 +50,6 @@ def add_variables_domain_dsl(amount, is_vectorized=False, include_shield=True):
     dslf.lambdas(
         include_shield=include_shield,
         max_type_depth=np.log2(amount) + 1,
-        require_arities=[amount],
     )
     if is_vectorized:
         dslf.production(

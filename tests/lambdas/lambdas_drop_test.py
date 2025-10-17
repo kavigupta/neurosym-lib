@@ -278,6 +278,3 @@ class TestShieldInterface(unittest.TestCase):
             if len(result) == 0:
                 return
         self.fail("Expected at least one failure without shield")
-
-
-TestShieldInterface().test_without_shield_occassionally_catastrophically_fails()
