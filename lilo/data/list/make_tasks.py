@@ -7,7 +7,6 @@ Utility functions for loading tasks for the list domain from DreamCoder.
 import os
 
 from src.task_loaders import *
-from data.math.grammar import *
 
 import dreamcoder.domains.list.main as list_legacy
 
@@ -25,8 +24,12 @@ class ListLoader(TaskDataLoader):
             filename=os.path.join(DEFAULT_DATA_DIRECTORY, "list_tasks2.json"),
         )[:105]
         
-        train_tasks = all_tasks[:80]
-        test_tasks = all_tasks[80:]
+        train_tasks = all_tasks[14:20] #+ list_legacy.make_list_bootstrap_tasks()
+        test_tasks = all_tasks[20:26]
+        
+        # tasks = list_legacy.make_list_bootstrap_tasks()
+        # train_tasks = tasks
+        # test_tasks = tasks
 
         return {TRAIN: train_tasks, TEST: test_tasks}
     
@@ -36,6 +39,4 @@ class ListLanguageLoader(TaskDataLoader):
     name = "list"
 
     def load_task_language(self):
-        return ({},{}) # No language for math tasks
-    
-
+        return ({},{}) # No language for list tasks

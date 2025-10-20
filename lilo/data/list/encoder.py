@@ -17,7 +17,7 @@ from dreamcoder.domains.list.main import LearnedFeatureExtractor
 ExamplesEncoderRegistry = ModelLoaderRegistries[EXAMPLES_ENCODER]
 
 @ExamplesEncoderRegistry.register
-class MathFeatureExamplesEncoder(ModelLoader):
+class ListFeatureExamplesEncoder(ModelLoader):
     """
     Loads the LearnedFeatureExtractor for the list domain.
     """
