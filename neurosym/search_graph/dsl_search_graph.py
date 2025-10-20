@@ -46,6 +46,14 @@ class DSLSearchGraph(SearchGraph):
         )
 
     def expand_node(self, node):
+        assert isinstance(node, DSLSearchNode)
+        if not self.skip_ahead:
+            yield from self._direct_expand_node(node)
+        else:
+            for expanded_node in self._direct_expand_node(node):
+                yield self._maximally_expanded_node(expanded_node)
+
+    def _direct_expand_node(self, node):
         hole_sets = self.hole_set_chooser.choose_hole_sets(node.program)
         relevant_holes = sorted(set(h for hs in hole_sets for h in hs))
         # relevant_productions[hole_idx] : list of expansions for holes[hole_idx]
