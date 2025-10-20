@@ -4,9 +4,8 @@ import tqdm.auto as tqdm
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainer,
-    NEARTrainerConfig,
+from neurosym.examples.near.cost import (
+    ProgramEmbedding,
 )
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
@@ -179,20 +178,21 @@ class ValidationCost:
                 f"Partial Program not found for {render_s_expression(program)}"
             ) from e
 
-        if len(list(model.parameters())) == 0:
-            raise UninitializableProgramError(
-                f"No parameters in program {render_s_expression(program)}"
-            )
+    def program_to_module(
+        self, dsl: DSL, program: InitializedSExpression, embedding: ProgramEmbedding
+    ) -> torch.nn.Module:
+        """
+        Convert a program to a TorchProgramModule, which can then be trained.
+        This can be overriden in subclasses to provide custom behavior, e.g.,
+        integrating the program module into a larger model.
 
-        pl_model = NEARTrainer(model, config=self.trainer_cfg)
-        trainer.fit(
-            pl_model,
-            self.datamodule.train_dataloader(),
-            self.datamodule.val_dataloader(),
-        )
-        if self.progress_by_epoch:
-            pbar.close()
+        :param program: The program to convert.
+        :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
+            These should share weights, so that training the model also trains the program.
+        """
+        program_module = TorchProgramModule(dsl, program)
 
+        model = embedding.embed_initialized_program(program_module)
         return model
 
 
@@ -203,6 +203,47 @@ class UninitializableProgramError(Exception):
     or when a program has no parameters.
     """
 
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
+
+def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
+    if n_epochs is None:
+        n_epochs = trainer_cfg.n_epochs
+    if any(
+        p.requires_grad for p in model.parameters()
+    ):  # only train if there are parameters to train
+        optimizer, schedulers = schedule_optimizer(
+            trainer_cfg.optimizer(
+                model.parameters(),
+                lr=trainer_cfg.lr,
+                weight_decay=trainer_cfg.weight_decay,
+            ),
+            trainer_cfg.scheduler,
+            len(datamodule.train),
+            n_epochs,
+        )
+        torch.manual_seed(trainer_cfg.seed)
+        model = model.train()
+        model = model.to(trainer_cfg.accelerator)
+        for _ in range(n_epochs):
+            for batch in datamodule.train_dataloader():
+                batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+                x, y = batch["inputs"], batch["outputs"]
+                optimizer.zero_grad()
+                loss = trainer_cfg.loss_callback(model(x, environment=()), y)
+                loss.backward()
+                optimizer.step()
+                for scheduler in schedulers:
+                    scheduler.step()
+
+    model = model.eval()
+    val_loss_sum = 0
+    val_loss_count = 0
+    for batch in datamodule.val_dataloader():
+        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
+        x, y = batch["inputs"], batch["outputs"]
+        with torch.no_grad():
+            val_loss_sum += trainer_cfg.loss_callback(
+                model(x, environment=()), y
+            ).item()
+        val_loss_count += 1
+    model = model.train().cpu()
+    return val_loss_sum / val_loss_count
