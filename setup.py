@@ -26,7 +26,7 @@ setuptools.setup(
         "pytorch-lightning",
         "permacache",
         "requests",
-        "stitch-core==0.1.25",
+        "stitch-core==0.1.27",
         "scikit-learn",
         "s-exp-parser==1.4.0",
         "no_toplevel_code==1.0.0",

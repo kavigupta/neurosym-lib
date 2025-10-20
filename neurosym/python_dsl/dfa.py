@@ -40,6 +40,27 @@ _excluded_python_tags = [
     "Num",
 ]
 
+COMPOUND_EXPRESSION_KINDS = (
+    ast.IfExp,
+    ast.Dict,
+    ast.Set,
+    ast.List,
+    ast.Tuple,
+    ast.Await,
+    ast.Yield,
+    ast.YieldFrom,
+)
+
+MULTI_LINE_STATEMENT_KINDS = (
+    ast.For,
+    ast.AsyncFor,
+    ast.While,
+    ast.If,
+    ast.With,
+    ast.AsyncWith,
+    ast.Try,
+)
+
 
 _python_transitions = frozendict(
     {
@@ -66,15 +87,7 @@ _python_transitions = frozendict(
                 "annotation": "E",
                 "simple": "bool",
             },
-            (
-                ast.For,
-                ast.AsyncFor,
-                ast.While,
-                ast.If,
-                ast.With,
-                ast.AsyncWith,
-                ast.Try,
-            ): {
+            MULTI_LINE_STATEMENT_KINDS: {
                 "iter": "E",
                 "test": "E",
                 "body": "seqS",
@@ -106,16 +119,7 @@ _python_transitions = frozendict(
             },
             ast.NamedExpr: {"value": "E", "target": "L"},
             ast.Lambda: {"args": "As", "body": "E"},
-            (
-                ast.IfExp,
-                ast.Dict,
-                ast.Set,
-                ast.List,
-                ast.Tuple,
-                ast.Await,
-                ast.Yield,
-                ast.YieldFrom,
-            ): {
+            COMPOUND_EXPRESSION_KINDS: {
                 "ctx": "Ctx",
                 "elts": "[StarredRoot]",
                 "keys": "[E]",
