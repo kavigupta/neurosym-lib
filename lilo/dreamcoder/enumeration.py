@@ -303,8 +303,8 @@ def multicoreEnumeration(
     for job in min_likelihood_dict.keys():
         starting = time.time()
         parsed_enumerations = []
-        solved = False
-        while not solved:
+        not_solved = True
+        while not_solved:
             bi = budgetIncrement(min_likelihood_dict[job])
             current_generations = list(family.enumerate(dist = dist_dict[job], min_likelihood = min_likelihood_dict[job], chunk_size = bi))
             enumerations[job] += current_generations
@@ -340,6 +340,9 @@ def multicoreEnumeration(
                 log_prob = float(format(prob_fraction, '.10g'))
                 dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logPrior = log_prob, logLikelihood=likelihood)
                 parsed_enumerations.append(dreamcoder_entry)
+                if likelihood == 0.0:
+                    not_solved = False
+                    break
             min_likelihood_dict[job] -= bi
             if time.time() - starting > enumerationTimeout:
                 print(f"Final min_likelihood for job {job} is {min_likelihood_dict[job]}, enumerated {len(parsed_enumerations)} programs.")
