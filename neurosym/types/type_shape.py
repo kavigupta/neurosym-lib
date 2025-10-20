@@ -69,7 +69,7 @@ class TypeShape:
                 f"Too few sequence dimensions, {render_type(typ)} expected"
                 f" {count_sequences}, got {len(self.sequence_lengths)}"
             )
-        if count_sequences < len(self.sequence_lengths):
+        if 1 <= count_sequences < len(self.sequence_lengths):
             raise TypeShapeException(
                 f"Too many sequence dimensions, {render_type(typ)} expected"
                 f" {count_sequences}, got {len(self.sequence_lengths)}"
@@ -81,7 +81,7 @@ class TypeShape:
                 shape.append(sequence_lengths_to_use.pop(0))
             else:
                 shape.append(dim)
-        assert not sequence_lengths_to_use
+        assert count_sequences == 0 or not sequence_lengths_to_use
         return tuple(shape)
 
     @property

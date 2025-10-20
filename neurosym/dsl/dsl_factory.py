@@ -1,4 +1,5 @@
 import copy
+import warnings
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
@@ -15,7 +16,6 @@ from ..types.type_signature import (
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
-    ConcreteProduction,
     LambdaProduction,
     ParameterizedProduction,
     Production,
@@ -34,9 +34,9 @@ class DSLFactory:
 
         dslf = DSLFactory()
         dslf.typedef("fn", "(i) -> i")
-        dslf.concrete("inc", "$fn", lambda x: x + 1)
-        dslf.concrete("const_0", "$fn", lambda x: 0)
-        dslf.concrete("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
+        dslf.production("inc", "$fn", lambda x: x + 1)
+        dslf.production("const_0", "$fn", lambda x: 0)
+        dslf.production("compose", "($fn, $fn) -> $fn", lambda f, g: lambda x: f(g(x))
         dslf.finalize()
     """
 
@@ -44,7 +44,6 @@ class DSLFactory:
         self, max_expansion_steps=np.inf, max_env_depth=4, max_overall_depth=6, **env
     ):
         self.t = TypeDefiner(**env)
-        self._concrete_productions = []
         self._parameterized_productions = []
         self._signatures = []
         self._known_types = []
@@ -68,7 +67,7 @@ class DSLFactory:
         .. code-block:: python
 
             dslf.typedef("fn", "(i) -> i")
-            dslf.concrete("inc", "$fn", lambda x: x + 1)
+            dslf.production("inc", "$fn", lambda x: x + 1)
         """
         self.t.typedef(key, type_str)
 
@@ -84,7 +83,7 @@ class DSLFactory:
             dslf.filtered_type_variable(
                 "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
             )
-            dslf.concrete("+", "%num -> %num -> %num", lambda x: x)
+            dslf.production("+", "%num -> %num -> %num", lambda x: x)
         """
         self.t.filtered_type_variable(key, type_filter)
 
@@ -113,22 +112,13 @@ class DSLFactory:
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
-        Add a concrete production to the DSL.
-
-        :param symbol: The symbol for the production.
-        :param type_str: The type string for the production.
-        :param semantics: The semantics to use for the production. This should have
-            a type corresponding to ``type_str``. Note: *this is not checked*.
+        Deprecated alias of :py:meth:`production`.
         """
-        sig = self.t.sig(type_str)
-        self._concrete_productions.append(
-            (
-                symbol,
-                sig,
-                semantics,
-            )
+        warnings.warn(
+            "The method concrete is deprecated. Use production instead.",
+            DeprecationWarning,
         )
-        self._signatures.append(sig)
+        self.production(symbol, type_str, semantics, {})
 
     def parameterized(
         self,
@@ -136,6 +126,22 @@ class DSLFactory:
         type_str: str,
         semantics: object,
         parameters: Dict[str, Callable[[], object]],
+    ):
+        """
+        Deprecated alias of :py:meth:`production`.
+        """
+        warnings.warn(
+            "The method parameterized is deprecated. Use production instead.",
+            DeprecationWarning,
+        )
+        self.production(symbol, type_str, semantics, parameters)
+
+    def production(
+        self,
+        symbol: str,
+        type_str: str,
+        semantics: object,
+        parameters: Dict[str, Callable[[], object]] = None,
     ):
         """
         Add a parameterized production to the DSL.
@@ -147,6 +153,8 @@ class DSLFactory:
         :param parameters: A dictionary mapping parameter names to functions that
             generate initial parameter values.
         """
+        if parameters is None:
+            parameters = {}
         sig = self.t.sig(type_str)
         self._parameterized_productions.append(
             (
@@ -174,7 +182,7 @@ class DSLFactory:
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def _expansions_for_single_production(
-        self, terminals, type_constructors, constructor, symbol, sig, *args
+        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
     ):
         sigs = sorted(
             set(
@@ -191,19 +199,21 @@ class DSLFactory:
         assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
 
         prods = [
-            constructor(symbol, FunctionTypeSignature.from_type(expansion), *args)
+            production_constructor(
+                symbol, FunctionTypeSignature.from_type(expansion), *args
+            )
             for expansion in sigs
         ]
 
         return {symbol: Production.reindex(prods)}
 
     def _expansions_for_all_productions(
-        self, expand_to, terminals, type_constructors, args
+        self, type_atoms, type_constructors, production_constructor, args
     ):
         result = {}
         for arg in args:
             for_prod = self._expansions_for_single_production(
-                expand_to, terminals, type_constructors, *arg
+                type_atoms, type_constructors, production_constructor, *arg
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
@@ -234,12 +244,7 @@ class DSLFactory:
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
-                *universe, ConcreteProduction, self._concrete_productions
-            )
-        )
-        sym_to_productions.update(
-            self._expansions_for_all_productions(
-                *universe, ParameterizedProduction, self._parameterized_productions
+                *universe, ParameterizedProduction.of, self._parameterized_productions
             )
         )
 

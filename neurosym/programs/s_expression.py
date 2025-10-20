@@ -1,5 +1,8 @@
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field, replace
 from typing import Dict, Tuple, Union
+
+from neurosym.utils.documentation import internal_only
 
 
 @dataclass(frozen=True, eq=True)
@@ -16,12 +19,6 @@ class SExpression:
 
     symbol: str
     children: Tuple[Union["SExpression", str]]
-
-    @property
-    def postorder(self):
-        for x in self.children:
-            yield from x.postorder
-        yield self
 
     def replace_symbols_by_id(self, id_to_symbol):
         """
@@ -53,6 +50,25 @@ class SExpression:
             tuple(child.replace_nodes_by_id(id_to_new_node) for child in self.children),
         )
 
+    def replace_first(
+        self, symbol: str, replacement: "SExpression"
+    ) -> Tuple["SExpression", bool]:
+        """
+        Replace the first occurrence of a node with a given symbol in this SExpression
+        with a replacement.
+
+        In general, a minimal number of nodes should be copied. If the symbol is not found,
+        a reference to this SExpression is returned.
+
+        :param symbol: The symbol whose node's first occurrence to replace.
+        :param replacement: The value to replace the node with.
+
+        :return: A tuple of the new SExpression and a boolean indicating whether
+            the replacement was successful. The replacement is successful if the symbol was found
+            in the tree.
+        """
+        return _replace_first(self, symbol, replacement)
+
 
 @dataclass
 class InitializedSExpression:
@@ -71,6 +87,7 @@ class InitializedSExpression:
     # state includes things related to the execution of the program,
     # e.g. weights of a neural network
     state: Dict[str, object]
+    ident: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def all_state_values(self):
         """

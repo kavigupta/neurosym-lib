@@ -3,6 +3,7 @@ from types import NoneType
 from typing import Callable, Dict, Iterator, List, Tuple, Union
 
 import numpy as np
+from frozendict import frozendict
 
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_with_environment import (
@@ -12,11 +13,10 @@ from neurosym.types.type_with_environment import (
 )
 from neurosym.utils.tree_trie import TreeTrie
 
-from ..dsl.abstraction import AbstractionIndexParameter
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
-from ..types.type_signature import FunctionTypeSignature, VariableTypeSignature
+from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
 
 ROOT_SYMBOL = "<root>"
@@ -56,6 +56,8 @@ class DSL:
                 i,
                 is_wildcard_predicate=lambda x: isinstance(x, GenericTypeVariable),
             )
+
+        self._minimum_type_computer = {}
 
     def symbols(self):
         """
@@ -149,7 +151,7 @@ class DSL:
         Compute the value of the given program.
         """
         if hasattr(program, "__compute_value__"):
-            return program.__compute_value__(self)
+            return program.__compute_value__(self, environment)
         prod = self.get_production(program.symbol)
         return prod.apply(
             self, program.state, program.children, environment=environment
@@ -254,6 +256,28 @@ class DSL:
             if all(t in constructible for t in in_t)
         }
 
+    def minimal_term_size_for_type(
+        self, typ: TypeWithEnvironment, symbol_costs: Dict[str, int] = None
+    ) -> int:
+        """
+        Minimal term size for the given type.
+
+        :param typ: The type to compute the minimal term size for.
+        :param symbol_costs: A dictionary of symbol costs. If None, all symbols have a cost of 1.
+
+        :return: The minimal term size for the given type, as a sum of symbol costs
+            for the symbols in the tree. If the type is not constructible, returns
+            float('inf').
+        """
+        if symbol_costs is None:
+            symbol_costs = {}
+        key = frozendict(symbol_costs)
+        if key not in self._minimum_type_computer:
+            self._minimum_type_computer[key] = MinimalTermSizeForTypeComputer(
+                self, symbol_costs
+            )
+        return self._minimum_type_computer[key].compute(typ)
+
     def compute_type(
         self,
         program: SExpression,
@@ -328,12 +352,16 @@ class DSL:
         """
         return "\n".join(production.render() for production in self.productions)
 
-    def add_production(self, prod):
+    def add_productions(self, *prods):
         """
         Add a production to the DSL.
         """
+        symbols = set(self._production_by_symbol.keys())
+        for prod in prods:
+            assert prod.symbol() not in symbols, f"Duplicate symbol {prod.symbol()}"
+            symbols.add(prod.symbol())
         return DSL(
-            self.productions + [prod],
+            self.productions + list(prods),
             self.valid_root_types,
             self.max_type_depth,
             self.max_env_depth,

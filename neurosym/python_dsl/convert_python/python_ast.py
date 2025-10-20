@@ -38,6 +38,8 @@ class PythonAST(ABC):
         code = self.to_python_ast()
         if isinstance(code, Splice):
             code = code.target
+        if code is None:
+            return "None"
         return ast.unparse(code)
 
     @abstractmethod

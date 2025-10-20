@@ -8,8 +8,8 @@ def basic_arith_dsl(lambdas=False):
     :param lambdas: Whether to include lambda expressions in the DSL.
     """
     dslf = DSLFactory()
-    dslf.concrete("+", "(i, i) -> i", lambda x, y: x + y)
-    dslf.concrete("1", "() -> i", lambda: 1)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("1", "() -> i", lambda: 1)
     if lambdas:
         dslf.lambdas()
     dslf.prune_to("i", "i -> i", "i -> i -> i", "(i, i) -> i", "(i, i) -> i -> i")
