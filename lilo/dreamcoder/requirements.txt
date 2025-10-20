@@ -1,14 +1,10 @@
-# Module
--e .
-
-# Tests
-pytest
-parameterized
-matplotlib # needed for tutorial test
-
-# Lint
-pylint
-
-# Documentation
--r docs/requirements.txt
-sphobjinv
+openai==0.27.7
+pregex
+num2words
+nltk
+class-registry
+psutil
+seaborn
+pandas
+plotly
+tenacity
