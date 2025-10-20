@@ -422,7 +422,7 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
                 """
                 try:
                     x?Exception$e = 2
-                except Exception?x as e:
+                except Exception?x as e?Exception$x:
                     x?Exception$e = e?Exception$x
                 """
             ).strip(),
@@ -465,7 +465,7 @@ class DefUseMaskTest(DefUseMaskTestGeneric):
             code.strip(),
             cwq(
                 """
-                x: List[Dict[str, int]] = []
+                x?Dict$List$int$str: List?Dict$int$str[Dict?List$int$str[str?Dict$List$int, int?Dict$List$str]] = []
                 """
             ).strip(),
         )

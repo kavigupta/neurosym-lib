@@ -85,6 +85,7 @@ def s_exp_to_parsed_ast(
     if x == "nil":
         return ListAST([])
     if isinstance(x, str):
+        x = x.split(PYTHON_DSL_SEPARATOR)[0]
         return handle_leaf(x, node_hooks)
     assert isinstance(x, SExpression), str((type(x), x))
     tag, args = x.symbol, x.children

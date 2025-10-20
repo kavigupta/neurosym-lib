@@ -1,5 +1,5 @@
 import copy
-from typing import Iterable, Tuple
+from typing import Iterable, Set, Tuple, Union
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
@@ -38,7 +38,10 @@ def run_dfa_on_program(
 
 
 def add_disambiguating_type_tags(
-    dfa, prog: SExpression, start_state: str
+    dfa,
+    prog: SExpression,
+    start_state: str,
+    only_for_nodes: Union[None, Set[str]] = None,
 ) -> SExpression:
     """
     Add disambiguating type tags to a program, which appended to each symbol in the program,
@@ -53,6 +56,8 @@ def add_disambiguating_type_tags(
     prog = copy.deepcopy(prog)
     node_id_to_new_symbol = {}
     for node, tag in run_dfa_on_program(dfa, prog, start_state):
+        if only_for_nodes is not None and node.symbol not in only_for_nodes:
+            continue
         assert isinstance(node, SExpression), node
         new_symbol = node.symbol + PYTHON_DSL_SEPARATOR + clean_type(tag)
         if is_sequence(tag, node.symbol):
