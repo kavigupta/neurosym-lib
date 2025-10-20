@@ -130,13 +130,7 @@ class NEAR:
             validation_epochs=validation_max_epochs,
         )
 
-        iterator = self.search_strategy(
-            g,
-            max_iterations=max_iterations,
-            **(
-                dict(max_depth=self.max_depth) if self.max_depth is not None else dict()
-            ),
-        )
+        iterator = self.search_strategy(g, max_iterations=max_iterations)
 
         sexprs = list(itertools.islice(iterator, n_programs))
         return sexprs

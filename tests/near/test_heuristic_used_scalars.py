@@ -62,7 +62,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
             dsl=dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=hole_filler,
-            search_strategy=ns.search.bounded_astar,
+            search_strategy=ns.search.astar,
             loss_callback=torch.nn.functional.mse_loss,
             validation_params=dict(progress_by_epoch=False),
             is_goal=check,

@@ -229,7 +229,7 @@ class TestShieldInterface(unittest.TestCase):
             count, is_vectorized=True, include_shield=include_shield
         )
         print(original_dsl.render())
-        interface = near.NEAR(n_epochs=2, max_depth=None, lr=0.01)
+        interface = near.NEAR(n_epochs=2, max_depth=float("inf"), lr=0.01)
 
         def is_goal(node):
             f2 = original_dsl.compute(original_dsl.initialize(node.program))
