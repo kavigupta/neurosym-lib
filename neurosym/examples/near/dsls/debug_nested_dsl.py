@@ -67,7 +67,7 @@ def get_variable_dsl(nesting):
         dslf.concrete(f"correct_{i}", typ, _expand_last_axis)
         dslf.concrete(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
 
-    dslf.lambdas(require_arities=[1])
+    dslf.lambdas()
     dslf.prune_to("{f, 1} -> {f, %s}" % (nesting + 1))
     return dslf.finalize()
 
