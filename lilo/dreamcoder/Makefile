@@ -15,5 +15,5 @@ clean:
 
 setup-ocaml:
 	opam update
-	cd solvers && opam switch create --deps-only --locked --yes .
+	cd solvers && opam switch remove /lilo/dreamcoder/solvers --yes && opam switch create --deps-only --locked --yes .
 
