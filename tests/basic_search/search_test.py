@@ -58,7 +58,7 @@ class TestSearch(unittest.TestCase):
             compute_cost=cost,
         )
 
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         print(node)
         self.assertEqual(
             node,

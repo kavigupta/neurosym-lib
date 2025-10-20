@@ -14,7 +14,7 @@ def bounded_astar(
 ) -> Iterable[X]:
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
-    the order it was visited. See ``astar`` for more details.
+    the order it was visited. See ``AStar`` for more details.
 
     :param g: Search graph to search over
     :param cost_plus_heuristic: An admissible cost heuristic.
