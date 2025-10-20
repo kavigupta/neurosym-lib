@@ -66,7 +66,7 @@ def list_dslf(*output_types):
     dslf.concrete(
         "filter",
         "((#T) -> b, [#T]) -> [#T]",
-        lambda f , x: [i for i in x if f(i)],
+        lambda f, x: [i for i in x if f(i)],
     )
     # (lambda (lambda
     #   (reduce
@@ -96,7 +96,6 @@ def list_dslf(*output_types):
 
 
 def list_dsl(*output_types):
-    """The List DSL from the DreamCoder repository.
-    """
+    """The List DSL from the DreamCoder repository."""
     dslf = list_dslf(*output_types)
     return dslf.finalize()

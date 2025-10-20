@@ -91,7 +91,9 @@ class AbstractionProduction(FunctionLikeProduction):
         return f"{self._symbol:>15} :: {self._type_signature.render()} = {self._render_as_lambda()}"
 
 
-def _with_index_parameters(ise: InitializedSExpression, inputs: tuple, must_be_s_exp: bool = False):
+def _with_index_parameters(
+    ise: InitializedSExpression, inputs: tuple, must_be_s_exp: bool = False
+):
     """
     With the given inputs, replace all AbstractionIndexParameters in the given
     InitializedSExpression with AbstractionParameters.

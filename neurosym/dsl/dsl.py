@@ -12,11 +12,11 @@ from neurosym.types.type_with_environment import (
 )
 from neurosym.utils.tree_trie import TreeTrie
 
+from ..dsl.abstraction import AbstractionIndexParameter
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..dsl.abstraction import AbstractionIndexParameter
 from ..types.type import GenericTypeVariable, Type
-from ..types.type_signature import VariableTypeSignature, FunctionTypeSignature
+from ..types.type_signature import FunctionTypeSignature, VariableTypeSignature
 from .production import Production
 
 ROOT_SYMBOL = "<root>"
@@ -253,7 +253,7 @@ class DSL:
             for sym, in_t in rules
             if all(t in constructible for t in in_t)
         }
-    
+
     def compute_type(
         self,
         program: SExpression,
@@ -294,18 +294,27 @@ class DSL:
             if res is not None:
                 return res
         if isinstance(program, SExpression):
-            child_types = [self.compute_type_abs(child, lookup) for child in program.children]
+            child_types = [
+                self.compute_type_abs(child, lookup) for child in program.children
+            ]
         elif isinstance(program, InitializedSExpression):
             child_types = []
             for child_index in range(len(program.children)):
                 child = program.children[child_index]
                 if isinstance(child, AbstractionIndexParameter):
-                    function_type_signature = self.get_production(program.symbol).type_signature()
+                    function_type_signature = self.get_production(
+                        program.symbol
+                    ).type_signature()
                     assert isinstance(function_type_signature, FunctionTypeSignature)
-                    env = Environment.merge_all(*[child_types[c_ind].env for c_ind in range(child_index)])
-                    env = env.child((function_type_signature.arguments[child_index],))                
-                    child_types.append(TypeWithEnvironment(typ =  
-                    function_type_signature.arguments[child_index], env = env))
+                    env = Environment.merge_all(
+                        *[child_types[c_ind].env for c_ind in range(child_index)]
+                    )
+                    env = env.child((function_type_signature.arguments[child_index],))
+                    child_types.append(
+                        TypeWithEnvironment(
+                            typ=function_type_signature.arguments[child_index], env=env
+                        )
+                    )
                 else:
                     child_types.append(self.compute_type_abs(child, lookup))
         else:

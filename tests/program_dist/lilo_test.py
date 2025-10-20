@@ -3,10 +3,9 @@ import unittest
 from fractions import Fraction
 
 import numpy as np
+from utils import enumerate_dsl
 
 import neurosym as ns
-
-from utils import enumerate_dsl
 
 if __name__ == "__main__":
     dslf = ns.DSLFactory()
