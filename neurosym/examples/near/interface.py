@@ -1,5 +1,5 @@
 import itertools
-from typing import Callable, Union
+from typing import Callable
 
 import torch
 from frozendict import frozendict
@@ -29,7 +29,7 @@ class NEAR:
 
     def __init__(
         self,
-        max_depth: Union[int, torch.NoneType] = None,
+        max_depth: int,
         lr: float = 1e-4,
         n_epochs: int = 10,
         accelerator: str = "cpu",
