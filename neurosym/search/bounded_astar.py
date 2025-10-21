@@ -1,6 +1,6 @@
 import queue
 from dataclasses import dataclass, field
-from typing import Iterable, TypeVar, Optional
+from typing import Iterable, Optional, TypeVar
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
