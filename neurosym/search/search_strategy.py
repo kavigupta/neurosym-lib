@@ -19,3 +19,6 @@ class SearchStrategy(ABC):
         Returns:
             Iterator: An iterator over search results.
         """
+
+    def __call__(self, graph: SearchGraph[X]) -> Iterator[X]:
+        return self.search(graph)
