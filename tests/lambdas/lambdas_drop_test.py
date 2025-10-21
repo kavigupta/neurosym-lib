@@ -242,7 +242,7 @@ class TestShieldInterface(unittest.TestCase):
             dsl=original_dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=100),
-            search_strategy=near.with_shield.osg_astar,
+            search_strategy=near.with_shield.OSGAstar(max_iterations),
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=cost,
@@ -254,7 +254,6 @@ class TestShieldInterface(unittest.TestCase):
             datamodule=datamodule,
             program_signature="{f, %s} -> {f, 1}" % count,
             n_programs=1,
-            max_iterations=max_iterations,
         )
 
     @parameterized.expand(indices_all)
