@@ -30,7 +30,7 @@ class BoundedAStar(SearchStrategy):
         fringe = queue.PriorityQueue()
 
         def add_to_fringe(node, depth):
-            fringe.put(BoundedAStarNode(graph.cost(node), node, depth))
+            fringe.put(_BoundedAStarNode(graph.cost(node), node, depth))
 
         add_to_fringe(graph.initial_node(), 0)
         iterations = 0
@@ -49,7 +49,7 @@ class BoundedAStar(SearchStrategy):
 
 
 @dataclass(order=True)
-class BoundedAStarNode:
+class _BoundedAStarNode:
     """
     Represents a node in the A* search tree.
     """

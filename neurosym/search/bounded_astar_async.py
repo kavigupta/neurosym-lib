@@ -3,7 +3,7 @@ from typing import Callable, Iterable, TypeVar
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from neurosym.search.bounded_astar import BoundedAStarNode
+from neurosym.search.bounded_astar import _BoundedAStarNode
 from neurosym.search_graph.search_graph import SearchGraph
 
 from .search_strategy import SearchStrategy
@@ -11,7 +11,7 @@ from .search_strategy import SearchStrategy
 X = TypeVar("X")
 
 
-class FuturePriorityQueue(queue.PriorityQueue):
+class _FuturePriorityQueue(queue.PriorityQueue):
     """
     A priority queue with primitive support for futures.
     """
@@ -64,13 +64,13 @@ class BoundedAStarAsync(SearchStrategy):
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         with Pool(self.max_workers) as executor:
             visited = set()
-            fringe = FuturePriorityQueue()
+            fringe = _FuturePriorityQueue()
 
             def add_to_fringe(node, depth):
                 future = executor.apipe(graph.cost, node)
                 fringe.putitem(
                     future,
-                    future_fn=lambda ret: BoundedAStarNode(ret, node, depth),
+                    future_fn=lambda ret: _BoundedAStarNode(ret, node, depth),
                 )
 
             add_to_fringe(graph.initial_node(), 0)
