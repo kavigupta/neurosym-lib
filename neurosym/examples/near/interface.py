@@ -1,6 +1,5 @@
 import itertools
-from types import NoneType
-from typing import Callable, Union
+from typing import Callable
 
 import torch
 from frozendict import frozendict
@@ -98,7 +97,6 @@ class NEAR:
         program_signature: str,
         n_programs: int = 1,  # type: ignore
         validation_max_epochs: int = 2000,
-        max_iterations: Union[int, NoneType] = None,
     ):
         """
         Fits the NEAR model to the provided data.
@@ -130,7 +128,7 @@ class NEAR:
             validation_epochs=validation_max_epochs,
         )
 
-        iterator = self.search_strategy(g, max_iterations=max_iterations)
+        iterator = self.search_strategy(g)
 
         sexprs = list(itertools.islice(iterator, n_programs))
         return sexprs

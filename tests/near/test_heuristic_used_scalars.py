@@ -62,7 +62,9 @@ class TestHeuristicUsedScalars(unittest.TestCase):
             dsl=dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=hole_filler,
-            search_strategy=ns.search.astar,
+            search_strategy=ns.search.BoundedAStar(
+                max_depth=float("inf"), max_iterations=100
+            ),
             loss_callback=torch.nn.functional.mse_loss,
             validation_params=dict(progress_by_epoch=False),
             is_goal=check,
@@ -72,7 +74,6 @@ class TestHeuristicUsedScalars(unittest.TestCase):
             program_signature="{f, 1} -> {f, 1}",
             n_programs=1,
             validation_max_epochs=100,
-            max_iterations=100,
         )
         res = [ns.render_s_expression(x) for x in res]
         print(res)
