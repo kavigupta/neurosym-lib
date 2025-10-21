@@ -18,14 +18,14 @@ class OSGAstar(SearchStrategy):
     def __init__(self, max_iterations: Union[int, NoneType] = None):
         self.max_iterations = max_iterations
 
-    def search(self, g: SearchGraph[X]) -> Iterable[X]:
+    def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
         fringe = queue.PriorityQueue()
 
         def add_to_fringe(cost, node):
             fringe.put(_AStarNode(cost, node))
 
-        add_to_fringe(0, g.initial_node())
+        add_to_fringe(0, graph.initial_node())
         iterations = 0
         # this is similar to the BFS algorithm
         # pylint: disable=duplicate-code
@@ -37,7 +37,7 @@ class OSGAstar(SearchStrategy):
             if node in visited:
                 continue
             visited.add(node)
-            cost = g.cost(node)
-            yield from g.yield_goal_node(node)
-            for child in g.expand_node(node):
+            cost = graph.cost(node)
+            yield from graph.yield_goal_node(node)
+            for child in graph.expand_node(node):
                 add_to_fringe(cost, child)
