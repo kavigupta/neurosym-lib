@@ -116,7 +116,10 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         dsl=dsl,
         type_env=TypeDefiner(),
         neural_hole_filler=neural_hole_filler,
-        search_strategy=BoundedAStar,
+        search_strategy=BoundedAStar(
+            max_depth=float("inf"),
+            max_iterations=nesting * 4 if max_iterations is None else max_iterations,
+        ),
         loss_callback=torch.nn.functional.mse_loss,
         validation_params=dict(progress_by_epoch=False),
     )
@@ -125,7 +128,6 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         program_signature="{f, 1} -> {f, %s}" % (nesting + 1),
         n_programs=1,
         validation_max_epochs=100,
-        max_iterations=nesting * 4 if max_iterations is None else max_iterations,
     )
 
 
