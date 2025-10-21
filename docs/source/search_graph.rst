@@ -17,10 +17,10 @@ Search Graph
 .. autoclass:: neurosym.ReturnSearchGraph
 .. autoclass:: neurosym.search.SearchStrategy
     :members: search
-.. autofunction:: neurosym.search.bfs
 .. autoclass:: neurosym.search.AStar
-.. autofunction:: neurosym.search.bounded_astar
-.. autofunction:: neurosym.search.bounded_astar_async
+.. autoclass:: neurosym.search.BFS
+.. autoclass:: neurosym.search.BoundedAStar
+.. autoclass:: neurosym.search.BoundedAStarAsync
 .. autoclass:: neurosym.MetadataComputer
     :members:
 .. autoclass:: neurosym.NoMetadataComputer
