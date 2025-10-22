@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 import heapq
+from dataclasses import dataclass, field
 from typing import Iterable, Optional, TypeVar
 
 from neurosym.programs.s_expression import SExpression
@@ -23,12 +23,16 @@ class BoundedAStar(SearchStrategy):
     :raises AssertionError: If `max_depth` is not greater than 0.
     """
 
-    def __init__(self, max_depth: int, max_iterations: Optional[int] = None, frontier_capacity: int = 0):
+    def __init__(
+        self,
+        max_depth: int,
+        max_iterations: Optional[int] = None,
+        frontier_capacity: int = 0,
+    ):
         assert max_depth > 0
         self.max_depth = max_depth
         self.max_iterations = max_iterations
         self.frontier_capacity = frontier_capacity
-    
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
