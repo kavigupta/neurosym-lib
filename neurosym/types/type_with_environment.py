@@ -46,6 +46,9 @@ class Environment:
         env = self
         # delete the last type first, since it starts at index 0
         for typ in new_types[::-1]:
+            if len(env) == 0:
+                # This is fine, there's just some missing stuff above
+                return env
             env = env.attempt_remove(0, typ)
             assert (
                 env is not None
