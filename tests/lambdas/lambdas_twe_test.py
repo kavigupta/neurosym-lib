@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+# better to have duplication in tests than overly abstract ones
 import unittest
 
 import neurosym as ns
