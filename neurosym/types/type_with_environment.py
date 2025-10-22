@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from frozendict import frozendict
-from typing import Optional
 
 from neurosym.types.type import Type
 
