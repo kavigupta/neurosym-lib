@@ -8,7 +8,7 @@ from neurosym.types.type import Type
 
 
 @dataclass(frozen=True, eq=True)
-class Environment:
+class StrictEnvironment:
     """
     Represents a type environment containing a stack of types.
     """
@@ -22,7 +22,7 @@ class Environment:
         """
         return cls(frozendict())
 
-    def child(self, *new_typs: Tuple[Type]) -> "Environment":
+    def child(self, *new_typs: Tuple[Type]) -> "StrictEnvironment":
         """
         Add the given types to the top of the environment,
         in reverse order. This environment is not modified.
@@ -36,7 +36,7 @@ class Environment:
             assert env is not None
         return env
 
-    def parent(self, new_types) -> "Environment":
+    def parent(self, new_types) -> "StrictEnvironment":
         """
         Assert that the given types are at the top of the environment,
         and remove them. This environment is not modified.
@@ -57,7 +57,7 @@ class Environment:
 
     def attempt_insert(
         self, index: int, typ: Optional[Type] = None
-    ) -> "Environment | None":
+    ) -> "StrictEnvironment | None":
         """
         Attempt to insert the given type at the given index, shifting other types
         up by one. If the index is beyond the current length of the environment,
@@ -73,11 +73,11 @@ class Environment:
                 result[i + 1] = existing_typ
         if typ is not None:
             result[index] = typ
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
     def attempt_remove(
         self, index: int, typ: Optional[Type] = None
-    ) -> "Environment | None":
+    ) -> "StrictEnvironment | None":
         """
         Attempt to remove the given type at the given index, shifting other types
         down by one. If the index is beyond the current length of the environment,
@@ -95,9 +95,9 @@ class Environment:
                 result[i] = existing_typ
             elif i > index:
                 result[i - 1] = existing_typ
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
-    def merge(self, other: "Environment"):
+    def merge(self, other: "StrictEnvironment"):
         """
         Merge two environments, asserting that they agree on the same indices.
         """
@@ -108,10 +108,10 @@ class Environment:
                 assert result[i] == typ
             else:
                 result[i] = typ
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
     @classmethod
-    def merge_all(cls, *environments: List["Environment"]):
+    def merge_all(cls, *environments: List["StrictEnvironment"]):
         """
         Merge a list of environments, doing so in order.
         """
@@ -119,7 +119,7 @@ class Environment:
         for env in environments:
             # pylint: disable=protected-access
             result.update(env._elements)
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
     def contains_type_at(self, typ: Type, index: int) -> bool:
         """
@@ -165,7 +165,7 @@ class Environment:
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:
     """
-    Like Environment, but allows any type at any index.
+    Like StrictEnvironment, but allows any type at any index.
     """
 
     unique_hash = "P"
@@ -228,7 +228,7 @@ class TypeWithEnvironment:
     """
 
     typ: Type
-    env: Environment
+    env: StrictEnvironment
 
     @cached_property
     def unique_hash(self):

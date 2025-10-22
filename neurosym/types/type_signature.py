@@ -14,7 +14,7 @@ from frozendict import frozendict
 from torch import NoneType
 
 from neurosym.types.type import ArrowType, Type, TypeVariable, UnificationError
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 
 class TypeSignature(ABC):
@@ -106,7 +106,7 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        env = Environment.merge_all(*envs)
+        env = StrictEnvironment.merge_all(*envs)
         mapping = {}
         try:
             for t1, t2 in zip(self.arguments, types):
@@ -291,7 +291,7 @@ class VariableTypeSignature(TypeSignature):
             return None
         return TypeWithEnvironment(
             self.variable_type,
-            Environment(frozendict({self.index_in_env: self.variable_type})),
+            StrictEnvironment(frozendict({self.index_in_env: self.variable_type})),
         )
 
 

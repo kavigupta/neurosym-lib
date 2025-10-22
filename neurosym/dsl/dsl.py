@@ -7,8 +7,8 @@ from frozendict import frozendict
 
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_with_environment import (
-    Environment,
     PermissiveEnvironmment,
+    StrictEnvironment,
     TypeWithEnvironment,
 )
 from neurosym.utils.tree_trie import TreeTrie
@@ -191,7 +191,7 @@ class DSL:
             TypeWithEnvironment(
                 type,
                 (
-                    Environment.empty()
+                    StrictEnvironment.empty()
                     if care_about_variables
                     else PermissiveEnvironmment()
                 ),
