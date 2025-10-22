@@ -11,9 +11,7 @@ Types
 .. autoclass:: neurosym.Environment
     :members:
 .. autoclass:: neurosym.StrictEnvironment
-    :members:
 .. autoclass:: neurosym.PermissiveEnvironmment
-    :members:
 .. autoclass:: neurosym.TypeWithEnvironment
     :members:
 .. autoclass:: neurosym.UnificationError
