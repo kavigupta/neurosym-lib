@@ -8,7 +8,7 @@ from neurosym.types.type import Type
 
 
 @dataclass(frozen=True, eq=True)
-class Environment:
+class StrictEnvironment:
     """
     Represents a type environment containing a stack of types.
     """
@@ -22,7 +22,7 @@ class Environment:
         """
         return cls(frozendict())
 
-    def child(self, *new_typs: Tuple[Type]) -> "Environment":
+    def child(self, *new_typs: Tuple[Type]) -> "StrictEnvironment":
         """
         Add the given types to the top of the environment,
         in reverse order. This environment is not modified.
@@ -35,9 +35,9 @@ class Environment:
         result = {i + len(new_typs): typ for i, typ in self._elements.items()}
         for i, new_typ in enumerate(new_typs):
             result[i] = new_typ
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
-    def parent(self, new_types) -> "Environment":
+    def parent(self, new_types) -> "StrictEnvironment":
         """
         Assert that the given types are at the top of the environment,
         and remove them. This environment is not modified.
@@ -55,9 +55,9 @@ class Environment:
             for i, typ in self._elements.items()
             if i >= len(new_types)
         }
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
-    def merge(self, other: "Environment"):
+    def merge(self, other: "StrictEnvironment"):
         """
         Merge two environments, asserting that they agree on the same indices.
         """
@@ -68,10 +68,10 @@ class Environment:
                 assert result[i] == typ
             else:
                 result[i] = typ
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
     @classmethod
-    def merge_all(cls, *environments: List["Environment"]):
+    def merge_all(cls, *environments: List["StrictEnvironment"]):
         """
         Merge a list of environments, doing so in order.
         """
@@ -79,7 +79,7 @@ class Environment:
         for env in environments:
             # pylint: disable=protected-access
             result.update(env._elements)
-        return Environment(frozendict(result))
+        return StrictEnvironment(frozendict(result))
 
     def contains_type_at(self, typ: Type, index: int) -> bool:
         """
@@ -125,7 +125,7 @@ class Environment:
 @dataclass(frozen=True, eq=True)
 class PermissiveEnvironmment:
     """
-    Like Environment, but allows any type at any index.
+    Like StrictEnvironment, but allows any type at any index.
     """
 
     unique_hash = "P"
@@ -174,7 +174,7 @@ class TypeWithEnvironment:
     """
 
     typ: Type
-    env: Environment
+    env: StrictEnvironment
 
     @cached_property
     def unique_hash(self):

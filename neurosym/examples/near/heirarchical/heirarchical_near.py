@@ -10,7 +10,7 @@ from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph
 from neurosym.types.type import Type
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 
 def heirarchical_near_graph(
@@ -65,7 +65,7 @@ def heirarchical_near_graph(
             high_level_dsl.get_production(symbol)
             .type_signature()
             .return_type_template(),
-            Environment.empty(),
+            StrictEnvironment.empty(),
         )
     )
 
