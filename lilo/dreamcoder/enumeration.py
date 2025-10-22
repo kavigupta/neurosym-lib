@@ -4,6 +4,7 @@ from dreamcoder.utilities import get_root_dir, limit_virtual_memory_fn
 import dreamcoder.neurosym as ns
 from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
 from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
+from dreamcoder.neurosym.compression.process_abstraction import _StitchLambdaRewriter
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
 from dreamcoder.neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
@@ -230,7 +231,7 @@ def multicoreEnumeration(
     dslf = list_dslf("[i] -> i")
     dsl = dslf.finalize()
     max_arity = 3 # for toy 1
-    num_productions = 110 # for toy 6 # make sure to include root in this count
+    num_productions = 88 # for toy 6 # make sure to include root in this count
     primitive_list = [prod.symbol() for prod in dsl.productions]
     #print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
     for task in g.keys():
@@ -253,7 +254,7 @@ def multicoreEnumeration(
                     primitive_list.append(k)
     
     #Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
-    family = ns.BigramProgramDistributionFamily(dsl)
+    family = ns.BigramProgramDistributionFamily(dsl,include_type_preorder_mask=False, additional_preorder_masks=[ns.TypePreorderMaskELF],)
     print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
     frontiers = {}
     dist_dict = {}
@@ -298,7 +299,7 @@ def multicoreEnumeration(
     
     min_likelihood_dict = {task: 0.0 for task in tasks}
     enumerations = {task: [] for task in tasks}
-    
+    StitchRewriter = _StitchLambdaRewriter(dsl)
     #SAGNIK_TBD: Recreate the while loop below - while satisfying memory and time constraints, enumerate all programs in between the lower and upper bound
     # SAGNIK_TBD: Optimize for one CPU per job
     for job in min_likelihood_dict.keys():
@@ -334,7 +335,7 @@ def multicoreEnumeration(
                 if likelihood == 0.0:
                     solved = True
                 try:
-                    dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(ns_prog)))
+                    dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(StitchRewriter.to_stitch(ns_prog))))
                 except Exception as e:
                     print(f"Exception {e} for {render_s_expression(ns_prog)}")
                     raise e

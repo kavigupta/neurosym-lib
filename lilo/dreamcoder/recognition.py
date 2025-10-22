@@ -1812,7 +1812,10 @@ class RecurrentFeatureExtractor(nn.Module):
         self.parallelTaskOfProgram = True
 
         assert lexicon
-        lexicon = sorted(lexicon)
+        try:
+            lexicon = sorted(lexicon)
+        except:
+            lexicon = list(lexicon)
         self.specialSymbols = [
             "STARTING",  # start of entire sequence
             "ENDING",  # ending of entire sequence
