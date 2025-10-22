@@ -229,20 +229,6 @@ class PermissiveEnvironmment(Environment):
         del typ
         return self
 
-    def attempt_insert(self, index: int):
-        """
-        Just return self, since any types are allowed.
-        """
-        del index
-        return self
-
-    def attempt_remove(self, index: int):
-        """
-        Just return self, since any types are allowed.
-        """
-        del index
-        return self
-
     def contains_type_at(self, typ: Type, index: int):
         del typ, index
         return True
