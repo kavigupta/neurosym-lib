@@ -3,6 +3,7 @@ from functools import cached_property
 from typing import Dict, List, Tuple
 
 from frozendict import frozendict
+from typing import Optional
 
 from neurosym.types.type import Type
 
@@ -29,13 +30,12 @@ class Environment:
 
         :param new_typs: The types to add.
         """
-        new_typs = new_typs[
-            ::-1
-        ]  # reverse, so that the first element is the first index
-        result = {i + len(new_typs): typ for i, typ in self._elements.items()}
-        for i, new_typ in enumerate(new_typs):
-            result[i] = new_typ
-        return Environment(frozendict(result))
+        env = self
+        # insert the elements in regular order so that the last element ends up at 0
+        for typ in new_typs:
+            env = env.attempt_insert(0, typ)
+            assert env is not None
+        return env
 
     def parent(self, new_types) -> "Environment":
         """
@@ -44,20 +44,18 @@ class Environment:
 
         :param new_types: The types to remove.
         """
-        new_types = new_types[
-            ::-1
-        ]  # reverse, so that the first element is the first index
-        for i, new_typ in enumerate(new_types):
-            if i in self._elements:
-                assert self._elements[i] == new_typ
-        result = {
-            i - len(new_types): typ
-            for i, typ in self._elements.items()
-            if i >= len(new_types)
-        }
-        return Environment(frozendict(result))
+        env = self
+        # delete the last type first, since it starts at index 0
+        for typ in new_types[::-1]:
+            env = env.attempt_remove(0, typ)
+            assert (
+                env is not None
+            ), f"Could not remove type {typ} from environment {self}"
+        return env
 
-    def attempt_insert(self, index: int) -> "Environment | None":
+    def attempt_insert(
+        self, index: int, typ: Optional[Type] = None
+    ) -> "Environment | None":
         """
         Attempt to insert the given type at the given index, shifting other types
         up by one. If the index is beyond the current length of the environment,
@@ -71,9 +69,13 @@ class Environment:
                 result[i] = existing_typ
             else:
                 result[i + 1] = existing_typ
+        if typ is not None:
+            result[index] = typ
         return Environment(frozendict(result))
 
-    def attempt_remove(self, index: int) -> "Environment | None":
+    def attempt_remove(
+        self, index: int, typ: Optional[Type] = None
+    ) -> "Environment | None":
         """
         Attempt to remove the given type at the given index, shifting other types
         down by one. If the index is beyond the current length of the environment,
@@ -81,7 +83,9 @@ class Environment:
         """
         if index >= len(self):
             return None
-        if index not in self._elements:
+        if index in self._elements and (
+            typ is not None and self._elements[index] != typ
+        ):
             return None
         result = {}
         for i, existing_typ in self._elements.items():
