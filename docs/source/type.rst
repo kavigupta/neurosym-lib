@@ -23,6 +23,7 @@ Subclasses of :class:`Type`
 .. autoclass:: neurosym.TensorType
 .. autoclass:: neurosym.ListType
 .. autoclass:: neurosym.ArrowType
+    :members: with_output_type
 .. autoclass:: neurosym.GenericTypeVariable
 .. autoclass:: neurosym.TypeVariable
 .. autoclass:: neurosym.FilteredTypeVariable

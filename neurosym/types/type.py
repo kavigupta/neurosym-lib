@@ -251,6 +251,15 @@ class ArrowType(Type):
             self.output_type.subst_type_vars(subst),
         )
 
+    def with_output_type(self, new_output_type: Type) -> "ArrowType":
+        """
+        Return a new arrow type with the same input type and a new output type.
+
+        :param new_output_type: the new output type.
+        :return: a new arrow type with the new output type.
+        """
+        return ArrowType(self.input_type, new_output_type)
+
     def inherent_parameters(self):
         return dict()
 

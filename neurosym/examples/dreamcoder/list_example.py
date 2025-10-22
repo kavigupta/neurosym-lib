@@ -7,7 +7,7 @@ def list_dsl(*output_types):
     """
     The List DSL from the DreamCoder repository.
     """
-    dslf = DSLFactory(max_overall_depth=5, max_expansion_steps=3)
+    dslf = DSLFactory(max_overall_depth=5)
 
     for i in range(6):
         dslf.production(str(i), "() -> i", lambda i=i: i)
