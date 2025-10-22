@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Optional, Self, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from typing_extensions import Self
+
 
 from frozendict import frozendict
 
