@@ -3,10 +3,8 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple
 
-from typing_extensions import Self
-
-
 from frozendict import frozendict
+from typing_extensions import Self
 
 from neurosym.types.type import Type
 
