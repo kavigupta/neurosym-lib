@@ -65,6 +65,13 @@ class Environment(ABC):
         Produce a short representation of the environment.
         """
 
+    @property
+    @abstractmethod
+    def unique_hash(self):
+        """
+        A unique hash for this environment.
+        """
+
     def child(self, *new_typs: Tuple[Type]) -> "Environment":
         """
         Add the given types to the top of the environment,
@@ -100,6 +107,16 @@ class Environment(ABC):
 
     def __len__(self):
         return self.environment_size()
+
+    @classmethod
+    def merge_all(cls, *environments: List["Environment"]):
+        """
+        Merge a list of environments, doing so in order.
+        """
+        result = cls.empty()
+        for env in environments:
+            result = result.merge(env)
+        return result
 
 
 @dataclass(frozen=True, eq=True)
@@ -156,17 +173,6 @@ class StrictEnvironment(Environment):
                 result[i - 1] = existing_typ
         return StrictEnvironment(frozendict(result))
 
-    @classmethod
-    def merge_all(cls, *environments: List["StrictEnvironment"]):
-        """
-        Merge a list of environments, doing so in order.
-        """
-        result = {}
-        for env in environments:
-            # pylint: disable=protected-access
-            result.update(env._elements)
-        return StrictEnvironment(frozendict(result))
-
     def contains_type_at(self, typ: Type, index: int) -> bool:
         return index in self._elements and self._elements[index] == typ
 
@@ -205,8 +211,6 @@ class PermissiveEnvironmment(Environment):
     Like StrictEnvironment, but allows any type at any index.
     """
 
-    unique_hash = "P"
-
     @classmethod
     def empty(cls):
         return cls()
@@ -235,6 +239,10 @@ class PermissiveEnvironmment(Environment):
     def short_repr(self):
         return "*"
 
+    @property
+    def unique_hash(self):
+        return "P"
+
 
 @dataclass(frozen=True, eq=True)
 class TypeWithEnvironment:
@@ -246,7 +254,7 @@ class TypeWithEnvironment:
     """
 
     typ: Type
-    env: StrictEnvironment
+    env: Environment
 
     @cached_property
     def unique_hash(self):
