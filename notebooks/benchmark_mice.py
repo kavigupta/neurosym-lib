@@ -235,7 +235,9 @@ def run_experiment(
 
     # Search for programs with bounded A*
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.bounded_astar(g, max_depth=max_depth, frontier_capacity=frontier_capacity)
+    iterator = ns.search.BoundedAStar(
+        max_depth=max_depth, frontier_capacity=frontier_capacity
+    )(g)
 
     programs_list = []
     start_time = time.time()
