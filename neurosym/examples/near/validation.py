@@ -169,8 +169,8 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
                 loss = trainer_cfg.loss_callback(model(x, environment=()), y)
                 loss.backward()
                 optimizer.step()
-                for sch in schedulers:
-                    sch.step()
+                for scheduler in schedulers:
+                    scheduler.step()
 
             if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
                 model.eval()
