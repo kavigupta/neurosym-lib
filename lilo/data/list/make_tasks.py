@@ -24,7 +24,7 @@ class ListLoader(TaskDataLoader):
             filename=os.path.join(DEFAULT_DATA_DIRECTORY, "list_tasks2.json"),
         )[:105]
         
-        train_tasks = all_tasks[14:20][:3] #+ list_legacy.make_list_bootstrap_tasks()
+        train_tasks = all_tasks[14:20][3:-1] #+ list_legacy.make_list_bootstrap_tasks()
         test_tasks = all_tasks[20:26]
         
         # tasks = list_legacy.make_list_bootstrap_tasks()
