@@ -34,7 +34,9 @@ class TestEnumeratability(unittest.TestCase):
         expans = {
             ns.render_s_expression(prog)
             for prog in dsl.expansions_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("i -> i"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("i -> i"), ns.StrictEnvironment.empty()
+                )
             )
         }
         print(expans)
@@ -62,7 +64,7 @@ class TestEnumeratability(unittest.TestCase):
         expans = {
             ns.render_s_expression(prog)
             for prog in dsl_2.expansions_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("i"), ns.Environment.empty())
+                ns.TypeWithEnvironment(ns.parse_type("i"), ns.StrictEnvironment.empty())
             )
         }
         print(expans)
@@ -72,7 +74,9 @@ class TestEnumeratability(unittest.TestCase):
         expans = {
             ns.render_s_expression(prog)
             for prog in dsl_2.expansions_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("() -> i"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("() -> i"), ns.StrictEnvironment.empty()
+                )
             )
         }
         print(expans)
