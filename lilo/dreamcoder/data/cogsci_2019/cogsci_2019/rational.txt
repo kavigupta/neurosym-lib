@@ -1,0 +1,5 @@
+/om2/user/ellisk/ec/experimentOutputs/rational/2019-02-15T11:28:40.635813/
+/om2/user/ellisk/ec/experimentOutputs/rational/2019-02-19T18:04:34.743890/
+/om2/user/ellisk/ec/experimentOutputs/rational/2019-02-15T11:28:27.615614/
+/om2/user/ellisk/ec/experimentOutputs/rational/2019-02-15T11:28:17.171165/
+/om2/user/ellisk/ec/experimentOutputs/rational/2019-02-15T11:28:20.454707/

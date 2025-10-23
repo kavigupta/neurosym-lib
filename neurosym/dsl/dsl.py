@@ -300,6 +300,52 @@ class DSL:
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
 
+    def compute_type_abs(
+        self,
+        program: SExpression | InitializedSExpression | str,
+        lookup: Callable[[SExpression], TypeWithEnvironment] = lambda x: None,
+    ) -> TypeWithEnvironment:
+        """
+        Computes the type of the given abstraction.
+
+        :param program: The program to compute the type of.
+        :param lookup: A function that can be used to look up the type of a program. This
+            is useful for handling special caes. If the function returns None, we compute
+            the type of the program using the DSL.
+        """
+        if lookup is not None:
+            res = lookup(program)
+            if res is not None:
+                return res
+        if isinstance(program, SExpression):
+            child_types = [
+                self.compute_type_abs(child, lookup) for child in program.children
+            ]
+        elif isinstance(program, InitializedSExpression):
+            child_types = []
+            for child_index in range(len(program.children)):
+                child = program.children[child_index]
+                if isinstance(child, AbstractionIndexParameter):
+                    function_type_signature = self.get_production(
+                        program.symbol
+                    ).type_signature()
+                    assert isinstance(function_type_signature, FunctionTypeSignature)
+                    env = Environment.merge_all(
+                        *[child_types[c_ind].env for c_ind in range(child_index)]
+                    )
+                    env = env.child((function_type_signature.arguments[child_index],))
+                    child_types.append(
+                        TypeWithEnvironment(
+                            typ=function_type_signature.arguments[child_index], env=env
+                        )
+                    )
+                else:
+                    child_types.append(self.compute_type_abs(child, lookup))
+        else:
+            raise Exception(f"Invalid program type: {type(program)}")
+        prod = self.get_production(program.symbol)
+        return prod.type_signature().unify_arguments(child_types)
+
     def render(self) -> str:
         """
         Render this DSL as a string.
