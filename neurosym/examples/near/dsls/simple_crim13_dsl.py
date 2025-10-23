@@ -7,6 +7,7 @@ from neurosym.dsl.dsl_factory import DSLFactory
 from ..operations.aggregation import running_agg_torch
 from ..operations.basic import ite_torch
 from ..operations.lists import map_prefix_torch, map_torch
+from neurosym.types.type import ListType
 
 CRIM13_FEATURES = {
     "position": torch.LongTensor([0, 1, 2, 3]),
@@ -69,14 +70,18 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
             ),
         )
 
+    dslf.filtered_type_variable(
+        "affine_input", lambda x: not isinstance(x, ListType)
+    )
+
     dslf.production(
         "add",
-        "(#a -> #b, #a -> #b) -> #a -> #b",
+        "(%affine_input -> #b, %affine_input -> #b) -> %affine_input -> #b",
         lambda f1, f2: lambda x: f1(x) + f2(x),
     )
     dslf.production(
         "mul",
-        "(#a -> #b, #a -> #b) -> #a -> #b",
+        "(%affine_input -> #b, %affine_input -> #b) -> %affine_input -> #b",
         lambda f1, f2: lambda x: f1(x) * f2(x),
     )
 
@@ -108,12 +113,6 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
             "(([$fI]) -> [$fH]) -> [$fI] -> [$fO]",
             lambda f, lin: lambda x: lin(f(x)).softmax(-1),
             dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
-        )
-    else:
-        dslf.production(
-            "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> [$fO]",
-            lambda f: lambda x: f(x).softmax(-1),
         )
     # pylint: disable=unnecessary-lambda
     dslf.production(

@@ -113,14 +113,15 @@ class NearCost:
         :param dsl: The DSL to use for training.
         :param model: The model to train. Will be mutated in place.
         """
-        val_loss = self.validation_heuristic.compute_cost(dsl, model, self.embedding)
         struct_cost = self.structural_cost.compute_structural_cost(
             self.embedding.embed_program(model.uninitialize()), dsl
         )
+        if struct_cost == float("inf"):
+            return float("inf")
+        val_loss = self.validation_heuristic.compute_cost(dsl, model, self.embedding)
         result = (
             1 - self.structural_cost_weight
         ) * val_loss + self.structural_cost_weight * struct_cost
-        log("Overall cost:", result, " (val:", val_loss, ", struct:", struct_cost, ")")
         return result
 
     def __call__(

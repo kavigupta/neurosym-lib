@@ -10,3 +10,4 @@ dist
 .vs
 build
 neurosym-env
+outputs/mice_results/near_outputs/
