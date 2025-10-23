@@ -47,7 +47,7 @@ def simple_calms21_dsl(num_classes, hidden_dim=None):
     dslf.typedef("fI", "{f, $input_size}")
 
     for feature_name, feature_indices in CALMS21_FEATURES.items():
-        dslf.parameterized(
+        dslf.production(
             f"affine_{feature_name}",
             "() -> $fI -> $fH",
             lambda lin, feature_indices=feature_indices: lambda x: lin(
@@ -59,7 +59,7 @@ def simple_calms21_dsl(num_classes, hidden_dim=None):
                 )
             ),
         )
-        dslf.parameterized(
+        dslf.production(
             f"affine_bool_{feature_name}",
             "() -> $fI -> {f, 1}",
             lambda lin, feature_indices=feature_indices: lambda x: lin(
@@ -72,54 +72,54 @@ def simple_calms21_dsl(num_classes, hidden_dim=None):
             ),
         )
 
-    dslf.concrete(
+    dslf.production(
         "add",
         "(#a -> #b, #a -> #b) -> #a -> #b",
         lambda f1, f2: lambda x: f1(x) + f2(x),
     )
-    dslf.concrete(
+    dslf.production(
         "mul",
         "(#a -> #b, #a -> #b) -> #a -> #b",
         lambda f1, f2: lambda x: f1(x) * f2(x),
     )
 
-    dslf.concrete(
+    dslf.production(
         "running_avg_last5",
         "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 4, lambda t: t),
     )
-    dslf.concrete(
+    dslf.production(
         "running_avg_last10",
         "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 9, lambda t: t),
     )
 
-    dslf.concrete(
+    dslf.production(
         "running_avg_window5",
         "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 2, lambda t: t + 2),
     )
-    dslf.concrete(
+    dslf.production(
         "running_avg_window11",
         "(#a -> $fH) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 5, lambda t: t + 5),
     )
 
     if hidden_dim != num_classes:
-        dslf.parameterized(
+        dslf.production(
             "output",
             "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f, lin: lambda x: lin(f(x)).softmax(-1),
             dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
         )
     else:
-        dslf.concrete(
+        dslf.production(
             "output",
             "(([$fI]) -> $fH) -> [$fI] -> $fO",
             lambda f: lambda x: f(x).softmax(-1),
         )
     # pylint: disable=unnecessary-lambda
-    dslf.concrete(
+    dslf.production(
         "ite",
         "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
         lambda cond, fx, fy: ite_torch(cond, fx, fy),
