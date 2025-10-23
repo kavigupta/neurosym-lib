@@ -143,14 +143,14 @@ def eval_program(module, feature_data, labels) -> tuple:
 
 def run_experiment(
     output_path: str = "outputs/mice_results/reproduction.pkl",
-    num_programs: int = 10,
-    hidden_dim: int = 1,
-    neural_hidden_size: int = 32,
+    num_programs: int = 40,
+    hidden_dim: int = 16,
+    neural_hidden_size: int = 16,
     batch_size: int = 50,
-    n_epochs: int = 15,
-    final_n_epochs: int = 15,
-    lr: float = 1e-4,
-    structural_cost_weight: float = 0.005,
+    n_epochs: int = 30,
+    final_n_epochs: int = 40,
+    lr: float = 1e-5,
+    structural_cost_weight: float = 0.0001,
     max_depth: int = 10,
     frontier_capacity: int = 8,
     train_seed: int = 0,
@@ -326,7 +326,7 @@ def main():
     parser.add_argument(
         "--num-programs",
         type=int,
-        default=10,
+        default=40,
         help="Number of programs to discover"
     )
     parser.add_argument(
@@ -350,13 +350,13 @@ def main():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=15,
+        default=30,
         help="Number of epochs for search training"
     )
     parser.add_argument(
         "--final-epochs",
         type=int,
-        default=15,
+        default=40,
         help="Number of epochs for final training"
     )
     parser.add_argument(
@@ -364,6 +364,12 @@ def main():
         type=float,
         default=1e-4,
         help="Learning rate"
+    )
+    parser.add_argument(
+        "--structural-cost-weight",
+        type=float,
+        default=0.0005,
+        help="Weight for structural cost in search"
     )
     parser.add_argument(
         "--device",
@@ -382,6 +388,7 @@ def main():
         neural_hidden_size=args.neural_hidden_size,
         batch_size=args.batch_size,
         n_epochs=args.epochs,
+        structural_cost_weight=args.structural_cost_weight,
         final_n_epochs=args.final_epochs,
         lr=args.lr,
         device=args.device,
@@ -408,3 +415,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ================================================================================
+# RESULTS SUMMARY
+# ================================================================================
+# Best program: SExpression(symbol='map', children=(SExpression(symbol='affine_bool_acceleration', children=()),))
+#   F1-score: 0.788163
+#   Hamming accuracy: 0.799109
+#   Discovery time: 61.51s
+# ================================================================================

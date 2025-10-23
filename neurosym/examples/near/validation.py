@@ -6,23 +6,75 @@ from sklearn.metrics import hamming_loss
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.cost import (
-    IdentityProgramEmbedding,
-    MinimalStepsNearStructuralCost,
-    NearCost,
-    NearValidationHeuristic,
-    ProgramEmbedding,
-    UninitializableProgramError,
-)
+from neurosym.examples.near.cost import (IdentityProgramEmbedding,
+                                         MinimalStepsNearStructuralCost,
+                                         NearCost, NearValidationHeuristic,
+                                         ProgramEmbedding,
+                                         UninitializableProgramError)
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
-from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
-from neurosym.examples.near.models.torch_program_module import TorchProgramModule
+from neurosym.examples.near.methods.near_example_trainer import \
+    NEARTrainerConfig
+from neurosym.examples.near.models.torch_program_module import \
+    TorchProgramModule
 from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.logging import log
 
 pl = import_pytorch_lightning()
+
+
+def flatten_sequence_logits_and_labels(
+    logits: np.ndarray, labels: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Flatten model logits and ground-truth labels so that they share a common
+    sample dimension.
+
+    This handles sequence models whose logits have extra temporal dimensions
+    (e.g., ``(batch, time, num_classes)``) while the labels may either already be
+    expanded to match that temporal dimension or provided as a single label per
+    batch element.
+    """
+    logits = np.asarray(logits)
+    labels = np.asarray(labels)
+
+    if logits.ndim < 2:
+        raise ValueError(
+            f"Expected logits with at least 2 dimensions, got shape {logits.shape}"
+        )
+
+    feature_shape = logits.shape[:-1]
+    batch_size = feature_shape[0]
+    temporal_factor = int(np.prod(feature_shape[1:])) if len(feature_shape) > 1 else 1
+
+    flattened_logits = logits.reshape(-1, logits.shape[-1])
+    total_samples = flattened_logits.shape[0]
+    labels_flat = labels.reshape(-1)
+    if labels_flat.shape[0] == total_samples:
+        return flattened_logits, labels_flat
+
+    if labels_flat.shape[0] == batch_size and temporal_factor > 1:
+        labels_flat = np.repeat(labels_flat, temporal_factor)
+        return flattened_logits, labels_flat
+
+    labels_reshaped = labels.reshape(batch_size, -1)
+    if labels_reshaped.shape[1] == 1 and temporal_factor > 1:
+        labels_flat = np.repeat(labels_reshaped[:, 0], temporal_factor)
+    elif labels_reshaped.shape[1] == temporal_factor:
+        labels_flat = labels_reshaped.reshape(-1)
+    else:
+        raise ValueError(
+            "Unable to align logits and labels shapes: "
+            f"logits={logits.shape}, labels={labels.shape}"
+        )
+
+    if labels_flat.shape[0] != total_samples:
+        raise ValueError(
+            "Unable to align logits and labels after broadcasting: "
+            f"logits={logits.shape}, labels={labels.shape}"
+        )
+    return flattened_logits, labels_flat
 
 
 class ValidationCost(NearValidationHeuristic):

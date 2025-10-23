@@ -13,6 +13,7 @@ from sklearn.metrics import classification_report
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.validation import flatten_sequence_logits_and_labels
 
 from .utils import assertDSLEnumerable
 
@@ -87,13 +88,14 @@ class TestNEARMiceDSL(unittest.TestCase):
         # pylint: enable=no-member
         self.assertIsNotNone(initialized_program)
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
-        feature_data = datamodule.test.inputs
-        labels = datamodule.test.outputs.flatten()
         # module, _ = validation_cost.validate_model(best_program, n_epochs=15)
         module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
-        predictions = (
-            module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
+        feature_data = datamodule.test.inputs
+        raw_predictions = module(torch.tensor(feature_data), environment=())
+        flat_logits, labels = flatten_sequence_logits_and_labels(
+            raw_predictions.detach().cpu().numpy(), datamodule.test.outputs
         )
+        predictions = flat_logits.argmax(-1)
         report = classification_report(
             labels,
             predictions,

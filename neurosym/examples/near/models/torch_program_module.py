@@ -1,9 +1,7 @@
 from torch import nn
 
-from neurosym.programs.s_expression import (
-    InitializedSExpression,
-    is_initialized_s_expression,
-)
+from neurosym.programs.s_expression import (InitializedSExpression,
+                                            is_initialized_s_expression)
 
 
 class TorchProgramModule(nn.Module):

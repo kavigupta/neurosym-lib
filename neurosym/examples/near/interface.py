@@ -7,9 +7,7 @@ from frozendict import frozendict
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.near.methods.near_example_trainer import (
-    NEARTrainerConfig,
-    classification_mse_loss,
-)
+    NEARTrainerConfig, classification_mse_loss)
 from neurosym.examples.near.neural_dsl import NeuralDSL
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.search_graph import validated_near_graph

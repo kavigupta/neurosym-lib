@@ -10,11 +10,10 @@ from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.hole_set_chooser import ChooseFirst
 from neurosym.search_graph.metadata_computer import NoMetadataComputer
 from neurosym.search_graph.search_graph import SearchGraph
-from neurosym.search_graph.search_graph_transformer import (
-    FilterEdgesGraph,
-    LimitEdgesGraph,
-)
-from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType, Type
+from neurosym.search_graph.search_graph_transformer import (FilterEdgesGraph,
+                                                            LimitEdgesGraph)
+from neurosym.types.type import (ArrowType, AtomicType, ListType, TensorType,
+                                 Type)
 from neurosym.utils.logging import log
 
 X = TypeVar("X")

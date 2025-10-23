@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import io
 import os
-from multiprocessing import get_context
 from typing import Callable
 
 import numpy as np
@@ -63,6 +64,31 @@ def _load_npy(array_descriptor):
     return data
 
 
+def _split_dataset(dataset: torch.utils.data.Dataset, val_fraction : float = 0.1, seed: int = 0):
+    """
+    Split a dataset into train and validation sets.
+
+    :param val_fraction: the fraction of the training data to use for validation.
+    :param seed: the seed for the random permutation of the training data.
+    """
+    n = len(dataset)
+    indices = np.random.RandomState(seed=seed).permutation(n)
+    split = int(n * (1 - val_fraction))
+    train_indices = indices[:split]
+    val_indices = indices[split:]
+    train = DatasetFromNpy.from_arrays(
+        dataset.inputs[train_indices],
+        dataset.outputs[train_indices],
+        seed=dataset.seed,
+    )
+    val = DatasetFromNpy.from_arrays(
+        dataset.inputs[val_indices],
+        dataset.outputs[val_indices],
+        seed=dataset.seed,
+    )
+    return train, val
+
+
 class DatasetFromNpy(torch.utils.data.Dataset):
     """
     A dataset from an array, either passed in or loaded from a url/path.
@@ -71,8 +97,6 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     :param output_input_descriptor: the descriptor of the outputs.
     :param seed: the seed for the random permutation of the dataset.
     """
-
-    # TODO test/val split
 
     def __init__(self, inut_descriptor, output_descriptor, seed):
         """
@@ -83,13 +107,25 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         """
         self.inputs = _load_npy(inut_descriptor)
         self.outputs = _load_npy(output_descriptor)
+        self.seed = seed
         assert len(self.inputs) == len(self.outputs)
+        self.ordering = self.get_ordering(seed, len(self.inputs))
+
+    @classmethod
+    def from_arrays(cls, inputs, outputs, seed):
+        instance = cls.__new__(cls)
+        instance.inputs = inputs
+        instance.outputs = outputs
+        instance.seed = seed
+        instance.ordering = cls.get_ordering(seed, len(inputs))
+        return instance
+
+    @staticmethod
+    def get_ordering(seed, n_inputs):
         if seed is not None:
-            self.ordering = np.random.RandomState(seed=seed).permutation(
-                len(self.inputs)
-            )
+            return np.random.RandomState(seed=seed).permutation(n_inputs)
         else:
-            self.ordering = np.arange(len(self.inputs))
+            return np.arange(n_inputs)
 
     def get_io_dims(self, is_regression=False):
         """
@@ -115,11 +151,14 @@ class DatasetWrapper(pl.LightningDataModule):
         self,
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
+        val: torch.utils.data.Dataset | None = None,
+        val_fraction: float = 0.15,
         batch_size: int = 32,
         num_workers: int = 0,
     ):
         super().__init__()
         self.train = train
+        self.val = val if val is not None else test
         self.test = test
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -135,7 +174,7 @@ class DatasetWrapper(pl.LightningDataModule):
         return self.load_dataset(self.train)
 
     def val_dataloader(self):
-        return self.load_dataset(self.test)
+        return self.load_dataset(self.val)
 
     def test_dataloader(self):
         return self.load_dataset(self.test)

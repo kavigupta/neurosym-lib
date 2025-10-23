@@ -1,8 +1,7 @@
 from typing import Callable, Tuple
 
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
-    remove_last_n_elements,
-)
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import \
+    remove_last_n_elements
 from neurosym.python_dsl.names import PYTHON_DSL_SEPARATOR
 from neurosym.utils.documentation import internal_only
 

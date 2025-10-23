@@ -1,4 +1,4 @@
-from .load_data import DatasetFromNpy, DatasetWrapper
+from .load_data import _split_dataset, DatasetFromNpy, DatasetWrapper
 
 
 def crim13_data_example(train_seed, **kwargs) -> DatasetWrapper:
@@ -18,18 +18,24 @@ def crim13_data_example(train_seed, **kwargs) -> DatasetWrapper:
     test_data = "data/mice_classification/crim13/test_crim13_data.npy"
     test_labels = "data/mice_classification/crim13/test_crim13_labels.npy"
 
+    train_dataset = DatasetFromNpy(
+        train_data,
+        train_labels,
+        train_seed,
+    )
+    train_dataset, val_dataset = _split_dataset(
+        train_dataset, val_fraction=0.15, seed=train_seed
+    )
+
     # pylint: disable=duplicate-code
     return DatasetWrapper(
-        DatasetFromNpy(
-            train_data,
-            train_labels,
-            train_seed,
-        ),
+        train_dataset,
         DatasetFromNpy(
             test_data,
             test_labels,
             None,
         ),
+        val_dataset,
         **kwargs,
     )
     # pylint: enable=duplicate-code

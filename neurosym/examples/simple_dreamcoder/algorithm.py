@@ -6,10 +6,8 @@ import numpy as np
 from neurosym.compression.process_abstraction import multi_step_compression
 from neurosym.dsl.dsl import DSL
 from neurosym.program_dist.bigram import BigramProgramDistributionFamily
-from neurosym.program_dist.distribution import (
-    ProgramDistribution,
-    ProgramDistributionFamily,
-)
+from neurosym.program_dist.distribution import (ProgramDistribution,
+                                                ProgramDistributionFamily)
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 

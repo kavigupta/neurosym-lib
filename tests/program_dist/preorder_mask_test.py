@@ -2,7 +2,8 @@ import unittest
 
 import neurosym as ns
 
-from .bigram_test import fam_with_ordering, fam_with_ordering_231, fam_with_vars
+from .bigram_test import (fam_with_ordering, fam_with_ordering_231,
+                          fam_with_vars)
 
 
 class TreeDistributionTest(unittest.TestCase):

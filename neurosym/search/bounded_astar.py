@@ -1,7 +1,7 @@
+import heapq
 from dataclasses import dataclass, field
 from types import NoneType
 from typing import Iterable, TypeVar, Union
-import heapq
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.search_graph.search_graph import SearchGraph
@@ -25,6 +25,7 @@ def bounded_astar(
     :raises AssertionError: If `max_depth` is not greater than 0.
     """
     assert max_depth > 0
+    assert frontier_capacity >= 0
     visited = set()
     fringe = []
 
