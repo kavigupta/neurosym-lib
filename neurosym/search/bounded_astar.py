@@ -17,22 +17,15 @@ class BoundedAStar(SearchStrategy):
 
     :param max_depth: Maximum depth to search to.
     :param max_iterations: Maximum number of iterations to perform. If None, no limit is applied.
-    :param frontier_capacity: Maximum number of nodes to keep in the fringe. If 0, no limit is applied.
     :return: An iterable of goal nodes in the order they were visited.
 
     :raises AssertionError: If `max_depth` is not greater than 0.
     """
 
-    def __init__(
-        self,
-        max_depth: int,
-        max_iterations: Optional[int] = None,
-        frontier_capacity: int = 0,
-    ):
+    def __init__(self, max_depth: int, max_iterations: Optional[int] = None):
         assert max_depth > 0
         self.max_depth = max_depth
         self.max_iterations = max_iterations
-        self.frontier_capacity = frontier_capacity
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
