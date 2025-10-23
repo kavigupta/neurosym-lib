@@ -251,13 +251,13 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
                     labels.cpu().numpy().flatten().astype(int),
                     predictions.cpu().numpy().flatten(),
                 )
+                best_acc = max(best_acc, val_acc)
 
                 if trainer_cfg.early_stopping:
                     if val_loss < best_val - trainer_cfg.early_stopping_min_delta:
                         best_val = val_loss
                         best_weights = copy.deepcopy(model.state_dict())
                         epochs_no_improve = 0
-                        best_acc = val_acc
                     else:
                         epochs_no_improve += 1
                         if epochs_no_improve >= trainer_cfg.early_stopping_patience:
