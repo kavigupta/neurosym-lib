@@ -51,7 +51,6 @@ __Results.__ We compare the performance of the original NEAR implementation with
  - Other Heuristics.
     - Without `GenericMLPRNNNeuralHoleFiller`
     - With `GenericMLPRNNNeuralHoleFiller`
-    - Case study on how easy/hard is it to add a new function to the search algo and integrate it into the search. 
+    - Case study on how easy/hard is it to add a new function to the search algo and integrate it into the search.
     - How easy is it to search over a language with variables instead of a langauge with combinators?
         - Repimplement the mouse DSL with lambdas/variables.
-    

@@ -15,7 +15,13 @@ from neurosym.program_dist.tree_distribution.ordering import (
 from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
     annotate_with_alternate_symbols, collect_preorder_symbols)
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
-    ConjunctionPreorderMask, NoopPreorderMask, PreorderMask)
+    ConjunctionPreorderMask,
+    NoopPreorderMask,
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask_elf import (
+    TypePreorderMaskELF,
+)
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
     chain_undos, remove_last_n_elements)
 from neurosym.programs.hole import Hole

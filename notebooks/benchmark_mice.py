@@ -49,9 +49,7 @@ def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
 
 
 def threshold_predictions(
-    y_true: torch.Tensor,
-    y_scores: torch.Tensor,
-    threshold_type: str = "quantile"
+    y_true: torch.Tensor, y_scores: torch.Tensor, threshold_type: str = "quantile"
 ) -> torch.Tensor:
     """
     Apply dynamic thresholding to predictions.
@@ -78,7 +76,9 @@ def threshold_predictions(
     return predictions
 
 
-def compute_metrics(predictions: np.ndarray, ground_truth: np.ndarray) -> Dict[str, Any]:
+def compute_metrics(
+    predictions: np.ndarray, ground_truth: np.ndarray
+) -> Dict[str, Any]:
     """
     Compute evaluation metrics for predictions.
 
@@ -152,7 +152,6 @@ def run_experiment(
     lr: float = 1e-5,
     structural_cost_weight: float = 0.0001,
     max_depth: int = 10,
-    frontier_capacity: int = 8,
     train_seed: int = 0,
     device: str = "cuda:0",
 ) -> List[Dict[str, Any]]:
@@ -170,16 +169,15 @@ def run_experiment(
         lr: Learning rate
         structural_cost_weight: Weight for structural cost in search
         max_depth: Maximum program depth
-        frontier_capacity: Frontier capacity for bounded A*
         train_seed: Random seed for data
         device: Device to use for training
 
     Returns:
         List of discovered programs with metrics
     """
-    print("="*80)
+    print("=" * 80)
     print("CRIM-13 NEAR Experiment - Neurosym-lib Implementation")
-    print("="*80)
+    print("=" * 80)
     print(f"Configuration:")
     print(f"  Output path: {output_path}")
     print(f"  Number of programs: {num_programs}")
@@ -191,13 +189,14 @@ def run_experiment(
     print(f"  Learning rate: {lr}")
     print(f"  Structural cost weight: {structural_cost_weight}")
     print(f"  Max depth: {max_depth}")
-    print(f"  Frontier capacity: {frontier_capacity}")
     print(f"  Device: {device}")
-    print("="*80)
+    print("=" * 80)
 
     # Prepare data and DSL
     print("\n[1/5] Loading CRIM-13 dataset...")
-    datamodule = ns.datasets.crim13_data_example(train_seed=train_seed, batch_size=batch_size)
+    datamodule = ns.datasets.crim13_data_example(
+        train_seed=train_seed, batch_size=batch_size
+    )
     output_dim = 1
     original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=hidden_dim)
     print(f"  Train samples: {len(datamodule.train.inputs)}")
@@ -215,7 +214,9 @@ def run_experiment(
 
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=original_dsl,
-        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=neural_hidden_size),
+        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(
+            hidden_size=neural_hidden_size
+        ),
     )
 
     cost = near.default_near_cost(
@@ -235,7 +236,7 @@ def run_experiment(
 
     # Search for programs with bounded A*
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.bounded_astar(g, max_depth=max_depth, frontier_capacity=frontier_capacity)
+    iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
 
     programs_list = []
     start_time = time.time()
@@ -299,16 +300,16 @@ def run_experiment(
     print(f"\n  Saved final results to: {output_path}")
 
     # Print summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("RESULTS SUMMARY")
-    print("="*80)
+    print("=" * 80)
     if programs_list:
         best_program = max(programs_list, key=lambda x: x["report"]["f1_score"])
         print(f"Best program: {best_program['program']}")
         print(f"  F1-score: {best_program['report']['f1_score']:.6f}")
         print(f"  Hamming accuracy: {best_program['report']['hamming_accuracy']:.6f}")
         print(f"  Discovery time: {best_program['time']:.2f}s")
-    print("="*80)
+    print("=" * 80)
 
     return programs_list
 
@@ -321,7 +322,7 @@ def main():
         "--output",
         type=str,
         default="outputs/mice_results/reproduction.pkl",
-        help="Output path for results"
+        help="Output path for results",
     )
     parser.add_argument(
         "--num-programs",
@@ -330,52 +331,35 @@ def main():
         help="Number of programs to discover"
     )
     parser.add_argument(
-        "--hidden-dim",
-        type=int,
-        default=16,
-        help="Hidden dimension for DSL"
+        "--hidden-dim", type=int, default=16, help="Hidden dimension for DSL"
     )
     parser.add_argument(
         "--neural-hidden-size",
         type=int,
         default=16,
-        help="Hidden size for neural hole filler"
+        help="Hidden size for neural hole filler",
     )
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=2000,
-        help="Training batch size"
+        "--batch-size", type=int, default=2000, help="Training batch size"
     )
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=30,
-        help="Number of epochs for search training"
+        "--epochs", type=int, default=30, help="Number of epochs for search training"
     )
     parser.add_argument(
         "--final-epochs",
         type=int,
         default=40,
-        help="Number of epochs for final training"
+        help="Number of epochs for final training",
     )
-    parser.add_argument(
-        "--lr",
-        type=float,
-        default=1e-4,
-        help="Learning rate"
-    )
+    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
         "--structural-cost-weight",
         type=float,
         default=0.0005,
-        help="Weight for structural cost in search"
+        help="Weight for structural cost in search",
     )
     parser.add_argument(
-        "--device",
-        type=str,
-        default="cuda:0",
-        help="Device to use for training"
+        "--device", type=str, default="cuda:0", help="Device to use for training"
     )
 
     args = parser.parse_args()
@@ -406,7 +390,7 @@ def main():
                 "hamming_accuracy": r["report"]["hamming_accuracy"],
             }
             for r in results
-        ]
+        ],
     }
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)

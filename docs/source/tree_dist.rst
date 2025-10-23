@@ -16,6 +16,8 @@ Preorder Mask
 .. autoclass:: neurosym.ConjunctionPreorderMask
     :members: of
 .. autoclass:: neurosym.TypePreorderMask
+    :members: valid_productions
+.. autoclass:: neurosym.TypePreorderMaskELF
 
 Node Ordering
 -------------------------------------------

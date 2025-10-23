@@ -20,13 +20,11 @@ class TestEnumeratability(unittest.TestCase):
                 1 :: () -> i -> i
                 + :: (#t -> i, #t -> i) -> #t -> i
                 id :: #a -> #a
-        compose_0 :: (#a -> () -> () -> i, (() -> () -> i) -> #c) -> #a -> #c
-        compose_1 :: (#a -> () -> i, (() -> i) -> #c) -> #a -> #c
-        compose_2 :: (#a -> (i, i) -> i, ((i, i) -> i) -> #c) -> #a -> #c
-        compose_3 :: (#a -> i -> i, (i -> i) -> #c) -> #a -> #c
-        compose_4 :: (#a -> i, i -> #c) -> #a -> #c
+        compose_0 :: (#a -> i -> i, (i -> i) -> #c) -> #a -> #c
+        compose_1 :: (#a -> i, i -> #c) -> #a -> #c
         """
         actual = dsl.render()
+        print(actual)
         self.assertEqual(
             {line.strip() for line in actual.strip().split("\n")},
             {line.strip() for line in expected.strip().split("\n")},
@@ -43,14 +41,11 @@ class TestEnumeratability(unittest.TestCase):
         self.assertSetEqual(
             expans,
             {
+                "(compose_1 ??::<i -> i> ??::<i -> i>)",
                 "(1)",
                 "(id ??::<i -> i>)",
+                "(compose_0 ??::<i -> i -> i> ??::<(i -> i) -> i>)",
                 "(+ ??::<i -> i> ??::<i -> i>)",
-                "(compose_0 ??::<i -> () -> () -> i> ??::<(() -> () -> i) -> i>)",
-                "(compose_1 ??::<i -> () -> i> ??::<(() -> i) -> i>)",
-                "(compose_2 ??::<i -> (i, i) -> i> ??::<((i, i) -> i) -> i>)",
-                "(compose_3 ??::<i -> i -> i> ??::<(i -> i) -> i>)",
-                "(compose_4 ??::<i -> i> ??::<i -> i>)",
             },
         )
 

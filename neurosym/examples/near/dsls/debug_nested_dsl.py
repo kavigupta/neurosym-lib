@@ -1,11 +1,10 @@
 import numpy as np
 import torch
-from torch import nn
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.interface import NEAR
-from neurosym.search.bounded_astar import bounded_astar
+from neurosym.search.bounded_astar import BoundedAStar
 from neurosym.types.type_string_repr import TypeDefiner
 
 
@@ -33,12 +32,11 @@ def get_combinator_dsl(nesting):
     dslf = DSLFactory()
     dslf.production(
         "terminal",
-        "() -> {f, 1} -> {f, 2}",
-        lambda lin: lin,
-        dict(lin=lambda: nn.Linear(1, 2)),
+        "() -> {f, 1} -> {f, 1}",
+        lambda: lambda x: x,
     )
 
-    for i in range(2, nesting + 1):
+    for i in range(1, nesting + 1):
         typ = "({f, 1} -> {f, %s}) -> {f, 1} -> {f, %s}" % (i, i + 1)
         dslf.production(
             f"correct_{i}",
@@ -63,19 +61,13 @@ def get_variable_dsl(nesting):
     a variable
     """
     dslf = DSLFactory()
-    dslf.production(
-        "terminal",
-        "{f, 1} -> {f, 2}",
-        lambda x, *, lin: lin(x),
-        dict(lin=lambda: nn.Linear(1, 2)),
-    )
 
-    for i in range(2, nesting + 1):
+    for i in range(1, nesting + 1):
         typ = "{f, %s} -> {f, %s}" % (i, i + 1)
         dslf.production(f"correct_{i}", typ, _expand_last_axis)
         dslf.production(f"wrong_{i}", typ, lambda x: _expand_last_axis(x * 0))
 
-    dslf.lambdas(max_arity=1)
+    dslf.lambdas()
     dslf.prune_to("{f, 1} -> {f, %s}" % (nesting + 1))
     return dslf.finalize()
 
@@ -124,7 +116,10 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         dsl=dsl,
         type_env=TypeDefiner(),
         neural_hole_filler=neural_hole_filler,
-        search_strategy=bounded_astar,
+        search_strategy=BoundedAStar(
+            max_depth=float("inf"),
+            max_iterations=nesting * 4 if max_iterations is None else max_iterations,
+        ),
         loss_callback=torch.nn.functional.mse_loss,
         validation_params=dict(progress_by_epoch=False),
     )
@@ -133,7 +128,6 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         program_signature="{f, 1} -> {f, %s}" % (nesting + 1),
         n_programs=1,
         validation_max_epochs=100,
-        max_iterations=nesting * 4 if max_iterations is None else max_iterations,
     )
 
 

@@ -1,8 +1,8 @@
 from typing import Callable, List
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
-from neurosym.types.type_with_environment import (Environment,
-                                                  TypeWithEnvironment)
+from neurosym.dsl.production import Production
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
 
@@ -27,10 +27,20 @@ class TypePreorderMask(PreorderMask):
         # each list represents the types of the children of the current node
         self.type_stack: List[List[TypeWithEnvironment]] = []
 
+    def valid_productions(self, twe: TypeWithEnvironment) -> List[Production]:
+        """
+        Compute the set of valid productions for a given type with environment.
+        Can be overridden by subclasses to implement different type masking strategies.
+
+        :param twe: The type to compute valid symbols for.
+        :return: A list of valid productions.
+        """
+        return [prod for prod, _ in self.dsl.productions_for_type(twe)]
+
     def compute_mask(self, position, symbols):
         valid_productions = {
-            self.tree_dist.symbol_to_index[sym.symbol()]
-            for sym, _ in self.dsl.productions_for_type(self.type_stack[-1][position])
+            self.tree_dist.symbol_to_index[prod.symbol()]
+            for prod in self.valid_productions(self.type_stack[-1][position])
         }
         return [i in valid_productions for i in symbols]
 

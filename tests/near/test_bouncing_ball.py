@@ -114,7 +114,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             validation_epochs=4000,
         )
         best_programs = itertools.islice(
-            ns.search.bounded_astar(g, max_depth=1000, max_iterations=10000), 4
+            ns.search.BoundedAStar(max_depth=1000, max_iterations=10000)(g), 4
         )
         num_with_one_ground_bounce_branch = 0
         for prog in best_programs:

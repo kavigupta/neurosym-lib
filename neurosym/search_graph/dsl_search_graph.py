@@ -2,6 +2,7 @@ import itertools
 from types import NoneType
 from typing import Callable
 
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
 from neurosym.types.type_with_environment import (Environment,
@@ -67,7 +68,9 @@ class DSLSearchGraph(SearchGraph[SExpression]):
 
     def _direct_expand_node(self, node):
         hole_sets = self.hole_set_chooser.choose_hole_sets(node.program)
-        relevant_holes = sorted(set(h for hs in hole_sets for h in hs))
+        relevant_holes = sorted(
+            set(h for hs in hole_sets for h in hs), key=render_s_expression
+        )
         # relevant_productions[hole_idx] : list of expansions for holes[hole_idx]
         relevant_productions = {}
         for hole in relevant_holes:

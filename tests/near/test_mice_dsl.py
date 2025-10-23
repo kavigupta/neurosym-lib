@@ -74,10 +74,7 @@ class TestNEARMiceDSL(unittest.TestCase):
             is_goal=lambda _: True,
             cost=cost,
         )
-        iterator = ns.search.bounded_astar(
-            g,
-            max_depth=5,
-        )
+        iterator = ns.search.BoundedAStar(max_depth=5)(g)
         # Should not throw a StopIteration error
         program = next(iterator)
         initialized_program = neural_dsl.initialize(program)
