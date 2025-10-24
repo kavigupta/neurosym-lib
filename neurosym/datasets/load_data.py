@@ -57,16 +57,18 @@ def _load_npy(array_descriptor):
     # pylint: disable=missing-timeout
     if os.path.exists(array_descriptor):
         # Load from local path
-        data = np.load(array_descriptor)
+        data = np.load(array_descriptor, allow_pickle=True)
     else:
         data = requests.get(array_descriptor).content
-        data = np.load(io.BytesIO(data))
+        data = np.load(io.BytesIO(data), allow_pickle=False) # security concerns with allow_pickle=True
+
+    # if npz file, extract the first array
+    if array_descriptor.endswith('.npz'):
+        data = data[list(data.files)[0]]
     return data
 
 
-def _split_dataset(
-    dataset: torch.utils.data.Dataset, val_fraction: float = 0.1, seed: int = 0
-):
+def _split_dataset(dataset: torch.utils.data.Dataset, val_fraction : float = 0.1, seed: int = 0):
     """
     Split a dataset into train and validation sets.
 
@@ -100,14 +102,14 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     :param seed: the seed for the random permutation of the dataset.
     """
 
-    def __init__(self, inut_descriptor, output_descriptor, seed):
+    def __init__(self, input_descriptor, output_descriptor, seed):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
-        self.inputs = _load_npy(inut_descriptor)
+        self.inputs = _load_npy(input_descriptor)
         self.outputs = _load_npy(output_descriptor)
         self.seed = seed
         assert len(self.inputs) == len(self.outputs)

@@ -1,12 +1,6 @@
 import torch
-from torch import nn
 
-from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.types.type import ListType
 
-from ..operations.aggregation import running_agg_torch
-from ..operations.basic import ite_torch
-from ..operations.lists import map_prefix_torch, map_torch
 from .near_affine_dsl_builder import NEARAffineSelectorDSLBuilder
 
 CRIM13_FEATURES = {

@@ -31,7 +31,8 @@
     :members:
 .. autoclass:: neurosym.examples.near.IdentityProgramEmbedding
     :members:
-
+.. autoclass:: neurosym.examples.near.compute_metrics
+    :members:
 
 ``NEAR`` Heirarchical Algorithm
 --------------------------------------------
@@ -82,14 +83,18 @@ NEAR Transformer
 
 Example Datasets/DSLs
 --------------------------------------------
+.. autofunction:: neurosym.datasets.bball_data_example
 .. autofunction:: neurosym.datasets.calms21_investigation_example
 .. autofunction:: neurosym.datasets.crim13_data_example
+.. autofunction:: neurosym.datasets.flyvfly_data_example
 .. autofunction:: neurosym.datasets.near_data_example
 .. autofunction:: neurosym.examples.near.differentiable_arith_dsl
 .. autofunction:: neurosym.examples.near.example_rnn_dsl
 .. autofunction:: neurosym.examples.near.simple_calms21_dsl
 .. autofunction:: neurosym.examples.near.adaptive_calms21_dsl
+.. autofunction:: neurosym.examples.near.simple_bball_dsl
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
+.. autofunction:: neurosym.examples.near.simple_fruitflies_dsl
 .. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
 .. autofunction:: neurosym.examples.near.adaptive_mice_dsl_builder
 

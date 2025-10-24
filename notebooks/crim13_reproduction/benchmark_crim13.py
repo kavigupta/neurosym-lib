@@ -17,7 +17,7 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.validation import compute_metrics
+from neurosym.examples.near.metrics import compute_metrics
 
 def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     """
@@ -60,7 +60,7 @@ def eval_program(module, feature_data, labels) -> tuple:
 
 
 def evaluate_reported_program(
-    output_path: str = "outputs/mice_results/reported_program.pkl",
+    output_path: str = "outputs/crim13_results/reported_program.pkl",
     hidden_dim: int = 1,
     neural_hidden_size: int = 16,
     batch_size: int = 50,
@@ -187,7 +187,7 @@ def evaluate_reported_program(
 
 
 def run_experiment(
-    output_path: str = "outputs/mice_results/reproduction.pkl",
+    output_path: str = "outputs/crim13_results/reproduction.pkl",
     num_programs: int = 40,
     hidden_dim: int = 16,
     neural_hidden_size: int = 16,
@@ -199,6 +199,7 @@ def run_experiment(
     max_depth: int = 10,
     train_seed: int = 0,
     device: str = "cuda:0",
+    behavior: str = "sniff",
 ) -> List[Dict[str, Any]]:
     """
     Run the NEAR experiment on CRIM-13 dataset.
@@ -240,7 +241,7 @@ def run_experiment(
     # Prepare data and DSL
     print("\n[1/5] Loading CRIM-13 dataset...")
     datamodule = ns.datasets.crim13_data_example(
-        train_seed=train_seed, batch_size=batch_size
+        train_seed=train_seed, batch_size=batch_size, behavior=behavior
     )
     output_dim = 1
     original_dsl = near.simple_crim13_dsl(num_classes=output_dim, hidden_dim=hidden_dim)
@@ -366,7 +367,7 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="outputs/mice_results/reproduction.pkl",
+        default="outputs/crim13_results/reproduction.pkl",
         help="Output path for results",
     )
     parser.add_argument(
@@ -407,12 +408,21 @@ def main():
         "--device", type=str, default="cuda:0", help="Device to use for training"
     )
     parser.add_argument(
+        "--behavior", type=str, default="sniff", help="Behavior to use for training",
+        choices=['sniff', 'other'],
+    )
+    parser.add_argument(
         "--evaluate-reported",
         action="store_true",
         help="Evaluate the reported program from MICE-DSL paper instead of running search",
     )
 
     args = parser.parse_args()
+
+    # add behavior suffix to output path
+    behavior_suffix = f"_{args.behavior}"
+    if behavior_suffix not in args.output:
+        args.output = args.output.replace(".pkl", f"{behavior_suffix}.pkl")
 
     # Choose which mode to run
     if args.evaluate_reported:
@@ -425,6 +435,7 @@ def main():
             structural_cost_weight=args.structural_cost_weight,
             lr=args.lr,
             device=args.device,
+            behavior=args.behavior,
         )
 
         # Save summary
@@ -451,6 +462,7 @@ def main():
             final_n_epochs=args.final_epochs,
             lr=args.lr,
             device=args.device,
+            behavior=args.behavior,
         )
 
         # Save summary

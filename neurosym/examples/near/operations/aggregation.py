@@ -15,8 +15,10 @@ class SymmetricMorletFilter(torch.nn.Module):
     def __init__(self, width=torch.pi):  # noqa: E741
         super().__init__()
         self.width = width
+        # trainable parameters
         self.w = torch.nn.Parameter(torch.tensor(0.5, requires_grad=True))
         self.s = torch.nn.Parameter(torch.tensor(0.5, requires_grad=True))
+        self.register_buffer("width_buf", torch.tensor(float(width)))
 
     def get_filter(self, x):
         """
@@ -35,14 +37,16 @@ class SymmetricMorletFilter(torch.nn.Module):
 
         :param batch: ``(B, L, D)`` or ``(L, D)`` sequence of values.
         """
+        if not self.w.device == batch.device:
+            self.to(batch.device)
         seq_dim = 1 if len(batch.shape) == 3 else 0
         seq_len = batch.shape[seq_dim]
-        morlet_filter = (
-            self.get_filter(torch.linspace(-self.width, self.width, seq_len))
-            .unsqueeze(1)
-            .repeat(1, batch.shape[-1])
-        )
-        return torch.sum(torch.mul(batch, morlet_filter), dim=seq_dim)
+        x = torch.linspace(-self.width_buf.item(), self.width_buf.item(), seq_len, device=batch.device, dtype=batch.dtype)
+        morlet = self.get_filter(x).view(seq_len, 1)
+        if batch.dim() == 3:
+            return (batch * morlet.unsqueeze(0)).sum(dim=1)
+        else:
+            return (batch * morlet).sum(dim=0)
 
 
 def running_agg_torch(
