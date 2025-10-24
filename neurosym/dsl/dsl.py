@@ -6,9 +6,11 @@ import numpy as np
 from frozendict import frozendict
 
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
-from neurosym.types.type_with_environment import (Environment,
-                                                  PermissiveEnvironmment,
-                                                  TypeWithEnvironment)
+from neurosym.types.type_with_environment import (
+    Environment,
+    PermissiveEnvironmment,
+    TypeWithEnvironment,
+)
 from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole

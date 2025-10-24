@@ -1,3 +1,4 @@
+import importlib
 import logging
 import warnings
 
@@ -12,12 +13,15 @@ def import_pytorch_lightning():
     # Some environments replace the stdlib distutils module with setuptools._distutils,
     # which does not expose the ``version`` attribute. We patch it in lazily here to
     # avoid import errors without taking a hard dependency on distutils internals.
-    import distutils  # pylint: disable=deprecated-module
+    try:
+        import distutils  # type: ignore[import-not-found]  # pylint: disable=deprecated-module
+    except ModuleNotFoundError:  # pragma: no cover - Python >=3.12
+        distutils = importlib.import_module("setuptools._distutils")
 
     if not hasattr(distutils, "version"):
-        from distutils import version as _distutils_version  # pylint: disable=deprecated-module
-
-        distutils.version = _distutils_version  # type: ignore[attr-defined]
+        distutils.version = importlib.import_module(  # type: ignore[attr-defined]
+            f"{distutils.__name__}.version"
+        )
     import pytorch_lightning as pl
 
     warnings.filterwarnings("default", category=DeprecationWarning)

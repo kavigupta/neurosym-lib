@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from neurosym.program_dist.tree_distribution.tree_distribution import \
-    TreeDistribution
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
 from .names import GLOBAL_REGEX
 

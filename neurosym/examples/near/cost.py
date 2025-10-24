@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from neurosym.dsl.dsl import DSL
-from neurosym.examples.near.models.torch_program_module import \
-    TorchProgramModule
+from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.examples.near.neural_dsl import PartialProgramNotFoundError
 from neurosym.programs.hole import Hole
-from neurosym.programs.s_expression import (InitializedSExpression,
-                                            SExpression,
-                                            is_initialized_s_expression)
+from neurosym.programs.s_expression import (
+    InitializedSExpression,
+    SExpression,
+    is_initialized_s_expression,
+)
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.utils.logging import log

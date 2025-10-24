@@ -5,8 +5,7 @@ from typing import Callable
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
-from neurosym.types.type_with_environment import (Environment,
-                                                  TypeWithEnvironment)
+from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
 
 from ..dsl.dsl import DSL
 from ..programs.hole import Hole, _all_holes, _replace_holes

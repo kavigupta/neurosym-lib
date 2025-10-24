@@ -3,11 +3,11 @@ import torch
 from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
+from neurosym.types.type import ListType
 
 from ..operations.aggregation import running_agg_torch
 from ..operations.basic import ite_torch
 from ..operations.lists import map_prefix_torch, map_torch
-from neurosym.types.type import ListType
 
 CRIM13_FEATURES = {
     "position": torch.LongTensor([0, 1, 2, 3]),
@@ -70,9 +70,7 @@ def simple_crim13_dsl(num_classes, hidden_dim=None):
             ),
         )
 
-    dslf.filtered_type_variable(
-        "affine_input", lambda x: not isinstance(x, ListType)
-    )
+    dslf.filtered_type_variable("affine_input", lambda x: not isinstance(x, ListType))
 
     dslf.production(
         "add",

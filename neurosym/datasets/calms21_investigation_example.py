@@ -1,4 +1,4 @@
-from .load_data import _split_dataset, DatasetFromNpy, DatasetWrapper
+from .load_data import DatasetFromNpy, DatasetWrapper, _split_dataset
 
 
 def calms21_investigation_example(train_seed, **kwargs) -> DatasetWrapper:

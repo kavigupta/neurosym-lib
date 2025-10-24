@@ -9,9 +9,10 @@ import tqdm.auto as tqdm
 
 from neurosym.dsl.dsl import DSL
 from neurosym.examples.simple_dreamcoder.algorithm import (
-    compute_best_fits_for_each, simple_dreamcoder)
-from neurosym.examples.simple_dreamcoder.domain import (example_dataset,
-                                                        example_dsl)
+    compute_best_fits_for_each,
+    simple_dreamcoder,
+)
+from neurosym.examples.simple_dreamcoder.domain import example_dataset, example_dsl
 from neurosym.utils.logging import log
 
 

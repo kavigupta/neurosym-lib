@@ -8,8 +8,12 @@ from parameterized import parameterized
 import neurosym as ns
 from tests.utils import assertDSL
 
-from .utils import (ChildrenInOrderAsserterMask, ChildrenInOrderMask,
-                    ProbabilityTester, enumerate_dsl)
+from .utils import (
+    ChildrenInOrderAsserterMask,
+    ChildrenInOrderMask,
+    ProbabilityTester,
+    enumerate_dsl,
+)
 
 
 def get_dsl(with_vars=False, with_3=False):

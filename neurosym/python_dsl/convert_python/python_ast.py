@@ -7,8 +7,10 @@ from typing import List
 from frozendict import frozendict
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.python_dsl.dfa import (COMPOUND_EXPRESSION_KINDS,
-                                     MULTI_LINE_STATEMENT_KINDS)
+from neurosym.python_dsl.dfa import (
+    COMPOUND_EXPRESSION_KINDS,
+    MULTI_LINE_STATEMENT_KINDS,
+)
 
 from .splice import Splice
 from .symbol import PythonSymbol

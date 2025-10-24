@@ -8,19 +8,16 @@ for the CRIM-13 mice behavior classification task.
 
 import argparse
 import json
-import os
 import pickle
 import time
 from pathlib import Path
 from typing import Dict, List, Any
 
-import numpy as np
 import torch
-from sklearn.metrics import classification_report, f1_score, hamming_loss, roc_curve
 
 import neurosym as ns
 from neurosym.examples import near
-
+from neurosym.examples.near.validation import compute_metrics
 
 def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     """
@@ -41,80 +38,6 @@ def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         targets.float(),
         weight=torch.tensor([2.0], device=predictions.device),
     )
-
-
-def threshold_predictions(
-    y_true: torch.Tensor, y_scores: torch.Tensor, threshold_type: str = "quantile"
-) -> torch.Tensor:
-    """
-    Apply dynamic thresholding to predictions.
-
-    Args:
-        y_true: Ground truth labels
-        y_scores: Model prediction scores (logits)
-        threshold_type: Type of thresholding ('quantile', 'roc', or 'static')
-
-    Returns:
-        Binary predictions
-    """
-    if threshold_type == "quantile":
-        threshold = np.quantile(y_scores, 1 - y_true.float().mean())
-    elif threshold_type == "roc":
-        fpr, tpr, thresholds = roc_curve(y_true, y_scores)
-        threshold = thresholds[np.argmax(tpr - fpr)]
-    elif threshold_type == "static":
-        threshold = 0.5
-    else:
-        raise ValueError(f"Unknown threshold type: {threshold_type}")
-
-    predictions = (torch.sigmoid(y_scores) < threshold).int()
-    return predictions
-
-
-def compute_metrics(
-    predictions: np.ndarray, ground_truth: np.ndarray
-) -> Dict[str, Any]:
-    """
-    Compute evaluation metrics for predictions.
-
-    Args:
-        predictions: Raw prediction scores (logits)
-        ground_truth: Ground truth labels
-
-    Returns:
-        Dictionary containing various metrics
-    """
-    predictions = (
-        threshold_predictions(
-            torch.tensor(ground_truth, dtype=torch.float32),
-            torch.tensor(predictions, dtype=torch.float32),
-            threshold_type="quantile",
-        )
-        .numpy()
-        .flatten()
-    )
-    ground_truth = ground_truth.flatten()
-
-    try:
-        weighted_avg_f1 = f1_score(predictions, ground_truth, average="weighted")
-        unweighted_avg_f1 = f1_score(predictions, ground_truth, average="macro")
-        all_f1 = f1_score(predictions, ground_truth, average=None)
-        hamming_accuracy = 1 - hamming_loss(ground_truth, predictions)
-    except ValueError as e:
-        print(f"Error computing metrics: {e}")
-        weighted_avg_f1 = 0.0
-        unweighted_avg_f1 = 0.0
-        all_f1 = []
-        hamming_accuracy = 0.0
-
-    report = classification_report(ground_truth, predictions, output_dict=True)
-    return {
-        "f1_score": weighted_avg_f1,
-        "unweighted_f1": unweighted_avg_f1,
-        "all_f1s": all_f1,
-        "hamming_accuracy": hamming_accuracy,
-        "report": report,
-    }
 
 
 def eval_program(module, feature_data, labels) -> tuple:
@@ -169,7 +92,7 @@ def evaluate_reported_program(
     print("=" * 80)
     print("Evaluating Reported Program from MICE-DSL Paper")
     print("=" * 80)
-    print(f"Configuration:")
+    print("Configuration:")
     print(f"  Output path: {output_path}")
     print(f"  Hidden dim: {hidden_dim}")
     print(f"  Neural hidden size: {neural_hidden_size}")
@@ -300,7 +223,7 @@ def run_experiment(
     print("=" * 80)
     print("CRIM-13 NEAR Experiment - Neurosym-lib Implementation")
     print("=" * 80)
-    print(f"Configuration:")
+    print("Configuration:")
     print(f"  Output path: {output_path}")
     print(f"  Number of programs: {num_programs}")
     print(f"  Hidden dim: {hidden_dim}")
@@ -392,7 +315,7 @@ def run_experiment(
     print(f"  Saved raw programs to: {raw_output_path}")
 
     # Evaluate each discovered program
-    print(f"\n[5/5] Evaluating programs on test set...")
+    print("\n[5/5] Evaluating programs on test set...")
     for i, d in enumerate(programs_list):
         print(f"\n  Evaluating program {i+1}/{len(programs_list)}...")
         program = d["program"]

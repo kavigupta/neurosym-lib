@@ -5,8 +5,7 @@ from typing import Tuple
 from torch import nn
 
 from neurosym.examples.near.models.mlp import MLP, MLPConfig
-from neurosym.examples.near.models.rnn import (RNNConfig, Seq2ClassRNN,
-                                               Seq2SeqRNN)
+from neurosym.examples.near.models.rnn import RNNConfig, Seq2ClassRNN, Seq2SeqRNN
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.types.type import ArrowType, AtomicType, ListType, TensorType
 from neurosym.types.type_annotated_object import TypeAnnotatedObject

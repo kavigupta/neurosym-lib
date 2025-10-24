@@ -64,7 +64,9 @@ def _load_npy(array_descriptor):
     return data
 
 
-def _split_dataset(dataset: torch.utils.data.Dataset, val_fraction : float = 0.1, seed: int = 0):
+def _split_dataset(
+    dataset: torch.utils.data.Dataset, val_fraction: float = 0.1, seed: int = 0
+):
     """
     Split a dataset into train and validation sets.
 
@@ -124,8 +126,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     def get_ordering(seed, n_inputs):
         if seed is not None:
             return np.random.RandomState(seed=seed).permutation(n_inputs)
-        else:
-            return np.arange(n_inputs)
+        return np.arange(n_inputs)
 
     def get_io_dims(self, is_regression=False):
         """
@@ -162,6 +163,7 @@ class DatasetWrapper(pl.LightningDataModule):
         self.test = test
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.val_fraction = val_fraction
 
     def load_dataset(self, dataset):
         for i in range(len(dataset) // self.batch_size + 1):

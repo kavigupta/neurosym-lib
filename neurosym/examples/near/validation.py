@@ -2,7 +2,13 @@ import copy
 
 import numpy as np
 import torch
-from sklearn.metrics import hamming_loss
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    f1_score,
+    hamming_loss,
+    roc_curve,
+)
 
 from neurosym.datasets.load_data import DatasetWrapper
 from neurosym.dsl.dsl import DSL
@@ -14,10 +20,8 @@ from neurosym.examples.near.cost import (
     ProgramEmbedding,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
-from neurosym.examples.near.methods.near_example_trainer import \
-    NEARTrainerConfig
-from neurosym.examples.near.models.torch_program_module import \
-    TorchProgramModule
+from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
+from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.utils.imports import import_pytorch_lightning
@@ -26,57 +30,249 @@ from neurosym.utils.logging import log
 pl = import_pytorch_lightning()
 
 
-def flatten_sequence_logits_and_labels(
-    logits: np.ndarray, labels: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Flatten model logits and ground-truth labels so that they share a common
-    sample dimension.
+def _is_binary_indicator(arr: np.ndarray) -> bool:
+    vals = np.unique(arr)
+    return np.all(np.isin(vals, [0, 1]))
 
-    This handles sequence models whose logits have extra temporal dimensions
-    (e.g., ``(batch, time, num_classes)``) while the labels may either already be
-    expanded to match that temporal dimension or provided as a single label per
-    batch element.
-    """
-    logits = np.asarray(logits)
-    labels = np.asarray(labels)
 
-    if logits.ndim < 2:
-        raise ValueError(
-            f"Expected logits with at least 2 dimensions, got shape {logits.shape}"
-        )
+def _sigmoid(z: np.ndarray) -> np.ndarray:
+    return 1.0 / (1.0 + np.exp(-z))
 
-    feature_shape = logits.shape[:-1]
-    batch_size = feature_shape[0]
-    temporal_factor = int(np.prod(feature_shape[1:])) if len(feature_shape) > 1 else 1
 
-    flattened_logits = logits.reshape(-1, logits.shape[-1])
-    total_samples = flattened_logits.shape[0]
-    labels_flat = labels.reshape(-1)
-    if labels_flat.shape[0] == total_samples:
-        return flattened_logits, labels_flat
+def _softmax(z: np.ndarray, axis: int = -1) -> np.ndarray:
+    z = z - np.max(z, axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / np.sum(e, axis=axis, keepdims=True)
 
-    if labels_flat.shape[0] == batch_size and temporal_factor > 1:
-        labels_flat = np.repeat(labels_flat, temporal_factor)
-        return flattened_logits, labels_flat
 
-    labels_reshaped = labels.reshape(batch_size, -1)
-    if labels_reshaped.shape[1] == 1 and temporal_factor > 1:
-        labels_flat = np.repeat(labels_reshaped[:, 0], temporal_factor)
-    elif labels_reshaped.shape[1] == temporal_factor:
-        labels_flat = labels_reshaped.reshape(-1)
+def _looks_like_probabilities(arr: np.ndarray) -> bool:
+    return np.min(arr) >= 0.0 and np.max(arr) <= 1.0
+
+
+def _threshold_single_label(
+    y_true_1d: np.ndarray, probs_1d: np.ndarray, threshold_type: str = "quantile"
+) -> np.ndarray:
+    uniq = np.unique(y_true_1d)
+    if uniq.size < 2:
+        return np.full_like(probs_1d, int(uniq[0]), dtype=np.int32)
+
+    if threshold_type == "quantile":
+        prevalence = float(y_true_1d.mean())
+        if prevalence <= 0.0:
+            return np.zeros_like(probs_1d, dtype=np.int32)
+        if prevalence >= 1.0:
+            return np.ones_like(probs_1d, dtype=np.int32)
+        thr = np.quantile(probs_1d, 1.0 - prevalence)
+    elif threshold_type == "roc":
+        fpr, tpr, thresholds = roc_curve(y_true_1d, probs_1d)
+        thr = thresholds[np.argmax(tpr - fpr)]
+    elif threshold_type == "static":
+        thr = 0.5
     else:
-        raise ValueError(
-            "Unable to align logits and labels shapes: "
-            f"logits={logits.shape}, labels={labels.shape}"
+        raise ValueError(f"Unknown threshold type: {threshold_type}")
+
+    return (probs_1d >= thr).astype(np.int32)
+
+
+def _prepare_targets_and_preds(
+    ground_truth: np.ndarray,
+    predictions: np.ndarray,
+    threshold_type: str = "quantile",
+):
+    """
+    Normalize a wide variety of shapes into:
+    - task = 'multilabel': y_true (N,L) in {0,1}, y_pred_bin (N,L) in {0,1}
+    - task = 'multiclass': y_true (M,) ints, y_pred_cls (M,) ints
+      (where M is N, or N*T for sequence tasks)
+    """
+    y_true = ground_truth
+    y_pred = predictions
+
+    # Case A: class axis present in predictions -> multiclass (e.g., (N,2) or (N,T,4))
+    has_class_axis = (
+        y_pred.ndim >= 2
+        and y_pred.shape[-1] > 1
+        and (
+            y_true.ndim == y_pred.ndim - 1
+            or (y_true.ndim == y_pred.ndim and y_true.shape[-1] == y_pred.shape[-1])
+            or (y_true.ndim == 2 and y_pred.ndim == 2 and y_true.shape[1] == 1)
+        )
+    )
+
+    if has_class_axis:
+        probs = (
+            _softmax(y_pred, axis=-1)
+            if not _looks_like_probabilities(y_pred)
+            and np.allclose(y_pred.sum(axis=-1), 1.0, atol=1e-3)
+            else y_pred
+        )
+        y_pred_cls = probs.argmax(axis=-1)
+
+        # Normalize ground truth to class indices
+        if y_true.ndim == y_pred.ndim and y_true.shape[-1] == y_pred.shape[-1]:
+            # One-hot or soft targets -> take argmax
+            y_true_cls = y_true.argmax(axis=-1)
+        elif y_true.ndim == y_pred.ndim - 1:
+            y_true_cls = y_true
+        elif y_true.ndim == 2 and y_pred.ndim == 2 and y_true.shape[1] == 1:
+            y_true_cls = y_true.squeeze(1)
+        else:
+            raise ValueError(
+                f"Shape mismatch for multiclass: y_true {y_true.shape} vs y_pred {y_pred.shape}"
+            )
+
+        # Flatten any extra axes for metrics
+        return (
+            y_true_cls.reshape(-1).astype(int),
+            y_pred_cls.reshape(-1).astype(int),
+            "multiclass",
         )
 
-    if labels_flat.shape[0] != total_samples:
-        raise ValueError(
-            "Unable to align logits and labels after broadcasting: "
-            f"logits={logits.shape}, labels={labels.shape}"
+    # Case B: multilabel (no class axis, same shape, binary indicators in y_true)
+    same_shape = y_true.shape == y_pred.shape
+    if same_shape and _is_binary_indicator(y_true):
+        # Convert scores to probabilities if needed
+
+        probs = _sigmoid(y_pred) if not _looks_like_probabilities(y_pred) else y_pred
+
+        # Per-label thresholding
+        if probs.ndim == 1:
+            preds_bin = _threshold_single_label(
+                y_true.astype(int), probs, threshold_type
+            )
+            y_true_ml = y_true.astype(int).reshape(-1)
+            preds_bin = preds_bin.reshape(-1)
+        elif probs.ndim == 2:
+            cols = []
+            for j in range(probs.shape[1]):
+                cols.append(
+                    _threshold_single_label(
+                        y_true[:, j].astype(int), probs[:, j], threshold_type
+                    )
+                )
+            preds_bin = np.stack(cols, axis=1).astype(np.int32)
+            y_true_ml = y_true.astype(int)
+        else:
+            # Allow (N,1) after reshape
+            preds_bin = _threshold_single_label(
+                y_true.reshape(-1).astype(int), probs.reshape(-1), threshold_type
+            )
+            y_true_ml = y_true.reshape(-1).astype(int)
+            preds_bin = preds_bin.reshape(-1)
+
+        return y_true_ml, preds_bin, "multilabel"
+
+    # Case C: binary special cases like (N,1) vs (N,2)
+    if y_pred.ndim == 2 and y_pred.shape[1] == 2 and y_true.ndim in (1, 2):
+        # Treat as multiclass with 2 classes
+        probs = (
+            y_pred
+            if (
+                _looks_like_probabilities(y_pred)
+                and np.allclose(y_pred.sum(axis=-1), 1.0, atol=1e-3)
+            )
+            else _softmax(y_pred, axis=-1)
         )
-    return flattened_logits, labels_flat
+
+        y_pred_cls = probs.argmax(axis=-1)
+        y_true_cls = y_true.squeeze(-1) if y_true.ndim == 2 else y_true
+        return (
+            y_true_cls.reshape(-1).astype(int),
+            y_pred_cls.reshape(-1).astype(int),
+            "multiclass",
+        )
+
+    raise ValueError(
+        f"Unsupported shapes. I expected either (N,) or (N,L) multilabel, "
+        f"or ...xC multiclass with a class axis. Got y_true={y_true.shape}, y_pred={y_pred.shape}."
+    )
+
+
+def compute_metrics(
+    predictions: np.ndarray,
+    ground_truth: np.ndarray,
+    metric_name: str = "all",
+    threshold_type: str = "quantile",
+):
+    """
+    Generalized metrics:
+      - Multilabel: threshold per label (quantile/roc/static)
+      - Multiclass: softmax + argmax over class axis (supports sequence shapes)
+
+    Returns dict with: f1_score (weighted), unweighted_f1 (macro), all_f1s (per class/label),
+    hamming_accuracy (== accuracy for multiclass), and classification report for "all".
+    """
+    y_true_norm, y_pred_norm, task = _prepare_targets_and_preds(
+        ground_truth, predictions, threshold_type
+    )
+
+    weighted_avg_f1 = unweighted_avg_f1 = 0.0
+    all_f1 = []
+    hamming_accuracy = 0.0
+
+    try:
+        if task == "multilabel":
+            if metric_name in ("all", "weighted_f1"):
+                weighted_avg_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average="weighted", zero_division=0
+                )
+            if metric_name in ("all", "unweighted_f1"):
+                unweighted_avg_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average="macro", zero_division=0
+                )
+            if metric_name == "all":
+                all_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average=None, zero_division=0
+                )
+            if metric_name in ("all", "hamming_accuracy"):
+                hamming_accuracy = 1.0 - hamming_loss(y_true_norm, y_pred_norm)
+
+            report = (
+                classification_report(
+                    y_true_norm, y_pred_norm, output_dict=True, zero_division=0
+                )
+                if metric_name == "all"
+                else {}
+            )
+
+        else:  # multiclass
+            if metric_name in ("all", "weighted_f1"):
+                weighted_avg_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average="weighted", zero_division=0
+                )
+            if metric_name in ("all", "unweighted_f1"):
+                unweighted_avg_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average="macro", zero_division=0
+                )
+            if metric_name == "all":
+                all_f1 = f1_score(
+                    y_true_norm, y_pred_norm, average=None, zero_division=0
+                )
+
+            # Use plain accuracy for multiclass; return it under the same key for API stability.
+            if metric_name in ("all", "hamming_accuracy"):
+                hamming_accuracy = accuracy_score(y_true_norm, y_pred_norm)
+
+            report = (
+                classification_report(
+                    y_true_norm, y_pred_norm, output_dict=True, zero_division=0
+                )
+                if metric_name == "all"
+                else {}
+            )
+
+    except ValueError as e:
+        print(f"Error computing metrics: {e}")
+        report = {}
+
+    return {
+        "f1_score": float(weighted_avg_f1),
+        "unweighted_f1": float(unweighted_avg_f1),
+        "all_f1s": np.asarray(all_f1).tolist() if len(np.shape(all_f1)) else all_f1,
+        "hamming_accuracy": float(hamming_accuracy),
+        "report": report,
+        "task_type": task,
+    }
 
 
 class ValidationCost(NearValidationHeuristic):
@@ -192,6 +388,7 @@ def default_near_cost(
     )
 
 
+# pylint: disable=too-many-branches,too-many-statements
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
@@ -243,14 +440,18 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
                 val_loss = val_loss_sum / val_cnt
                 labels = torch.cat(labels, dim=0)
                 predictions = torch.cat(predictions, dim=0).detach()
-                threshold = np.quantile(
-                    predictions.cpu().numpy(), 1 - labels.cpu().float().numpy().mean()
+                metrics = compute_metrics(
+                    predictions=predictions.cpu().numpy(),
+                    ground_truth=labels.cpu().numpy(),
+                    metric_name="all",
                 )
-                predictions = torch.sigmoid(predictions) < threshold
-                val_acc = 1 - hamming_loss(
-                    labels.cpu().numpy().flatten().astype(int),
-                    predictions.cpu().numpy().flatten(),
-                )
+                metric_key = trainer_cfg.validation_metric
+                if metric_key not in metrics:
+                    raise KeyError(
+                        f"Validation metric '{metric_key}' is unavailable. "
+                        f"Available metrics: {list(metrics.keys())}"
+                    )
+                val_acc = float(metrics[metric_key])
                 best_acc = max(best_acc, val_acc)
 
                 if trainer_cfg.early_stopping:

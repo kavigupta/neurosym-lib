@@ -8,9 +8,11 @@ from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
 from ..programs.s_expression import SExpression, postorder
-from ..programs.s_expression_render import (parse_s_expression,
-                                            render_s_expression,
-                                            symbols_for_program)
+from ..programs.s_expression_render import (
+    parse_s_expression,
+    render_s_expression,
+    symbols_for_program,
+)
 from ..types.type_signature import FunctionTypeSignature
 
 

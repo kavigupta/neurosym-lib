@@ -1,8 +1,15 @@
 from types import NoneType
 from typing import List, Union
 
-from neurosym.types.type import (ArrowType, AtomicType, FilteredTypeVariable,
-                                 ListType, TensorType, Type, TypeVariable)
+from neurosym.types.type import (
+    ArrowType,
+    AtomicType,
+    FilteredTypeVariable,
+    ListType,
+    TensorType,
+    Type,
+    TypeVariable,
+)
 from neurosym.types.type_signature import FunctionTypeSignature
 
 SPECIAL_CHARS = ["{", "}", "[", "]", "(", ")", "->", ","]

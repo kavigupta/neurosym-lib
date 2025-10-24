@@ -3,18 +3,16 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from neurosym.dsl.dsl import DSL
-from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import \
-    PreorderMask
-from neurosym.program_dist.tree_distribution.preorder_mask.undos import \
-    chain_undos
-from neurosym.program_dist.tree_distribution.tree_distribution import \
-    TreeDistribution
+from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
+    PreorderMask,
+)
+from neurosym.program_dist.tree_distribution.preorder_mask.undos import chain_undos
+from neurosym.program_dist.tree_distribution.tree_distribution import TreeDistribution
 
 from .extra_var import ExtraVar, canonicalized_python_name_leaf_regex
 from .handler import DefaultHandler, Handler, HandlerPuller, default_handler
 from .names import NAME_REGEX
-from .special_case_symbol_predicate import (NameEPredicate,
-                                            SpecialCaseSymbolPredicate)
+from .special_case_symbol_predicate import NameEPredicate, SpecialCaseSymbolPredicate
 
 
 @dataclass

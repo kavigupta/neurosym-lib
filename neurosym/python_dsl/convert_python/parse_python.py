@@ -4,8 +4,15 @@ from typing import List, Union
 
 from neurosym.python_dsl import python_ast_tools
 
-from .python_ast import (LeafAST, ListAST, NodeAST, PythonAST, SequenceAST,
-                         SliceElementAST, StarrableElementAST)
+from .python_ast import (
+    LeafAST,
+    ListAST,
+    NodeAST,
+    PythonAST,
+    SequenceAST,
+    SliceElementAST,
+    StarrableElementAST,
+)
 from .symbol import PythonSymbol, create_descoper
 
 

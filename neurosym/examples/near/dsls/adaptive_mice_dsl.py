@@ -3,10 +3,11 @@ import torch
 from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
+from neurosym.types.type import ListType
 
 from ..operations.aggregation import SymmetricMorletFilter, running_agg_torch
 from ..operations.basic import ite_torch
-from ..operations.lists import map_torch
+from ..operations.lists import map_prefix_torch, map_torch
 from .simple_calms21_dsl import CALMS21_FEATURES, CALMS21_FULL_FEATURE_DIM
 from .simple_crim13_dsl import CRIM13_FEATURES, CRIM13_FULL_FEATURE_DIM
 
@@ -109,41 +110,44 @@ def adaptive_mice_dsl_builder(
             ),
         )
 
+    dslf.filtered_type_variable("affine_input", lambda x: not isinstance(x, ListType))
+
     dslf.production(
         "add",
-        "(#a -> #b, #a -> #b) -> #a -> #b",
+        "(%affine_input -> #b, %affine_input -> #b) -> %affine_input -> #b",
         lambda f1, f2: lambda x: f1(x) + f2(x),
     )
     dslf.production(
         "mul",
-        "(#a -> #b, #a -> #b) -> #a -> #b",
+        "(%affine_input -> #b, %affine_input -> #b) -> %affine_input -> #b",
         lambda f1, f2: lambda x: f1(x) * f2(x),
     )
+
     dslf.production(
         "running_avg_last5",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 4, lambda t: t),
     )
     dslf.production(
         "running_avg_last10",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 9, lambda t: t),
     )
 
     dslf.production(
         "running_avg_window5",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 2, lambda t: t + 2),
     )
     dslf.production(
         "running_avg_window11",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f: lambda x: running_agg_torch(x, f, lambda t: t - 5, lambda t: t + 5),
     )
 
     dslf.production(
         f"convolve_3_len{seq_len}",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f, conv: lambda x: conv(f(x)).squeeze(),
         parameters=dict(
             conv=lambda: torch.nn.Conv1d(seq_len, 1, 3, padding=1, bias=False)
@@ -151,7 +155,7 @@ def adaptive_mice_dsl_builder(
     )
     dslf.production(
         f"convolve_5_len{seq_len}",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f, conv: lambda x: conv(f(x)).squeeze(),
         parameters=dict(
             conv=lambda: torch.nn.Conv1d(seq_len, 1, 5, padding=2, bias=False)
@@ -161,7 +165,7 @@ def adaptive_mice_dsl_builder(
     # pylint: disable=unnecessary-lambda
     dslf.production(
         "sym_morlet",
-        "([#a] -> [#b]) -> [#a] -> #b",
+        "([#a] -> [$fH]) -> [#a] -> $fH",
         lambda f, filter: lambda x: filter(f(x)),
         parameters=dict(filter=lambda: SymmetricMorletFilter()),
     )
@@ -169,24 +173,26 @@ def adaptive_mice_dsl_builder(
     if hidden_dim != num_classes:
         dslf.production(
             "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> $fO",
+            "(([$fI]) -> [$fH]) -> [$fI] -> [$fO]",
             lambda f, lin: lambda x: lin(f(x)).softmax(-1),
             dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
         )
-    else:
-        dslf.production(
-            "output",
-            "(([$fI]) -> [$fH]) -> [$fI] -> $fO",
-            lambda f: lambda x: f(x).softmax(-1),
-        )
+
     dslf.production(
         "ite",
-        "(#a -> {f, 1},  #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
+        ite_torch,
     )
     # pylint: enable=unnecessary-lambda
     dslf.production(
-        "map", "(#a -> #b) -> [#a] -> [#b]", lambda f: lambda x: map_torch(f, x)
+        "map",
+        "(#a -> #b) -> [#a] -> [#b]",
+        lambda f: lambda x: map_torch(f, x),
+    )
+    dslf.production(
+        "map_prefix",
+        "([#a] -> #b) -> [#a] -> [#b]",
+        lambda f: lambda x: map_prefix_torch(f, x),
     )
 
     dslf.prune_to("[$fI] -> $fO")

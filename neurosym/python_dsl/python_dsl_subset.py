@@ -6,8 +6,7 @@ from typing import Callable, Dict, List, Set, Tuple, Union
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.programs.s_expression import SExpression
 from neurosym.python_dsl import python_ast_tools
-from neurosym.python_dsl.convert_python.convert import \
-    to_type_annotated_ns_s_exp
+from neurosym.python_dsl.convert_python.convert import to_type_annotated_ns_s_exp
 from neurosym.python_dsl.convert_python.python_ast import PythonAST
 from neurosym.types.type import ArrowType
 from neurosym.types.type_string_repr import parse_type, render_type
