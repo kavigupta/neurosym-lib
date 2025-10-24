@@ -65,4 +65,7 @@ docs = [
 ]
 dev = [
     "pre-commit>=4.3.0",
+    "pandas",
+    "ipykernel>=7.0.1",
+    "tabulate",
 ]

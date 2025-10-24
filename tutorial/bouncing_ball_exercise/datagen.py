@@ -1,5 +1,5 @@
 """
-Data generation for a set of predefined functions. Generates both testing and training data for set of test functions. 
+Data generation for a set of predefined functions. Generates both testing and training data for set of test functions.
 
 
 
