@@ -131,6 +131,11 @@ class TreeDistribution:
         """
         return self.node_ordering(self)
 
+    # Convenience: allow the tree distribution to be called like a symbol table.
+    # This makes tests that treat the distribution as a callable symbol -> name mapper work.
+    def __call__(self, idx: int) -> str:
+        return self.symbols[idx][0]
+
 
 class TreeProgramDistributionFamily(ProgramDistributionFamily):
     """
