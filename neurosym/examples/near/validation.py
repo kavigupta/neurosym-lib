@@ -32,9 +32,6 @@ class ValidationCost(NearValidationHeuristic):
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
     :param progress_by_epoch: Whether to display progress by epoch.
-    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
-        The scale of the validation cost (float) and structural_cost (int) can
-        vary so it's important to tune this for each new problem.
     :param kwargs: Additional arguments to pass to the trainer.
     """
 
@@ -77,9 +74,13 @@ class ValidationCost(NearValidationHeuristic):
 
         model = self.program_to_module(dsl, model, embedding)
 
-        val_loss = _train_model(
-            model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
-        )
+        try:
+            val_loss = _train_model(
+                model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
+            )
+        except torch.OutOfMemoryError:
+            log("  Out of memory during training even with reduced batch size, returning inf cost")
+            return float("inf")
 
         return val_loss
 
@@ -106,21 +107,20 @@ def default_near_cost(
     datamodule: DatasetWrapper,
     progress_by_epoch=False,
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
-    structural_cost_weight: float = 0.5,
+    structural_cost_penalty: float = 0.01,
     symbol_costs=None,
     cost=MinimalStepsNearStructuralCost,
     **kwargs,
 ):
     """
-    Default NearCost. This is, by default, a 50/50 blend of structural cost and validation cost,
-    with the given parameters.
+    Default NearCost. Uses additive combination: f = validation_cost + penalty * structural_cost
 
     :param neural_dsl: The neural DSL to use.
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
     :param progress_by_epoch: Whether to display progress by epoch.
     :param embedding: The embedding to use.
-    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
+    :param structural_cost_penalty: Penalty multiplier for structural cost (default: 0.01).
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
@@ -131,13 +131,15 @@ def default_near_cost(
             progress_by_epoch=progress_by_epoch,
             **kwargs,
         ),
-        structural_cost_weight=structural_cost_weight,
+        structural_cost_penalty=structural_cost_penalty,
         embedding=embedding,
     )
 
 
 # pylint: disable=too-many-branches,too-many-statements
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
+    best_weights = None
+    best_acc = 0.0
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
     if any(
@@ -145,9 +147,7 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
     ):  # only train if there are parameters to train
         torch.manual_seed(trainer_cfg.seed)
         best_val = float("inf")
-        best_acc = 0.0
         epochs_no_improve = 0
-        best_weights = None
 
         optimizer, schedulers = schedule_optimizer(
             trainer_cfg.optimizer(

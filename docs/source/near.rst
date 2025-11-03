@@ -94,7 +94,7 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.examples.near.adaptive_calms21_dsl
 .. autofunction:: neurosym.examples.near.simple_bball_dsl
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
-.. autofunction:: neurosym.examples.near.simple_fruitflies_dsl
+.. autofunction:: neurosym.examples.near.simple_flyvfly_dsl
 .. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
 .. autofunction:: neurosym.examples.near.adaptive_mice_dsl_builder
 

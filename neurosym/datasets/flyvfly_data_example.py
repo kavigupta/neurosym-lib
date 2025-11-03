@@ -1,5 +1,5 @@
 # pylint: disable=duplicate-code
-from .load_data import DatasetFromNpy, DatasetWrapper, _split_dataset
+from .load_data import DatasetFromNpy, DatasetWrapper
 
 
 def flyvfly_data_example(train_seed, **kwargs) -> DatasetWrapper:

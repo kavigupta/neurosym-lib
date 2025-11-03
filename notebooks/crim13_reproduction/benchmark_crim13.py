@@ -66,7 +66,7 @@ def evaluate_reported_program(
     batch_size: int = 50,
     final_n_epochs: int = 40,
     lr: float = 1e-5,
-    structural_cost_weight: float = 0.0001,
+    structural_cost_penalty: float = 0.0001,
     train_seed: int = 0,
     device: str = "cuda:0",
 ) -> Dict[str, Any]:
@@ -132,7 +132,7 @@ def evaluate_reported_program(
     cost = near.default_near_cost(
         trainer_cfg=trainer_cfg,
         datamodule=datamodule,
-        structural_cost_weight=structural_cost_weight,
+        structural_cost_penalty=structural_cost_penalty,
     )
 
     # The reported program
@@ -195,7 +195,7 @@ def run_experiment(
     n_epochs: int = 30,
     final_n_epochs: int = 40,
     lr: float = 1e-5,
-    structural_cost_weight: float = 0.0001,
+    structural_cost_penalty: float = 0.0001,
     max_depth: int = 10,
     train_seed: int = 0,
     device: str = "cuda:0",
@@ -213,7 +213,7 @@ def run_experiment(
         n_epochs: Number of epochs for search training
         final_n_epochs: Number of epochs for final training
         lr: Learning rate
-        structural_cost_weight: Weight for structural cost in search
+        structural_cost_penalty: Weight for structural cost in search
         max_depth: Maximum program depth
         train_seed: Random seed for data
         device: Device to use for training
@@ -233,7 +233,7 @@ def run_experiment(
     print(f"  Epochs (search): {n_epochs}")
     print(f"  Epochs (final): {final_n_epochs}")
     print(f"  Learning rate: {lr}")
-    print(f"  Structural cost weight: {structural_cost_weight}")
+    print(f"  Structural cost weight: {structural_cost_penalty}")
     print(f"  Max depth: {max_depth}")
     print(f"  Device: {device}")
     print("=" * 80)
@@ -268,7 +268,7 @@ def run_experiment(
     cost = near.default_near_cost(
         trainer_cfg=trainer_cfg,
         datamodule=datamodule,
-        structural_cost_weight=structural_cost_weight,
+        structural_cost_penalty=structural_cost_penalty,
     )
 
     # Create the NEAR graph
@@ -399,10 +399,10 @@ def main():
     )
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
-        "--structural-cost-weight",
+        "--structural-cost-penalty",
         type=float,
-        default=0.005,
-        help="Weight for structural cost in search",
+        default=0.01,
+        help="Penalty multiplier for structural cost (default: 0.01, matching NEAR)",
     )
     parser.add_argument(
         "--device", type=str, default="cuda:0", help="Device to use for training"
@@ -432,7 +432,7 @@ def main():
             neural_hidden_size=args.neural_hidden_size,
             batch_size=args.batch_size,
             final_n_epochs=args.final_epochs,
-            structural_cost_weight=args.structural_cost_weight,
+            structural_cost_penalty=args.structural_cost_penalty,
             lr=args.lr,
             device=args.device,
             behavior=args.behavior,
@@ -458,7 +458,7 @@ def main():
             neural_hidden_size=args.neural_hidden_size,
             batch_size=args.batch_size,
             n_epochs=args.epochs,
-            structural_cost_weight=args.structural_cost_weight,
+            structural_cost_penalty=args.structural_cost_penalty,
             final_n_epochs=args.final_epochs,
             lr=args.lr,
             device=args.device,

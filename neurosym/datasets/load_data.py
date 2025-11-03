@@ -9,6 +9,7 @@ import requests
 import torch
 
 from neurosym.utils.imports import import_pytorch_lightning
+from neurosym.utils.documentation import internal_only
 
 pl = import_pytorch_lightning()
 
@@ -125,6 +126,7 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         return instance
 
     @staticmethod
+    @internal_only
     def get_ordering(seed, n_inputs):
         if seed is not None:
             return np.random.RandomState(seed=seed).permutation(n_inputs)
@@ -167,6 +169,7 @@ class DatasetWrapper(pl.LightningDataModule):
         self.num_workers = num_workers
         self.val_fraction = val_fraction
 
+    @internal_only
     def load_dataset(self, dataset):
         for i in range(len(dataset) // self.batch_size + 1):
             batch = dataset[i * self.batch_size : (i + 1) * self.batch_size]

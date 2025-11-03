@@ -30,6 +30,7 @@ class NEARAffineSelectorDSLBuilder:
         self.features = features
         self.full_feature_dim = full_feature_dim
 
+    @internal_only
     def build_time_invariant(self, num_classes, hidden_dim=None):
         """
         Build a time-invariant differentiable DSL for trajectory classification.
@@ -145,6 +146,7 @@ class NEARAffineSelectorDSLBuilder:
         dslf.prune_to("([$fI]) -> [$fO]")
         return dslf.finalize()
 
+    @internal_only
     def build_time_variant(self, num_classes, seq_len, hidden_dim=None):
         """
         Build a time-variant differentiable DSL for trajectory classification.

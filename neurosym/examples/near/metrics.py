@@ -18,6 +18,7 @@ from sklearn.metrics import (
 )
 
 from neurosym.utils.documentation import internal_only
+from neurosym.utils.logging import log
 
 
 @internal_only
@@ -209,7 +210,7 @@ def compute_metrics(
                 y_true_np, y_pred_np, threshold_type
             )
     except ValueError as err:
-        print(f"Error preparing predictions for metrics: {err}")
+        log(f"Error preparing predictions for metrics: {err}")
         y_true_norm = y_pred_norm = None
 
     weighted_avg_f1 = 0.0
@@ -266,7 +267,7 @@ def compute_metrics(
                 )
 
     except ValueError as err:
-        print(f"Error computing metrics: {err}")
+        log(f"Error computing metrics: {err}")
 
     return {
         "f1_score": float(weighted_avg_f1),
