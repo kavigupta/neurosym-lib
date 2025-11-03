@@ -116,7 +116,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
     def test_multiple_no_hole_filler(self):
         dsl = dsl_with_scalars("{f, 1}")
         self.assertEqual(
-            self.run_model(dsl, 2**5, near.DoNothingNeuralHoleFiller()),
+            self.run_model(dsl, 2**7, near.DoNothingNeuralHoleFiller()),
             [],
         )
 
