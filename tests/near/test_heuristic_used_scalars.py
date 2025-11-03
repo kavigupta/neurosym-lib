@@ -23,7 +23,8 @@ def dsl_with_scalars(typ):
     dslf.typedef("f", typ)
     dslf.production("zero", "$f -> $f", lambda x: 0 * x)
     dslf.production("double", "$f -> $f", lambda x: 2 * x)
-    dslf.production("wrap", "($f -> $f) -> {f, 1} -> {f, 1}", wrap)
+    if typ != "{f, 1}":
+        dslf.production("wrap", "($f -> $f) -> {f, 1} -> {f, 1}", wrap)
     dslf.lambdas()
     dslf.prune_to("{f, 1} -> {f, 1}")
     return dslf.finalize()
