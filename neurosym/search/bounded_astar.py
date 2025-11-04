@@ -1,4 +1,4 @@
-import queue
+import heapq
 from dataclasses import dataclass, field
 from typing import Iterable, Optional, TypeVar
 
@@ -16,8 +16,10 @@ class BoundedAStar(SearchStrategy):
     the order it was visited. See ``AStar`` for more details.
 
     :param max_depth: Maximum depth to search to.
-    :param max_iterations: Maximum number of iterations to perform. Defaults to None
-        (infinity).
+    :param max_iterations: Maximum number of iterations to perform. If None, no limit is applied.
+    :return: An iterable of goal nodes in the order they were visited.
+
+    :raises AssertionError: If `max_depth` is not greater than 0.
     """
 
     def __init__(self, max_depth: int, max_iterations: Optional[int] = None):
@@ -27,15 +29,16 @@ class BoundedAStar(SearchStrategy):
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
-        fringe = queue.PriorityQueue()
+        fringe = []
 
         def add_to_fringe(node, depth):
-            fringe.put(_BoundedAStarNode(graph.cost(node), node, depth))
+            cost = graph.cost(node)
+            heapq.heappush(fringe, _BoundedAStarNode(cost, node, depth))
 
         add_to_fringe(graph.initial_node(), 0)
         iterations = 0
-        while not fringe.empty():
-            fringe_var = fringe.get()
+        while fringe:
+            fringe_var = heapq.heappop(fringe)
             node, depth = fringe_var.node, fringe_var.depth
             if node in visited or depth > self.max_depth:
                 continue

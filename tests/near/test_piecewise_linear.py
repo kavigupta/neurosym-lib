@@ -130,7 +130,7 @@ def get_validation_cost(
         datamodule=dataset,
         progress_by_epoch=False,
         embedding=embedding,
-        structural_cost_weight=0.2,
+        structural_cost_penalty=0.2,
         symbol_costs=symbol_costs,
     )
 
