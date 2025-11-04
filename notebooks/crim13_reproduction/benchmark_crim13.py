@@ -426,6 +426,9 @@ def main():
 
     # Choose which mode to run
     if args.evaluate_reported:
+        if args.behavior != "sniff":
+            print("Warning: Evaluating reported program is only valid for 'sniff' behavior.")
+            return
         # Evaluate only the reported program
         result = evaluate_reported_program(
             output_path=args.output,
@@ -435,7 +438,6 @@ def main():
             structural_cost_penalty=args.structural_cost_penalty,
             lr=args.lr,
             device=args.device,
-            behavior=args.behavior,
         )
 
         # Save summary

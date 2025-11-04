@@ -112,7 +112,7 @@ def eval_program(module, feature_data, labels) -> tuple:
     """
     predictions = (
         module(torch.tensor(feature_data), environment=()).detach().numpy().flatten()
-    )
+    ).reshape([feature_data.shape[0], -1])
     metrics = compute_metrics(predictions, labels)
     return metrics, predictions
 
@@ -222,33 +222,37 @@ def run_experiment(
     programs_list = []
     start_time = time.time()
 
-    # Collect programs
-    while True:
-        try:
-            program = next(iterator)
-        except StopIteration:
-            print(f"  Search exhausted after {len(programs_list)} programs")
-            break
+    # # Collect programs
+    # while True:
+    #     try:
+    #         program = next(iterator)
+    #     except StopIteration:
+    #         print(f"  Search exhausted after {len(programs_list)} programs")
+    #         break
 
-        timer = time.time() - start_time
-        programs_list.append({"program": program, "time": timer})
-        print(f"  Found program {len(programs_list)}: {program}")
+    #     timer = time.time() - start_time
+    #     programs_list.append({"program": program, "time": timer})
+    #     print(f"  Found program {len(programs_list)}: {program}")
 
-        if len(programs_list) >= num_programs:
-            print(f"  Reached max programs limit ({num_programs})")
-            break
+    #     if len(programs_list) >= num_programs:
+    #         print(f"  Reached max programs limit ({num_programs})")
+    #         break
 
-    search_time = time.time() - start_time
-    print(f"\n  Total search time: {search_time:.2f} seconds")
-    print(f"  Programs found: {len(programs_list)}")
+    # search_time = time.time() - start_time
+    # print(f"\n  Total search time: {search_time:.2f} seconds")
+    # print(f"  Programs found: {len(programs_list)}")
 
     # Save raw program list
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
     raw_output_path = str(output_path_obj).replace(".pkl", "_raw.pkl")
-    with open(raw_output_path, "wb") as f:
-        pickle.dump(programs_list, f)
-    print(f"  Saved raw programs to: {raw_output_path}")
+    # with open(raw_output_path, "wb") as f:
+    #     pickle.dump(programs_list, f)
+    # print(f"  Saved raw programs to: {raw_output_path}")
+    # load from saved raw programs for reproduction
+    with open(raw_output_path, "rb") as f:
+        programs_list = pickle.load(f)
+    print(f"  Loaded raw programs from: {raw_output_path}")
 
     # Evaluate each discovered program
     print("\n[5/5] Evaluating programs on test set...")
@@ -263,7 +267,7 @@ def run_experiment(
         )
 
         feature_data = datamodule.test.inputs
-        labels = datamodule.test.outputs.flatten()
+        labels = datamodule.test.outputs
 
         module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
         metrics, predictions = eval_program(module, feature_data, labels)
@@ -318,7 +322,7 @@ def main():
         help="Hidden size for neural hole filler",
     )
     parser.add_argument(
-        "--batch-size", type=int, default=128, help="Training batch size"
+        "--batch-size", type=int, default=2048, help="Training batch size"
     )
     parser.add_argument(
         "--epochs", type=int, default=30, help="Number of epochs for search training"
@@ -333,7 +337,7 @@ def main():
     parser.add_argument(
         "--structural-cost-penalty",
         type=float,
-        default=0.01,
+        default=0.1,
         help="Penalty multiplier for structural cost (default: 0.01, matching NEAR)",
     )
     parser.add_argument(

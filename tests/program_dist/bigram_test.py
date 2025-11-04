@@ -244,7 +244,8 @@ class BigramCountProgramsTest(unittest.TestCase):
         self.maxDiff = None
 
     def convert(self, family, count):
-        symbol_text = lambda x: family.tree_distribution_skeleton
+        # Map internal symbol indices to their textual names via the tree distribution skeleton.
+        symbol_text = lambda x: family.tree_distribution_skeleton.symbols[x][0]
         numerators = {
             tuple((symbol_text(sym), pos) for sym, pos in chain): {
                 symbol_text(sym): count for sym, count in counts.items()
