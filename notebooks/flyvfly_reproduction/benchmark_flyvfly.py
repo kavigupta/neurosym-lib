@@ -222,25 +222,25 @@ def run_experiment(
     programs_list = []
     start_time = time.time()
 
-    # # Collect programs
-    # while True:
-    #     try:
-    #         program = next(iterator)
-    #     except StopIteration:
-    #         print(f"  Search exhausted after {len(programs_list)} programs")
-    #         break
+    # Collect programs
+    while True:
+        try:
+            program = next(iterator)
+        except StopIteration:
+            print(f"  Search exhausted after {len(programs_list)} programs")
+            break
 
-    #     timer = time.time() - start_time
-    #     programs_list.append({"program": program, "time": timer})
-    #     print(f"  Found program {len(programs_list)}: {program}")
+        timer = time.time() - start_time
+        programs_list.append({"program": program, "time": timer})
+        print(f"  Found program {len(programs_list)}: {program}")
 
-    #     if len(programs_list) >= num_programs:
-    #         print(f"  Reached max programs limit ({num_programs})")
-    #         break
+        if len(programs_list) >= num_programs:
+            print(f"  Reached max programs limit ({num_programs})")
+            break
 
-    # search_time = time.time() - start_time
-    # print(f"\n  Total search time: {search_time:.2f} seconds")
-    # print(f"  Programs found: {len(programs_list)}")
+    search_time = time.time() - start_time
+    print(f"\n  Total search time: {search_time:.2f} seconds")
+    print(f"  Programs found: {len(programs_list)}")
 
     # Save raw program list
     output_path_obj = Path(output_path)
