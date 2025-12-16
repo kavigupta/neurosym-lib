@@ -37,7 +37,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             is_goal=lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             cost=lambda x: 0,
         )
-        node = next(ns.search.bfs(g))
+        node = next(ns.search.BFS()(g))
         self.assertEqual(
             str(node),
             str(
@@ -96,7 +96,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             cost=cost,
         )
 
-        node = next(ns.search.bounded_astar(g, max_depth=max_depth))
+        node = next(ns.search.BoundedAStar(max_depth=max_depth)(g))
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):

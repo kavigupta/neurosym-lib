@@ -17,7 +17,7 @@ class TestSearch(unittest.TestCase):
 
         g = simple_test_graph.map(map_fn)
 
-        iterable = ns.search.astar(g)
+        iterable = ns.search.AStar()(g)
         self.assertEqual(next(iterable), ["22A22A"] * 2)
         self.assertEqual(seen, ["22A22A"])
         self.assertEqual(next(iterable), ["2B22A2B"] * 2)

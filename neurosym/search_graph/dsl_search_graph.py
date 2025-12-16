@@ -2,9 +2,10 @@ import itertools
 from types import NoneType
 from typing import Callable
 
+from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.dsl_search_node import DSLSearchNode
 from neurosym.search_graph.metadata_computer import MetadataComputer
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 from ..dsl.dsl import DSL
 from ..programs.hole import Hole, _all_holes, _replace_holes
@@ -51,7 +52,7 @@ class DSLSearchGraph(SearchGraph[SExpression]):
 
     def initial_node(self):
         return DSLSearchNode(
-            Hole.of(TypeWithEnvironment(self.target_type, Environment.empty())),
+            Hole.of(TypeWithEnvironment(self.target_type, StrictEnvironment.empty())),
             self.dsl,
             self.metadata_computer.for_initial_node(),
         )
@@ -66,7 +67,9 @@ class DSLSearchGraph(SearchGraph[SExpression]):
 
     def _direct_expand_node(self, node):
         hole_sets = self.hole_set_chooser.choose_hole_sets(node.program)
-        relevant_holes = sorted(set(h for hs in hole_sets for h in hs))
+        relevant_holes = sorted(
+            set(h for hs in hole_sets for h in hs), key=render_s_expression
+        )
         # relevant_productions[hole_idx] : list of expansions for holes[hole_idx]
         relevant_productions = {}
         for hole in relevant_holes:

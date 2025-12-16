@@ -53,11 +53,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.bounded_astar_async(
-                g,
-                max_depth=max_depth,
-                max_workers=4,
-            )
+            iterator = ns.search.BoundedAStarAsync(max_depth, 4)(g)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1

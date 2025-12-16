@@ -140,5 +140,6 @@ from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_ty
 from .types.type_with_environment import (
     Environment,
     PermissiveEnvironmment,
+    StrictEnvironment,
     TypeWithEnvironment,
 )

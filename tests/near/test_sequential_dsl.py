@@ -56,10 +56,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.bounded_astar(
-                g,
-                max_depth=3,
-            )
+            iterator = ns.search.BoundedAStar(max_depth=3)(g)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1

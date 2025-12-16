@@ -129,7 +129,7 @@ class TestListDSL(unittest.TestCase):
             is_goal=is_goal,
             cost=lambda x: 0,
         )
-        it = ns.search.bfs(g)
+        it = ns.search.BFS()(g)
         node = next(it)
         self.assertEqual(
             ns.render_s_expression(node),
