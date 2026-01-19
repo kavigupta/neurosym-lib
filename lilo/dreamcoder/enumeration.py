@@ -244,7 +244,7 @@ def multicoreEnumeration(
     
         max_arity = 3 # for toy 1
         primitive_list = [prod.symbol() for prod in dsl.productions]
-        num_productions = len(primitive_list)
+        num_productions = 1 + len(primitive_list)
         #print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != '$':
