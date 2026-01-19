@@ -265,6 +265,8 @@ def multicoreEnumeration(
         dreamcoder_ns_mapping[ordered_symbols[p]] = p
     print(f"DreamCoder NeuroSym Mapping: {list(dreamcoder_ns_mapping)} \n")
     for t in tasks:
+        if str(t.request) != 'list(int) -> int':
+            continue
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
         likelihood_dict = library_list[t] #task2grammar[t].expression2likelihood
         #Automatically maps dreamcoder primitive name to corresponding neurosym index
@@ -303,6 +305,9 @@ def multicoreEnumeration(
     #SAGNIK_TBD: Recreate the while loop below - while satisfying memory and time constraints, enumerate all programs in between the lower and upper bound
     # SAGNIK_TBD: Optimize for one CPU per job
     for job in min_likelihood_dict.keys():
+        if job not in dist_dict:
+            frontiers[job] = Frontier([], task=job)
+            continue
         starting = time.time()
         parsed_enumerations = []
         solved = False
