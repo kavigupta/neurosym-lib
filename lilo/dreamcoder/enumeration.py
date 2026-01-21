@@ -204,37 +204,55 @@ def multicoreEnumeration(
     if not isinstance(g, dict):
         g = {t: g for t in tasks}
     
-    for t in tasks:
+    if len(tasks) > 0:
+        t = tasks[0]
         if isinstance(g[t], ContextualGrammar):
             print(f"Contextual Grammar Productions: {g[t].productions} \n")
             print(f"Contextual Grammar Primitives: {g[t].primitives} \n")
-            # print(f"Library: {g[t].library}")
-            # print(f"noParent: {g[t].noParent}")
-            # print(f"variableParent: {g[t].variableParent}")
             library_list = {tx: g[tx].library for tx in tasks}
         elif isinstance(g[t], Grammar):
             task2grammar = g
             print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
             library_list =  {tx: task2grammar[tx].expression2likelihood for tx in tasks}
-        break
     
-    dslf = ns.DSLFactory()
-    #Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
-    """
-    dslf.concrete("1", "() -> i", lambda: 1)
-    dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
-    dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
-    dslf.lambdas()
-    dslf.prune_to("i -> i")
-    dsl = dslf.finalize()
-    """
-    dslf = list_dslf("[i] -> i")
-    dsl = dslf.finalize()
-    max_arity = 3 # for toy 1
-    num_productions = 88 # for toy 6 # make sure to include root in this count
-    primitive_list = [prod.symbol() for prod in dsl.productions]
-    #print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
+    dsl_dict = {}
+    min_likelihood_dict = {task: 0.0 for task in tasks}
+    enumerations = {task: [] for task in tasks}
+    frontiers = {}
+    dist_dict = {}
+    
     for task in g.keys():
+        dslf = ns.DSLFactory()
+        #Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
+        """
+        dslf.concrete("1", "() -> i", lambda: 1)
+        dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
+        dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
+        dslf.lambdas()
+        dslf.prune_to("i -> i")
+        dsl = dslf.finalize()
+        dslf = list_dslf("[i] -> i")
+        """
+        example_for_type = task.examples[0]
+        print(f"Task: {task}, Example: {example_for_type}")
+        if type(example_for_type[0][0]) == list:
+            input_type = "[i]"
+        else:
+            input_type = "i"
+        if type(example_for_type[1]) == list:
+            output_type = "[i]"
+        else:
+            output_type = "i"
+        print(f"Task input type: {input_type}, output type: {output_type}")
+        dslf = list_dslf(f"{input_type} -> {output_type}")
+        dsl = dslf.finalize()
+        dsl_dict[task] = dsl
+    
+        max_arity = 3 # for toy 1
+        primitive_list = [prod.symbol() for prod in dsl.productions]
+        num_productions = 1 + len(primitive_list)
+        #print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
+        #print(f"Primitive List: {[str(x.symbol()) + '----' for x in dsl.productions]} \n")
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != '$':
                 #This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
@@ -252,30 +270,27 @@ def multicoreEnumeration(
                     final = AbstractionProduction(k, type_signature, s_exp)                    
                     dsl = dsl.add_production(final)                    
                     primitive_list.append(k)
-    
-    #Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
-    family = ns.BigramProgramDistributionFamily(dsl,include_type_preorder_mask=False, additional_preorder_masks=[ns.TypePreorderMaskELF],)
-    print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
-    frontiers = {}
-    dist_dict = {}
+        
+        #Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
+        #family = ns.BigramProgramDistributionFamily(dsl)
+        family = ns.BigramProgramDistributionFamily(dsl, include_type_preorder_mask=False, additional_preorder_masks=[ns.TypePreorderMaskELF])
+        print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
 
-    ordered_symbols = dsl.ordered_symbols(include_root=True)
-    dreamcoder_ns_mapping = {}
-    for p in range(len(ordered_symbols)):
-        dreamcoder_ns_mapping[ordered_symbols[p]] = p
-    print(f"DreamCoder NeuroSym Mapping: {list(dreamcoder_ns_mapping)} \n")
-    for t in tasks:
-        if str(t.request) != 'list(int) -> int':
-            continue
+        ordered_symbols = dsl.ordered_symbols(include_root=True)
+        dreamcoder_ns_mapping = {}
+        for p in range(len(ordered_symbols)):
+            dreamcoder_ns_mapping[ordered_symbols[p]] = p
+        print(f"DreamCoder NeuroSym Mapping: {list(dreamcoder_ns_mapping)} \n")
+        
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
-        likelihood_dict = library_list[t] #task2grammar[t].expression2likelihood
+        likelihood_dict = library_list[task] #task2grammar[task].expression2likelihood
         #Automatically maps dreamcoder primitive name to corresponding neurosym index
         for k, v in likelihood_dict.items():
             if str(k) == "$0":
                 production_ind = dreamcoder_ns_mapping["<root>"]
             else:
                 production_ind = dreamcoder_ns_mapping[str(k)]
-            if isinstance(g[t], ContextualGrammar):
+            if isinstance(g[task], ContextualGrammar):
                 if len(v) > 0:
                     bigram_row = v[0].expression2likelihood
                     for child, likelihood in bigram_row.items():
@@ -289,32 +304,27 @@ def multicoreEnumeration(
                     for child_ind in range(num_productions):
                         for arity in range(max_arity):
                             dist[production_ind][arity][child_ind] = 1/num_productions
-            elif isinstance(g[t], Grammar):
+            elif isinstance(g[task], Grammar):
                 for prod_ind in range(num_productions):
                     for arity in range(max_arity):
                         dist[prod_ind][arity][production_ind] = v
+                        
         #Filter the productions out that are impossible to reach
         tensor_dist = torch.tensor(dist)
         reshaped_tensor_dist = tensor_dist.reshape(tuple([1] + list(tensor_dist.shape)))
         normalized_dist = family._normalize_parameters(reshaped_tensor_dist)
-        dist_dict[t] = ns.BigramProgramDistribution(dist_fam = family, distribution = normalized_dist.numpy()[0])
+        dist_dict[task] = ns.BigramProgramDistribution(dist_fam = family, distribution = normalized_dist.numpy()[0])
+        StitchRewriter = _StitchLambdaRewriter(dsl_dict[task])
     
-    min_likelihood_dict = {task: 0.0 for task in tasks}
-    enumerations = {task: [] for task in tasks}
-    StitchRewriter = _StitchLambdaRewriter(dsl)
-    #SAGNIK_TBD: Recreate the while loop below - while satisfying memory and time constraints, enumerate all programs in between the lower and upper bound
-    # SAGNIK_TBD: Optimize for one CPU per job
-    for job in min_likelihood_dict.keys():
-        if job not in dist_dict:
-            frontiers[job] = Frontier([], task=job)
-            continue
+        #SAGNIK_TBD: Recreate the while loop below - while satisfying memory and time constraints, enumerate all programs in between the lower and upper bound
+        # SAGNIK_TBD: Optimize for one CPU per job
         starting = time.time()
         parsed_enumerations = []
         solved = False
         while not solved:
-            bi = budgetIncrement(min_likelihood_dict[job])
-            current_generations = list(family.enumerate(dist = dist_dict[job], min_likelihood = min_likelihood_dict[job], chunk_size = bi))
-            enumerations[job] += current_generations
+            bi = budgetIncrement(min_likelihood_dict[task])
+            current_generations = list(family.enumerate(dist = dist_dict[task], min_likelihood = min_likelihood_dict[task], chunk_size = bi))
+            enumerations[task] += current_generations
             
             #Here we attempt to parse enumerated programs to DreamCoder-style programs to create DreamCoder Frontier Entries
             for ns_prog_tuple in current_generations:
@@ -326,7 +336,7 @@ def multicoreEnumeration(
                     continue
                 target_outputs = []
                 actual_outputs = []
-                for example in job.examples:
+                for example in task.examples:
                     target_outputs.append(example[1])
                     try:
                         actual_outputs.append(actual_ns_function(*example[0]))
@@ -342,18 +352,18 @@ def multicoreEnumeration(
                 try:
                     dreamcoder_prog = Program.parse(neurosym_to_dreamcoder(render_s_expression(StitchRewriter.to_stitch(ns_prog))))
                 except Exception as e:
+                    print(f"Grammar is {g[task]}")
                     print(f"Exception {e} for {render_s_expression(ns_prog)}")
                     raise e
                 log_prob = float(format(prob_fraction, '.10g'))
                 dreamcoder_entry = FrontierEntry(program=dreamcoder_prog, logPrior = log_prob, logLikelihood=likelihood)
                 parsed_enumerations.append(dreamcoder_entry)
-            min_likelihood_dict[job] -= bi
+            min_likelihood_dict[task] -= bi
             if time.time() - starting > enumerationTimeout:
-                print(f"Final min_likelihood for job {job} is {min_likelihood_dict[job]}, enumerated {len(parsed_enumerations)} programs.")
+                print(f"Final min_likelihood for task {task} is {min_likelihood_dict[task]}, enumerated {len(parsed_enumerations)} programs.")
                 break
-        print(f"Task {job} done with solve status {solved}.")
-        frontiers[job] = Frontier(parsed_enumerations, task=job)
-
+        print(f"Task {task} done with solve status {solved}.")
+        frontiers[task] = Frontier(parsed_enumerations, task=task)
     bestSearchTime = {t: None for t in tasks}
     return [frontiers[t] for t in tasks], bestSearchTime
 
