@@ -344,22 +344,43 @@ def multicoreEnumeration(
         dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float64)
         print("likelihood dict!")
 
-        # Automatically maps DreamCoder primitive name to corresponding NeuroSym index.
-        def _child_to_ind(child):
-            if str(child) == "$0":
-                return dreamcoder_ns_mapping["<root>"]
-            return dreamcoder_ns_mapping[str(child)]
+        # Automatically maps DreamCoder primitive name to one or more NeuroSym indices.
+        def _child_to_inds(child):
+            """
+            Map a DreamCoder child symbol to the corresponding NeuroSym symbol
+            index/indices.
+
+            For most primitives this is just a string match. For the special
+            variable symbol "$0" we want the *same* log-score to be attached to
+            the concrete NeuroSym variable symbol that appears in the candidate
+            set at this site. In the list DSL used here, that symbol is "$0_3".
+            """
+            s = str(child)
+            if s == "$0":
+                # For the DreamCoder variable "$0", attach the same log-score to
+                # *all* concrete NeuroSym variable symbols of the form "$0_*".
+                var_syms = [
+                    sym
+                    for sym in ordered_symbols
+                    if isinstance(sym, str) and sym.startswith("$0_")
+                ]
+                assert (
+                    len(var_syms) > 0
+                ), 'Expected at least one "$0_*" variable symbol in NeuroSym DSL.'
+                return [dreamcoder_ns_mapping[sym] for sym in var_syms]
+            return [dreamcoder_ns_mapping[s]]
 
         if isinstance(g[task], ContextualGrammar):
             # 1) Fill the root distribution using DreamCoder's noParent grammar.
             root_ind = dreamcoder_ns_mapping["<root>"]
             root_row = no_parent_by_task[task].expression2likelihood
             for child, likelihood in root_row.items():
-                child_ind = _child_to_ind(child)
+                child_inds = _child_to_inds(child)
                 # Root has no argument-index notion in DreamCoder, but NeuroSym's bigram
                 # model expects an arity axis; use the same distribution for all arities.
                 for arity in range(max_arity):
-                    dist[root_ind][arity][child_ind] = likelihood
+                    for child_ind in child_inds:
+                        dist[root_ind][arity][child_ind] = likelihood
 
             # 2) Fill all lambda-parent distributions from noParent as well.
             lam_parent_inds = [
@@ -369,8 +390,9 @@ def multicoreEnumeration(
             ]
             for lam_ind in lam_parent_inds:
                 for child, likelihood in root_row.items():
-                    child_ind = _child_to_ind(child)
-                    dist[lam_ind][0][child_ind] = likelihood
+                    child_inds = _child_to_inds(child)
+                    for child_ind in child_inds:
+                        dist[lam_ind][0][child_ind] = likelihood
 
             # 3) Fill each parent’s per-argument distributions from the library.
             likelihood_dict = library_list[
@@ -382,8 +404,9 @@ def multicoreEnumeration(
                 for arg_index, arg_grammar in enumerate(arg_grammars[:max_arity]):
                     bigram_row = arg_grammar.expression2likelihood
                     for child, likelihood in bigram_row.items():
-                        child_ind = _child_to_ind(child)
-                        dist[parent_ind][arg_index][child_ind] = likelihood
+                        child_inds = _child_to_inds(child)
+                        for child_ind in child_inds:
+                            dist[parent_ind][arg_index][child_ind] = likelihood
 
             # 4) Variable-parent distributions (DreamCoder uses this when parent is an Index).
             # NeuroSym doesn't have an explicit "Index parent" node; we approximate by
@@ -394,17 +417,21 @@ def multicoreEnumeration(
         elif isinstance(g[task], Grammar):
             likelihood_dict = library_list[task]  # expression2likelihood
             for k, v in likelihood_dict.items():
-                production_ind = _child_to_ind(k)
-                for prod_ind in range(num_productions):
-                    for arity in range(max_arity):
-                        dist[prod_ind][arity][production_ind] = v
+                production_inds = _child_to_inds(k)
+                for production_ind in production_inds:
+                    for prod_ind in range(num_productions):
+                        for arity in range(max_arity):
+                            dist[prod_ind][arity][production_ind] = v
 
         # Filter the productions out that are impossible to reach
         tensor_dist = torch.tensor(dist)
-        reshaped_tensor_dist = tensor_dist.reshape(tuple([1] + list(tensor_dist.shape)))
-        normalized_dist = family._normalize_parameters(reshaped_tensor_dist)
+        reshaped_tensor_dist = np.exp(tensor_dist.reshape(tuple([1] + list(tensor_dist.shape))))
+        # Apply only the validity mask; keep DreamCoder's scores as logits.
+        # masked_logits = family._normalize_parameters(reshaped_tensor_dist)
         dist_dict[task] = ns.BigramProgramDistribution(
-            dist_fam=family, distribution=normalized_dist.numpy()[0]
+            dist_fam=family,
+            distribution=reshaped_tensor_dist.numpy()[0],
+            _disable_validation=True,
         )
         StitchRewriter = _StitchLambdaRewriter(dsl_dict[task])
 
