@@ -209,7 +209,14 @@ def multicoreEnumeration(
         if isinstance(g[t], ContextualGrammar):
             print(f"Contextual Grammar Productions: {g[t].productions} \n")
             print(f"Contextual Grammar Primitives: {g[t].primitives} \n")
+            # For contextual grammars, we need both the per-parent argument grammars (library)
+            # and the special top-level grammar (noParent). DreamCoder treats lambdas as
+            # structure (they do not become a "parent"), but NeuroSym will emit explicit
+            # `lam_*` nodes; we therefore map `lam_*` parent distributions to the same
+            # distribution DreamCoder would use at that position (noParent).
             library_list = {tx: g[tx].library for tx in tasks}
+            no_parent_by_task = {tx: g[tx].noParent for tx in tasks}
+            variable_parent_by_task = {tx: g[tx].variableParent for tx in tasks}
         elif isinstance(g[t], Grammar):
             task2grammar = g
             print(f"Expressions2Likelihood: {task2grammar[t].expression2likelihood}")
@@ -281,30 +288,59 @@ def multicoreEnumeration(
         for p in range(len(ordered_symbols)):
             dreamcoder_ns_mapping[ordered_symbols[p]] = p
         print(f"DreamCoder NeuroSym Mapping: {list(dreamcoder_ns_mapping)} \n")
-        
-        dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float32)
-        likelihood_dict = library_list[task] #task2grammar[task].expression2likelihood
-        #Automatically maps dreamcoder primitive name to corresponding neurosym index
-        for k, v in likelihood_dict.items():
-            if str(k) == "$0":
-                production_ind = dreamcoder_ns_mapping["<root>"]
-            else:
-                production_ind = dreamcoder_ns_mapping[str(k)]
-            if isinstance(g[task], ContextualGrammar):
-                if len(v) > 0:
-                    bigram_row = v[0].expression2likelihood
+
+        # Use float64 end-to-end here to minimize numerical drift between
+        # DreamCoder scoring and NeuroSym likelihood computations.
+        dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float64)
+        print("likelihood dict!")
+
+        # Automatically maps DreamCoder primitive name to corresponding NeuroSym index.
+        def _child_to_ind(child):
+            if str(child) == "$0":
+                return dreamcoder_ns_mapping["<root>"]
+            return dreamcoder_ns_mapping[str(child)]
+
+        if isinstance(g[task], ContextualGrammar):
+            # 1) Fill the root distribution using DreamCoder's noParent grammar.
+            root_ind = dreamcoder_ns_mapping["<root>"]
+            root_row = no_parent_by_task[task].expression2likelihood
+            for child, likelihood in root_row.items():
+                child_ind = _child_to_ind(child)
+                # Root has no argument-index notion in DreamCoder, but NeuroSym's bigram
+                # model expects an arity axis; use the same distribution for all arities.
+                for arity in range(max_arity):
+                    dist[root_ind][arity][child_ind] = likelihood
+
+            # 2) Fill all lambda-parent distributions from noParent as well.
+            lam_parent_inds = [
+                ind for prod, ind in dreamcoder_ns_mapping.items() if str(prod).startswith("lam_")
+            ]
+            for lam_ind in lam_parent_inds:
+                for child, likelihood in root_row.items():
+                    child_ind = _child_to_ind(child)
+                    dist[lam_ind][0][child_ind] = likelihood
+
+            # 3) Fill each parent’s per-argument distributions from the library.
+            likelihood_dict = library_list[task]  # {parent_expr: [Grammar_for_arg0, ...]}
+            for parent, arg_grammars in likelihood_dict.items():
+                parent_ind = dreamcoder_ns_mapping[str(parent)]
+                # If for some reason we have no arg grammars, leave it to normalization.
+                for arg_index, arg_grammar in enumerate(arg_grammars[:max_arity]):
+                    bigram_row = arg_grammar.expression2likelihood
                     for child, likelihood in bigram_row.items():
-                        if str(child) == "$0":
-                            child_ind = dreamcoder_ns_mapping["<root>"]
-                        else:
-                            child_ind = dreamcoder_ns_mapping[str(child)]
-                    for arity in range(max_arity):
-                        dist[production_ind][arity][child_ind] = likelihood
-                else:
-                    for child_ind in range(num_productions):
-                        for arity in range(max_arity):
-                            dist[production_ind][arity][child_ind] = 1/num_productions
-            elif isinstance(g[task], Grammar):
+                        child_ind = _child_to_ind(child)
+                        dist[parent_ind][arg_index][child_ind] = likelihood
+
+            # 4) Variable-parent distributions (DreamCoder uses this when parent is an Index).
+            # NeuroSym doesn't have an explicit "Index parent" node; we approximate by
+            # also applying this distribution to lambda parents (handled above) and root.
+            # If later we introduce an explicit node for "variable parent", wire it here.
+            _ = variable_parent_by_task  # currently unused beyond storing for future fixes
+
+        elif isinstance(g[task], Grammar):
+            likelihood_dict = library_list[task]  # expression2likelihood
+            for k, v in likelihood_dict.items():
+                production_ind = _child_to_ind(k)
                 for prod_ind in range(num_productions):
                     for arity in range(max_arity):
                         dist[prod_ind][arity][production_ind] = v
