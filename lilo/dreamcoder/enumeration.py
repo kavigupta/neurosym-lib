@@ -488,6 +488,14 @@ def multicoreEnumeration(
                 dreamcoder_entry = FrontierEntry(
                     program=dreamcoder_prog, logPrior=log_prob, logLikelihood=likelihood
                 )
+                rescored_log_prob = g[task].logLikelihood(task.request, dreamcoder_prog)
+                prob_fraction_2 = family.compute_likelihood(dist_dict[task], ns_prog)
+                assert (
+                    abs(prob_fraction - prob_fraction_2) < 1e-5
+                ), f"Probability mismatch within NeuroSym!: {prob_fraction} [log({np.exp(prob_fraction)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})] in {render_s_expression(ns_prog)}"
+                assert (
+                    abs(rescored_log_prob - prob_fraction_2) < 1e-3
+                ), f"Log probability mismatch between DreamCoder and NeuroSym!: {rescored_log_prob} [log({np.exp(rescored_log_prob)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})]  in {render_s_expression(ns_prog)}"
                 parsed_enumerations.append(dreamcoder_entry)
             min_likelihood_dict[task] -= bi
             if time.time() - starting > enumerationTimeout:
