@@ -30,7 +30,7 @@ dependencies = [
   "lightning",
   "permacache",
   "requests",
-  "stitch-core==0.1.27",
+  "stitch-core==0.1.29",
   "scikit-learn",
   "s-exp-parser==1.4.0",
   "no_toplevel_code==1.0.0",
@@ -53,8 +53,8 @@ test = [
 ]
 lint = [
   "pylint==3.2.7",
-  "black==23.9.1",
-  "isort==5.12.0",
+  "black==24.4.2",
+  "isort==5.13.2",
   "sphobjinv",
 ]
 docs = [
