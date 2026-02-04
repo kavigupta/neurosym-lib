@@ -141,18 +141,82 @@ def default_near_cost(
     )
 
 
+class _ValidationState:
+    """Tracks the training search state for validation and early stopping."""
+
+    def __init__(self):
+        self.best_val = float("inf")
+        self.best_weights = None
+        self.epochs_no_improve = 0
+        self.best_acc = -float("inf")
+
+    def update_best_acc(self, val_acc: float):
+        """Update the best accuracy seen so far."""
+        self.best_acc = max(self.best_acc, val_acc)
+
+
+def _validate_model(model, datamodule, trainer_cfg, validation_state: _ValidationState):
+    """
+    Run validation on the model and compute metrics.
+
+    :param model: The model to validate.
+    :param datamodule: The data module containing validation data.
+    :param trainer_cfg: The trainer configuration.
+    :param validation_state: The validation state tracker.
+    :returns: should_break (bool) indicating whether training should stop early.
+    """
+    model.eval()
+    val_loss_sum, val_cnt = 0.0, 0
+    labels, predictions = [], []
+    with torch.no_grad():
+        for batch in datamodule.val_dataloader():
+            batch = [v.to(trainer_cfg.accelerator) for v in batch]
+            x, y = batch
+            pred_y = model(x, environment=())
+            val_loss_sum += trainer_cfg.loss_callback(pred_y, y).item()
+            val_cnt += 1
+            labels.append(y.cpu())
+            predictions.append(pred_y.cpu())
+    val_loss = val_loss_sum / val_cnt
+    labels = torch.cat(labels, dim=0)
+    predictions = torch.cat(predictions, dim=0).detach()
+    metrics = compute_metrics(
+        predictions=predictions.cpu().numpy(),
+        ground_truth=labels.cpu().numpy(),
+        metric_name="all",
+    )
+    metric_key = trainer_cfg.validation_metric
+    if metric_key not in metrics:
+        raise KeyError(
+            f"Validation metric '{metric_key}' is unavailable. "
+            f"Available metrics: {list(metrics.keys())}"
+        )
+    val_acc = float(metrics[metric_key])
+    validation_state.update_best_acc(val_acc)
+
+    should_break = False
+    if trainer_cfg.early_stopping:
+        if val_loss < validation_state.best_val - trainer_cfg.early_stopping_min_delta:
+            validation_state.best_val = val_loss
+            validation_state.best_weights = copy.deepcopy(model.state_dict())
+            validation_state.epochs_no_improve = 0
+        else:
+            validation_state.epochs_no_improve += 1
+            if validation_state.epochs_no_improve >= trainer_cfg.early_stopping_patience:
+                should_break = True
+
+    return should_break
+
+
 # pylint: disable=too-many-branches,too-many-statements
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
-    best_weights = None
-    best_acc = -float("inf")
+    validation_state = _ValidationState()
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
     if any(
         p.requires_grad for p in model.parameters()
     ):  # only train if there are parameters to train
         torch.manual_seed(trainer_cfg.seed)
-        best_val = float("inf")
-        epochs_no_improve = 0
 
         optimizer, schedulers = schedule_optimizer(
             trainer_cfg.optimizer(
@@ -178,47 +242,13 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
                     scheduler.step()
 
             if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
-                model.eval()
-                val_loss_sum, val_cnt = 0.0, 0
-                labels, predictions = [], []
-                with torch.no_grad():
-                    for batch in datamodule.val_dataloader():
-                        batch = [v.to(trainer_cfg.accelerator) for v in batch]
-                        x, y = batch
-                        pred_y = model(x, environment=())
-                        val_loss_sum += trainer_cfg.loss_callback(pred_y, y).item()
-                        val_cnt += 1
-                        labels.append(y.cpu())
-                        predictions.append(pred_y.cpu())
-                val_loss = val_loss_sum / val_cnt
-                labels = torch.cat(labels, dim=0)
-                predictions = torch.cat(predictions, dim=0).detach()
-                metrics = compute_metrics(
-                    predictions=predictions.cpu().numpy(),
-                    ground_truth=labels.cpu().numpy(),
-                    metric_name="all",
-                )
-                metric_key = trainer_cfg.validation_metric
-                if metric_key not in metrics:
-                    raise KeyError(
-                        f"Validation metric '{metric_key}' is unavailable. "
-                        f"Available metrics: {list(metrics.keys())}"
-                    )
-                val_acc = float(metrics[metric_key])
-                best_acc = max(best_acc, val_acc)
+                if _validate_model(model, datamodule, trainer_cfg, validation_state):
+                    break
+    else:
+        _validate_model(model, datamodule, trainer_cfg, validation_state)
 
-                if trainer_cfg.early_stopping:
-                    if val_loss < best_val - trainer_cfg.early_stopping_min_delta:
-                        best_val = val_loss
-                        best_weights = copy.deepcopy(model.state_dict())
-                        epochs_no_improve = 0
-                    else:
-                        epochs_no_improve += 1
-                        if epochs_no_improve >= trainer_cfg.early_stopping_patience:
-                            break
-
-    if best_weights is not None:
-        model.load_state_dict(best_weights)
+    if validation_state.best_weights is not None:
+        model.load_state_dict(validation_state.best_weights)
     model.cpu()
     # return best_val
-    return -1 * best_acc
+    return -1 * validation_state.best_acc
