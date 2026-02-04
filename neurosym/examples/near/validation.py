@@ -202,7 +202,10 @@ def _validate_model(model, datamodule, trainer_cfg, validation_state: _Validatio
             validation_state.epochs_no_improve = 0
         else:
             validation_state.epochs_no_improve += 1
-            if validation_state.epochs_no_improve >= trainer_cfg.early_stopping_patience:
+            if (
+                validation_state.epochs_no_improve
+                >= trainer_cfg.early_stopping_patience
+            ):
                 should_break = True
 
     return should_break

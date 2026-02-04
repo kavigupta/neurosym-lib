@@ -190,7 +190,7 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
         # L1 distance: mean of L1 norms (sum of absolute differences)
         # L2 distance: mean of L2 norms (sqrt of sum of squares)
         l1_dist = np.mean(np.sum(np.abs(diff), axis=-1))
-        l2_dist = np.mean(np.sum(diff ** 2, axis=-1))
+        l2_dist = np.mean(np.sum(diff**2, axis=-1))
         return {
             "neg_l1_dist": -float(l1_dist),
             "neg_l2_dist": -float(l2_dist),

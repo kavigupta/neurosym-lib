@@ -65,7 +65,13 @@ class NEARTrainerConfig:
     )
 
     def __post_init__(self):
-        valid_metrics = {"hamming_accuracy", "f1_score", "unweighted_f1", "neg_l2_dist", "neg_l1_dist"}
+        valid_metrics = {
+            "hamming_accuracy",
+            "f1_score",
+            "unweighted_f1",
+            "neg_l2_dist",
+            "neg_l1_dist",
+        }
         if self.validation_metric not in valid_metrics:
             raise ValueError(
                 f"Invalid validation metric: {self.validation_metric}. "
