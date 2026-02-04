@@ -144,7 +144,7 @@ def default_near_cost(
 # pylint: disable=too-many-branches,too-many-statements
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
     best_weights = None
-    best_acc = 0.0
+    best_acc = -float("inf")
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
     if any(
