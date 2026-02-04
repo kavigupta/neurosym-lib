@@ -122,6 +122,7 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         ),
         loss_callback=torch.nn.functional.mse_loss,
         validation_params=dict(progress_by_epoch=False),
+        validation_metric="neg_l2_dist",
     )
     return interface.fit(
         datamodule=get_dataset(nesting),
