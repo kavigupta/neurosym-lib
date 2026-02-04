@@ -10,8 +10,8 @@ Types
     :members: __call__, sig, typedef, filtered_type_variable, lookup_type, lookup_filter
 .. autoclass:: neurosym.Environment
     :members:
+.. autoclass:: neurosym.StrictEnvironment
 .. autoclass:: neurosym.PermissiveEnvironmment
-    :members:
 .. autoclass:: neurosym.TypeWithEnvironment
     :members:
 .. autoclass:: neurosym.UnificationError
