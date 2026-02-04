@@ -154,6 +154,32 @@ class _ValidationState:
         """Update the best accuracy seen so far."""
         self.best_acc = max(self.best_acc, val_acc)
 
+    def load_best_weights(self, model: torch.nn.Module):
+        """Load the best weights into the model if they exist."""
+        if self.best_weights is not None:
+            model.load_state_dict(self.best_weights)
+
+    def update_early_stopping(
+        self, val_loss: float, model: torch.nn.Module, trainer_cfg: NEARTrainerConfig
+    ) -> bool:
+        """
+        Update early stopping state based on validation loss.
+
+        :param val_loss: Current validation loss.
+        :param model: The model to save weights from if improvement is seen.
+        :param trainer_cfg: Trainer configuration containing early stopping parameters.
+        :returns: should_break (bool) indicating whether training should stop early.
+        """
+        if val_loss < self.best_val - trainer_cfg.early_stopping_min_delta:
+            self.best_val = val_loss
+            self.best_weights = copy.deepcopy(model.state_dict())
+            self.epochs_no_improve = 0
+        else:
+            self.epochs_no_improve += 1
+            if self.epochs_no_improve >= trainer_cfg.early_stopping_patience:
+                return True
+        return False
+
 
 def _validate_model(model, datamodule, trainer_cfg, validation_state: _ValidationState):
     """
@@ -194,21 +220,9 @@ def _validate_model(model, datamodule, trainer_cfg, validation_state: _Validatio
     val_acc = float(metrics[metric_key])
     validation_state.update_best_acc(val_acc)
 
-    should_break = False
-    if trainer_cfg.early_stopping:
-        if val_loss < validation_state.best_val - trainer_cfg.early_stopping_min_delta:
-            validation_state.best_val = val_loss
-            validation_state.best_weights = copy.deepcopy(model.state_dict())
-            validation_state.epochs_no_improve = 0
-        else:
-            validation_state.epochs_no_improve += 1
-            if (
-                validation_state.epochs_no_improve
-                >= trainer_cfg.early_stopping_patience
-            ):
-                should_break = True
-
-    return should_break
+    return trainer_cfg.early_stopping and validation_state.update_early_stopping(
+        val_loss, model, trainer_cfg
+    )
 
 
 # pylint: disable=too-many-branches,too-many-statements
@@ -216,42 +230,42 @@ def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig)
     validation_state = _ValidationState()
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
-    if any(
-        p.requires_grad for p in model.parameters()
-    ):  # only train if there are parameters to train
-        torch.manual_seed(trainer_cfg.seed)
-
-        optimizer, schedulers = schedule_optimizer(
-            trainer_cfg.optimizer(
-                model.parameters(),
-                lr=trainer_cfg.lr,
-                weight_decay=trainer_cfg.weight_decay,
-            ),
-            trainer_cfg.scheduler,
-            len(datamodule.train),
-            n_epochs,
-        )
-        model = model.to(trainer_cfg.accelerator)
-        for epoch in range(n_epochs):
-            model.train()
-            for batch in datamodule.train_dataloader():
-                optimizer.zero_grad()
-                batch = [v.to(trainer_cfg.accelerator) for v in batch]
-                x, y = batch
-                loss = trainer_cfg.loss_callback(model(x, environment=()), y)
-                loss.backward()
-                optimizer.step()
-                for scheduler in schedulers:
-                    scheduler.step()
-
-            if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
-                if _validate_model(model, datamodule, trainer_cfg, validation_state):
-                    break
-    else:
+    if not any(p.requires_grad for p in model.parameters()):
+        # Only train if there are parameters to train
         _validate_model(model, datamodule, trainer_cfg, validation_state)
 
-    if validation_state.best_weights is not None:
-        model.load_state_dict(validation_state.best_weights)
+        return -1 * validation_state.best_acc
+
+    torch.manual_seed(trainer_cfg.seed)
+
+    optimizer, schedulers = schedule_optimizer(
+        trainer_cfg.optimizer(
+            model.parameters(),
+            lr=trainer_cfg.lr,
+            weight_decay=trainer_cfg.weight_decay,
+        ),
+        trainer_cfg.scheduler,
+        len(datamodule.train),
+        n_epochs,
+    )
+    model = model.to(trainer_cfg.accelerator)
+    for epoch in range(n_epochs):
+        model.train()
+        for batch in datamodule.train_dataloader():
+            optimizer.zero_grad()
+            batch = [v.to(trainer_cfg.accelerator) for v in batch]
+            x, y = batch
+            loss = trainer_cfg.loss_callback(model(x, environment=()), y)
+            loss.backward()
+            optimizer.step()
+            for scheduler in schedulers:
+                scheduler.step()
+
+        if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
+            if _validate_model(model, datamodule, trainer_cfg, validation_state):
+                break
+
+    validation_state.load_best_weights(model)
+
     model.cpu()
-    # return best_val
     return -1 * validation_state.best_acc
