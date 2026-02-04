@@ -8,8 +8,8 @@ import numpy as np
 import requests
 import torch
 
-from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.documentation import internal_only
+from neurosym.utils.imports import import_pytorch_lightning
 
 pl = import_pytorch_lightning()
 
@@ -61,15 +61,19 @@ def _load_npy(array_descriptor):
         data = np.load(array_descriptor, allow_pickle=True)
     else:
         data = requests.get(array_descriptor).content
-        data = np.load(io.BytesIO(data), allow_pickle=False) # security concerns with allow_pickle=True
+        data = np.load(
+            io.BytesIO(data), allow_pickle=False
+        )  # security concerns with allow_pickle=True
 
     # if npz file, extract the first array
-    if array_descriptor.endswith('.npz'):
+    if array_descriptor.endswith(".npz"):
         data = data[list(data.files)[0]]
     return data
 
 
-def _split_dataset(dataset: torch.utils.data.Dataset, val_fraction : float = 0.1, seed: int = 0):
+def _split_dataset(
+    dataset: torch.utils.data.Dataset, val_fraction: float = 0.1, seed: int = 0
+):
     """
     Split a dataset into train and validation sets.
 

@@ -76,10 +76,15 @@ class ValidationCost(NearValidationHeuristic):
 
         try:
             val_loss = _train_model(
-                model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
+                model,
+                self.datamodule,
+                n_epochs=self.n_epochs,
+                trainer_cfg=self.trainer_cfg,
             )
         except torch.OutOfMemoryError:
-            log("  Out of memory during training even with reduced batch size, returning inf cost")
+            log(
+                "  Out of memory during training even with reduced batch size, returning inf cost"
+            )
             return float("inf")
 
         return val_loss
