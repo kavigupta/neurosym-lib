@@ -161,7 +161,7 @@ def _prepare_binary_targets_and_preds(
     return y_true_bin, y_pred_bin
 
 
-def compute_metrics(
+def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     predictions: np.ndarray,
     ground_truth: np.ndarray,
     metric_name: str = "all",

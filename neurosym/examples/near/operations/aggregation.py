@@ -51,8 +51,7 @@ class SymmetricMorletFilter(torch.nn.Module):
         morlet = self.get_filter(x).view(seq_len, 1)
         if batch.dim() == 3:
             return (batch * morlet.unsqueeze(0)).sum(dim=1)
-        else:
-            return (batch * morlet).sum(dim=0)
+        return (batch * morlet).sum(dim=0)
 
 
 def running_agg_torch(
