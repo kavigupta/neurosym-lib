@@ -105,7 +105,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
                 embedding=embedding,
-                # structural_cost_penalty=0.2,
+                structural_cost_penalty=1.0,
                 symbol_costs=symbol_costs,
             ),
             neural_hole_filler=filler,
