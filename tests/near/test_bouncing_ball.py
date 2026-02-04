@@ -100,6 +100,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
                     n_epochs=100,
                     accelerator="cpu",
                     loss_callback=nn.functional.mse_loss,
+                    validation_metric="neg_l2_dist",
                 ),
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
