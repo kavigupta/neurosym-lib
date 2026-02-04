@@ -147,7 +147,10 @@ class DatasetFromNpy(torch.utils.data.Dataset):
         return len(self.inputs)
 
     def __getitem__(self, idx):
-        return self.inputs[self.ordering[idx]], self.outputs[self.ordering[idx]]
+        return (
+            self.inputs[self.ordering[idx]],
+            self.outputs[self.ordering[idx]],
+        )
 
 
 class DatasetWrapper(pl.LightningDataModule):

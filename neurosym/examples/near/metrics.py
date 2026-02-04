@@ -169,14 +169,18 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
 ) -> Dict[str, Any]:
     """
     Compute evaluation metrics for predictions across binary, multiclass, and multilabel tasks.
-    Args:
-        predictions: Model prediction scores/logits/probabilities.
-        ground_truth: Ground truth labels.
-        metric_name: Optional selector to compute a subset of metrics.
-        threshold_type: Thresholding strategy used for binary problems.
-    Returns:
-        Dictionary containing weighted/macro/per-class F1, hamming accuracy (or accuracy),
+
+    :param predictions: Model prediction scores/logits/probabilities.
+    :type predictions: np.ndarray
+    :param ground_truth: Ground truth labels.
+    :type ground_truth: np.ndarray
+    :param metric_name: Optional selector to compute a subset of metrics.
+    :type metric_name: str
+    :param threshold_type: Thresholding strategy used for binary problems.
+    :type threshold_type: str
+    :returns: Dictionary containing weighted/macro/per-class F1, hamming accuracy (or accuracy),
         a classification report (when metric_name == "all"), and the inferred task type.
+    :rtype: Dict[str, Any]
     """
     y_true_np = np.asarray(ground_truth)
     y_pred_np = np.asarray(predictions)
