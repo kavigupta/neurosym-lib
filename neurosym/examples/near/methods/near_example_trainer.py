@@ -34,7 +34,7 @@ class NEARTrainerConfig:
     :param scheduler: Learning rate scheduler to use (default: "cosine")
     :param accelerator: Accelerator to use for training (default: "cpu")
     :param validation_interval: Interval for validation (default: 5)
-    :param validation_metric: Metric to use for validation (default: "hamming_accuracy", one of "hamming_accuracy", "f1_score", "unweighted_f1")
+    :param validation_metric: Metric to use for validation (default: "hamming_accuracy", one of "hamming_accuracy", "f1_score", "unweighted_f1", "neg_l2_dist", "neg_l1_dist")
     :param early_stopping: Whether to use early stopping (default: True)
     :param early_stopping_patience: Patience for early stopping (default: 2)
     :param early_stopping_min_delta: Minimum delta for early stopping (default: 1e-4)
@@ -65,7 +65,7 @@ class NEARTrainerConfig:
     )
 
     def __post_init__(self):
-        valid_metrics = {"hamming_accuracy", "f1_score", "unweighted_f1"}
+        valid_metrics = {"hamming_accuracy", "f1_score", "unweighted_f1", "neg_l2_dist", "neg_l1_dist"}
         if self.validation_metric not in valid_metrics:
             raise ValueError(
                 f"Invalid validation metric: {self.validation_metric}. "

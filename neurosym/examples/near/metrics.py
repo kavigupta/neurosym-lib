@@ -185,6 +185,17 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     y_true_np = np.asarray(ground_truth)
     y_pred_np = np.asarray(predictions)
 
+    if y_true_np.dtype.kind == "f":
+        diff = y_true_np - y_pred_np
+        # L1 distance: mean of L1 norms (sum of absolute differences)
+        # L2 distance: mean of L2 norms (sqrt of sum of squares)
+        l1_dist = np.mean(np.sum(np.abs(diff), axis=-1))
+        l2_dist = np.mean(np.sqrt(np.sum(diff ** 2, axis=-1)))
+        return {
+            "neg_l1_dist": -float(l1_dist),
+            "neg_l2_dist": -float(l2_dist),
+        }
+
     # Detect task type.
     same_shape = y_true_np.shape == y_pred_np.shape
     has_label_axis = y_pred_np.ndim >= 2 and y_pred_np.shape[-1] > 1
