@@ -67,6 +67,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
             ),
             loss_callback=torch.nn.functional.mse_loss,
             validation_params=dict(progress_by_epoch=False),
+            validation_metric="neg_l2_dist",
             is_goal=check,
         )
         res = interface.fit(
