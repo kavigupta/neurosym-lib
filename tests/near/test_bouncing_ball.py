@@ -97,7 +97,7 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             validation_cost_creator=lambda embedding, symbol_costs: near.default_near_cost(
                 trainer_cfg=near.NEARTrainerConfig(
                     lr=0.1,
-                    n_epochs=100,
+                    n_epochs=200,
                     accelerator="cpu",
                     loss_callback=nn.functional.mse_loss,
                     validation_metric="neg_l2_dist",
