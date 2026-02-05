@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import io
 import os
-from multiprocessing import get_context
 from typing import Callable
 
 import numpy as np
 import requests
 import torch
 
+from neurosym.utils.documentation import internal_only
 from neurosym.utils.imports import import_pytorch_lightning
 
 pl = import_pytorch_lightning()
@@ -56,11 +58,44 @@ def _load_npy(array_descriptor):
     # pylint: disable=missing-timeout
     if os.path.exists(array_descriptor):
         # Load from local path
-        data = np.load(array_descriptor)
+        data = np.load(array_descriptor, allow_pickle=True)
     else:
         data = requests.get(array_descriptor).content
-        data = np.load(io.BytesIO(data))
+        data = np.load(
+            io.BytesIO(data), allow_pickle=False
+        )  # security concerns with allow_pickle=True
+
+    # if npz file, extract the first array
+    if array_descriptor.endswith(".npz"):
+        data = data[list(data.files)[0]]
     return data
+
+
+def _split_dataset(
+    dataset: torch.utils.data.Dataset, val_fraction: float = 0.1, seed: int = 0
+):
+    """
+    Split a dataset into train and validation sets.
+
+    :param val_fraction: the fraction of the training data to use for validation.
+    :param seed: the seed for the random permutation of the training data.
+    """
+    n = len(dataset)
+    indices = np.random.RandomState(seed=seed).permutation(n)
+    split = int(n * (1 - val_fraction))
+    train_indices = indices[:split]
+    val_indices = indices[split:]
+    train = DatasetFromNpy.from_arrays(
+        dataset.inputs[train_indices],
+        dataset.outputs[train_indices],
+        seed=dataset.seed,
+    )
+    val = DatasetFromNpy.from_arrays(
+        dataset.inputs[val_indices],
+        dataset.outputs[val_indices],
+        seed=dataset.seed,
+    )
+    return train, val
 
 
 class DatasetFromNpy(torch.utils.data.Dataset):
@@ -72,24 +107,34 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     :param seed: the seed for the random permutation of the dataset.
     """
 
-    # TODO test/val split
-
-    def __init__(self, inut_descriptor, output_descriptor, seed):
+    def __init__(self, input_descriptor, output_descriptor, seed):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
-        self.inputs = _load_npy(inut_descriptor)
+        self.inputs = _load_npy(input_descriptor)
         self.outputs = _load_npy(output_descriptor)
+        self.seed = seed
         assert len(self.inputs) == len(self.outputs)
+        self.ordering = self.get_ordering(seed, len(self.inputs))
+
+    @classmethod
+    def from_arrays(cls, inputs, outputs, seed):
+        instance = cls.__new__(cls)
+        instance.inputs = inputs
+        instance.outputs = outputs
+        instance.seed = seed
+        instance.ordering = cls.get_ordering(seed, len(inputs))
+        return instance
+
+    @staticmethod
+    @internal_only
+    def get_ordering(seed, n_inputs):
         if seed is not None:
-            self.ordering = np.random.RandomState(seed=seed).permutation(
-                len(self.inputs)
-            )
-        else:
-            self.ordering = np.arange(len(self.inputs))
+            return np.random.RandomState(seed=seed).permutation(n_inputs)
+        return np.arange(n_inputs)
 
     def get_io_dims(self, is_regression=False):
         """
@@ -118,47 +163,33 @@ class DatasetWrapper(pl.LightningDataModule):
         self,
         train: torch.utils.data.Dataset,
         test: torch.utils.data.Dataset,
+        val: torch.utils.data.Dataset | None = None,
+        val_fraction: float = 0.15,
         batch_size: int = 32,
         num_workers: int = 0,
     ):
         super().__init__()
         self.train = train
+        self.val = val if val is not None else test
         self.test = test
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.val_fraction = val_fraction
+
+    @internal_only
+    def load_dataset(self, dataset):
+        for i in range((len(dataset) + self.batch_size - 1) // self.batch_size):
+            batch = dataset[(i * self.batch_size) : (i + 1) * self.batch_size]
+            yield [torch.as_tensor(x) for x in batch]
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.train,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
+        return self.load_dataset(self.train)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
+        return self.load_dataset(self.val)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.test,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            pin_memory=(self.num_workers > 0),
-            multiprocessing_context=(
-                get_context("loky") if (self.num_workers > 0) else None
-            ),
-        )
+        return self.load_dataset(self.test)
 
 
 def numpy_dataset_from_github(
