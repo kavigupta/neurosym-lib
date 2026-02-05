@@ -123,9 +123,10 @@ def get_validation_cost(
     return near.default_near_cost(
         trainer_cfg=near.NEARTrainerConfig(
             lr=0.005,
-            n_epochs=100,
+            n_epochs=200,
             accelerator="cpu",
             loss_callback=nn.functional.mse_loss,
+            validation_metric="neg_l2_dist",
         ),
         datamodule=dataset,
         progress_by_epoch=False,

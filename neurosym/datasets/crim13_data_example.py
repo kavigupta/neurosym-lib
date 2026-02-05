@@ -2,7 +2,7 @@
 from .load_data import DatasetFromNpy, DatasetWrapper, _split_dataset
 
 
-def crim13_data_example(train_seed, behavior='sniff', **kwargs) -> DatasetWrapper:
+def crim13_data_example(train_seed, behavior="sniff", **kwargs) -> DatasetWrapper:
     """
     Data example for the CRIM13 dataset. Available in the data/ folder.
     Source for full dataset: https://data.caltech.edu/records/4emt5-b0t10
@@ -16,10 +16,10 @@ def crim13_data_example(train_seed, behavior='sniff', **kwargs) -> DatasetWrappe
 
     train_data = "data/mice_classification/crim13/train_crim13_data.npy"
     test_data = "data/mice_classification/crim13/test_crim13_data.npy"
-    if behavior == 'sniff':
+    if behavior == "sniff":
         train_labels = "data/mice_classification/crim13/train_crim13_labels.npy"
         test_labels = "data/mice_classification/crim13/test_crim13_labels.npy"
-    elif behavior == 'other':
+    elif behavior == "other":
         train_labels = "data/mice_classification/crim13/train_crim13_labels_other.npy"
         test_labels = "data/mice_classification/crim13/test_crim13_labels_other.npy"
     else:

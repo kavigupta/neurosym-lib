@@ -2,7 +2,7 @@ from typing import Callable, List
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.dsl.production import Production
-from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
 
@@ -48,7 +48,7 @@ class TypePreorderMask(PreorderMask):
         symbol, arity = self.tree_dist.symbols[symbol]
         if symbol == ROOT_SYMBOL:
             self.type_stack.append(
-                [TypeWithEnvironment(self.root_type, Environment.empty())]
+                [TypeWithEnvironment(self.root_type, StrictEnvironment.empty())]
             )
             return self.type_stack.pop
         parent_type = self.type_stack[-1][position]

@@ -1,9 +1,7 @@
 # pylint: disable=duplicate-code,cyclic-import
 import torch
 
-
 from .near_affine_dsl_builder import NEARAffineSelectorDSLBuilder
-
 
 FLYVFLY_FEATURES = {
     "linear": torch.LongTensor([17, 25]),

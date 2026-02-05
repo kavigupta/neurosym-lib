@@ -161,7 +161,7 @@ def _prepare_binary_targets_and_preds(
     return y_true_bin, y_pred_bin
 
 
-def compute_metrics(
+def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     predictions: np.ndarray,
     ground_truth: np.ndarray,
     metric_name: str = "all",
@@ -169,17 +169,32 @@ def compute_metrics(
 ) -> Dict[str, Any]:
     """
     Compute evaluation metrics for predictions across binary, multiclass, and multilabel tasks.
-    Args:
-        predictions: Model prediction scores/logits/probabilities.
-        ground_truth: Ground truth labels.
-        metric_name: Optional selector to compute a subset of metrics.
-        threshold_type: Thresholding strategy used for binary problems.
-    Returns:
-        Dictionary containing weighted/macro/per-class F1, hamming accuracy (or accuracy),
+
+    :param predictions: Model prediction scores/logits/probabilities.
+    :type predictions: np.ndarray
+    :param ground_truth: Ground truth labels.
+    :type ground_truth: np.ndarray
+    :param metric_name: Optional selector to compute a subset of metrics.
+    :type metric_name: str
+    :param threshold_type: Thresholding strategy used for binary problems.
+    :type threshold_type: str
+    :returns: Dictionary containing weighted/macro/per-class F1, hamming accuracy (or accuracy),
         a classification report (when metric_name == "all"), and the inferred task type.
+    :rtype: Dict[str, Any]
     """
     y_true_np = np.asarray(ground_truth)
     y_pred_np = np.asarray(predictions)
+
+    if y_true_np.dtype.kind == "f":
+        diff = y_true_np - y_pred_np
+        # L1 distance: mean of L1 norms (sum of absolute differences)
+        # L2 distance: mean of L2 norms (sqrt of sum of squares)
+        l1_dist = np.mean(np.sum(np.abs(diff), axis=-1))
+        l2_dist = np.mean(np.sum(diff**2, axis=-1))
+        return {
+            "neg_l1_dist": -float(l1_dist),
+            "neg_l2_dist": -float(l2_dist),
+        }
 
     # Detect task type.
     same_shape = y_true_np.shape == y_pred_np.shape

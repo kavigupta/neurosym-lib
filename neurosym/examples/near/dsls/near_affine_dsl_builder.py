@@ -215,9 +215,7 @@ class NEARAffineSelectorDSLBuilder:
 
         def _aggregate_over_windows(seq_fn, x, window_start, window_end):
             seq = seq_fn(x)
-            return running_agg_torch(
-                seq, lambda y: y, window_start, window_end
-            )
+            return running_agg_torch(seq, lambda y: y, window_start, window_end)
 
         dslf.production(
             "running_avg_last5",
