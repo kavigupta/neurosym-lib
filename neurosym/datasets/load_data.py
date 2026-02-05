@@ -179,7 +179,7 @@ class DatasetWrapper(pl.LightningDataModule):
     @internal_only
     def load_dataset(self, dataset):
         for i in range((len(dataset) + self.batch_size - 1) // self.batch_size):
-            batch = dataset[(i * self.batch_size):(i + 1) * self.batch_size]
+            batch = dataset[(i * self.batch_size) : (i + 1) * self.batch_size]
             yield [torch.as_tensor(x) for x in batch]
 
     def train_dataloader(self):
