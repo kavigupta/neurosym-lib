@@ -31,7 +31,7 @@
     :members:
 .. autoclass:: neurosym.examples.near.IdentityProgramEmbedding
     :members:
-
+.. autofunction:: neurosym.examples.near.metrics.compute_metrics
 
 ``NEAR`` Heirarchical Algorithm
 --------------------------------------------
