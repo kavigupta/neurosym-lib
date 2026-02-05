@@ -1,3 +1,4 @@
+import heapq
 import queue
 from typing import Callable, Iterable, TypeVar
 
@@ -11,36 +12,37 @@ from .search_strategy import SearchStrategy
 X = TypeVar("X")
 
 
-class _FuturePriorityQueue(queue.PriorityQueue):
+class _FuturePriorityQueue:
     """
-    A priority queue with primitive support for futures.
+    A priority queue (heap-based) with primitive support for futures.
     """
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.waiting = []
+    def __init__(self) -> None:
+        self._heap: list = []
+        self.waiting: list = []
 
     def syncronize(self):
-        # check if any of the waiting items are done
-        for i, (item, item_fn) in enumerate(self.waiting):
+        # move ready futures from waiting into the heap
+        still_waiting = []
+        for item, item_fn in self.waiting:
             if item.ready():
-                # add to the queue
-                self.put(item_fn(item.get()))
-                # remove from waiting
-                self.waiting.pop(i)
+                heapq.heappush(self._heap, item_fn(item.get()))
+            else:
+                still_waiting.append((item, item_fn))
+        self.waiting = still_waiting
 
     def putitem(self, item, future_fn: Callable):
-        """Making sure this doesn't override the `put` method."""
         self.waiting.append((item, future_fn))
         self.syncronize()
 
     def empty(self):
-        return len(self.waiting) == 0 and super().empty()
+        return len(self.waiting) == 0 and len(self._heap) == 0
 
     def getitem(self):
-        """Making sure this doesn't override the `get` method."""
         self.syncronize()
-        return self.get_nowait()
+        if not self._heap:
+            raise queue.Empty
+        return heapq.heappop(self._heap)
 
 
 class BoundedAStarAsync(SearchStrategy):
