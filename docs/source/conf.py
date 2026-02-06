@@ -63,8 +63,3 @@ epub_show_urls = "footnote"
 html_css_files = [
     "css/custom.css",
 ]
-
-# Ensure the package root is on sys.path for autodoc imports
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
