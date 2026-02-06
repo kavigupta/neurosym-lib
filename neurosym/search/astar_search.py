@@ -1,4 +1,4 @@
-import queue
+import heapq
 from dataclasses import dataclass, field
 from typing import Iterable, TypeVar
 
@@ -17,16 +17,16 @@ class AStar(SearchStrategy):
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
-        fringe = queue.PriorityQueue()
+        fringe = []
 
         def add_to_fringe(node):
-            fringe.put(_AStarNode(graph.cost(node), node))
+            heapq.heappush(fringe, _AStarNode(graph.cost(node), node))
 
         add_to_fringe(graph.initial_node())
         # this is similar to the BFS algorithm
         # pylint: disable=duplicate-code
-        while not fringe.empty():
-            node = fringe.get().node
+        while fringe:
+            node = heapq.heappop(fringe).node
             if node in visited:
                 continue
             visited.add(node)
