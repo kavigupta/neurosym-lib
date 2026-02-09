@@ -1,4 +1,4 @@
-from typing import Tuple
+import copy
 
 import torch
 
@@ -10,10 +10,10 @@ from neurosym.examples.near.cost import (
     NearCost,
     NearValidationHeuristic,
     ProgramEmbedding,
-    UninitializableProgramError,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
 from neurosym.examples.near.methods.near_example_trainer import NEARTrainerConfig
+from neurosym.examples.near.metrics import compute_metrics
 from neurosym.examples.near.models.torch_program_module import TorchProgramModule
 from neurosym.programs.s_expression import InitializedSExpression
 from neurosym.programs.s_expression_render import render_s_expression
@@ -32,9 +32,6 @@ class ValidationCost(NearValidationHeuristic):
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
     :param progress_by_epoch: Whether to display progress by epoch.
-    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
-        The scale of the validation cost (float) and structural_cost (int) can
-        vary so it's important to tune this for each new problem.
     :param kwargs: Additional arguments to pass to the trainer.
     """
 
@@ -64,7 +61,7 @@ class ValidationCost(NearValidationHeuristic):
 
     def compute_cost(
         self, dsl: DSL, model: InitializedSExpression, embedding: ProgramEmbedding
-    ) -> Tuple[InitializedSExpression, float]:
+    ) -> float:
         """
         Initializes a TorchProgramModule and trains it. Returns the trained module, and the
         validation loss.
@@ -77,9 +74,18 @@ class ValidationCost(NearValidationHeuristic):
 
         model = self.program_to_module(dsl, model, embedding)
 
-        val_loss = _train_model(
-            model, self.datamodule, n_epochs=self.n_epochs, trainer_cfg=self.trainer_cfg
-        )
+        try:
+            val_loss = _train_model(
+                model,
+                self.datamodule,
+                n_epochs=self.n_epochs,
+                trainer_cfg=self.trainer_cfg,
+            )
+        except torch.OutOfMemoryError:
+            log(
+                "  Out of memory during training even with reduced batch size, returning inf cost"
+            )
+            return float("inf")
 
         return val_loss
 
@@ -92,17 +98,11 @@ class ValidationCost(NearValidationHeuristic):
         integrating the program module into a larger model.
 
         :param program: The program to convert.
-        :returns: A tuple containing the TorchProgramModule and the full Torch model to train.
-            These should share weights, so that training the model also trains the program.
+        :returns: The full Torch nn.Module to train.
         """
         program_module = TorchProgramModule(dsl, program)
 
         model = embedding.embed_initialized_program(program_module)
-
-        if len([x for x in model.parameters() if x.requires_grad]) == 0:
-            raise UninitializableProgramError(
-                f"No parameters in program {render_s_expression(program)}"
-            )
         return model
 
 
@@ -112,70 +112,160 @@ def default_near_cost(
     datamodule: DatasetWrapper,
     progress_by_epoch=False,
     embedding: ProgramEmbedding = IdentityProgramEmbedding(),
-    structural_cost_weight: float = 0.5,
+    structural_cost_penalty: float = 0.01,
     symbol_costs=None,
+    cost=MinimalStepsNearStructuralCost,
     **kwargs,
 ):
     """
-    Default NearCost. This is, by default, a 50/50 blend of structural cost and validation cost,
-    with the given parameters.
+    Default NearCost. Uses additive combination: f = validation_cost + penalty * structural_cost
 
     :param neural_dsl: The neural DSL to use.
     :param trainer_cfg: The configuration for the trainer.
     :param datamodule: The data module to use.
     :param progress_by_epoch: Whether to display progress by epoch.
     :param embedding: The embedding to use.
-    :param structural_cost_weight: Linearly interpolates b/w structural cost and validation loss.
+    :param structural_cost_penalty: Penalty multiplier for structural cost (default: 0.01).
     :param kwargs: Additional arguments to pass to the trainer.
     """
     return NearCost(
-        structural_cost=MinimalStepsNearStructuralCost(symbol_costs=symbol_costs or {}),
+        structural_cost=cost(symbol_costs=symbol_costs or {}),
         validation_heuristic=ValidationCost(
             trainer_cfg=trainer_cfg,
             datamodule=datamodule,
             progress_by_epoch=progress_by_epoch,
             **kwargs,
         ),
-        structural_cost_weight=structural_cost_weight,
+        structural_cost_penalty=structural_cost_penalty,
         embedding=embedding,
     )
 
 
+class _ValidationState:
+    """Tracks the training search state for validation and early stopping."""
+
+    def __init__(self):
+        self.best_val = float("inf")
+        self.best_weights = None
+        self.epochs_no_improve = 0
+        self.best_acc = -float("inf")
+
+    def update_best_acc(self, val_acc: float):
+        """Update the best accuracy seen so far."""
+        self.best_acc = max(self.best_acc, val_acc)
+
+    def load_best_weights(self, model: torch.nn.Module):
+        """Load the best weights into the model if they exist."""
+        if self.best_weights is not None:
+            model.load_state_dict(self.best_weights)
+
+    def update_early_stopping(
+        self, val_loss: float, model: torch.nn.Module, trainer_cfg: NEARTrainerConfig
+    ) -> bool:
+        """
+        Update early stopping state based on validation loss.
+
+        :param val_loss: Current validation loss.
+        :param model: The model to save weights from if improvement is seen.
+        :param trainer_cfg: Trainer configuration containing early stopping parameters.
+        :returns: should_break (bool) indicating whether training should stop early.
+        """
+        if val_loss < self.best_val - trainer_cfg.early_stopping_min_delta:
+            self.best_val = val_loss
+            self.best_weights = copy.deepcopy(model.state_dict())
+            self.epochs_no_improve = 0
+        else:
+            self.epochs_no_improve += 1
+            if self.epochs_no_improve >= trainer_cfg.early_stopping_patience:
+                return True
+        return False
+
+
+def _validate_model(model, datamodule, trainer_cfg, validation_state: _ValidationState):
+    """
+    Run validation on the model and compute metrics.
+
+    :param model: The model to validate.
+    :param datamodule: The data module containing validation data.
+    :param trainer_cfg: The trainer configuration.
+    :param validation_state: The validation state tracker.
+    :returns: should_break (bool) indicating whether training should stop early.
+    """
+    model.eval()
+    val_loss_sum, val_cnt = 0.0, 0
+    labels, predictions = [], []
+    with torch.no_grad():
+        for batch in datamodule.val_dataloader():
+            batch = [v.to(trainer_cfg.accelerator) for v in batch]
+            x, y = batch
+            pred_y = model(x, environment=())
+            val_loss_sum += trainer_cfg.loss_callback(pred_y, y).item()
+            val_cnt += 1
+            labels.append(y.cpu())
+            predictions.append(pred_y.cpu())
+    val_loss = val_loss_sum / val_cnt
+    labels = torch.cat(labels, dim=0)
+    predictions = torch.cat(predictions, dim=0).detach()
+    metrics = compute_metrics(
+        predictions=predictions.cpu().numpy(),
+        ground_truth=labels.cpu().numpy(),
+        metric_name="all",
+    )
+    metric_key = trainer_cfg.validation_metric
+    if metric_key not in metrics:
+        raise KeyError(
+            f"Validation metric '{metric_key}' is unavailable. "
+            f"Available metrics: {list(metrics.keys())}"
+        )
+    val_acc = float(metrics[metric_key])
+    validation_state.update_best_acc(val_acc)
+
+    return trainer_cfg.early_stopping and validation_state.update_early_stopping(
+        val_loss, model, trainer_cfg
+    )
+
+
+# pylint: disable=too-many-branches,too-many-statements
 def _train_model(model, datamodule, *, n_epochs, trainer_cfg: NEARTrainerConfig):
+    validation_state = _ValidationState()
     if n_epochs is None:
         n_epochs = trainer_cfg.n_epochs
+    if not any(p.requires_grad for p in model.parameters()):
+        # Only train if there are parameters to train
+        _validate_model(model, datamodule, trainer_cfg, validation_state)
+
+        return -1 * validation_state.best_acc
+
+    torch.manual_seed(trainer_cfg.seed)
+
     optimizer, schedulers = schedule_optimizer(
         trainer_cfg.optimizer(
-            model.parameters(), lr=trainer_cfg.lr, weight_decay=trainer_cfg.weight_decay
+            model.parameters(),
+            lr=trainer_cfg.lr,
+            weight_decay=trainer_cfg.weight_decay,
         ),
         trainer_cfg.scheduler,
         len(datamodule.train),
         n_epochs,
     )
-    torch.manual_seed(trainer_cfg.seed)
-    model = model.train()
     model = model.to(trainer_cfg.accelerator)
-    for _ in range(n_epochs):
+    for epoch in range(n_epochs):
+        model.train()
         for batch in datamodule.train_dataloader():
-            batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-            x, y = batch["inputs"], batch["outputs"]
             optimizer.zero_grad()
+            batch = [v.to(trainer_cfg.accelerator) for v in batch]
+            x, y = batch
             loss = trainer_cfg.loss_callback(model(x, environment=()), y)
             loss.backward()
             optimizer.step()
             for scheduler in schedulers:
                 scheduler.step()
 
-    model = model.eval()
-    val_loss_sum = 0
-    val_loss_count = 0
-    for batch in datamodule.val_dataloader():
-        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-        x, y = batch["inputs"], batch["outputs"]
-        with torch.no_grad():
-            val_loss_sum += trainer_cfg.loss_callback(
-                model(x, environment=()), y
-            ).item()
-        val_loss_count += 1
-    model = model.train().cpu()
-    return val_loss_sum / val_loss_count
+        if epoch == (n_epochs - 1) or epoch % trainer_cfg.validation_interval == 0:
+            if _validate_model(model, datamodule, trainer_cfg, validation_state):
+                break
+
+    validation_state.load_best_weights(model)
+
+    model.cpu()
+    return -1 * validation_state.best_acc

@@ -58,7 +58,7 @@ class TestSearch(unittest.TestCase):
     def test_astar_basic_1(self):
         g = simple_test_graph
 
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(node, "22A22A")
 
     def test_astar_basic_2(self):
@@ -68,7 +68,7 @@ class TestSearch(unittest.TestCase):
             character_to_match="B",
             desired_number=4,
         )
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(node, "1BB1BB")
 
     def test_bind(self):
@@ -85,7 +85,7 @@ class TestSearch(unittest.TestCase):
                 desired_number=4,
             )
         )
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         # capable of backtracking slightly to find the optimal solution
         self.assertEqual(node, "2B2B2B2B")
 
@@ -103,7 +103,7 @@ class TestSearch(unittest.TestCase):
                 desired_number=4,
             )
         )
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(node, ("22A22A", "2", "2", "2", "2"))
 
     def test_bind_three_types(self):
@@ -129,7 +129,7 @@ class TestSearch(unittest.TestCase):
                 desired_number=4,
             )
         )
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(
             node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))
         )
@@ -165,7 +165,7 @@ class TestSearch(unittest.TestCase):
         )
         if rng.rand() < 0.5:
             g = g.bind(ns.ReturnSearchGraph)
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(
             node, (("22A22A", "2", "2", "2", "2"), ("1",), ("1",), ("1",), ("1",))
         )

@@ -8,7 +8,9 @@ class TestHoleRender(unittest.TestCase):
         self.assertEqual(
             ns.Hole(
                 1234,
-                ns.TypeWithEnvironment(ns.parse_type("x -> y"), ns.Environment.empty()),
+                ns.TypeWithEnvironment(
+                    ns.parse_type("x -> y"), ns.StrictEnvironment.empty()
+                ),
             ).__to_pair__(False),
             "??::<x -> y>",
         )
@@ -30,7 +32,7 @@ class TestHoleRender(unittest.TestCase):
                 1234,
                 ns.TypeWithEnvironment(
                     ns.parse_type("x -> y"),
-                    ns.Environment.empty().child(ns.parse_type("z")),
+                    ns.StrictEnvironment.empty().child(ns.parse_type("z")),
                 ),
             ).__to_pair__(False),
             "??::<x -> y|0=z>",
@@ -42,7 +44,7 @@ class TestHoleRender(unittest.TestCase):
                 1234,
                 ns.TypeWithEnvironment(
                     ns.parse_type("x -> y"),
-                    ns.Environment.empty()
+                    ns.StrictEnvironment.empty()
                     .child(ns.parse_type("a1"), ns.parse_type("a2"))
                     .child(ns.parse_type("b1"), ns.parse_type("b2")),
                 ),

@@ -18,7 +18,7 @@ class TestSearch(unittest.TestCase):
             lambda x: dsl.compute(dsl.initialize(x.program)) == 4,
             metadata_computer=ns.NoMetadataComputer(),
         )
-        node = next(ns.search.bfs(g))
+        node = next(ns.search.BFS()(g))
         self.assertEqual(
             node,
             ns.SExpression(
@@ -57,7 +57,7 @@ class TestSearch(unittest.TestCase):
             compute_cost=cost,
         )
 
-        node = next(ns.search.astar(g))
+        node = next(ns.search.AStar()(g))
         print(node)
         self.assertEqual(
             node,

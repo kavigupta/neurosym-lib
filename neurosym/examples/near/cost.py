@@ -94,11 +94,14 @@ class IdentityProgramEmbedding(ProgramEmbedding):
 class NearCost:
     """
     Near cost function that combines a structural cost and a validation heuristic.
+
+    Uses additive combination: f = validation_cost + penalty * structural_cost
+    This matches NEAR's original implementation.
     """
 
     structural_cost: NearStructuralCost
     validation_heuristic: NearValidationHeuristic
-    structural_cost_weight: float = 0.5
+    structural_cost_penalty: float = 0.01
     error_loss: float = 10000
     embedding: ProgramEmbedding = IdentityProgramEmbedding()
 
@@ -111,22 +114,19 @@ class NearCost:
         """
         Compute the cost of a model. Calling this will mutate the `model`.
 
+        Uses additive combination: cost = validation_loss + penalty * structural_cost
+
         :param dsl: The DSL to use for training.
         :param model: The model to train. Will be mutated in place.
         """
-        try:
-            val_loss = self.validation_heuristic.compute_cost(
-                dsl, model, self.embedding
-            )
-        except UninitializableProgramError as e:
-            log(e.message)
-            return self.error_loss
         struct_cost = self.structural_cost.compute_structural_cost(
             self.embedding.embed_program(model.uninitialize()), dsl
         )
-        return (
-            1 - self.structural_cost_weight
-        ) * val_loss + self.structural_cost_weight * struct_cost
+        if struct_cost == float("inf"):
+            return float("inf")
+        val_loss = self.validation_heuristic.compute_cost(dsl, model, self.embedding)
+        result = val_loss + self.structural_cost_penalty * struct_cost
+        return result
 
     def __call__(
         self,
@@ -159,9 +159,6 @@ class NearCost:
                 program = dsl.initialize(program)
             except PartialProgramNotFoundError:
                 log(f"Partial Program not found for {render_s_expression(program)}")
-                return self.error_loss
-            except UninitializableProgramError as e:
-                log(e.message)
                 return self.error_loss
         assert is_initialized_s_expression(program), type(program)
         return self.compute_cost(dsl, program)
@@ -214,15 +211,3 @@ class MinimalStepsNearStructuralCost(PerNodeNearStructuralCost):
             node.twe, symbol_costs=self.symbol_costs
         )
         return result
-
-
-class UninitializableProgramError(Exception):
-    """
-    UninitializableProgramError is raised when a program cannot be
-    initialized due to either an inability to fill a hole in a partial program
-    or when a program has no parameters.
-    """
-
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message

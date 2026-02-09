@@ -10,8 +10,8 @@ Types
     :members: __call__, sig, typedef, filtered_type_variable, lookup_type, lookup_filter
 .. autoclass:: neurosym.Environment
     :members:
+.. autoclass:: neurosym.StrictEnvironment
 .. autoclass:: neurosym.PermissiveEnvironmment
-    :members:
 .. autoclass:: neurosym.TypeWithEnvironment
     :members:
 .. autoclass:: neurosym.UnificationError
@@ -23,6 +23,7 @@ Subclasses of :class:`Type`
 .. autoclass:: neurosym.TensorType
 .. autoclass:: neurosym.ListType
 .. autoclass:: neurosym.ArrowType
+    :members: with_output_type
 .. autoclass:: neurosym.GenericTypeVariable
 .. autoclass:: neurosym.TypeVariable
 .. autoclass:: neurosym.FilteredTypeVariable

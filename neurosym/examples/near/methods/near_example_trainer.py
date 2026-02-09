@@ -34,6 +34,11 @@ class NEARTrainerConfig:
     :param seed: Random seed for reproducibility (default: 44)
     :param scheduler: Learning rate scheduler to use (default: "cosine")
     :param accelerator: Accelerator to use for training (default: "cpu")
+    :param validation_interval: Interval for validation (default: 10_000_000). This large default effectively disables intermediate validation.
+    :param validation_metric: Metric to use for validation (default: "hamming_accuracy", one of "hamming_accuracy", "f1_score", "unweighted_f1", "neg_l2_dist", "neg_l1_dist")
+    :param early_stopping: Whether to use early stopping (default: False)
+    :param early_stopping_patience: Patience for early stopping (default: 2)
+    :param early_stopping_min_delta: Minimum delta for early stopping (default: 1e-4)
     :param optimizer: Optimizer to use (default: torch.optim.Adam)
     :param loss_callback: Loss function to use (default: :py:func:`neurosym.examples.near.classification_mse_loss`)
     """
@@ -44,6 +49,11 @@ class NEARTrainerConfig:
     seed: int = 44
     scheduler: str = "cosine"
     accelerator: str = "cpu"
+    validation_interval: int = 10_000_000
+    validation_metric: str = "hamming_accuracy"
+    early_stopping: bool = False
+    early_stopping_patience: int = 2
+    early_stopping_min_delta: float = 1e-4
     # This is necessary for some unfathomable reason. I assume that torch.optim.Adam
     # is overwritten by pytorch-lightning, so we need to pass it as a lambda to avoid
     # passing the outdated version.
@@ -51,6 +61,20 @@ class NEARTrainerConfig:
     # pylint: disable=unnecessary-lambda
     optimizer: str = lambda *args, **kwargs: torch.optim.Adam(*args, **kwargs)
 
-    loss_callback: Callable[
-        [torch.Tensor, torch.Tensor], torch.Tensor
-    ] = classification_mse_loss
+    loss_callback: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = (
+        classification_mse_loss
+    )
+
+    def __post_init__(self):
+        valid_metrics = {
+            "hamming_accuracy",
+            "f1_score",
+            "unweighted_f1",
+            "neg_l2_dist",
+            "neg_l1_dist",
+        }
+        if self.validation_metric not in valid_metrics:
+            raise ValueError(
+                f"Invalid validation metric: {self.validation_metric}. "
+                f"Must be one of {valid_metrics}."
+            )

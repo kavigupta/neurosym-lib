@@ -1,54 +1,59 @@
-# pylint: skip-file
-import queue
+import heapq
 from dataclasses import dataclass, field
-from types import NoneType
-from typing import Iterable, TypeVar, Union
+from typing import Iterable, Optional, TypeVar
 
 from neurosym.programs.s_expression import SExpression
 from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
 
+from .search_strategy import SearchStrategy
+
 X = TypeVar("X")
 
 
-def bounded_astar(
-    g: SearchGraph[X], max_depth: int, max_iterations: Union[int, NoneType] = None
-) -> Iterable[X]:
+class BoundedAStar(SearchStrategy):
     """
     Performs a bounded a-star search on the given search graph, yielding each goal node in
-    the order it was visited. See ``astar`` for more details.
+    the order it was visited. See ``AStar`` for more details.
 
-    :param g: Search graph to search over
-    :param cost_plus_heuristic: An admissible cost heuristic.
     :param max_depth: Maximum depth to search to.
-    :param depth_computer: Strategy to calculate program depth.
-        Default strategy is to uniformly increment depth by one for each node.
+    :param max_iterations: Maximum number of iterations to perform. If None, no limit is applied.
+    :return: An iterable of goal nodes in the order they were visited.
+
+    :raises AssertionError: If `max_depth` is not greater than 0.
     """
-    assert max_depth > 0
-    visited = set()
-    fringe = queue.PriorityQueue()
 
-    def add_to_fringe(node, depth):
-        fringe.put(BoundedAStarNode(g.cost(node), node, depth))
+    def __init__(self, max_depth: int, max_iterations: Optional[int] = None):
+        assert max_depth > 0
+        self.max_depth = max_depth
+        self.max_iterations = max_iterations
 
-    add_to_fringe(g.initial_node(), 0)
-    iterations = 0
-    while not fringe.empty():
-        fringe_var = fringe.get()
-        node, depth = fringe_var.node, fringe_var.depth
-        if node in visited or depth > max_depth:
-            continue
-        visited.add(node)
-        yield from g.yield_goal_node(node)
-        for child in g.expand_node(node):
-            add_to_fringe(child, depth + 1)
-        iterations += 1
-        if max_iterations is not None and iterations >= max_iterations:
-            break
+    def search(self, graph: SearchGraph[X]) -> Iterable[X]:
+        visited = set()
+        fringe = []
+
+        def add_to_fringe(node, depth):
+            cost = graph.cost(node)
+            heapq.heappush(fringe, _BoundedAStarNode(cost, node, depth))
+
+        add_to_fringe(graph.initial_node(), 0)
+        iterations = 0
+        while fringe:
+            fringe_var = heapq.heappop(fringe)
+            node, depth = fringe_var.node, fringe_var.depth
+            if node in visited or depth > self.max_depth:
+                continue
+            visited.add(node)
+            yield from graph.yield_goal_node(node)
+            for child in graph.expand_node(node):
+                add_to_fringe(child, depth + 1)
+            iterations += 1
+            if self.max_iterations is not None and iterations >= self.max_iterations:
+                break
 
 
 @dataclass(order=True)
-class BoundedAStarNode:
+class _BoundedAStarNode:
     """
     Represents a node in the A* search tree.
     """

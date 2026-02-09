@@ -32,19 +32,25 @@ class TestMinimalTermSize(unittest.TestCase):
         dsl = self.basicDSL()
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("literal"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("literal"), ns.StrictEnvironment.empty()
+                )
             ),
             1,  # (1)
         )
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("sum"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("sum"), ns.StrictEnvironment.empty()
+                )
             ),
             3,  # (+ (1) (1))
         )
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("product"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("product"), ns.StrictEnvironment.empty()
+                )
             ),
             7,  # (* (+ (1) (1)) (+ (1) (1)))
         )
@@ -54,7 +60,7 @@ class TestMinimalTermSize(unittest.TestCase):
         self.assertEqual(
             dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
-                    ns.parse_type("product"), ns.Environment.empty()
+                    ns.parse_type("product"), ns.StrictEnvironment.empty()
                 ),
                 {"+": 0.1, "*": 10},
             ),
@@ -79,7 +85,9 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type(f"t{i}"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type(f"t{i}"), ns.StrictEnvironment.empty()
+                )
             ),
             2 ** (i + 1) - 1,
         )
@@ -100,7 +108,9 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type(f"t{i}"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type(f"t{i}"), ns.StrictEnvironment.empty()
+                )
             ),
             i + 1,
         )
@@ -121,7 +131,7 @@ class TestMinimalTermSize(unittest.TestCase):
         self.assertEqual(
             dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
-                    ns.parse_type("a -> literal"), ns.Environment.empty()
+                    ns.parse_type("a -> literal"), ns.StrictEnvironment.empty()
                 )
             ),
             1 + 2,  # (lam (1 ($0)))
@@ -135,7 +145,7 @@ class TestMinimalTermSize(unittest.TestCase):
         self.assertEqual(
             dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
-                    ns.parse_type("a -> sum"), ns.Environment.empty()
+                    ns.parse_type("a -> sum"), ns.StrictEnvironment.empty()
                 )
             ),
             1 + 1 + 2 * 2,  # (lam (+ (1 ($0)) (1 ($0))))
@@ -149,7 +159,7 @@ class TestMinimalTermSize(unittest.TestCase):
         self.assertEqual(
             dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
-                    ns.parse_type("a -> product"), ns.Environment.empty()
+                    ns.parse_type("a -> product"), ns.StrictEnvironment.empty()
                 )
             ),
             1 + 3 + 2 * 4,  # (lam (* (+ (1 ($0)) (1 ($0))) (+ (1 ($0)) (1 ($0))))
@@ -163,7 +173,7 @@ class TestMinimalTermSize(unittest.TestCase):
         self.assertEqual(
             dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
-                    ns.parse_type("product -> a"), ns.Environment.empty()
+                    ns.parse_type("product -> a"), ns.StrictEnvironment.empty()
                 )
             ),
             float("inf"),  # (lam (* (+ (1 ($0)) (1 ($0))) (+ (1 ($0)) (1 ($0))))
@@ -206,7 +216,9 @@ class TestMinimalTermSize(unittest.TestCase):
         symbol_costs["b_1"] = b_bad
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("t"), ns.Environment.empty()),
+                ns.TypeWithEnvironment(
+                    ns.parse_type("t"), ns.StrictEnvironment.empty()
+                ),
                 symbol_costs,
             ),
             # done_a
@@ -225,7 +237,7 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.StrictEnvironment.empty())
             ),
             float("inf"),  # cannot be expressed
         )
@@ -240,7 +252,7 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.StrictEnvironment.empty())
             ),
             float("inf"),  # cannot be expressed
         )
@@ -255,7 +267,7 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("a"), ns.Environment.empty())
+                ns.TypeWithEnvironment(ns.parse_type("a"), ns.StrictEnvironment.empty())
             ),
             float("inf"),  # cannot be expressed
         )
@@ -270,7 +282,9 @@ class TestMinimalTermSize(unittest.TestCase):
         count = self.instrumentDSL(dsl)
         self.assertEqual(
             dsl.minimal_term_size_for_type(
-                ns.TypeWithEnvironment(ns.parse_type("u -> v"), ns.Environment.empty())
+                ns.TypeWithEnvironment(
+                    ns.parse_type("u -> v"), ns.StrictEnvironment.empty()
+                )
             ),
             float("inf"),  # cannot be expressed
         )
@@ -283,7 +297,7 @@ class TestMinimalTermSize(unittest.TestCase):
             original_dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
                     ns.parse_type("[{f, 12}] -> [{f, 12}]"),
-                    ns.Environment.empty(),
+                    ns.StrictEnvironment.empty(),
                 )
             ),
             2,
@@ -292,7 +306,7 @@ class TestMinimalTermSize(unittest.TestCase):
             original_dsl.minimal_term_size_for_type(
                 ns.TypeWithEnvironment(
                     ns.parse_type("{f, 12} -> {f, 4}"),
-                    ns.Environment.empty(),
+                    ns.StrictEnvironment.empty(),
                 )
             ),
             float("inf"),

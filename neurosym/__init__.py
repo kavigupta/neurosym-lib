@@ -33,6 +33,9 @@ from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import 
     NoopPreorderMask,
     PreorderMask,
 )
+from neurosym.program_dist.tree_distribution.preorder_mask.type_preorder_mask_elf import (
+    TypePreorderMaskELF,
+)
 from neurosym.program_dist.tree_distribution.preorder_mask.undos import (
     chain_undos,
     remove_last_n_elements,
@@ -131,5 +134,6 @@ from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_ty
 from .types.type_with_environment import (
     Environment,
     PermissiveEnvironmment,
+    StrictEnvironment,
     TypeWithEnvironment,
 )
