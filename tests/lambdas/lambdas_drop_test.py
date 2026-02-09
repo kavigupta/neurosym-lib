@@ -246,8 +246,9 @@ class TestShieldInterface(unittest.TestCase):
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=cost,
-                structural_cost_weight=0.05,
+                structural_cost_penalty=0.05,
             ),
+            validation_metric="neg_l2_dist",
             is_goal=is_goal,
         )
         return interface.fit(
