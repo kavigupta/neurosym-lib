@@ -1,3 +1,4 @@
+*.pyc
 **/__pycache__
 .ipynb_checkpoints
 Untitled.ipynb
@@ -8,4 +9,8 @@ env
 dist
 .vs
 build
-.DS_Storeneurosym-env
+neurosym-env
+outputs/crim13_results/near_outputs/
+data/**/*.npy
+outputs/mice_results/near_outputs/*/log.txt
+outputs/mice_results/near_outputs/*/program.p

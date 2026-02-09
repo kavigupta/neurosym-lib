@@ -6,19 +6,22 @@ from torch import nn
 import neurosym as ns
 from neurosym.examples import near
 
-dataset_factory = lambda train_seed: ns.DatasetWrapper(  # noqa: E731
-    ns.DatasetFromNpy(
-        "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
-        "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
-        train_seed,
-    ),
-    ns.DatasetFromNpy(
-        "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
-        "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
-        None,
-    ),
-    batch_size=200,
-)
+
+def dataset_factory(train_seed):
+    return ns.DatasetWrapper(
+        ns.DatasetFromNpy(
+            "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
+            "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
+            train_seed,
+        ),
+        ns.DatasetFromNpy(
+            "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
+            "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
+            None,
+        ),
+        batch_size=200,
+    )
+
 
 L = 4
 
