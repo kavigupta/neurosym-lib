@@ -12,13 +12,23 @@ from neurosym.examples.near.heirarchical.heirarchical_near import (
     heirarchical_near_graph,
 )
 from neurosym.examples.near.methods.base_trainer import schedule_optimizer
+from neurosym.examples.near.metrics import compute_metrics
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import ValidationCost, default_near_cost
 
 from . import with_shield
 from .dsls import debug_nested_dsl
+from .dsls.adaptive_mice_dsl import (
+    adaptive_calms21_dsl,
+    adaptive_crim13_dsl,
+    adaptive_mice_dsl_builder,
+)
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
+from .dsls.simple_bball_dsl import simple_bball_dsl
+from .dsls.simple_calms21_dsl import simple_calms21_dsl
+from .dsls.simple_crim13_dsl import simple_crim13_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
+from .dsls.simple_flyvfly_dsl import simple_flyvfly_dsl
 from .interface import NEAR
 from .methods.near_example_trainer import NEARTrainerConfig, classification_mse_loss
 from .models.mlp import MLP, MLPConfig, mlp_factory

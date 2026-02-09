@@ -94,11 +94,14 @@ class IdentityProgramEmbedding(ProgramEmbedding):
 class NearCost:
     """
     Near cost function that combines a structural cost and a validation heuristic.
+
+    Uses additive combination: f = validation_cost + penalty * structural_cost
+    This matches NEAR's original implementation.
     """
 
     structural_cost: NearStructuralCost
     validation_heuristic: NearValidationHeuristic
-    structural_cost_weight: float = 0.5
+    structural_cost_penalty: float = 0.01
     error_loss: float = 10000
     embedding: ProgramEmbedding = IdentityProgramEmbedding()
 
@@ -111,17 +114,18 @@ class NearCost:
         """
         Compute the cost of a model. Calling this will mutate the `model`.
 
+        Uses additive combination: cost = validation_loss + penalty * structural_cost
+
         :param dsl: The DSL to use for training.
         :param model: The model to train. Will be mutated in place.
         """
-        val_loss = self.validation_heuristic.compute_cost(dsl, model, self.embedding)
         struct_cost = self.structural_cost.compute_structural_cost(
             self.embedding.embed_program(model.uninitialize()), dsl
         )
-        result = (
-            1 - self.structural_cost_weight
-        ) * val_loss + self.structural_cost_weight * struct_cost
-        log("Overall cost:", result, " (val:", val_loss, ", struct:", struct_cost, ")")
+        if struct_cost == float("inf"):
+            return float("inf")
+        val_loss = self.validation_heuristic.compute_cost(dsl, model, self.embedding)
+        result = val_loss + self.structural_cost_penalty * struct_cost
         return result
 
     def __call__(
