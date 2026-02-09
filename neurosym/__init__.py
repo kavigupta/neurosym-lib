@@ -15,6 +15,7 @@ from neurosym.dsl.production import (
     LambdaProduction,
     ParameterizedProduction,
     Production,
+    ShieldProduction,
     VariableProduction,
 )
 from neurosym.examples.near.search_graph import FilterUnexpandableNodes
@@ -125,6 +126,7 @@ from .types.type import (
 from .types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
+    ShieldTypeSignature,
     TypeSignature,
     VariableTypeSignature,
     bottom_up_enumerate_types,

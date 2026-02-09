@@ -16,6 +16,7 @@ from neurosym.examples.near.metrics import compute_metrics
 from neurosym.examples.near.models.generic_mlp_rnn import GenericMLPRNNNeuralHoleFiller
 from neurosym.examples.near.validation import ValidationCost, default_near_cost
 
+from . import with_shield
 from .dsls import debug_nested_dsl
 from .dsls.adaptive_mice_dsl import (
     adaptive_calms21_dsl,
