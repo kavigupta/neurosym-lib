@@ -56,25 +56,37 @@ def setup(device="cpu"):
     return datamodule, neural_dsl, cost
 
 
-def evaluate_program(program, neural_dsl, cost, datamodule):
-    initialized = neural_dsl.initialize(program)
-    cost.validation_heuristic.with_n_epochs(40).compute_cost(
-        neural_dsl, initialized, cost.embedding
-    )
-    module = near.TorchProgramModule(neural_dsl, initialized)
+def evaluate_programs(programs, neural_dsl, cost, datamodule):
+    # Initialize all programs first, then train all — matches the pattern in
+    # test_mice_dsl.py.  Interleaving init/train changes the PyTorch RNG state
+    # (because _train_model resets torch.manual_seed) and produces worse
+    # initializations.
+    parsed = [ns.parse_s_expression(p) for p in programs]
+    initialized = [neural_dsl.initialize(p) for p in parsed]
+    costs = [
+        cost.validation_heuristic.with_n_epochs(40).compute_cost(
+            neural_dsl, ip, cost.embedding
+        )
+        for ip in initialized
+    ]
     feature_data = datamodule.test.inputs
     labels = datamodule.test.outputs.flatten()
-    predictions = module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
-    report = classification_report(
-        labels,
-        predictions,
-        target_names=["not investigation", "investigation"],
-        output_dict=True,
-    )
-    return {
-        "not_investigation_f1": report["not investigation"]["f1-score"],
-        "investigation_f1": report["investigation"]["f1-score"],
-    }
+    results = []
+    for ip, c in zip(initialized, costs):
+        module = near.TorchProgramModule(neural_dsl, ip)
+        predictions = module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
+        report = classification_report(
+            labels,
+            predictions,
+            target_names=["not investigation", "investigation"],
+            output_dict=True,
+        )
+        results.append({
+            "not_investigation_f1": report["not investigation"]["f1-score"],
+            "investigation_f1": report["investigation"]["f1-score"],
+            "cost": c,
+        })
+    return results
 
 
 def run_search(name, strategy, n_programs, device="cpu"):
@@ -97,14 +109,16 @@ def run_search(name, strategy, n_programs, device="cpu"):
         print(f"  [{elapsed:.1f}s] {program_str}")
 
     print("Evaluating F1 scores...")
-    for entry in programs:
-        program = ns.parse_s_expression(entry["program"])
-        f1s = evaluate_program(program, neural_dsl, cost, datamodule)
+    eval_results = evaluate_programs(
+        [e["program"] for e in programs], neural_dsl, cost, datamodule
+    )
+    for entry, f1s in zip(programs, eval_results):
         entry.update(f1s)
         print(
             f"  {entry['program'][:60]}..."
             f"  not_inv={f1s['not_investigation_f1']:.4f}"
             f"  inv={f1s['investigation_f1']:.4f}"
+            f"  cost={f1s['cost']:.4f}"
         )
 
     return programs
@@ -114,19 +128,19 @@ def main():
     parser = argparse.ArgumentParser(description="BoundedAStar vs OSGAstar timing")
     parser.add_argument("--device", default="cpu", help="device (default: cpu)")
     parser.add_argument(
-        "--n-programs", type=int, default=5, help="programs per strategy (default: 5)"
+        "--n-programs", type=int, default=20, help="programs per strategy (default: 20)"
     )
     args = parser.parse_args()
 
     print("=" * 60)
-    print(f"CALMS21 Mouse DSL: BoundedAStar vs OSGAstar")
+    print("CALMS21 Mouse DSL: BoundedAStar vs OSGAstar (both max_depth=5)")
     print(f"device={args.device}  n_programs={args.n_programs}")
     print("=" * 60)
 
     results = {}
     for name, strategy in [
         ("BoundedAStar(max_depth=5)", ns.search.BoundedAStar(max_depth=5)),
-        ("OSGAstar", ns.search.OSGAstar()),
+        ("OSGAstar(max_depth=5)", ns.search.OSGAstar(max_depth=5)),
     ]:
         results[name] = run_search(name, strategy, args.n_programs, args.device)
 
