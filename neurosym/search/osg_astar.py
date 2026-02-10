@@ -1,9 +1,7 @@
 import queue
 from dataclasses import dataclass, field
 from types import NoneType
-from typing import Iterable, Union
-
-from typing import TypeVar
+from typing import Iterable, TypeVar, Union
 
 from neurosym.search.search_strategy import SearchStrategy
 from neurosym.search_graph.search_graph import SearchGraph
