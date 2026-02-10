@@ -6,13 +6,16 @@ OSGAstar uses lazy cost evaluation (children inherit parent cost, own cost compu
 only when popped), which avoids training neural networks for nodes never explored.
 
 Usage:
-    python experiments/osg_astar_mice_timing.py [--device DEVICE]
+    python experiments/osg_astar_mice_timing.py [--device DEVICE] [--n-programs N]
 """
 
 import argparse
+import itertools
+import json
 import time
 
 import torch
+from sklearn.metrics import classification_report
 
 import neurosym as ns
 from neurosym.examples import near
@@ -50,35 +53,74 @@ def setup(device="cpu"):
         trainer_cfg=trainer_cfg,
         datamodule=datamodule,
     )
-    return neural_dsl, cost
+    return datamodule, neural_dsl, cost
 
 
-def run_search(name, strategy, device="cpu"):
+def evaluate_program(program, neural_dsl, cost, datamodule):
+    initialized = neural_dsl.initialize(program)
+    cost.validation_heuristic.with_n_epochs(40).compute_cost(
+        neural_dsl, initialized, cost.embedding
+    )
+    module = near.TorchProgramModule(neural_dsl, initialized)
+    feature_data = datamodule.test.inputs
+    labels = datamodule.test.outputs.flatten()
+    predictions = module(torch.tensor(feature_data), environment=()).argmax(-1).numpy()
+    report = classification_report(
+        labels,
+        predictions,
+        target_names=["not investigation", "investigation"],
+        output_dict=True,
+    )
+    return {
+        "not_investigation_f1": report["not investigation"]["f1-score"],
+        "investigation_f1": report["investigation"]["f1-score"],
+    }
+
+
+def run_search(name, strategy, n_programs, device="cpu"):
     print(f"\n--- {name} ---")
     print("Setting up...")
-    neural_dsl, cost = setup(device)
+    datamodule, neural_dsl, cost = setup(device)
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
         is_goal=lambda _: True,
         cost=cost,
     )
-    print("Searching...")
+    print(f"Searching for {n_programs} programs...")
+    programs = []
     start = time.time()
-    program = next(strategy(g))
-    elapsed = time.time() - start
-    program_str = ns.render_s_expression(program)
-    print(f"Done in {elapsed:.1f}s")
-    return program_str, elapsed
+    for program in itertools.islice(strategy(g), n_programs):
+        elapsed = time.time() - start
+        program_str = ns.render_s_expression(program)
+        programs.append({"program": program_str, "latency": elapsed})
+        print(f"  [{elapsed:.1f}s] {program_str}")
+
+    print("Evaluating F1 scores...")
+    for entry in programs:
+        program = ns.parse_s_expression(entry["program"])
+        f1s = evaluate_program(program, neural_dsl, cost, datamodule)
+        entry.update(f1s)
+        print(
+            f"  {entry['program'][:60]}..."
+            f"  not_inv={f1s['not_investigation_f1']:.4f}"
+            f"  inv={f1s['investigation_f1']:.4f}"
+        )
+
+    return programs
 
 
 def main():
     parser = argparse.ArgumentParser(description="BoundedAStar vs OSGAstar timing")
     parser.add_argument("--device", default="cpu", help="device (default: cpu)")
+    parser.add_argument(
+        "--n-programs", type=int, default=5, help="programs per strategy (default: 5)"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
-    print(f"CALMS21 Mouse DSL: BoundedAStar vs OSGAstar (device={args.device})")
+    print(f"CALMS21 Mouse DSL: BoundedAStar vs OSGAstar")
+    print(f"device={args.device}  n_programs={args.n_programs}")
     print("=" * 60)
 
     results = {}
@@ -86,22 +128,17 @@ def main():
         ("BoundedAStar(max_depth=5)", ns.search.BoundedAStar(max_depth=5)),
         ("OSGAstar", ns.search.OSGAstar()),
     ]:
-        program_str, elapsed = run_search(name, strategy, args.device)
-        results[name] = (program_str, elapsed)
+        results[name] = run_search(name, strategy, args.n_programs, args.device)
 
-    print()
-    print("=" * 60)
-    print("Results")
-    print("=" * 60)
-    for name, (program_str, elapsed) in results.items():
-        print(f"\n  {name}")
-        print(f"    Time:    {elapsed:.1f}s")
-        print(f"    Program: {program_str}")
-
-    times = list(results.values())
-    speedup = times[0][1] / times[1][1] if times[1][1] > 0 else float("inf")
-    print(f"\n  Speedup: {speedup:.1f}x")
-    print("=" * 60)
+    output = {
+        "device": args.device,
+        "n_programs": args.n_programs,
+        "strategies": results,
+    }
+    output_path = "experiments/osg_astar_mice_results.json"
+    with open(output_path, "w") as f:
+        json.dump(output, f, indent=2)
+    print(f"\nResults written to {output_path}")
 
 
 if __name__ == "__main__":
