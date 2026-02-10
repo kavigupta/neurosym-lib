@@ -41,9 +41,9 @@ class ECGValidationCost(ValidationCost):
             progress_by_epoch=progress_by_epoch,
             n_epochs=n_epochs,
         )
-        assert isinstance(trainer_cfg, ECGTrainerConfig), (
-            "ECGValidationCost requires ECGTrainerConfig"
-        )
+        assert isinstance(
+            trainer_cfg, ECGTrainerConfig
+        ), "ECGValidationCost requires ECGTrainerConfig"
         assert trainer_cfg.num_labels > 0, "num_labels must be set in ECGTrainerConfig"
         self.ecg_trainer_cfg = trainer_cfg
 
@@ -73,7 +73,9 @@ class ECGValidationCost(ValidationCost):
         return val_loss
 
 
-def _train_model_with_metrics(model, datamodule, *, n_epochs, trainer_cfg: ECGTrainerConfig):
+def _train_model_with_metrics(
+    model, datamodule, *, n_epochs, trainer_cfg: ECGTrainerConfig
+):
     """
     Extended training function that also computes and logs ECG-specific metrics.
 
@@ -84,7 +86,9 @@ def _train_model_with_metrics(model, datamodule, *, n_epochs, trainer_cfg: ECGTr
     :return: Validation loss
     """
     # Use the standard training loop
-    val_loss = _train_model(model, datamodule, n_epochs=n_epochs, trainer_cfg=trainer_cfg)
+    val_loss = _train_model(
+        model, datamodule, n_epochs=n_epochs, trainer_cfg=trainer_cfg
+    )
 
     # Compute additional ECG metrics on validation set
     model = model.eval().to(trainer_cfg.accelerator)
@@ -103,9 +107,7 @@ def _train_model_with_metrics(model, datamodule, *, n_epochs, trainer_cfg: ECGTr
     all_targets = torch.cat(all_targets, dim=0)
 
     # Compute ECG metrics
-    metrics = compute_ecg_metrics(
-        all_predictions, all_targets, trainer_cfg.num_labels
-    )
+    metrics = compute_ecg_metrics(all_predictions, all_targets, trainer_cfg.num_labels)
 
     # Log metrics (optional - can be extended to use wandb or other loggers)
     log(f"  Validation metrics: {metrics}")

@@ -135,8 +135,9 @@ def compute_io_shape(t):
             case t if isinstance(t, Tuple):
                 return len(t)
             case AtomicType(k):
-                assert known_atom_shapes is not None, \
-                "known_atom_shapes must be provided for AtomicType"
+                assert (
+                    known_atom_shapes is not None
+                ), "known_atom_shapes must be provided for AtomicType"
                 assert k in known_atom_shapes, f"Unknown shape for type {k}"
                 return known_atom_shapes[k]
             case _:

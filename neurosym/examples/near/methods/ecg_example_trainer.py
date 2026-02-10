@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import torch
-from sklearn.metrics import roc_auc_score, balanced_accuracy_score, f1_score
+from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
 from torch import nn
 
 from .near_example_trainer import NEARTrainerConfig
@@ -20,6 +20,7 @@ class ECGTrainerConfig(NEARTrainerConfig):
     :param is_regression: Whether this is a regression task (default: False)
     :param is_multilabel: Whether this is a multi-label classification task (default: False)
     """
+
     num_labels: int = -1  # Must be set programmatically
     is_regression: bool = False
     is_multilabel: bool = False
@@ -55,7 +56,9 @@ def compute_ecg_metrics(predictions, targets, num_labels):
 
     # Get probabilities from logits
     if predictions_np.min() < 0 or predictions_np.max() > 1:
-        predictions_probs = torch.softmax(torch.from_numpy(predictions_np), dim=-1).numpy()
+        predictions_probs = torch.softmax(
+            torch.from_numpy(predictions_np), dim=-1
+        ).numpy()
     else:
         predictions_probs = predictions_np
 
@@ -67,21 +70,29 @@ def compute_ecg_metrics(predictions, targets, num_labels):
 
     # AUROC
     try:
-        metrics['auroc'] = roc_auc_score(y_true=targets_np, y_score=predictions_probs, multi_class='ovr')
+        metrics["auroc"] = roc_auc_score(
+            y_true=targets_np, y_score=predictions_probs, multi_class="ovr"
+        )
     except ValueError:
-        metrics['auroc'] = 0.0
+        metrics["auroc"] = 0.0
 
     # Balanced accuracy
-    metrics['balanced_accuracy'] = balanced_accuracy_score(y_true=target_classes, y_pred=pred_classes)
+    metrics["balanced_accuracy"] = balanced_accuracy_score(
+        y_true=target_classes, y_pred=pred_classes
+    )
 
     # Hamming accuracy (exact match)
-    metrics['hamming_accuracy'] = (pred_classes == target_classes).mean()
+    metrics["hamming_accuracy"] = (pred_classes == target_classes).mean()
 
     # F1 scores
     if num_labels > 2:
-        metrics['weighted_avg_f1'] = f1_score(target_classes, pred_classes, average='weighted')
-        metrics['unweighted_avg_f1'] = f1_score(target_classes, pred_classes, average='macro')
+        metrics["weighted_avg_f1"] = f1_score(
+            target_classes, pred_classes, average="weighted"
+        )
+        metrics["unweighted_avg_f1"] = f1_score(
+            target_classes, pred_classes, average="macro"
+        )
     else:
-        metrics['f1'] = f1_score(target_classes, pred_classes, average='binary')
+        metrics["f1"] = f1_score(target_classes, pred_classes, average="binary")
 
     return metrics

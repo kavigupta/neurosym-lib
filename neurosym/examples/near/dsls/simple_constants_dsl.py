@@ -14,7 +14,7 @@ DSL of the form:
 import torch
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.examples.near.models.constant import ConstantConfig, Constant
+from neurosym.examples.near.models.constant import Constant, ConstantConfig
 
 
 def simple_constants_dsl(length):

@@ -26,12 +26,13 @@ class Selector(nn.Module):
         masked_logits = torch.nn.functional.gumbel_softmax(logits, tau=1, hard=True)
         return masked_logits
 
+
 def selector_factory(**kwargs):
     """
     Allows instantiating an selector module with a given input and output size.
     """
-    input_dim = kwargs['input_dim']
-    kwargs.pop('input_dim')
+    input_dim = kwargs["input_dim"]
+    kwargs.pop("input_dim")
 
     def construct_model(input_shape: List[Tuple[int]], output_shape: Tuple[int]):
         assert len(input_shape) == 0
