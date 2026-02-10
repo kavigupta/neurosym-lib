@@ -6,8 +6,10 @@
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
+.. autoclass:: neurosym.examples.near.ECGTrainerConfig
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
+.. autoclass:: neurosym.examples.near.TrainingError
 
 ``NEAR`` Cost
 --------------------------------------------
@@ -26,6 +28,8 @@
 .. autoclass:: neurosym.examples.near.NearValidationHeuristic
     :members:
 .. autoclass:: neurosym.examples.near.ValidationCost
+    :members:
+.. autoclass:: neurosym.examples.near.ECGValidationCost
     :members:
 .. autoclass:: neurosym.examples.near.ProgramEmbedding
     :members:
@@ -64,6 +68,9 @@ NEAR Factory Functions
 .. autoclass:: neurosym.examples.near.GenericMLPRNNNeuralHoleFiller
 .. autoclass:: neurosym.examples.near.TransformerNeuralHoleFiller
 .. autofunction:: neurosym.examples.near.create_modules
+.. autoclass:: neurosym.examples.near.Constant
+    :members:
+.. autofunction:: neurosym.examples.near.constant_factory
 .. autofunction:: neurosym.examples.near.mlp_factory
 .. autoclass:: neurosym.examples.near.MLPConfig
 .. autoclass:: neurosym.examples.near.MLP
@@ -72,6 +79,9 @@ NEAR Factory Functions
 .. autoclass:: neurosym.examples.near.RNNConfig
 .. autoclass:: neurosym.examples.near.Seq2SeqRNN
 .. autoclass:: neurosym.examples.near.Seq2ClassRNN
+.. autoclass:: neurosym.examples.near.Selector
+    :members:
+.. autofunction:: neurosym.examples.near.selector_factory
 
 NEAR Transformer
 --------------------------------------------
@@ -85,6 +95,7 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.datasets.bball_data_example
 .. autofunction:: neurosym.datasets.calms21_investigation_example
 .. autofunction:: neurosym.datasets.crim13_data_example
+.. autofunction:: neurosym.datasets.ecg_data_example
 .. autofunction:: neurosym.datasets.flyvfly_data_example
 .. autofunction:: neurosym.datasets.near_data_example
 .. autofunction:: neurosym.examples.near.differentiable_arith_dsl
@@ -93,6 +104,8 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.examples.near.adaptive_calms21_dsl
 .. autofunction:: neurosym.examples.near.simple_bball_dsl
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
+.. autofunction:: neurosym.examples.near.simple_constants_dsl
+.. autofunction:: neurosym.examples.near.simple_ecg_dsl
 .. autofunction:: neurosym.examples.near.simple_flyvfly_dsl
 .. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
 .. autofunction:: neurosym.examples.near.adaptive_mice_dsl_builder
@@ -100,6 +113,8 @@ Example Datasets/DSLs
 Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
+.. autofunction:: neurosym.examples.near.ecg_cross_entropy_loss
+.. autofunction:: neurosym.examples.near.compute_ecg_metrics
 .. autofunction:: neurosym.examples.near.schedule_optimizer
 
 For testing and demonstration purposes

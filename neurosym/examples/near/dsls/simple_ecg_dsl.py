@@ -1,11 +1,15 @@
 # pylint: disable=duplicate-code,cyclic-import
 import torch
 from torch import nn
-from torch.nn.functional import one_hot
 
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.types.type import ArrowType, AtomicType
+
+
+def _one_hot(*args, **kwargs):
+    # pylint: disable=not-callable
+    return torch.nn.functional.one_hot(*args, **kwargs)
 
 
 def _subset_selector_all_feat(x, channel, typ):
@@ -40,7 +44,7 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
         dslf.concrete(
             f"channel_{i}",
             "() -> () -> channel",
-            lambda i=i: lambda x: one_hot(
+            lambda i=i: lambda x: _one_hot(
                 torch.full(tuple(x.shape[:-1]), i, device=x.device, dtype=torch.long),
                 num_classes=12,
             ),

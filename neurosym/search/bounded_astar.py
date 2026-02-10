@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import Iterable, Optional, TypeVar
 
 from neurosym.programs.s_expression import SExpression
-from neurosym.programs.s_expression_render import render_s_expression
 from neurosym.search_graph.search_graph import SearchGraph
 
 from .search_strategy import SearchStrategy

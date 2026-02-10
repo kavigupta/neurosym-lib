@@ -11,7 +11,7 @@ def ecg_data_example(
     """Creates a dataset for ECG classification experiments.
 
     This follows the same standardized file layout as the basketball dataset:
-    train/valid/test splits with *_data.npz and *_labels_{single|multi}.npz files.
+    train/valid/test splits with ``*_data.npz`` and ``*_labels_{single|multi}.npz`` files.
 
     Args:
         train_seed (int): Seed for dataset shuffling.
