@@ -1,3 +1,4 @@
+# pylint: skip-file
 from dataclasses import dataclass
 from typing import Callable
 

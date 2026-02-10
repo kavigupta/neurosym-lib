@@ -107,16 +107,26 @@ class DatasetFromNpy(torch.utils.data.Dataset):
     :param seed: the seed for the random permutation of the dataset.
     """
 
-    def __init__(self, input_descriptor, output_descriptor, seed):
+    # TODO test/val split
+
+    def __init__(self, input_descriptor, output_descriptor, seed, is_regression=False):
         """
         Parameters
         ----------
         url : str
             The url of the numpy file.
         """
+        self.is_regression = is_regression
         self.inputs = _load_npy(input_descriptor)
         self.outputs = _load_npy(output_descriptor)
         self.seed = seed
+        # convert float64 to float32
+        if np.issubdtype(self.inputs.dtype, np.float64):
+            self.inputs = self.inputs.astype(np.float32)
+
+        if np.issubdtype(self.outputs.dtype, np.float64):
+            self.outputs = self.outputs.astype(np.float32)
+
         assert len(self.inputs) == len(self.outputs)
         self.ordering = self.get_ordering(seed, len(self.inputs))
 

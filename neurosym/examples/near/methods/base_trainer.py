@@ -69,3 +69,9 @@ def _step_lr_scheduler(total_steps: int):
         return factor
 
     return f
+
+
+class TrainingError(Exception):
+    """
+    Raised when training fails.
+    """
