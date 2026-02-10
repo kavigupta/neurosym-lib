@@ -1,6 +1,7 @@
 # pylint: disable=duplicate-code,cyclic-import
 import torch
 from torch import nn
+from torch.nn.functional import one_hot
 
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.operations.basic import ite_torch
@@ -26,6 +27,7 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
     :param hidden_dim: Unused, kept for API parity with other DSLs.
     :param max_overall_depth: Maximum depth for DSL expansion.
     """
+    del hidden_dim
     feature_dim = 6
     dslf = DSLFactory(
         I=input_dim, O=num_classes, F=feature_dim, max_overall_depth=max_overall_depth
@@ -38,7 +40,7 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
         dslf.concrete(
             f"channel_{i}",
             "() -> () -> channel",
-            lambda: lambda x: torch.nn.functional.one_hot(
+            lambda i=i: lambda x: one_hot(
                 torch.full(tuple(x.shape[:-1]), i, device=x.device, dtype=torch.long),
                 num_classes=12,
             ),
@@ -57,12 +59,11 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
     )
 
     def guard_callables(fn, **kwargs):
-        is_callable = [callable(kwargs[k]) for k in kwargs]
-        if any(is_callable):
+        if any(callable(value) for value in kwargs.values()):
             return lambda z: fn(
                 **{
-                    k: (kwargs[k](z) if is_callable[i] else kwargs[k])
-                    for i, k in enumerate(kwargs)
+                    key: (value(z) if callable(value) else value)
+                    for key, value in kwargs.items()
                 }
             )
         return fn(**kwargs)
@@ -76,7 +77,7 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
             case _:
                 return True
 
-    dslf.filtered_type_variable("num", lambda x: filter_constants(x))
+    dslf.filtered_type_variable("num", filter_constants)
     dslf.concrete(
         "add",
         "(%num, %num) -> %num",
@@ -105,7 +106,7 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
     dslf.concrete(
         "ite",
         "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        lambda cond, fx, fy: ite_torch(cond, fx, fy),
+        ite_torch,
     )
 
     dslf.prune_to("($fInp) -> $fOut")

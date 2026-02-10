@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
-from ...types.type import ArrowType, ListType, TensorType, Type
+from ...types.type import ArrowType, AtomicType, ListType, TensorType, Type
 from .neural_hole_filler import DictionaryNeuralHoleFiller, NeuralHoleFiller
 
 
@@ -115,12 +115,13 @@ def create_modules(types: List[Type], module_factory):
 
 
 @internal_only
-def compute_io_shape(t):
+def compute_io_shape(t, known_atom_shapes=None):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
         input_shape: list of tuples (shape, type)
         output_shape: tuple (shape, type)
+    known_atom_shapes: optional mapping of AtomicType names to shapes.
     """
     assert isinstance(t, ArrowType)
     input_types = t.input_type
