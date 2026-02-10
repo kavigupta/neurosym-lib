@@ -35,8 +35,8 @@ def load_dataset_npz(features_pth, label_pth):
 
 
 def filter_multilabel(split):
-    x_fname = f"data/ecg_multitask_example/x_{split}.npy"
-    y_fname = f"data/ecg_multitask_example/y_{split}.npy"
+    x_fname = f"data/ecg_classification/ecg_process/x_{split}.npy"
+    y_fname = f"data/ecg_classification/ecg_process/y_{split}.npy"
     X = np.load(x_fname)
     y = np.load(y_fname)
 
@@ -68,27 +68,18 @@ def create_dataset_factory(train_seed, is_regression, n_workers):
         DatasetWrapper: An instance of `DatasetWrapper` containing both the
         training and testing datasets.
     """
-    return DatasetWrapper(
-        DatasetFromNpy(
-            "data/ecg_multitask_example/x_train_filtered.npy",
-            "data/ecg_multitask_example/y_train_filtered.npy",
-            seed=train_seed,
-            is_regression=is_regression,
-        ),
-        DatasetFromNpy(
-            "data/ecg_multitask_example/x_test_filtered.npy",
-            "data/ecg_multitask_example/y_test_filtered.npy",
-            seed=0,
-            is_regression=is_regression,
-        ),
+    return ns.datasets.ecg_data_example(
+        train_seed=train_seed,
+        label_mode="multi",
+        is_regression=is_regression,
         batch_size=1000,
-        n_workers=n_workers,
+        num_workers=n_workers,
     )
 
 
-datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_workers=0)
+datamodule = create_dataset_factory(train_seed=42, is_regression=True, n_workers=0)
 # Retrieve input and output dimensions from the training dataset
-input_dim, output_dim = datamodule.train.get_io_dims()
+input_dim, output_dim = datamodule.train.get_io_dims(is_regression=True)
 
 
 early_stop_callback = EarlyStopping(

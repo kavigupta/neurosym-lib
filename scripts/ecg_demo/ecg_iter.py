@@ -32,8 +32,8 @@ def load_dataset_npz(features_pth, label_pth):
 
 
 def filter_multilabel(split):
-    x_fname = f"data/ecg_multitask_example/x_{split}.npy"
-    y_fname = f"data/ecg_multitask_example/y_{split}.npy"
+    x_fname = f"data/ecg_classification/ecg_process/x_{split}.npy"
+    y_fname = f"data/ecg_classification/ecg_process/y_{split}.npy"
     X = np.load(x_fname)
     y = np.load(y_fname)
 
@@ -65,27 +65,18 @@ def create_dataset_factory(train_seed, is_regression, n_workers):
         DatasetWrapper: An instance of `DatasetWrapper` containing both the
         training and testing datasets.
     """
-    return DatasetWrapper(
-        DatasetFromNpy(
-            "data/ecg_multitask_example/x_train_filtered.npy",
-            "data/ecg_multitask_example/y_train_filtered.npy",
-            seed=train_seed,
-            is_regression=is_regression,
-        ),
-        DatasetFromNpy(
-            "data/ecg_multitask_example/x_test_filtered.npy",
-            "data/ecg_multitask_example/y_test_filtered.npy",
-            seed=0,
-            is_regression=is_regression,
-        ),
+    return ns.datasets.ecg_data_example(
+        train_seed=train_seed,
+        label_mode="multi",
+        is_regression=is_regression,
         batch_size=1000,
-        n_workers=n_workers,
+        num_workers=n_workers,
     )
 
 
-datamodule = create_dataset_factory(train_seed=42, is_regression=False, n_workers=0)
+datamodule = create_dataset_factory(train_seed=42, is_regression=True, n_workers=0)
 # Retrieve input and output dimensions from the training dataset
-input_dim, output_dim = datamodule.train.get_io_dims()
+input_dim, output_dim = datamodule.train.get_io_dims(is_regression=True)
 
 
 # def subset_selector(x, channel, feat, typ):
@@ -198,7 +189,7 @@ def ecg_dsl(input_dim, output_dim, max_overall_depth=6):
                 return True
 
     def filter_same_type(x):
-        
+
         raise NotImplementedError
 
     dslf.filtered_type_variable("num", lambda x: filter_constants(x))
@@ -413,5 +404,5 @@ with open("best_program_nodes.pkl", "wb") as f:
 import IPython; IPython.embed()
 
 
-# Depth: 0, Cost: -0.4897, Program: ??::<{f, 144} -> {f, 9}>: : 0it [0Depth: 0, Cost: -0.4897, Program:Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 2it [00:11,  6.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:11,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 6it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -Depth: 3, Cost: -0.5749, Program: (output (select_ampDepth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_Depth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_6))) : : 14558it [Depth: 6, CostDepth: 8, Cost: -0.602, ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it] 
+# Depth: 0, Cost: -0.4897, Program: ??::<{f, 144} -> {f, 9}>: : 0it [0Depth: 0, Cost: -0.4897, Program:Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 2it [00:11,  6.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 3it [00:11,  3.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 4it [00:11,  2.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:11,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 5it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, 144} -> {f,: : 6it [00:12,  1.Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -> {f, 9}> ??::<{f, Depth: 1, Cost: -0.52, Program: (add ??::<{f, 144} -Depth: 3, Cost: -0.5749, Program: (output (select_ampDepth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_Depth: 6, Cost: -0.5925, Program: (sub (sub (output (select_amplitude (channel_6))) : : 14558it [Depth: 6, CostDepth: 8, Cost: -0.602, ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it]
 # ProgrDepth: 8, Cost: -0.602, Program: (add (mul (mul (ite (linear (select_amplitude (cha: : 46808it [59:31:22,  6.08s/it]^C60it [48:58:05,  7.45s/it]
