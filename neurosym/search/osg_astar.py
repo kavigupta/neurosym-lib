@@ -3,10 +3,12 @@ from dataclasses import dataclass, field
 from types import NoneType
 from typing import Iterable, Union
 
+from typing import TypeVar
+
 from neurosym.search.search_strategy import SearchStrategy
 from neurosym.search_graph.search_graph import SearchGraph
 
-X = type("X", (), {})
+X = TypeVar("X")
 
 
 @dataclass(order=True)
