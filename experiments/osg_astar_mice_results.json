@@ -1,0 +1,70 @@
+{
+  "device": "cpu",
+  "n_programs": 5,
+  "strategies": {
+    "BoundedAStar(max_depth=5)": [
+      {
+        "program": "(output (running_avg_last10 (affine_min_res_nose_dist)))",
+        "latency": 617.3937258720398,
+        "not_investigation_f1": 0.8401891252955083,
+        "investigation_f1": 0.6180790960451977
+      },
+      {
+        "program": "(output (running_avg_last10 (affine_angle_between)))",
+        "latency": 617.3937790393829,
+        "not_investigation_f1": 0.7138616122402375,
+        "investigation_f1": 0.2270203578038248
+      },
+      {
+        "program": "(output (running_avg_last10 (affine_res_angle_head_body)))",
+        "latency": 617.3937976360321,
+        "not_investigation_f1": 0.0035026269702276708,
+        "investigation_f1": 0.38751345532831
+      },
+      {
+        "program": "(output (running_avg_last10 (affine_area_ellipse_ratio)))",
+        "latency": 617.3938128948212,
+        "not_investigation_f1": 0.8413926499032882,
+        "investigation_f1": 0.012048192771084338
+      },
+      {
+        "program": "(output (running_avg_last10 (add (affine_acceleration) (affine_axis_ratio))))",
+        "latency": 622.2074601650238,
+        "not_investigation_f1": 0.8666666666666667,
+        "investigation_f1": 0.1076923076923077
+      }
+    ],
+    "OSGAstar": [
+      {
+        "program": "(output (add (running_avg_window11 (ite (affine_bool_res_angle_head_body) (affine_overlap_bboxes) (affine_res_angle_head_body))) (running_avg_last10 (affine_axis_ratio))))",
+        "latency": 36.133612394332886,
+        "not_investigation_f1": 0.8368675204702918,
+        "investigation_f1": 0.3718674211802749
+      },
+      {
+        "program": "(output (add (running_avg_window11 (ite (affine_bool_res_angle_head_body) (affine_overlap_bboxes) (affine_res_angle_head_body))) (running_avg_last10 (affine_area_ellipse_ratio))))",
+        "latency": 36.440667390823364,
+        "not_investigation_f1": 0.8636363636363636,
+        "investigation_f1": 0.0
+      },
+      {
+        "program": "(output (add (running_avg_window11 (ite (affine_bool_res_angle_head_body) (affine_overlap_bboxes) (affine_res_angle_head_body))) (running_avg_last10 (affine_overlap_bboxes))))",
+        "latency": 36.58713173866272,
+        "not_investigation_f1": 0.8636363636363636,
+        "investigation_f1": 0.0
+      },
+      {
+        "program": "(output (add (running_avg_window11 (ite (affine_bool_res_angle_head_body) (affine_overlap_bboxes) (affine_res_angle_head_body))) (running_avg_last10 (affine_rel_angle_social))))",
+        "latency": 36.747039556503296,
+        "not_investigation_f1": 0.7834593152512228,
+        "investigation_f1": 0.35153129161118507
+      },
+      {
+        "program": "(output (add (running_avg_window11 (ite (affine_bool_res_angle_head_body) (affine_overlap_bboxes) (affine_res_angle_head_body))) (running_avg_last10 (affine_speed))))",
+        "latency": 36.912155866622925,
+        "not_investigation_f1": 0.7395272642171776,
+        "investigation_f1": 0.3555298204979734
+      }
+    ]
+  }
+}
