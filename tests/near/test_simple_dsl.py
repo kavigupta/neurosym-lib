@@ -83,8 +83,8 @@ class TestNEARSimpleDSL(unittest.TestCase):
             return False
 
         def cost(x):
-            if isinstance(x.program, ns.SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
+            if isinstance(x.program, ns.SExpression):
+                return len(str(x.program))
             return 0
 
         max_depth = 7
