@@ -113,10 +113,9 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,
+            max_depth=1000,
         )
-        best_programs = itertools.islice(
-            ns.search.BoundedAStar(max_depth=1000, max_iterations=10000)(g), 4
-        )
+        best_programs = itertools.islice(ns.search.AStar(max_iterations=10000)(g), 4)
         num_with_one_ground_bounce_branch = 0
         for prog in best_programs:
             print(ns.render_s_expression(prog.uninitialize()))

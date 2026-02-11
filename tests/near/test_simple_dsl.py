@@ -96,7 +96,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             cost=cost,
         )
 
-        node = next(ns.search.BoundedAStar(max_depth=max_depth)(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):

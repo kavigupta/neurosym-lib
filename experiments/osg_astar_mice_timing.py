@@ -1,5 +1,5 @@
 """
-Timing experiment comparing BoundedAStar vs OSGAstar on the CALMS21 mouse DSL.
+Timing experiment comparing AStar vs OSGAstar on the CALMS21 mouse DSL.
 
 Both strategies search for a program in the same DSL with the same cost function.
 OSGAstar uses lazy cost evaluation (children inherit parent cost, own cost computed
@@ -96,6 +96,7 @@ def run_search(name, strategy, n_programs, device="cpu"):
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
+        max_depth=5,
         is_goal=lambda _: True,
         cost=cost,
     )
@@ -125,7 +126,7 @@ def run_search(name, strategy, n_programs, device="cpu"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="BoundedAStar vs OSGAstar timing")
+    parser = argparse.ArgumentParser(description="AStar vs OSGAstar timing")
     parser.add_argument("--device", default="cpu", help="device (default: cpu)")
     parser.add_argument(
         "--n-programs", type=int, default=20, help="programs per strategy (default: 20)"
@@ -133,14 +134,14 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("CALMS21 Mouse DSL: BoundedAStar vs OSGAstar (both max_depth=5)")
+    print("CALMS21 Mouse DSL: AStar vs OSGAstar (graph max_depth=5)")
     print(f"device={args.device}  n_programs={args.n_programs}")
     print("=" * 60)
 
     results = {}
     for name, strategy in [
-        ("BoundedAStar(max_depth=5)", ns.search.BoundedAStar(max_depth=5)),
-        ("OSGAstar(max_depth=5)", ns.search.OSGAstar(max_depth=5)),
+        ("AStar", ns.search.AStar()),
+        ("OSGAstar", ns.search.OSGAstar()),
     ]:
         results[name] = run_search(name, strategy, args.n_programs, args.device)
 

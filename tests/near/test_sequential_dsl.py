@@ -47,6 +47,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
                 s="([{f, $L}]) -> [{f, $O}]",
                 env=ns.TypeDefiner(L=input_dim, O=output_dim),
             ),
+            max_depth=3,
             is_goal=lambda _: True,
             cost=near.default_near_cost(
                 trainer_cfg=trainer_cfg,
@@ -56,7 +57,7 @@ class TestNEARSequentialDSL(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.BoundedAStar(max_depth=3)(g)
+            iterator = ns.search.AStar()(g)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1
