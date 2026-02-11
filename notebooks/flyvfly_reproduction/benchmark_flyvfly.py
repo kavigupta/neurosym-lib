@@ -211,13 +211,14 @@ def run_experiment(
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
+        max_depth=max_depth,
         is_goal=lambda _: True,
         cost=cost,
     )
 
-    # Search for programs with bounded A*
+    # Search for programs with A*
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
+    iterator = ns.search.AStar()(g)
 
     programs_list = []
     start_time = time.time()

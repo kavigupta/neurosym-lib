@@ -151,7 +151,7 @@ class TestPiecewiseLinear(unittest.TestCase):
 
     def search(self, g, count=3):
 
-        iterator = ns.search.BoundedAStar(max_depth=10000, max_iterations=100)(g)
+        iterator = ns.search.AStar(max_iterations=100)(g)
 
         return list(itertools.islice(iterator, count))
 

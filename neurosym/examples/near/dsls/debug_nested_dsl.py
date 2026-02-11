@@ -4,7 +4,7 @@ import torch
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.interface import NEAR
-from neurosym.search.bounded_astar import BoundedAStar
+from neurosym.search.astar_search import AStar
 from neurosym.types.type_string_repr import TypeDefiner
 
 
@@ -116,8 +116,7 @@ def run_near_on_dsl(nesting, dsl, neural_hole_filler, max_iterations=None):
         dsl=dsl,
         type_env=TypeDefiner(),
         neural_hole_filler=neural_hole_filler,
-        search_strategy=BoundedAStar(
-            max_depth=float("inf"),
+        search_strategy=AStar(
             max_iterations=nesting * 4 if max_iterations is None else max_iterations,
         ),
         loss_callback=torch.nn.functional.mse_loss,
