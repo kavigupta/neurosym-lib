@@ -4,7 +4,7 @@ Test dsl/differentiable_dsl.py with NEAR search graph.
 We conduct the following tests:
 - Sanity check: We can find a simple program.
 - BFS: We can find a simple program with BFS.
-- Astar: We can find a simple program with bounded Astar search.
+- Astar: We can find a simple program with Astar search.
 - Enumerate: We can enumerate all programs of a certain size.
 NEAR Integration tests.
 """
