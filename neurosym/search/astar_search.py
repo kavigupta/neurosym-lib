@@ -14,7 +14,8 @@ class AStar(SearchStrategy):
     Performs an A* search on the given search graph, yielding each goal node in the
     order it was visited. Requires that the search graph implement a cost method.
 
-    :param max_iterations: Maximum number of iterations to perform. Defaults to None.
+    :param max_iterations: Maximum number of iterations to perform. If None, no limit
+        is applied.
     """
 
     def __init__(self, max_iterations: Optional[int] = None):

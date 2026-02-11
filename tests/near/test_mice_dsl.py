@@ -71,6 +71,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         g = near.near_graph(
             neural_dsl,
             neural_dsl.valid_root_types[0],
+            max_depth=5,
             is_goal=lambda _: True,
             cost=cost,
         )

@@ -18,9 +18,8 @@ Search Graph
 .. autoclass:: neurosym.search.SearchStrategy
     :members: search
 .. autoclass:: neurosym.search.AStar
+.. autoclass:: neurosym.search.AStarAsync
 .. autoclass:: neurosym.search.BFS
-.. autoclass:: neurosym.search.BoundedAStar
-.. autoclass:: neurosym.search.BoundedAStarAsync
 .. autoclass:: neurosym.search.OSGAstar
 .. autoclass:: neurosym.MetadataComputer
     :members:
