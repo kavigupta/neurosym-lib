@@ -1,0 +1,290 @@
+{
+  "device": "cpu",
+  "n_programs": 20,
+  "strategies": {
+    "AStar": [
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window5 (affine_overlap_bboxes))))",
+        "latency": 14.202176570892334,
+        "not_investigation_f1": 0.7549459245581641,
+        "investigation_f1": 0.5794477138976912,
+        "cost": -0.7253333333333334
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last5 (affine_overlap_bboxes))))",
+        "latency": 15.566220998764038,
+        "not_investigation_f1": 0.40514246004169563,
+        "investigation_f1": 0.4516335682254965,
+        "cost": -0.368
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window11 (affine_overlap_bboxes))))",
+        "latency": 16.804545879364014,
+        "not_investigation_f1": 0.8625998830637303,
+        "investigation_f1": 0.18872266973532797,
+        "cost": -0.7293333333333333
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last10 (affine_overlap_bboxes))))",
+        "latency": 18.093246459960938,
+        "not_investigation_f1": 0.05927180355630821,
+        "investigation_f1": 0.3892248488180319,
+        "cost": -0.316
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window5 (affine_res_angle_head_body))))",
+        "latency": 18.093315839767456,
+        "not_investigation_f1": 0.0,
+        "investigation_f1": 0.3870967741935484,
+        "cost": -0.304
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window5 (affine_area_ellipse_ratio))))",
+        "latency": 18.09334421157837,
+        "not_investigation_f1": 0.35290482076637825,
+        "investigation_f1": 0.24240231548480462,
+        "cost": -0.2986666666666667
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last5 (affine_area_ellipse_ratio))))",
+        "latency": 18.093366146087646,
+        "not_investigation_f1": 0.33249188604399565,
+        "investigation_f1": 0.42640223117446546,
+        "cost": -0.384
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window11 (affine_area_ellipse_ratio))))",
+        "latency": 18.093387603759766,
+        "not_investigation_f1": 0.8093315388066398,
+        "investigation_f1": 0.4487678339818418,
+        "cost": -0.66
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last10 (affine_area_ellipse_ratio))))",
+        "latency": 18.093408584594727,
+        "not_investigation_f1": 0.8557710773958134,
+        "investigation_f1": 0.05296343001261034,
+        "cost": -0.6853333333333333
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last5 (affine_angle_between))))",
+        "latency": 18.09342861175537,
+        "not_investigation_f1": 0.3502555366269165,
+        "investigation_f1": 0.37781402936378466,
+        "cost": -0.444
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window5 (affine_angle_between))))",
+        "latency": 18.093448400497437,
+        "not_investigation_f1": 0.23288690476190477,
+        "investigation_f1": 0.3774154589371981,
+        "cost": -0.3373333333333333
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window11 (affine_angle_between))))",
+        "latency": 18.093467473983765,
+        "not_investigation_f1": 0.8610478359908884,
+        "investigation_f1": 0.0,
+        "cost": -0.6866666666666666
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last10 (affine_angle_between))))",
+        "latency": 18.093485355377197,
+        "not_investigation_f1": 0.3037800687285223,
+        "investigation_f1": 0.34433656957928804,
+        "cost": -0.37066666666666664
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last10 (affine_facing_angle))))",
+        "latency": 25.447896003723145,
+        "not_investigation_f1": 0.6899724011039559,
+        "investigation_f1": 0.18401937046004843,
+        "cost": -0.5346666666666666
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window5 (affine_facing_angle))))",
+        "latency": 25.447946071624756,
+        "not_investigation_f1": 0.42727860374919197,
+        "investigation_f1": 0.39022711631108054,
+        "cost": -0.376
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_last5 (affine_facing_angle))))",
+        "latency": 25.447969675064087,
+        "not_investigation_f1": 0.021645021645021644,
+        "investigation_f1": 0.3875338753387534,
+        "cost": -0.316
+      },
+      {
+        "program": "(output (mul (running_avg_last5 (affine_res_angle_head_body)) (running_avg_window11 (affine_facing_angle))))",
+        "latency": 25.44799041748047,
+        "not_investigation_f1": 0.7753191489361703,
+        "investigation_f1": 0.18769230769230769,
+        "cost": -0.6213333333333333
+      },
+      {
+        "program": "(output (mul (running_avg_last10 (affine_facing_angle)) (running_avg_window5 (affine_overlap_bboxes))))",
+        "latency": 29.8973126411438,
+        "not_investigation_f1": 0.31336405529953915,
+        "investigation_f1": 0.3906888958792073,
+        "cost": -0.4613333333333333
+      },
+      {
+        "program": "(output (mul (running_avg_last10 (affine_facing_angle)) (running_avg_last10 (affine_overlap_bboxes))))",
+        "latency": 31.279053688049316,
+        "not_investigation_f1": 0.7850829920241431,
+        "investigation_f1": 0.2674504041146216,
+        "cost": -0.6906666666666667
+      },
+      {
+        "program": "(output (mul (running_avg_last10 (affine_facing_angle)) (running_avg_last5 (affine_overlap_bboxes))))",
+        "latency": 32.616613149642944,
+        "not_investigation_f1": 0.8239188909579971,
+        "investigation_f1": 0.2707797772065124,
+        "cost": -0.6733333333333333
+      }
+    ],
+    "OSGAstar": [
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_axis_ratio))))",
+        "latency": 8.434658288955688,
+        "not_investigation_f1": 0.8622963537626067,
+        "investigation_f1": 0.15876777251184834,
+        "cost": -0.716
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_speed))))",
+        "latency": 8.56560730934143,
+        "not_investigation_f1": 0.40415486307837584,
+        "investigation_f1": 0.3294367693942614,
+        "cost": -0.4493333333333333
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_acceleration))))",
+        "latency": 8.688345670700073,
+        "not_investigation_f1": 0.07682672233820459,
+        "investigation_f1": 0.3866851595006935,
+        "cost": -0.31333333333333335
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_overlap_bboxes))))",
+        "latency": 8.927593469619751,
+        "not_investigation_f1": 0.7229020979020979,
+        "investigation_f1": 0.10955056179775281,
+        "cost": -0.5293333333333333
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_area_ellipse_ratio))))",
+        "latency": 9.046332836151123,
+        "not_investigation_f1": 0.004372540445999125,
+        "investigation_f1": 0.3867492593590089,
+        "cost": -0.30266666666666664
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_min_res_nose_dist))))",
+        "latency": 9.165743589401245,
+        "not_investigation_f1": 0.40243511694969564,
+        "investigation_f1": 0.3522056269538034,
+        "cost": -0.38533333333333336
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_angle_between))))",
+        "latency": 9.535507917404175,
+        "not_investigation_f1": 0.4811264230077891,
+        "investigation_f1": 0.34936138241923365,
+        "cost": -0.48533333333333334
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_tangential_velocity))))",
+        "latency": 9.535558938980103,
+        "not_investigation_f1": 0.836256157635468,
+        "investigation_f1": 0.10162162162162162,
+        "cost": -0.6733333333333333
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_rel_angle_social))))",
+        "latency": 9.53557801246643,
+        "not_investigation_f1": 0.12484897301651228,
+        "investigation_f1": 0.38214387261870914,
+        "cost": -0.32266666666666666
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window5 (affine_res_angle_head_body))))",
+        "latency": 9.535594940185547,
+        "not_investigation_f1": 0.0,
+        "investigation_f1": 0.3870967741935484,
+        "cost": -0.304
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_axis_ratio))))",
+        "latency": 9.972361087799072,
+        "not_investigation_f1": 0.7574883514532949,
+        "investigation_f1": 0.2679169457468185,
+        "cost": -0.48133333333333334
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_speed))))",
+        "latency": 10.105005502700806,
+        "not_investigation_f1": 0.0,
+        "investigation_f1": 0.3870967741935484,
+        "cost": -0.304
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_acceleration))))",
+        "latency": 10.231106519699097,
+        "not_investigation_f1": 0.8633693386393785,
+        "investigation_f1": 0.0027662517289073307,
+        "cost": -0.6946666666666667
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_overlap_bboxes))))",
+        "latency": 10.480860471725464,
+        "not_investigation_f1": 0.206973293768546,
+        "investigation_f1": 0.35290556900726394,
+        "cost": -0.316
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_area_ellipse_ratio))))",
+        "latency": 10.60640287399292,
+        "not_investigation_f1": 0.3777154870357393,
+        "investigation_f1": 0.4354736172917991,
+        "cost": -0.548
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_min_res_nose_dist))))",
+        "latency": 10.73116946220398,
+        "not_investigation_f1": 0.6917420814479638,
+        "investigation_f1": 0.5576298701298701,
+        "cost": -0.6866666666666666
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_tangential_velocity))))",
+        "latency": 10.85747241973877,
+        "not_investigation_f1": 0.8636363636363636,
+        "investigation_f1": 0.0,
+        "cost": -0.696
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_angle_between))))",
+        "latency": 11.100757122039795,
+        "not_investigation_f1": 0.8190782853692896,
+        "investigation_f1": 0.1280310378273521,
+        "cost": -0.664
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_rel_angle_social))))",
+        "latency": 11.10080623626709,
+        "not_investigation_f1": 0.692401661373076,
+        "investigation_f1": 0.3398007341373886,
+        "cost": -0.5173333333333333
+      },
+      {
+        "program": "(output (add (running_avg_window11 (affine_speed)) (running_avg_window11 (affine_res_angle_head_body))))",
+        "latency": 11.100826263427734,
+        "not_investigation_f1": 0.14526894385551628,
+        "investigation_f1": 0.3695337387778743,
+        "cost": -0.316
+      }
+    ]
+  }
+}
