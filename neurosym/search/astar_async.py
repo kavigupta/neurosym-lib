@@ -4,7 +4,7 @@ from typing import Callable, Iterable, TypeVar
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
-from neurosym.search.bounded_astar import _BoundedAStarNode
+from neurosym.search.astar_search import _AStarNode
 from neurosym.search_graph.search_graph import SearchGraph
 
 from .search_strategy import SearchStrategy
@@ -45,22 +45,19 @@ class _FuturePriorityQueue:
         return heapq.heappop(self._heap)
 
 
-class BoundedAStarAsync(SearchStrategy):
+class AStarAsync(SearchStrategy):
     """
-    Performs a bounded a-star search on the given search graph, yielding each node in
-    the order it was visited. Evaluates the cost_plus_heuristic function asynchronously
+    Performs an A* search on the given search graph, yielding each node in
+    the order it was visited. Evaluates the cost function asynchronously
     spawning max_workers processes. This function doesn't optimally traverse the search
     graph.
 
-    :param max_depth: Maximum depth to search to.
     :param max_workers: Maximum number of workers to use for evaluating
-        the cost_plus_heuristic function.
+        the cost function.
     """
 
-    def __init__(self, max_depth: int, max_workers: int):
-        assert max_depth > 0, "Cannot have 0 depth."
+    def __init__(self, max_workers: int):
         assert max_workers > 0, "Cannot have 0 workers."
-        self.max_depth = max_depth
         self.max_workers = max_workers
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
@@ -68,24 +65,23 @@ class BoundedAStarAsync(SearchStrategy):
             visited = set()
             fringe = _FuturePriorityQueue()
 
-            def add_to_fringe(node, depth):
+            def add_to_fringe(node):
                 future = executor.apipe(graph.cost, node)
                 fringe.putitem(
                     future,
-                    future_fn=lambda ret: _BoundedAStarNode(ret, node, depth),
+                    future_fn=lambda ret: _AStarNode(ret, node),
                 )
 
-            add_to_fringe(graph.initial_node(), 0)
+            add_to_fringe(graph.initial_node())
             while not fringe.empty():
                 try:
                     fringe_var = fringe.getitem()
-                    # pylint: disable=duplicate-code
-                    node, depth = fringe_var.node, fringe_var.depth
-                    if node.program in visited or depth > self.max_depth:
+                    node = fringe_var.node
+                    if node.program in visited:
                         continue
                     visited.add(node.program)
                     yield from graph.yield_goal_node(node)
                     for child in graph.expand_node(node):
-                        add_to_fringe(child, depth + 1)
+                        add_to_fringe(child)
                 except queue.Empty:
                     pass

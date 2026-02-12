@@ -23,7 +23,7 @@ class TestNEARInterface(unittest.TestCase):
             dsl=original_dsl,
             type_env=t,
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=10),
-            search_strategy=ns.search.BoundedAStar(max_depth=3),
+            search_strategy=ns.search.AStar(),
         )
         results = interface.fit(
             datamodule=datamodule,

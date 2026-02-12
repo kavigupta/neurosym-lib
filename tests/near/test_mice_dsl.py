@@ -70,10 +70,11 @@ class TestNEARMiceDSL(unittest.TestCase):
         g = near.near_graph(
             neural_dsl,
             neural_dsl.valid_root_types[0],
+            max_depth=5,
             is_goal=lambda _: True,
             cost=cost,
         )
-        iterator = ns.search.BoundedAStar(max_depth=5)(g)
+        iterator = ns.search.AStar()(g)
         # Should not throw a StopIteration error
         program = next(iterator)
         initialized_program = neural_dsl.initialize(program)
