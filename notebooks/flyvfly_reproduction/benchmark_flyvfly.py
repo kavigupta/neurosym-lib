@@ -247,13 +247,9 @@ def run_experiment(
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
     raw_output_path = str(output_path_obj).replace(".pkl", "_raw.pkl")
-    # with open(raw_output_path, "wb") as f:
-    #     pickle.dump(programs_list, f)
-    # print(f"  Saved raw programs to: {raw_output_path}")
-    # load from saved raw programs for reproduction
-    with open(raw_output_path, "rb") as f:
-        programs_list = pickle.load(f)
-    print(f"  Loaded raw programs from: {raw_output_path}")
+    with open(raw_output_path, "wb") as f:
+        pickle.dump(programs_list, f)
+    print(f"  Saved raw programs to: {raw_output_path}")
 
     # Evaluate each discovered program
     print("\n[5/5] Evaluating programs on test set...")
