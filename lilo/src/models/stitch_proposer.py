@@ -103,11 +103,31 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             max_arity=kwargs["max_arity"],
             iterations=kwargs["iterations"],
         )
-
+        
+        # Map tasks to original program likelihoods.
+        task_to_program_likelihood = {}
+        with open(frontiers_filepath.replace(".json", "_with_likelihood.json"), "r") as f:
+            frontiers_dict_with_likelihood = json.load(f)
+            for frontier in frontiers_dict_with_likelihood["frontiers"]:
+                task_to_program_likelihood[frontier["task"]] = frontier["likelihoods"]
+        
+        # Construct a list of likelihoods assuming that the order of programs for each task is preserved after rewriting. The list of likelihoods should be in the same order as `programs_rewritten`.
+        rewritten_program_likelihoods = []
+        visited_tasks = set()
+        for task in tasks:
+            if task not in visited_tasks:
+                if task in task_to_program_likelihood:
+                    rewritten_program_likelihoods.extend(task_to_program_likelihood[task])
+                else:
+                    logging.warning(f"Task {task} not found in original frontiers with likelihoods. Assigning likelihood of 0 to rewritten programs for this task.")
+                    rewritten_program_likelihoods.extend([0.0] * len(task_to_programs[task]))
+                visited_tasks.add(task)
+        
+        assert len(programs_rewritten) == len(rewritten_program_likelihoods) == len(tasks), "Length of rewritten programs, their likelihoods, and tasks should be the same."
         # Rebuild the set of frontiers
         # NOTE(GG): Messy logic due to `include_samples=True` returns all samples; consider refactor.
         frontiers_rewritten, sample_frontiers_rewritten = [], []
-        for task_id, program in zip(tasks, programs_rewritten):
+        for task_id, program, likelihood in zip(tasks, programs_rewritten, rewritten_program_likelihoods):
             matching_tasks = experiment_state.get_tasks_for_ids(
                 task_splits[0],
                 [task_id],
@@ -129,7 +149,7 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
                         FrontierEntry(
                             program=Program.parse(program),
                             logPrior=0.0,
-                            logLikelihood=0.0,
+                            logLikelihood=likelihood,
                         )
                     ],
                     task=task,
@@ -153,7 +173,7 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
                         FrontierEntry(
                             program=Program.parse(program),
                             logPrior=0.0,
-                            logLikelihood=0.0,
+                            logLikelihood=likelihood,
                         )
                     ],
                     task=task,
@@ -183,7 +203,6 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             print(
                 f"Updated grammar (productions={len(grammar.productions)}) with {len(new_productions)} new abstractions."
             )
-
         # Rescore frontiers under grammar
         grammar = experiment_state.models[model_loaders.GRAMMAR]
         frontiers_rewritten = [grammar.rescoreFrontier(f) for f in frontiers_rewritten]
@@ -225,7 +244,7 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             Invented.parse(abs["dreamcoder"])
             for abs in compression_result.json["abstractions"]
         ]
-
+        
         task_to_programs = defaultdict(list)
         for rewritten, task in zip(
             compression_result.json["rewritten_dreamcoder"], stitch_kwargs["tasks"]

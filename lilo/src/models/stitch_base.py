@@ -36,6 +36,7 @@ class StitchBase(object):
             include_samples=include_samples,
         )
         frontiers_list = []
+        frontiers_list_with_likelihood = []
         for split in task_splits:
             for frontier in frontiers[split]:
                 programs = [entry.program for entry in frontier]
@@ -52,13 +53,20 @@ class StitchBase(object):
                                 )
                             )
                         ]
-
                     frontiers_list.append(
                         {
                             "task": frontier.task.name,
                             "programs": [{"program": str(p)} for p in programs],
                         }
                     )
+                    if not use_mdl_program:
+                        frontiers_list_with_likelihood.append(
+                            {
+                                "task": frontier.task.name,
+                                "programs": [{"program": str(p)} for p in programs],
+                                "likelihoods": [entry.logLikelihood for entry in frontier],
+                            }
+                        )
 
         # Write out the programs.
         os.makedirs(os.path.dirname(frontiers_filepath), exist_ok=True)
@@ -71,6 +79,16 @@ class StitchBase(object):
                 f,
                 indent=4,
             )
+        if not use_mdl_program:
+            with open(frontiers_filepath.replace(".json", "_with_likelihood.json"), "w") as f:
+                json.dump(
+                    {
+                        "DSL": experiment_state.models[GRAMMAR].json(),
+                        "frontiers": frontiers_list_with_likelihood,
+                    },
+                    f,
+                    indent=4,
+                )
 
     def _get_filepath_for_current_iteration(
         self,
