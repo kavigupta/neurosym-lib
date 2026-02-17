@@ -166,9 +166,11 @@ def _enumerate_tree_dist_dfs_uncached(
     # Performed recursively for now.
     syms, log_probs = tree_dist.likelihood_arrays[parents]
     position = parents[-1][1]
-    mask = preorder_mask.compute_mask(position, syms)
-    denominator = np.logaddexp.reduce(log_probs[mask])
-    for node, likelihood in zip(syms[mask], log_probs[mask] - denominator):
+    mask_adj = preorder_mask.compute_mask(position, syms)
+    valid = np.isfinite(mask_adj)
+    adjusted = log_probs + mask_adj.astype(log_probs.dtype)
+    denominator = np.logaddexp.reduce(adjusted[valid])
+    for node, likelihood in zip(syms[valid], adjusted[valid] - denominator):
         likelihood = np.float64(likelihood)
         new_parents = parents + (node,)
         new_parents = new_parents[-tree_dist.limit :]

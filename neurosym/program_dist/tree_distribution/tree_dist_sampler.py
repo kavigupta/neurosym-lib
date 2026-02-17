@@ -37,8 +37,9 @@ def attempt_to_sample_tree_dist(
         key = ancestors + ((parent, i),)
         key = key[-dist.limit :]
         possibilites, weights = dist.sampling_dict_arrays[key]
-        mask = preorder_mask.compute_mask(i, possibilites)
-        possibilites, weights = possibilites[mask], weights[mask]
+        mask_adj = preorder_mask.compute_mask(i, possibilites)
+        valid = np.isfinite(mask_adj)
+        possibilites, weights = possibilites[valid], weights[valid] * np.exp(mask_adj[valid].astype(weights.dtype))
         if len(possibilites) == 0:
             raise ValueError(f"No valid productions for {key}")
         weights /= weights.sum()

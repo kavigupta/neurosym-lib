@@ -1,5 +1,7 @@
 from typing import Callable, List
 
+import numpy as np
+
 from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.dsl.production import Production
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
@@ -38,11 +40,17 @@ class TypePreorderMask(PreorderMask):
         return [prod for prod, _ in self.dsl.productions_for_type(twe)]
 
     def compute_mask(self, position, symbols):
-        valid_productions = {
+        valid_prods = self.valid_productions(self.type_stack[-1][position])
+        valid_indices = {
             self.tree_dist.symbol_to_index[prod.symbol()]
-            for prod in self.valid_productions(self.type_stack[-1][position])
+            for prod in valid_prods
         }
-        return [i in valid_productions for i in symbols]
+        return np.where(
+            np.isin(symbols, list(valid_indices)) if len(valid_indices) > 0
+            else np.zeros(len(symbols), dtype=bool),
+            0.0,
+            -np.inf,
+        )
 
     def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol, arity = self.tree_dist.symbols[symbol]
