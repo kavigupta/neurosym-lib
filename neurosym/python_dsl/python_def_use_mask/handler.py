@@ -182,11 +182,18 @@ class Handler(ABC):
         if self.is_defining(position):
             return np.zeros(len(symbols))
         names = set(self.currently_defined_names())
-        return np.array([
-            0.0 if self._matches(names, symbol, idx_to_name, special_case_predicates)
-            else -np.inf
-            for symbol in symbols
-        ])
+        return np.array(
+            [
+                (
+                    0.0
+                    if self._matches(
+                        names, symbol, idx_to_name, special_case_predicates
+                    )
+                    else -np.inf
+                )
+                for symbol in symbols
+            ]
+        )
 
 
 class ConstructHandler(Handler):

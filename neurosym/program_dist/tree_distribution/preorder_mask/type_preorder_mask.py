@@ -42,12 +42,14 @@ class TypePreorderMask(PreorderMask):
     def compute_mask(self, position, symbols):
         valid_prods = self.valid_productions(self.type_stack[-1][position])
         valid_indices = {
-            self.tree_dist.symbol_to_index[prod.symbol()]
-            for prod in valid_prods
+            self.tree_dist.symbol_to_index[prod.symbol()] for prod in valid_prods
         }
         return np.where(
-            np.isin(symbols, list(valid_indices)) if len(valid_indices) > 0
-            else np.zeros(len(symbols), dtype=bool),
+            (
+                np.isin(symbols, list(valid_indices))
+                if len(valid_indices) > 0
+                else np.zeros(len(symbols), dtype=bool)
+            ),
             0.0,
             -np.inf,
         )
