@@ -232,7 +232,7 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             frontiers_dict = json.load(f)
             stitch_kwargs = stitch.from_dreamcoder(frontiers_dict)
 
-        stitch_kwargs.update(dict(eta_long=True, utility_by_rewrite=True))
+        stitch_kwargs.update(dict(eta_long=True, no_mismatch_check=True))
         
         compression_result = stitch.compress(
         **stitch_kwargs,
