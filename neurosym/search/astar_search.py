@@ -1,6 +1,6 @@
-import queue
+import heapq
 from dataclasses import dataclass, field
-from typing import Iterable, TypeVar
+from typing import Iterable, Optional, TypeVar
 
 from neurosym.search_graph.search_graph import SearchGraph
 
@@ -13,20 +13,30 @@ class AStar(SearchStrategy):
     """
     Performs an A* search on the given search graph, yielding each goal node in the
     order it was visited. Requires that the search graph implement a cost method.
+
+    :param max_iterations: Maximum number of iterations to perform. If None, no limit
+        is applied.
     """
+
+    def __init__(self, max_iterations: Optional[int] = None):
+        self.max_iterations = max_iterations
 
     def search(self, graph: SearchGraph[X]) -> Iterable[X]:
         visited = set()
-        fringe = queue.PriorityQueue()
+        fringe = []
 
         def add_to_fringe(node):
-            fringe.put(_AStarNode(graph.cost(node), node))
+            heapq.heappush(fringe, _AStarNode(graph.cost(node), node))
 
         add_to_fringe(graph.initial_node())
+        iterations = 0
         # this is similar to the BFS algorithm
         # pylint: disable=duplicate-code
-        while not fringe.empty():
-            node = fringe.get().node
+        while fringe:
+            if self.max_iterations is not None and iterations >= self.max_iterations:
+                break
+            iterations += 1
+            node = heapq.heappop(fringe).node
             if node in visited:
                 continue
             visited.add(node)

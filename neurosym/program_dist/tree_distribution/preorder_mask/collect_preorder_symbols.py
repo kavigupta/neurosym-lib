@@ -57,8 +57,9 @@ def _collect_preorder_symbols_dfs(
     """
     position = parents[-1][1]
     idxs = np.array([i for i, _ in tree_dist.distribution[parents]])
-    bool_mask = mask.compute_mask(position, idxs)
-    alts = tuple(int(x) for x in idxs[bool_mask])
+    mask_adj = mask.compute_mask(position, idxs)
+    valid = np.isfinite(mask_adj)
+    alts = tuple(int(x) for x in idxs[valid])
     if replace_node_midstream is not None:
         s_exp = replace_node_midstream(s_exp, mask, position, alts)
     yield s_exp, alts, mask

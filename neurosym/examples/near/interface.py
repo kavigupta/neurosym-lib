@@ -53,6 +53,7 @@ class NEAR:
         self.neural_dsl = None
         self.loss_callback = None
         self.search_strategy = None
+        self.validation_metric = "hamming_accuracy"
 
         self._is_registered = False
         self.validation_params = None
@@ -68,6 +69,7 @@ class NEAR:
             [torch.Tensor, torch.Tensor], torch.Tensor
         ] = classification_mse_loss,
         validation_params: dict = frozendict(),
+        validation_metric: str = "hamming_accuracy",
         is_goal: Callable[[DSLSearchNode], bool] = lambda _: True,
     ):
         """
@@ -79,6 +81,7 @@ class NEAR:
         :param search_strategy: A search strategy supported in `neurosym.search`
         :param loss_callback: Callable for the loss function used during training.
             Defaults to classification MSE loss.
+        :param validation_metric: Metric to use for validation.
         """
         self.dsl = dsl
         self.type_env = type_env
@@ -89,6 +92,7 @@ class NEAR:
         self.loss_callback = loss_callback
         self._is_registered = True
         self.validation_params = validation_params
+        self.validation_metric = validation_metric
         self.is_goal = is_goal
 
     def fit(
@@ -148,4 +152,5 @@ class NEAR:
             n_epochs=self.n_epochs,
             loss_callback=self.loss_callback,
             accelerator=self.accelerator,
+            validation_metric=self.validation_metric,
         )

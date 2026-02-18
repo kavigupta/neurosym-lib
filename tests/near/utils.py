@@ -21,5 +21,5 @@ def assertDSLEnumerable(dsl, out_t, max_depth=5):
     g = near.near_graph(dsl, t(out_t), max_depth=max_depth, is_goal=checker, cost=cost)
 
     # should not raise StopIteration.
-    for _ in ns.search.BoundedAStar(max_depth=max_depth)(g):
+    for _ in ns.search.AStar()(g):
         pass

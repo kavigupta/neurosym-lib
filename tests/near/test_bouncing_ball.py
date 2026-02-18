@@ -6,19 +6,22 @@ from torch import nn
 import neurosym as ns
 from neurosym.examples import near
 
-dataset_factory = lambda train_seed: ns.DatasetWrapper(
-    ns.DatasetFromNpy(
-        "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
-        "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
-        train_seed,
-    ),
-    ns.DatasetFromNpy(
-        "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
-        "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
-        None,
-    ),
-    batch_size=200,
-)
+
+def dataset_factory(train_seed):
+    return ns.DatasetWrapper(
+        ns.DatasetFromNpy(
+            "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_data.npy",
+            "tutorial/bouncing_ball_exercise/data/bounce_example/train_ex_labels.npy",
+            train_seed,
+        ),
+        ns.DatasetFromNpy(
+            "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_data.npy",
+            "tutorial/bouncing_ball_exercise/data/bounce_example/test_ex_labels.npy",
+            None,
+        ),
+        batch_size=200,
+    )
+
 
 L = 4
 
@@ -97,22 +100,21 @@ class TestHierarchicalBouncingBall(unittest.TestCase):
             validation_cost_creator=lambda embedding, symbol_costs: near.default_near_cost(
                 trainer_cfg=near.NEARTrainerConfig(
                     lr=0.1,
-                    n_epochs=100,
+                    n_epochs=200,
                     accelerator="cpu",
                     loss_callback=nn.functional.mse_loss,
+                    validation_metric="neg_l2_dist",
                 ),
                 datamodule=dataset_factory(42),
                 progress_by_epoch=True,
                 embedding=embedding,
-                # structural_cost_weight=0.2,
+                structural_cost_penalty=1.0,
                 symbol_costs=symbol_costs,
             ),
             neural_hole_filler=filler,
             validation_epochs=4000,
         )
-        best_programs = itertools.islice(
-            ns.search.BoundedAStar(max_depth=1000, max_iterations=10000)(g), 4
-        )
+        best_programs = itertools.islice(ns.search.AStar(max_iterations=10000)(g), 4)
         num_with_one_ground_bounce_branch = 0
         for prog in best_programs:
             print(ns.render_s_expression(prog.uninitialize()))
