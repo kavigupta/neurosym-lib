@@ -586,9 +586,10 @@ def _accumulate_counts(
     this_idx = tree_dist.symbol_to_index[program.symbol]
     numerators[ancestors][this_idx] += 1
     possibilities = np.arange(len(tree_dist.symbols))
-    mask = preorder_mask.compute_mask(parent_position, possibilities)
+    mask_adj = preorder_mask.compute_mask(parent_position, possibilities)
     preorder_mask.on_entry(parent_position, this_idx)
-    elements = possibilities[mask]
+    valid = np.isfinite(mask_adj)
+    elements = possibilities[valid]
     elements = tuple(int(x) for x in elements)
     denominators[ancestors][elements] += 1
     order = tree_dist.ordering.order(this_idx, len(program.children))
