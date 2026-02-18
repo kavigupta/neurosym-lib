@@ -527,18 +527,22 @@ class Grammar(object):
         return summary.logLikelihood(self)
 
     def rescoreFrontier(self, frontier):
-        return Frontier(
-            [
+        entries = []
+        for e in frontier:
+            summary = self.closedLikelihoodSummary(
+                frontier.task.request, e.program, silent=True
+            )
+            if summary is None:
+                continue
+            entries.append(
                 FrontierEntry(
                     e.program,
-                    logPrior=self.logLikelihood(frontier.task.request, e.program),
+                    logPrior=summary.logLikelihood(self),
                     logLikelihood=e.logLikelihood,
                     origin=e.origin,
                 )
-                for e in frontier
-            ],
-            frontier.task,
-        )
+            )
+        return Frontier(entries, frontier.task)
 
     def productionUses(self, frontiers):
         """Returns the expected number of times that each production was used. {production: expectedUses}"""
@@ -568,6 +572,7 @@ class Grammar(object):
                     for summary in [
                         self.closedLikelihoodSummary(f.task.request, e.program, True)
                     ]
+                    if summary is not None
                 ],
                 task=f.task,
             )
@@ -575,6 +580,7 @@ class Grammar(object):
         ]
 
         g = self
+        frontiers = [f for f in frontiers if not f.empty]
         for i in range(iterations):
             u = Uses()
             for f in frontiers:
