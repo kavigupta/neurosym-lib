@@ -329,7 +329,10 @@ def multicoreEnumeration(
         family = ns.BigramProgramDistributionFamily(
             dsl,
             include_type_preorder_mask=False,
-            additional_preorder_masks=[ns.TypePreorderMaskELF],
+            additional_preorder_masks=[
+                lambda td, dsl: ns.TypePreorderMaskELF(td, dsl, dreamcoder_compat=True),
+            ],
+            dreamcoder_compat=True,
         )
         print(f"Bigram Parameters Shape is: {family.parameters_shape()}")
 
@@ -352,17 +355,21 @@ def multicoreEnumeration(
 
             For most primitives this is just a string match. For the special
             variable symbol "$0" we want the *same* log-score to be attached to
-            the concrete NeuroSym variable symbol that appears in the candidate
-            set at this site. In the list DSL used here, that symbol is "$0_3".
+            *all* concrete NeuroSym variable symbols ("$N_M").  DreamCoder uses
+            a single "$0" to represent any variable and adjusts with
+            numberOfFreeVariables; NeuroSym has separate symbols per de Bruijn
+            index and type variant, with dreamcoder_compat handling the split.
             """
             s = str(child)
             if s == "$0":
-                # For the DreamCoder variable "$0", attach the same log-score to
-                # *all* concrete NeuroSym variable symbols of the form "$0_*".
+                # Attach the same log-score to variales. 
+                # The type preorder mask with dreamcoder_compat will
+                # filter to only the type-valid variables at each position and
+                # divide by n_vars.
                 var_syms = [
                     sym
                     for sym in ordered_symbols
-                    if isinstance(sym, str) and sym.startswith("$0_")
+                    if isinstance(sym, str) and re.match(r"\$\d+_\d+", sym)
                 ]
                 assert (
                     len(var_syms) > 0
