@@ -30,6 +30,9 @@ from neurosym.program_dist.tree_distribution.ordering import (
     DictionaryNodeOrdering,
     NodeOrdering,
 )
+from neurosym.program_dist.tree_distribution.preorder_mask.dreamcoder_lambda_transparency_mask import (
+    DreamCoderLambdaTransparencyMask,
+)
 from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
     annotate_with_alternate_symbols,
     collect_preorder_symbols,

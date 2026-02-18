@@ -8,6 +8,9 @@ import torch
 
 from neurosym.dsl.dsl import DSL, ROOT_SYMBOL
 from neurosym.program_dist.tree_distribution.ordering import DefaultNodeOrdering
+from neurosym.program_dist.tree_distribution.preorder_mask.dreamcoder_lambda_transparency_mask import (
+    DreamCoderLambdaTransparencyMask,
+)
 from neurosym.program_dist.tree_distribution.preorder_mask.preorder_mask import (
     ConjunctionPreorderMask,
     PreorderMask,
@@ -303,6 +306,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         ] = (),
         include_type_preorder_mask: bool = True,
         node_ordering=DefaultNodeOrdering,
+        dreamcoder_compat: bool = False,
     ):
         if valid_root_types is not None:
             dsl = dsl.with_valid_root_types(valid_root_types)
@@ -310,9 +314,20 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._symbols, self._arities, self._valid_mask = _bigram_mask(dsl)
         self._max_arity = max(self._arities)
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
-        self._additional_preorder_masks = additional_preorder_masks
-        self._include_type_preorder_mask = include_type_preorder_mask
         self._node_ordering = node_ordering
+
+        if dreamcoder_compat:
+            self._include_type_preorder_mask = False
+            self._additional_preorder_masks = (
+                (lambda td, dsl: TypePreorderMask(td, dsl, dreamcoder_compat=True),)
+                if include_type_preorder_mask
+                else ()
+            ) + tuple(additional_preorder_masks) + (
+                lambda td, dsl: DreamCoderLambdaTransparencyMask(td),
+            )
+        else:
+            self._additional_preorder_masks = additional_preorder_masks
+            self._include_type_preorder_mask = include_type_preorder_mask
 
     @property
     def sym_arities(self) -> List[int]:

@@ -3,7 +3,7 @@ from typing import Callable, List
 import numpy as np
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
-from neurosym.dsl.production import Production
+from neurosym.dsl.production import Production, VariableProduction
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
@@ -19,9 +19,10 @@ class TypePreorderMask(PreorderMask):
     cache key is the unique hash of the ``TypeWithEnvironment`` of the current node.
     """
 
-    def __init__(self, tree_dist, dsl):
+    def __init__(self, tree_dist, dsl, dreamcoder_compat=False):
         super().__init__(tree_dist)
         self.dsl = dsl
+        self.dreamcoder_compat = dreamcoder_compat
         assert len(self.dsl.valid_root_types) == 1, "Only one root type is supported"
         self.root_type = self.dsl.valid_root_types[0]
 
@@ -44,7 +45,7 @@ class TypePreorderMask(PreorderMask):
         valid_indices = {
             self.tree_dist.symbol_to_index[prod.symbol()] for prod in valid_prods
         }
-        return np.where(
+        mask = np.where(
             (
                 np.isin(symbols, list(valid_indices))
                 if len(valid_indices) > 0
@@ -53,6 +54,19 @@ class TypePreorderMask(PreorderMask):
             0.0,
             -np.inf,
         )
+        if self.dreamcoder_compat:
+            var_indices = {
+                self.tree_dist.symbol_to_index[prod.symbol()]
+                for prod in valid_prods
+                if isinstance(prod, VariableProduction)
+            }
+            n_vars = len(var_indices)
+            if n_vars > 1:
+                var_adj = -np.log(n_vars)
+                symbols_arr = np.asarray(symbols)
+                for vi in var_indices:
+                    mask[symbols_arr == vi] = var_adj
+        return mask
 
     def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol, arity = self.tree_dist.symbols[symbol]
