@@ -22,6 +22,7 @@ from .dsls.adaptive_mice_dsl import (
     adaptive_crim13_dsl,
     adaptive_mice_dsl_builder,
 )
+from .dsls.attention_drop_eg_dsl import attention_drop_ecg_dsl, attention_drop_eg_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_bball_dsl import simple_bball_dsl
 from .dsls.simple_calms21_dsl import simple_calms21_dsl

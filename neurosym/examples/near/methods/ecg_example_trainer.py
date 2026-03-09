@@ -1,6 +1,5 @@
 # pylint: skip-file
 from dataclasses import dataclass
-from typing import Callable
 
 import torch
 from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
@@ -35,9 +34,11 @@ def ecg_cross_entropy_loss(predictions, targets):
     """
     # predictions are logits, targets are one-hot
     predictions = predictions.view(-1, predictions.shape[-1])
-    targets = targets.view(-1, targets.shape[-1])
-    # Convert one-hot to class indices
-    target_indices = targets.argmax(dim=-1)
+    if targets.ndim == predictions.ndim:
+        targets = targets.view(-1, targets.shape[-1])
+        target_indices = targets.argmax(dim=-1)
+    else:
+        target_indices = targets.view(-1).long()
     return nn.functional.cross_entropy(predictions, target_indices)
 
 
@@ -62,16 +63,31 @@ def compute_ecg_metrics(predictions, targets, num_labels):
     else:
         predictions_probs = predictions_np
 
+    # Support both one-hot and integer targets.
+    if targets_np.ndim == predictions_probs.ndim:
+        target_classes = targets_np.argmax(axis=-1)
+        target_one_hot = targets_np
+    else:
+        target_classes = targets_np.reshape(-1).astype("int64")
+        target_one_hot = (
+            torch.nn.functional.one_hot(
+                torch.from_numpy(target_classes), num_classes=num_labels
+            )
+            .numpy()
+            .astype("float32")
+        )
+
     # Get predicted classes
     pred_classes = predictions_probs.argmax(axis=-1)
-    target_classes = targets_np.argmax(axis=-1)
 
     metrics = {}
 
     # AUROC
     try:
         metrics["auroc"] = roc_auc_score(
-            y_true=targets_np, y_score=predictions_probs, multi_class="ovr"
+            y_true=target_one_hot,
+            y_score=predictions_probs,
+            multi_class="ovr",
         )
     except ValueError:
         metrics["auroc"] = 0.0
@@ -87,12 +103,14 @@ def compute_ecg_metrics(predictions, targets, num_labels):
     # F1 scores
     if num_labels > 2:
         metrics["weighted_avg_f1"] = f1_score(
-            target_classes, pred_classes, average="weighted"
+            target_classes, pred_classes, average="weighted", zero_division=0
         )
         metrics["unweighted_avg_f1"] = f1_score(
-            target_classes, pred_classes, average="macro"
+            target_classes, pred_classes, average="macro", zero_division=0
         )
     else:
-        metrics["f1"] = f1_score(target_classes, pred_classes, average="binary")
+        metrics["f1"] = f1_score(
+            target_classes, pred_classes, average="binary", zero_division=0
+        )
 
     return metrics

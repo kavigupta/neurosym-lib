@@ -20,6 +20,25 @@ Run the benchmark script (uses the channel/interval ECG DSL):
 uv run python notebooks/ecg_reproduction/benchmark_ecg.py --num-programs 20 --epochs 30 --device cpu
 ```
 
+Run all ECG experiments (all DSLs + all baselines, single/multi, with optional
+extra torch-ecg datasets):
+```bash
+bash notebooks/ecg_reproduction/run_all_ecg_experiments.sh \
+  --device cpu \
+  --extra-datasets CPSC2018 \
+  --db-dir /path/to/torch-ecg/data
+```
+
+The ECG DSL now includes:
+- Channel-level selectors (`channel_0` ... `channel_11`)
+- Semantic channel groups (`channel_group_limb`, `channel_group_precordial`, etc.)
+- `drop_variables` for composing selectors while excluding channel subsets
+
+Run the attention + drop-variables benchmark:
+```bash
+uv run python notebooks/ecg_reproduction/benchmark_attention_drop_eg.py --num-programs 20 --epochs 30 --device cpu
+```
+
 ### Arguments
 - `--output` (default: `outputs/ecg_results/reproduction.pkl`)
 - `--num-programs` (default: `20`)
@@ -52,6 +71,44 @@ uv run python notebooks/ecg_reproduction/baseline_tree.py --model random_forest 
 ```
 
 Each baseline writes metrics to `outputs/ecg_results/baseline_*.json`.
+All ECG baselines and NEAR evaluation now use torch-ecg classification metrics
+(`macro_f1`, `macro_acc`, `macro_prec`, `macro_sens`, `macro_auroc`, `macro_auprc`).
+
+torch-ecg baselines (MultiScopicCNN + ECG_CRNN multi-scopic):
+```bash
+python notebooks/ecg_reproduction/baseline_torch_ecg.py --label-mode single --device cpu
+python notebooks/ecg_reproduction/baseline_torch_ecg.py --label-mode multi --device cpu \
+  --output outputs/ecg_results/baseline_torch_ecg_multi.json
+```
+
+To run these baselines on a torch-ecg dataset directly:
+```bash
+python notebooks/ecg_reproduction/baseline_torch_ecg.py \
+  --dataset-name CPSC2018 \
+  --db-dir /path/to/torch-ecg/data \
+  --label-mode single \
+  --device cpu
+```
+
+## 2c. General Benchmark on torch-ecg Datasets
+
+You can benchmark NEAR on any torch-ecg dataset class (for example `CPSC2018`)
+using:
+
+```bash
+python notebooks/ecg_reproduction/benchmark_ecg_general.py \
+  --dataset-name CPSC2018 \
+  --db-dir /path/to/torch-ecg/data \
+  --device cpu \
+  --num-programs 10
+```
+
+Notes:
+- This path requires `torch-ecg` (`pip install torch-ecg`).
+- The loader converts raw signals into a standardized `(N, 144)` feature format
+  compatible with `simple_ecg_dsl`.
+- Labels support `--label-mode single` and `--label-mode multi`.
+- Use `--dataset-kwargs-json` to pass dataset-specific constructor args.
 
 ## 3. Analyzing Results
 

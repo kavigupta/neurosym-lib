@@ -1,4 +1,3 @@
-# pylint: disable=duplicate-code,cyclic-import
 import torch
 from torch import nn
 
@@ -23,6 +22,61 @@ ECG_CHANNEL_GROUPS = {
 }
 
 
+class MaskedAttentionFeatureExtractor(nn.Module):
+    """
+    Attention feature extractor with explicit channel masking.
+
+    Input is expected to be flattened as [B, 12*6*2], corresponding to
+    [B, channels, features, value_type] with value_type in {"interval", "amplitude"}.
+    """
+
+    def __init__(self, *, value_type: str, feature_dim: int = ECG_FEATURE_DIM):
+        super().__init__()
+        if value_type not in ECG_VALUE_TYPES:
+            raise ValueError(f"Unknown ECG value type: {value_type}")
+        self.value_type = value_type
+        self.feature_dim = feature_dim
+        self.query = nn.Parameter(torch.randn(ECG_FEATURE_DIM))
+        self.projection = nn.Sequential(
+            nn.Linear(ECG_FEATURE_DIM, feature_dim),
+            nn.ReLU(),
+        )
+
+    def forward(self, x: torch.Tensor, channel_mask: torch.Tensor) -> torch.Tensor:
+        flat_x = x.reshape(
+            -1, ECG_NUM_CHANNELS * ECG_FEATURE_DIM * len(ECG_VALUE_TYPES)
+        )
+        structured_x = flat_x.reshape(-1, ECG_NUM_CHANNELS, ECG_FEATURE_DIM, 2)
+        type_idx = ECG_VALUE_TYPES.index(self.value_type)
+        signal = structured_x[:, :, :, type_idx]  # [B, 12, 6]
+
+        # Hard include/exclude mask for interpretability.
+        channel_mask = channel_mask.reshape(-1, ECG_NUM_CHANNELS)
+        valid = channel_mask > 0
+        has_valid = valid.any(dim=-1, keepdim=True)
+        valid = torch.where(has_valid, valid, torch.ones_like(valid))
+
+        scores = torch.einsum("bkc,c->bk", signal, self.query)
+        masked_scores = scores.masked_fill(~valid, -1e9)
+        attention = torch.softmax(masked_scores, dim=-1)
+
+        # Use mask magnitude as a prior and re-normalize.
+        mask_prior = channel_mask.clamp(min=0.0)
+        prior_sum = mask_prior.sum(dim=-1, keepdim=True)
+        mask_prior = torch.where(prior_sum > 0, mask_prior / prior_sum, attention)
+
+        attention = attention * mask_prior
+        attention_sum = attention.sum(dim=-1, keepdim=True)
+        attention = torch.where(
+            attention_sum > 0,
+            attention / attention_sum,
+            torch.softmax(masked_scores, dim=-1),
+        )
+
+        context = torch.einsum("bk,bkc->bc", attention, signal)
+        return self.projection(context)
+
+
 def _channel_selector(channel_indices):
     channel_indices = torch.as_tensor(channel_indices, dtype=torch.long)
 
@@ -37,26 +91,6 @@ def _channel_selector(channel_indices):
         return mask
 
     return _selector
-
-
-def _normalize_channel_mask(channel_mask):
-    mask_sum = channel_mask.sum(dim=-1, keepdim=True)
-    mask_sum = torch.where(mask_sum > 0, mask_sum, torch.ones_like(mask_sum))
-    return channel_mask / mask_sum
-
-
-def _subset_selector_all_feat(x, channel, value_type):
-    if value_type not in ECG_VALUE_TYPES:
-        raise ValueError(f"Unknown ECG value type: {value_type}")
-
-    flat_x = x.reshape(-1, ECG_NUM_CHANNELS * ECG_FEATURE_DIM * len(ECG_VALUE_TYPES))
-    structured_x = flat_x.reshape(-1, ECG_NUM_CHANNELS, ECG_FEATURE_DIM, 2)
-    type_idx = ECG_VALUE_TYPES.index(value_type)
-
-    # Allow grouped selectors to produce multi-hot masks; we average selected channels.
-    channel_mask = _normalize_channel_mask(channel(flat_x))
-    masked_x = (structured_x * channel_mask[..., None, None]).sum(dim=1)
-    return masked_x[:, :, type_idx]
 
 
 def _drop_variables(base_mask, variables_to_drop):
@@ -86,15 +120,13 @@ def _allow_only_non_channel_types(typ):
             return True
 
 
-def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6):
+def attention_drop_eg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6):
     """
-    A differentiable ECG DSL with channel-level and group-level selectors.
-    Includes a ``drop_variables`` production to remove subsets of channels
-    from a selector before feature extraction.
+    An attention-based ECG DSL with explicit channel masking and ``drop_variables``.
 
     :param input_dim: Number of input features (expected 12*6*2 = 144).
-    :param num_classes: Number of output classes (or labels).
-    :param hidden_dim: Unused, kept for API parity with other DSLs.
+    :param num_classes: Number of output classes.
+    :param hidden_dim: Unused, kept for API parity.
     :param max_overall_depth: Maximum depth for DSL expansion.
     """
     del hidden_dim
@@ -132,18 +164,19 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
     )
 
     dslf.production(
-        "select_interval",
+        "attention_interval",
         "(() -> channel) -> ($fInp) -> $fFeat",
-        lambda channel_selector: lambda x: _subset_selector_all_feat(
-            x, channel_selector, "interval"
+        lambda channel_selector, extractor: lambda x: extractor(x, channel_selector(x)),
+        parameters=dict(
+            extractor=lambda: MaskedAttentionFeatureExtractor(value_type="interval")
         ),
     )
-
     dslf.production(
-        "select_amplitude",
+        "attention_amplitude",
         "(() -> channel) -> ($fInp) -> $fFeat",
-        lambda channel_selector: lambda x: _subset_selector_all_feat(
-            x, channel_selector, "amplitude"
+        lambda channel_selector, extractor: lambda x: extractor(x, channel_selector(x)),
+        parameters=dict(
+            extractor=lambda: MaskedAttentionFeatureExtractor(value_type="amplitude")
         ),
     )
 
@@ -180,3 +213,15 @@ def simple_ecg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_depth=6)
 
     dslf.prune_to("($fInp) -> $fOut")
     return dslf.finalize()
+
+
+def attention_drop_ecg_dsl(
+    input_dim, num_classes, hidden_dim=None, max_overall_depth=6
+):
+    """Alias with corrected ECG spelling."""
+    return attention_drop_eg_dsl(
+        input_dim=input_dim,
+        num_classes=num_classes,
+        hidden_dim=hidden_dim,
+        max_overall_depth=max_overall_depth,
+    )

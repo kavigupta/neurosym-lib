@@ -1,7 +1,5 @@
 """ECG-specific validation cost with custom metrics."""
 
-from typing import Tuple
-
 import torch
 
 from neurosym.datasets.load_data import DatasetWrapper
@@ -49,9 +47,9 @@ class ECGValidationCost(ValidationCost):
 
     def compute_cost(
         self, dsl: DSL, model: InitializedSExpression, embedding: ProgramEmbedding
-    ) -> Tuple[InitializedSExpression, float]:
+    ) -> float:
         """
-        Trains the model and returns validation loss along with ECG-specific metrics.
+        Trains the model and returns validation loss while logging ECG-specific metrics.
 
         :param dsl: The DSL
         :param model: The initialized program
@@ -96,12 +94,16 @@ def _train_model_with_metrics(
     all_targets = []
 
     for batch in datamodule.val_dataloader():
-        batch = {k: v.to(trainer_cfg.accelerator) for k, v in batch.items()}
-        x, y = batch["inputs"], batch["outputs"]
+        batch = [v.to(trainer_cfg.accelerator) for v in batch]
+        x, y = batch
         with torch.no_grad():
             pred = model(x, environment=())
             all_predictions.append(pred.cpu())
             all_targets.append(y.cpu())
+
+    if not all_predictions:
+        model = model.train().cpu()
+        return val_loss
 
     all_predictions = torch.cat(all_predictions, dim=0)
     all_targets = torch.cat(all_targets, dim=0)

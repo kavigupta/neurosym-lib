@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """
-Reproduction script for NEAR experiments on the ECG dataset.
-
-This script mirrors the flyvfly/bball reproduction structure and uses a
-minimal ECG DSL for program search.
+Reproduction script for NEAR experiments on the ECG dataset using the
+attention + drop-variables ECG DSL.
 """
 
 import argparse
@@ -11,7 +9,7 @@ import json
 import pickle
 import time
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import torch
 
@@ -57,27 +55,18 @@ class ChannelHoleFiller(near.NeuralHoleFiller):
 
 
 def ce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    Cross-entropy loss for single-label ECG targets.
-    """
     targets = targets.view(-1).long()
     predictions = predictions.view(-1, predictions.shape[-1])
     return torch.nn.functional.cross_entropy(predictions, targets)
 
 
 def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    Binary cross-entropy loss for multi-label ECG targets.
-    """
     predictions = predictions.view(-1, predictions.shape[-1])
     targets = targets.view(-1, targets.shape[-1]).float()
     return torch.nn.functional.binary_cross_entropy_with_logits(predictions, targets)
 
 
 def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
-    """
-    Evaluate a program module on test data.
-    """
     predictions = (
         module(torch.tensor(feature_data), environment=()).detach().numpy()
     ).reshape(feature_data.shape[0], -1)
@@ -88,9 +77,9 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
 
 
 def run_experiment(
-    output_path: str = "outputs/ecg_results/reproduction.pkl",
+    output_path: str = "outputs/ecg_results/attention_drop_eg_reproduction.pkl",
     data_dir: str = "data/ecg_classification/ecg",
-    num_programs: int = 40,
+    num_programs: int = 20,
     hidden_dim: int = 16,
     neural_hidden_size: int = 16,
     batch_size: int = 1024,
@@ -103,30 +92,11 @@ def run_experiment(
     device: str = "cuda:0",
     label_mode: str = "single",
 ) -> List[Dict[str, Any]]:
-    """
-    Run the NEAR experiment on the ECG dataset.
-    """
     print("=" * 80)
-    print("ECG NEAR Experiment - Neurosym-lib Implementation")
+    print("ECG NEAR Experiment (attention_drop_eg_dsl)")
     print("=" * 80)
-    print("Configuration:")
-    print(f"  Output path: {output_path}")
-    print(f"  Data dir: {data_dir}")
-    print(f"  Number of programs: {num_programs}")
-    print(f"  Hidden dim: {hidden_dim}")
-    print(f"  Neural hidden size: {neural_hidden_size}")
-    print(f"  Batch size: {batch_size}")
-    print(f"  Epochs (search): {n_epochs}")
-    print(f"  Epochs (final): {final_n_epochs}")
-    print(f"  Learning rate: {lr}")
-    print(f"  Structural cost weight: {structural_cost_penalty}")
-    print(f"  Max depth: {max_depth}")
-    print(f"  Device: {device}")
-    print(f"  Label mode: {label_mode}")
-    print("=" * 80)
+    print(f"Data dir: {data_dir}")
 
-    # Prepare data and DSL
-    print("\n[1/5] Loading ECG dataset...")
     is_regression = label_mode == "multi"
     datamodule = ns.datasets.ecg_data_example(
         train_seed=train_seed,
@@ -143,21 +113,14 @@ def run_experiment(
     else:
         output_dim = datamodule.train.outputs.shape[-1]
         loss_fn = bce_loss
-        # compute_metrics treats float labels as regression; use neg_l2_dist for search heuristic
         validation_metric = "neg_l2_dist"
 
-    original_dsl = near.simple_ecg_dsl(
+    original_dsl = near.attention_drop_eg_dsl(
         input_dim=input_dim,
         num_classes=output_dim,
         hidden_dim=hidden_dim,
     )
-    print(f"  Train samples: {len(datamodule.train.inputs)}")
-    print(f"  Test/Val samples: {len(datamodule.test.inputs)}")
-    print(f"  Input features: {input_dim}")
-    print(f"  Output dim: {output_dim}")
 
-    # Trainer configuration
-    print("\n[2/5] Setting up trainer and neural DSL...")
     trainer_cfg = near.NEARTrainerConfig(
         n_epochs=n_epochs,
         lr=lr,
@@ -180,8 +143,6 @@ def run_experiment(
         structural_cost_penalty=structural_cost_penalty,
     )
 
-    # Create the NEAR graph
-    print("\n[3/5] Creating NEAR search graph...")
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
@@ -189,10 +150,7 @@ def run_experiment(
         cost=cost,
     )
 
-    # Search for programs with bounded A*
-    print(f"\n[4/5] Searching for programs (max {num_programs})...")
     iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
-
     programs_list = []
     start_time = time.time()
 
@@ -200,36 +158,19 @@ def run_experiment(
         try:
             program = next(iterator)
         except StopIteration:
-            print(f"  Search exhausted after {len(programs_list)} programs")
             break
-
-        timer = time.time() - start_time
-        programs_list.append({"program": program, "time": timer})
-        print(f"  Found program {len(programs_list)}: {program}")
-
+        programs_list.append({"program": program, "time": time.time() - start_time})
         if len(programs_list) >= num_programs:
-            print(f"  Reached max programs limit ({num_programs})")
             break
 
-    search_time = time.time() - start_time
-    print(f"\n  Total search time: {search_time:.2f} seconds")
-    print(f"  Programs found: {len(programs_list)}")
-
-    # Evaluate each discovered program
-    print("\n[5/5] Evaluating programs on test set...")
-    for i, d in enumerate(programs_list):
-        print(f"\n  Evaluating program {i + 1}/{len(programs_list)}...")
-        program = d["program"]
-        initialized_program = neural_dsl.initialize(program)
-
-        # Train with final epoch count
+    for d in programs_list:
+        initialized_program = neural_dsl.initialize(d["program"])
         _ = cost.validation_heuristic.with_n_epochs(final_n_epochs).compute_cost(
             neural_dsl, initialized_program, cost.embedding
         )
 
         feature_data = datamodule.test.inputs
         labels = datamodule.test.outputs
-
         module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
         metrics, predictions = eval_program(module, feature_data, labels, label_mode)
 
@@ -237,39 +178,23 @@ def run_experiment(
         d["true_vals"] = labels.tolist()
         d["pred_vals"] = predictions.tolist()
 
-        print(f"    Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
-        print(f"    Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
-
-    # Save final results
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "wb") as f:
+    with open(output_path_obj, "wb") as f:
         pickle.dump(programs_list, f)
-    print(f"\n  Saved final results to: {output_path}")
-
-    # Print summary
-    print("\n" + "=" * 80)
-    print("RESULTS SUMMARY")
-    print("=" * 80)
-    if programs_list:
-        best_program = max(programs_list, key=lambda x: x["report"].get("macro_f1", 0.0))
-        print(f"Best program: {best_program['program']}")
-        print(f"  Macro F1: {best_program['report'].get('macro_f1', 0.0):.6f}")
-        print(f"  Macro accuracy: {best_program['report'].get('macro_acc', 0.0):.6f}")
-        print(f"  Discovery time: {best_program['time']:.2f}s")
-    print("=" * 80)
+    print(f"Saved results to: {output_path_obj}")
 
     return programs_list
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Reproduce NEAR results on ECG dataset"
+        description="Reproduce NEAR results with attention_drop_eg_dsl on ECG dataset"
     )
     parser.add_argument(
         "--output",
         type=str,
-        default="outputs/ecg_results/reproduction.pkl",
+        default="outputs/ecg_results/attention_drop_eg_reproduction.pkl",
         help="Output path for results",
     )
     parser.add_argument(
@@ -278,46 +203,21 @@ def main():
         default="data/ecg_classification/ecg",
         help="Directory containing standardized ECG .npz splits.",
     )
-    parser.add_argument(
-        "--num-programs", type=int, default=20, help="Number of programs to discover"
-    )
-    parser.add_argument(
-        "--hidden-dim", type=int, default=16, help="Hidden dimension for DSL"
-    )
-    parser.add_argument(
-        "--neural-hidden-size",
-        type=int,
-        default=16,
-        help="Hidden size for neural hole filler",
-    )
-    parser.add_argument(
-        "--batch-size", type=int, default=1024, help="Training batch size"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=30, help="Number of epochs for search training"
-    )
-    parser.add_argument(
-        "--final-epochs",
-        type=int,
-        default=40,
-        help="Number of epochs for final training",
-    )
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument(
-        "--structural-cost-penalty",
-        type=float,
-        default=0.1,
-        help="Penalty multiplier for structural cost",
-    )
-    parser.add_argument(
-        "--device", type=str, default="cuda:0", help="Device to use for training"
-    )
+    parser.add_argument("--num-programs", type=int, default=20)
+    parser.add_argument("--hidden-dim", type=int, default=16)
+    parser.add_argument("--neural-hidden-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=1024)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--final-epochs", type=int, default=40)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--structural-cost-penalty", type=float, default=0.1)
+    parser.add_argument("--max-depth", type=int, default=10)
+    parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument(
         "--label-mode",
         type=str,
         default="single",
         choices=["single", "multi"],
-        help="Label mode to use (single or multi)",
     )
     args = parser.parse_args()
 
@@ -329,14 +229,15 @@ def main():
         neural_hidden_size=args.neural_hidden_size,
         batch_size=args.batch_size,
         n_epochs=args.epochs,
-        structural_cost_penalty=args.structural_cost_penalty,
         final_n_epochs=args.final_epochs,
         lr=args.lr,
+        structural_cost_penalty=args.structural_cost_penalty,
+        max_depth=args.max_depth,
         device=args.device,
         label_mode=args.label_mode,
     )
 
-    summary_path = args.output.replace(".pkl", "_summary.json")
+    summary_path = str(args.output).replace(".pkl", "_summary.json")
     summary = {
         "num_programs": len(results),
         "label_mode": args.label_mode,
@@ -344,15 +245,15 @@ def main():
             {
                 "program": str(r["program"]),
                 "time": r["time"],
-                "macro_f1": r["report"].get("macro_f1", 0.0),
-                "macro_accuracy": r["report"].get("macro_acc", 0.0),
+                "macro_f1": r.get("report", {}).get("macro_f1", 0.0),
+                "macro_accuracy": r.get("report", {}).get("macro_acc", 0.0),
             }
             for r in results
         ],
     }
-    with open(summary_path, "w") as f:
+    with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
-    print(f"\nSaved summary to: {summary_path}")
+    print(f"Saved summary to: {summary_path}")
 
 
 if __name__ == "__main__":

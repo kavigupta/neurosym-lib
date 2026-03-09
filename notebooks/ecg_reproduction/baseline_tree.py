@@ -14,7 +14,9 @@ from pathlib import Path
 import numpy as np
 
 import neurosym as ns
-from neurosym.examples.near.metrics import compute_metrics
+from neurosym.examples.near.metrics_torch_ecg import (
+    compute_torch_ecg_classification_metrics,
+)
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -103,17 +105,32 @@ def main() -> None:
     if args.label_mode == "single":
         probs = estimator.predict_proba(x_test)
         preds = np.asarray(probs)
-        metrics = compute_metrics(preds, y_test)
     else:
-        preds = estimator.predict(x_test)
-        metrics = compute_metrics(preds, y_test.astype("int32"))
+        if hasattr(estimator, "predict_proba"):
+            probs = estimator.predict_proba(x_test)
+            if isinstance(probs, list):
+                preds = np.column_stack(
+                    [
+                        p[:, 1] if p.ndim == 2 and p.shape[1] > 1 else p.reshape(-1)
+                        for p in probs
+                    ]
+                ).astype(np.float32)
+            else:
+                preds = np.asarray(probs, dtype=np.float32)
+        else:
+            preds = estimator.predict(x_test).astype(np.float32)
+
+    metrics = compute_torch_ecg_classification_metrics(
+        preds, y_test, label_mode=args.label_mode
+    )
 
     print("=" * 80)
     print("RESULTS")
     print("=" * 80)
-    print(f"Hamming accuracy: {metrics.get('hamming_accuracy', 0.0):.6f}")
-    print(f"Weighted F1: {metrics.get('f1_score', 0.0):.6f}")
-    print(f"Macro F1: {metrics.get('unweighted_f1', 0.0):.6f}")
+    print(f"Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
+    print(f"Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
+    print(f"Macro Precision: {metrics.get('macro_prec', 0.0):.6f}")
+    print(f"Macro Recall: {metrics.get('macro_sens', 0.0):.6f}")
     print("=" * 80)
 
     output_path = args.output

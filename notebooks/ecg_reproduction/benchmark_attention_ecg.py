@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Reproduction script for NEAR experiments on the ECG dataset.
+Reproduction script for NEAR experiments on the ECG dataset using Attention DSL.
 
-This script mirrors the flyvfly/bball reproduction structure and uses a
-minimal ECG DSL for program search.
+This script mirrors the original benchmark_ecg.py but uses the new
+attention-based ECG DSL.
 """
 
 import argparse
 import json
 import pickle
 import time
+import distutils.version  # Workaround for torch/tensorboard issue
 from pathlib import Path
 from typing import Dict, List, Any
 
@@ -17,43 +18,10 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl
 from neurosym.examples.near.metrics_torch_ecg import (
     compute_torch_ecg_classification_metrics,
 )
-from neurosym.types.type import ArrowType, AtomicType
-
-
-class ChannelSelector(torch.nn.Module):
-    def __init__(self, num_channels: int = 12):
-        super().__init__()
-        self.logits = torch.nn.Parameter(torch.zeros(num_channels))
-
-    def forward(self, x, environment=()):
-        del environment
-        batch_shape = x.shape[:-1]
-        logits = self.logits.expand(*batch_shape, -1)
-        return torch.nn.functional.gumbel_softmax(logits, tau=1.0, hard=True)
-
-
-class ChannelHoleFiller(near.NeuralHoleFiller):
-    def __init__(self, num_channels: int = 12):
-        self.num_channels = num_channels
-
-    def initialize_module(self, type_with_environment):
-        typ = type_with_environment.typ
-
-        def is_channel(t):
-            return isinstance(t, AtomicType) and t.name == "channel"
-
-        if isinstance(typ, ArrowType):
-            out = typ.output_type
-            if isinstance(out, ArrowType):
-                out = out.output_type
-            if is_channel(out):
-                return ChannelSelector(self.num_channels)
-        if is_channel(typ):
-            return ChannelSelector(self.num_channels)
-        return None
 
 
 def ce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
@@ -78,6 +46,8 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
     """
     Evaluate a program module on test data.
     """
+    # Note: feature_data for simple_ecg was (B, 144)
+    # attention_ecg_dsl expects the same flattened input
     predictions = (
         module(torch.tensor(feature_data), environment=()).detach().numpy()
     ).reshape(feature_data.shape[0], -1)
@@ -88,7 +58,7 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
 
 
 def run_experiment(
-    output_path: str = "outputs/ecg_results/reproduction.pkl",
+    output_path: str = "outputs/ecg_results/reproduction_attention.pkl",
     data_dir: str = "data/ecg_classification/ecg",
     num_programs: int = 40,
     hidden_dim: int = 16,
@@ -104,10 +74,10 @@ def run_experiment(
     label_mode: str = "single",
 ) -> List[Dict[str, Any]]:
     """
-    Run the NEAR experiment on the ECG dataset.
+    Run the NEAR experiment on the ECG dataset with Attention DSL.
     """
     print("=" * 80)
-    print("ECG NEAR Experiment - Neurosym-lib Implementation")
+    print("ECG NEAR Experiment - Attention DSL Implementation")
     print("=" * 80)
     print("Configuration:")
     print(f"  Output path: {output_path}")
@@ -146,10 +116,12 @@ def run_experiment(
         # compute_metrics treats float labels as regression; use neg_l2_dist for search heuristic
         validation_metric = "neg_l2_dist"
 
-    original_dsl = near.simple_ecg_dsl(
+    # Use the NEW Attention DSL
+    original_dsl = attention_ecg_dsl(
         input_dim=input_dim,
         num_classes=output_dim,
         hidden_dim=hidden_dim,
+        max_overall_depth=max_depth,
     )
     print(f"  Train samples: {len(datamodule.train.inputs)}")
     print(f"  Test/Val samples: {len(datamodule.test.inputs)}")
@@ -166,11 +138,13 @@ def run_experiment(
         validation_metric=validation_metric,
     )
 
+    # Note: We removed ChannelHoleFiller because the DSL no longer has Channel holes.
+    # The GenericMLPRNNNeuralHoleFiller will handle any other potential holes,
+    # though in this DSL most things are fully parameterized or concrete.
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=original_dsl,
-        neural_hole_filler=near.UnionNeuralHoleFiller(
-            ChannelHoleFiller(),
-            near.GenericMLPRNNNeuralHoleFiller(hidden_size=neural_hidden_size),
+        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(
+            hidden_size=neural_hidden_size
         ),
     )
 
@@ -264,12 +238,12 @@ def run_experiment(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Reproduce NEAR results on ECG dataset"
+        description="Reproduce NEAR results on ECG dataset with Attention DSL"
     )
     parser.add_argument(
         "--output",
         type=str,
-        default="outputs/ecg_results/reproduction.pkl",
+        default="outputs/ecg_results/reproduction_attention.pkl",
         help="Output path for results",
     )
     parser.add_argument(

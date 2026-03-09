@@ -17,7 +17,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 import neurosym as ns
-from neurosym.examples.near.metrics import compute_metrics
+from neurosym.examples.near.metrics_torch_ecg import (
+    compute_torch_ecg_classification_metrics,
+)
 
 
 def build_model(input_dim: int, output_dim: int, hidden_dim: int) -> nn.Module:
@@ -162,17 +164,17 @@ def main() -> None:
     train_time = time.time() - start_time
 
     preds, labels = predict(model, test_loader, args.device)
-    if args.label_mode == "multi":
-        metrics = compute_metrics(preds, labels.astype("int32"))
-    else:
-        metrics = compute_metrics(preds, labels)
+    metrics = compute_torch_ecg_classification_metrics(
+        preds, labels, label_mode=args.label_mode
+    )
 
     print("=" * 80)
     print("RESULTS")
     print("=" * 80)
-    print(f"Hamming accuracy: {metrics.get('hamming_accuracy', 0.0):.6f}")
-    print(f"Weighted F1: {metrics.get('f1_score', 0.0):.6f}")
-    print(f"Macro F1: {metrics.get('unweighted_f1', 0.0):.6f}")
+    print(f"Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
+    print(f"Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
+    print(f"Macro Precision: {metrics.get('macro_prec', 0.0):.6f}")
+    print(f"Macro Recall: {metrics.get('macro_sens', 0.0):.6f}")
     print("=" * 80)
 
     output_path = args.output
