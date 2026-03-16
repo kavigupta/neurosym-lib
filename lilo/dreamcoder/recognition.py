@@ -1667,20 +1667,24 @@ class RecognitionModel(nn.Module):
 
         program = self.generativeModel.sample(request, maximumDepth=6, maxAttempts=100)
         if program is None:
+            # print("Failed to sample program for request: ", request)
             return None
         task = self.featureExtractor.taskOfProgram(program, request)
 
         if statusUpdate is not None:
             flushEverything()
         if task is None:
+            # print("Task is None for request: ", request, "and program: ", program)
             return None
 
         if hasattr(self.featureExtractor, "lexicon"):
             if hasattr(self.featureExtractor, "useTask"):
                 if self.featureExtractor.tokenize(task) is None:
+                    # print("Failed to tokenize task for request: ", request, "and program: ", program)
                     return None
             else:
                 if self.featureExtractor.tokenize(task.examples) is None:
+                    # print("Failed to tokenize task examples for request: ", request, "and program: ", program)
                     return None
 
         ll = self.generativeModel.logLikelihood(request, program)
@@ -1982,6 +1986,7 @@ class RecurrentFeatureExtractor(nn.Module):
             while True:
                 # TIMEOUT! this must not be a very good program
                 if time.time() - startTime > self.helmholtzTimeout:
+                    print("Timeout occurred for program: ", p)
                     return None
 
                 # Grab some random inputs
@@ -1996,8 +2001,12 @@ class RecurrentFeatureExtractor(nn.Module):
                     ):
                         if is_not_degenerate_outputs(examples):
                             return Task("Helmholtz", tp, examples)
+                        # print("Failed to generate non-degenerate outputs for program: ", p, "on inputs: ", xs, "with outputs: ", [y for (xs, y) in examples])
                         return None
                 except Exception as e:
+                    #print("Failed to run for program: ", p, "on inputs: ", xs, "with error: ", e)
+                    #import traceback
+                    #traceback.print_exc()
                     continue  # Try searching for more inputs on which we can run.
 
         else:
@@ -2012,12 +2021,14 @@ class RecurrentFeatureExtractor(nn.Module):
                             self.helmholtzEvaluationTimeout,
                         )
                     except Exception as e:
+                        # print("Failed to run program for program: ", p, "on inputs: ", xs, "with error: ", e)
                         return None
                     ys.append(y)
                 if len(ys) == len(xss):
                     examples = list(zip(xss, ys))
                     if is_not_degenerate_outputs(examples):
                         return Task("Helmholtz", tp, examples)
+                    #print("Failed to generate non-degenerate outputs for program: ", p, "on inputs: ", xss, "with outputs: ", ys)
                     return None
             return None
 

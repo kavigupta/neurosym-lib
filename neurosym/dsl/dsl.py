@@ -18,6 +18,9 @@ from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
 from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
+from .abstraction import AbstractionIndexParameter, AbstractionParameter
+from ..types.type_signature import FunctionTypeSignature
+from ..types.type_with_environment import Environment, StrictEnvironment
 
 ROOT_SYMBOL = "<root>"
 
@@ -330,7 +333,7 @@ class DSL:
                         program.symbol
                     ).type_signature()
                     assert isinstance(function_type_signature, FunctionTypeSignature)
-                    env = Environment.merge_all(
+                    env = StrictEnvironment.merge_all(
                         *[child_types[c_ind].env for c_ind in range(child_index)]
                     )
                     env = env.child((function_type_signature.arguments[child_index],))

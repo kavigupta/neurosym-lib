@@ -7,7 +7,7 @@ from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
 from dreamcoder.neurosym.compression.process_abstraction import _StitchLambdaRewriter
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
 from dreamcoder.neurosym.types.type_with_environment import (
-    Environment,
+    StrictEnvironment,
     TypeWithEnvironment,
 )
 from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
@@ -311,7 +311,7 @@ def multicoreEnumeration(
                         new_type_env_dict[key] = reversed_order_items.pop()
                     corrected_type_argument = TypeWithEnvironment(
                         typ=type_argument.typ,
-                        env=Environment(_elements=new_type_env_dict),
+                        env=StrictEnvironment(_elements=new_type_env_dict),
                     )
                     type_signature = FunctionTypeSignature(
                         [
@@ -321,7 +321,7 @@ def multicoreEnumeration(
                         corrected_type_argument.typ,
                     )
                     final = AbstractionProduction(k, type_signature, s_exp)
-                    dsl = dsl.add_production(final)
+                    dsl = dsl.add_productions(final)
                     primitive_list.append(k)
 
         # Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily

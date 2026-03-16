@@ -5,9 +5,9 @@ from neurosym.dsl.dsl_factory import DSLFactory
 
 def list_dslf(*output_types):
     """
-    The List DSL from the DreamCoder repository (curried form).
+    The List DSL from the DreamCoder repository.
     """
-    dslf = DSLFactory(max_overall_depth=7)
+    dslf = DSLFactory(max_overall_depth=5)
 
     for i in range(6):
         dslf.production(str(i), "() -> i", lambda i=i: i)
@@ -15,94 +15,78 @@ def list_dslf(*output_types):
     dslf.production("empty", "() -> [#T]", lambda: [])
     dslf.production("singleton", "#T -> [#T]", lambda x: [x])
     dslf.production("range", "i -> [i]", lambda x: list(range(x)))
-
-    dslf.production("++", "[#T] -> [#T] -> [#T]", lambda x: lambda y: x + y)
-
+    dslf.production("++", "([#T], [#T]) -> [#T]", lambda x, y: x + y)
     dslf.production(
         "mapi",
-        "(i -> #T -> #R) -> [#T] -> [#R]",
-        lambda f: lambda x: [f(i)(v) for i, v in enumerate(x)],
+        "((i, #T) -> #R, [#T]) -> [#R]",
+        lambda f, x: [f(i, x) for i, x in enumerate(x)],
     )
-
     dslf.production(
         "reducei",
-        "(i -> #R -> #T -> #R) -> #R -> [#T] -> #R",
-        lambda f: lambda init: lambda xs: reduce(
-            lambda acc, pair: f(pair[0])(acc)(pair[1]),
-            enumerate(xs),
-            init,
-        ),
+        "((i, #R, #T) -> #R, #R, [#T]) -> #R",
+        lambda f, x, y: reduce(lambda acc, elem: (acc[0] + 1, f(acc[0], acc[1], elem)), y, (0, x))[1],
     )
 
     dslf.production("true", "() -> b", lambda: True)
     dslf.production("not", "b -> b", lambda x: not x)
-
-    dslf.production("and", "b -> b -> b", lambda x: lambda y: x and y)
-    dslf.production("or", "b -> b -> b", lambda x: lambda y: x or y)
-
-    dslf.production(
-        "i",
-        "b -> #T -> #T -> #T",
-        lambda cond: lambda y: lambda z: y if cond else z,
-    )
-
-    dslf.production("sort", "[#T] -> [#T]", sorted)
-
-    dslf.production("+", "i -> i -> i", lambda x: lambda y: x + y)
-    dslf.production("*", "i -> i -> i", lambda x: lambda y: x * y)
-
+    dslf.production("and", "(b, b) -> b", lambda x, y: x and y)
+    dslf.production("or", "(b, b) -> b", lambda x, y: x or y)
+    dslf.production("i", "(b, #T, #T) -> #T", lambda x, y, z: y if x else z)
+    dslf.production("sort", "([#T]) -> [#T]", sorted)
+    dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+    dslf.production("*", "(i, i) -> i", lambda x, y: x * y)
     dslf.production("negate", "i -> i", lambda x: -x)
-
-    dslf.production("mod", "i -> i -> i", lambda x: lambda y: x % y)
-
-    dslf.production("eq?", "i -> i -> b", lambda x: lambda y: x == y)
-    dslf.production("gt?", "i -> i -> b", lambda x: lambda y: x > y)
-
+    dslf.production("mod", "(i, i) -> i", lambda x, y: x % y)
+    dslf.production("eq?", "(i, i) -> b", lambda x, y: x == y)
+    dslf.production("gt?", "(i, i) -> b", lambda x, y: x > y)
     dslf.production(
         "is-prime",
         "i -> b",
         lambda x: x > 1 and all(x % i for i in range(2, min(1 + int(x**0.5), x))),
     )
-
-    dslf.production(
-        "is-square",
-        "i -> b",
-        lambda x: x > 1 and int(x**0.5) ** 2 == x,
-    )
-
+    dslf.production("is-square", "i -> b", lambda x: x > 1 and int(x**0.5) ** 2 == x)
     dslf.production("sum", "[i] -> i", sum)
-
+    # # (lambda (lambda (reduce (lambda (lambda (+ $0 $1))) 0 $0)))
     dslf.production("reverse", "[#T] -> [#T]", lambda x: x[::-1])
-
+    # (lambda (reduce (lambda (lambda (++ (singleton $0) $1))) empty $0))
     dslf.production(
         "all",
-        "(#T -> b) -> [#T] -> b",
-        lambda f: lambda xs: all(f(x) for x in xs),
+        "((#T) -> b, [#T]) -> b",
+        lambda f, x: all(f(i) for i in x),
     )
-
+    # (lambda (lambda (reduce (lambda (lambda (and $0 $1))) false (map $1 $0))))
     dslf.production(
         "any",
-        "(#T -> b) -> [#T] -> b",
-        lambda f: lambda xs: any(f(x) for x in xs),
+        "((#T) -> b, [#T]) -> b",
+        lambda f, x: any(f(i) for i in x),
     )
-
-    dslf.production(
-        "index",
-        "i -> [#T] -> #T",
-        lambda i: lambda xs: xs[i],
-    )
-
+    # (lambda (lambda (reduce (lambda (lambda (or $0 $1))) true (map $1 $0))))
+    dslf.production("index", "(i, [#T]) -> #T", lambda x, y: y[x])
+    # (lambda (lambda (reducei (lambda (lambda (lambda (if (eq? $1 $4) $0 0)))) 0 $0)))
     dslf.production(
         "filter",
-        "(#T -> b) -> [#T] -> [#T]",
-        lambda f: lambda xs: [x for x in xs if f(x)],
+        "((#T) -> b, [#T]) -> [#T]",
+        lambda f, x: [i for i in x if f(i)],
     )
-
-    dslf.production(
-        "slice",
-        "i -> i -> [#T] -> [#T]",
-        lambda a: lambda b: lambda xs: xs[a:b],
-    )
+    # (lambda (lambda
+    #   (reduce
+    #       (lambda (lambda (++ $1 (if ($3 $0) (singleton $0) empty))))
+    #       empty
+    #       $0)))
+    dslf.production("slice", "(i, i, [#T]) -> [#T]", lambda x, y, z: z[x:y])
+    # (lambda (lambda (lambda
+    #   (reducei
+    #     (lambda (lambda (lambda
+    #         (++
+    #             $2
+    #             (if
+    #                 (and
+    #                     (or (gt? $1 $5) (eq? $1 $5))
+    #                     (not (or (gt? $4 $1) (eq? $1 $4))))
+    #                 (singleton $0)
+    #                 empty)))))
+    #     empty
+    #     $0))))
 
     dslf.no_zeroadic()
 
