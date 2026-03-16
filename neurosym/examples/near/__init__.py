@@ -23,13 +23,13 @@ from .dsls.adaptive_mice_dsl import (
     adaptive_mice_dsl_builder,
 )
 from .dsls.attention_drop_eg_dsl import attention_drop_ecg_dsl, attention_drop_eg_dsl
+from .dsls.attention_ecg_dsl import attention_ecg_dsl
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_bball_dsl import simple_bball_dsl
 from .dsls.simple_calms21_dsl import simple_calms21_dsl
 from .dsls.simple_constants_dsl import simple_constants_dsl
 from .dsls.simple_crim13_dsl import simple_crim13_dsl
 from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
-from .dsls.simple_ecg_dsl import simple_ecg_dsl
 from .dsls.simple_flyvfly_dsl import simple_flyvfly_dsl
 from .interface import NEAR
 from .methods.base_trainer import TrainingError

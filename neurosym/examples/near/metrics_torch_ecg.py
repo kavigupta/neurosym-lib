@@ -59,9 +59,11 @@ def compute_torch_ecg_classification_metrics(
             raise ValueError(
                 f"Expected single-label predictions shape (N, C), got {y_pred.shape}"
             )
-        n_classes = int(y_pred.shape[-1])
+        n_classes_pred = int(y_pred.shape[-1])
         y_true_idx = y_true.reshape(-1).astype(np.int64)
         y_pred_idx = y_pred.argmax(axis=-1).astype(np.int64)
+        # Ensure num_classes covers both true labels and prediction columns.
+        n_classes = max(n_classes_pred, int(y_true_idx.max()) + 1)
         raw = metric_fn(
             labels=y_true_idx,
             outputs=y_pred_idx,

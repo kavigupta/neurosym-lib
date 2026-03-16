@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-Reproduction script for NEAR experiments on the ECG dataset using Attention DSL.
-
-This script mirrors the original benchmark_ecg.py but uses the new
-attention-based ECG DSL.
+Reproduction script for NEAR experiments on the ECG dataset using the
+soft-attention ECG DSL.
 """
 
 import argparse
 import json
 import pickle
 import time
-import distutils.version  # Workaround for torch/tensorboard issue
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import torch
 
@@ -60,14 +57,14 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
 def run_experiment(
     output_path: str = "outputs/ecg_results/reproduction_attention.pkl",
     data_dir: str = "data/ecg_classification/ecg",
-    num_programs: int = 40,
-    hidden_dim: int = 16,
-    neural_hidden_size: int = 16,
+    num_programs: int = 200,
+    hidden_dim: int = 32,
+    neural_hidden_size: int = 32,
     batch_size: int = 1024,
     n_epochs: int = 30,
-    final_n_epochs: int = 40,
+    final_n_epochs: int = 60,
     lr: float = 1e-4,
-    structural_cost_penalty: float = 0.01,
+    structural_cost_penalty: float = 0.1,
     max_depth: int = 10,
     train_seed: int = 0,
     device: str = "cuda:0",
@@ -253,15 +250,15 @@ def main():
         help="Directory containing standardized ECG .npz splits.",
     )
     parser.add_argument(
-        "--num-programs", type=int, default=20, help="Number of programs to discover"
+        "--num-programs", type=int, default=200, help="Number of programs to discover"
     )
     parser.add_argument(
-        "--hidden-dim", type=int, default=16, help="Hidden dimension for DSL"
+        "--hidden-dim", type=int, default=32, help="Hidden dimension for DSL"
     )
     parser.add_argument(
         "--neural-hidden-size",
         type=int,
-        default=16,
+        default=32,
         help="Hidden size for neural hole filler",
     )
     parser.add_argument(
@@ -273,7 +270,7 @@ def main():
     parser.add_argument(
         "--final-epochs",
         type=int,
-        default=40,
+        default=60,
         help="Number of epochs for final training",
     )
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")

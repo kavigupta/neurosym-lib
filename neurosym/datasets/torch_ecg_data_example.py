@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -157,7 +158,11 @@ def _dominant_autocorr_lag_norm(lead_signal: np.ndarray, max_lag: int = 200) -> 
     lag_bound = min(max_lag, x.size - 1)
     if lag_bound <= 1:
         return 0.0
-    acf = np.correlate(x, x, mode="full")[x.size - 1 : x.size + lag_bound]
+    # Use FFT-based autocorrelation — O(n log n) instead of O(n^2).
+    n = x.size
+    fft_x = np.fft.rfft(x, n=2 * n)
+    acf_full = np.fft.irfft(fft_x * np.conj(fft_x))
+    acf = acf_full[:lag_bound + 1]
     if acf.size <= 1:
         return 0.0
     lag = int(np.argmax(acf[1:]) + 1)
@@ -267,32 +272,83 @@ def _call_with_supported_kwargs(fn, kwargs: dict[str, Any]):
         return fn()
 
 
-def _load_record_data(db, record: str) -> np.ndarray:
-    load_data = getattr(db, "load_data", None)
-    if load_data is None:
-        raise AttributeError(
-            f"{type(db).__name__} does not provide `load_data`, cannot benchmark."
-        )
-    kwargs = {
-        "rec": record,
-        "record": record,
-        "data_format": "channel_first",
-        "units": "mV",
-        "return_fs": False,
-    }
-    try:
-        sig = inspect.signature(load_data)
-        supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
-        data = load_data(**supported)
-    except (TypeError, ValueError):
-        try:
-            data = load_data(record, data_format="channel_first")
-        except TypeError:
-            data = load_data(record)
+def _load_record_data(db, record: str, *, _format_cache: dict | None = None) -> np.ndarray:
+    """Load ECG waveform data for a single record.
 
-    if isinstance(data, tuple):
-        data = data[0]
-    return np.asarray(data, dtype=np.float32)
+    Uses a format cache to avoid repeatedly failing through torch_ecg's
+    ``load_data`` when the .mat files use PhysioNet format (``val`` key)
+    instead of the original CPSC2018 format (``ECG`` key).  On the first
+    call the loader probes the format; subsequent calls skip directly to
+    the working path.
+    """
+    if _format_cache is None:
+        _format_cache = {}
+
+    cached_fmt = _format_cache.get("fmt")
+
+    # Fast path: format already detected as direct-read.
+    if cached_fmt in ("val", "ECG"):
+        return _load_mat_direct(db, record, cached_fmt)
+
+    # Try torch_ecg's load_data first (only if we haven't already failed).
+    if cached_fmt != "direct_fallback":
+        load_data = getattr(db, "load_data", None)
+        if load_data is not None:
+            kwargs = {
+                "rec": record,
+                "record": record,
+                "data_format": "channel_first",
+                "units": "mV",
+                "return_fs": False,
+            }
+            try:
+                sig = inspect.signature(load_data)
+                supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
+                data = load_data(**supported)
+                if isinstance(data, tuple):
+                    data = data[0]
+                _format_cache["fmt"] = "torch_ecg"
+                return np.asarray(data, dtype=np.float32)
+            except (TypeError, ValueError, KeyError):
+                pass
+
+    # Direct .mat fallback — detect format on first record, cache it.
+    fmt = _detect_and_load_mat(db, record, _format_cache)
+    return _load_mat_direct(db, record, fmt)
+
+
+def _detect_and_load_mat(db, record: str, _format_cache: dict) -> str:
+    """Probe a single .mat file to determine its format and cache the result."""
+    from scipy.io import loadmat
+
+    rec_path = db.get_absolute_path(record, db.rec_ext)
+    raw = loadmat(str(rec_path))
+    if "val" in raw:
+        _format_cache["fmt"] = "val"
+        return "val"
+    if "ECG" in raw:
+        _format_cache["fmt"] = "ECG"
+        return "ECG"
+    raise ValueError(
+        f"Unrecognized .mat format for record {record}: keys={list(raw.keys())}"
+    )
+
+
+def _load_mat_direct(db, record: str, fmt: str) -> np.ndarray:
+    """Read a .mat file directly, using the pre-detected format."""
+    from scipy.io import loadmat
+
+    rec_path = db.get_absolute_path(record, db.rec_ext)
+    raw = loadmat(str(rec_path))
+    if fmt == "val":
+        # PhysioNet WFDB format: val is (n_leads, n_samples) in ADC units.
+        # Standard gain for CinC 2020 CPSC2018 data is 1000 ADC/mV.
+        data = np.asarray(raw["val"], dtype=np.float32) / 1000.0
+    elif fmt == "ECG":
+        data = np.asarray(raw["ECG"]["data"][0, 0], dtype=np.float32)
+    else:
+        raise ValueError(f"Unknown .mat format: {fmt}")
+    return data
 
 
 def _load_record_labels(db, record: str) -> list[str]:
@@ -332,6 +388,226 @@ def _load_record_labels(db, record: str) -> list[str]:
     return []
 
 
+# PhysioNet bulk ZIP for the CinC 2020 challenge (open access, ~4.5 GB).
+_PHYSIONET_CINC2020_ZIP = (
+    "https://physionet.org/static/published-projects/challenge-2020/"
+    "classification-of-12-lead-ecgs-the-physionetcomputing-in-cardiology-"
+    "challenge-2020-1.0.2.zip"
+)
+
+# Fallback download specifications for datasets whose upstream URLs are dead.
+# Each entry maps a torch-ecg class name to a dict with:
+#   "zip_prefix": path prefix inside the CinC 2020 ZIP to extract
+#   "label_urls": list of (url, extract) pairs for annotation files
+_FALLBACK_SPECS: dict[str, dict] = {
+    "CPSC2018": {
+        "zip_prefix": "training/cpsc_2018/",
+        "label_urls": [("http://2018.icbeb.org/file/REFERENCE.csv", False)],
+    },
+}
+
+
+def _download_from_physionet(
+    spec: dict,
+    db_path: Path,
+    verbose: int,
+    http_get,
+) -> None:
+    """Download record files from PhysioNet (open-access).
+
+    The CinC 2020 challenge hosts CPSC2018 data as individual ``.mat`` /
+    ``.hea`` files under subdirectories ``g1/`` … ``g7/``.  We crawl the
+    directory listings to build a file list, then download in parallel
+    using a thread pool with ``requests.Session`` for HTTP keep-alive.
+    Both ``.mat`` and ``.hea`` files are fetched (the ``.hea`` headers
+    are needed by CINC2021's ``load_ann`` for annotation reading).
+    """
+    import re
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    import requests
+    from requests.adapters import HTTPAdapter
+
+    zip_prefix = spec["zip_prefix"]  # e.g. "training/cpsc_2018/"
+    # Derive the per-file base URL from the zip prefix.
+    base_url = (
+        "https://physionet.org/files/challenge-2020/1.0.2/" + zip_prefix
+    )
+
+    if verbose:
+        print(
+            f"[torch_ecg_data_example] Downloading from PhysioNet: {base_url}"
+        )
+
+    session = requests.Session()
+    adapter = HTTPAdapter(pool_connections=32, pool_maxsize=64)
+    session.mount("https://", adapter)
+
+    # Discover group subdirectories (g1/, g2/, …).
+    listing = session.get(base_url, timeout=30).text
+    group_dirs = sorted(re.findall(r'href="(g\d+/)"', listing))
+
+    # Collect (url, dest_path) pairs — .mat and .hea files.
+    items: list[tuple[str, Path]] = []
+    for gdir in group_dirs:
+        group_url = base_url + gdir
+        group_listing = session.get(group_url, timeout=30).text
+        files = re.findall(r'href="([^"]+\.(?:mat|hea))"', group_listing)
+        dest = db_path / gdir.rstrip("/")
+        dest.mkdir(parents=True, exist_ok=True)
+        for fname in files:
+            out_path = dest / fname
+            if not out_path.exists():
+                items.append((group_url + fname, out_path))
+
+    if verbose:
+        print(
+            f"[torch_ecg_data_example]   {len(items)} files to download "
+            f"across {len(group_dirs)} groups (~1.5 GB)..."
+        )
+
+    lock = threading.Lock()
+    done = [0]
+
+    def _fetch(item: tuple[str, Path]) -> None:
+        url, out = item
+        resp = session.get(url, timeout=120)
+        resp.raise_for_status()
+        out.write_bytes(resp.content)
+        with lock:
+            done[0] += 1
+            if verbose and done[0] % 500 == 0:
+                print(
+                    f"[torch_ecg_data_example]   "
+                    f"{done[0]}/{len(items)} files..."
+                )
+
+    with ThreadPoolExecutor(max_workers=64) as pool:
+        futures = [pool.submit(_fetch, item) for item in items]
+        for f in as_completed(futures):
+            f.result()
+
+    session.close()
+
+    # Download label/annotation files.
+    for label_url, extract in spec.get("label_urls", []):
+        if verbose:
+            print(f"[torch_ecg_data_example]   labels: {label_url}")
+        http_get(label_url, str(db_path), extract=extract)
+
+    if verbose:
+        n_mat = sum(1 for _ in db_path.rglob("*.mat"))
+        print(
+            f"[torch_ecg_data_example] PhysioNet download complete. "
+            f"{n_mat} record file(s)."
+        )
+
+
+def _auto_download_torch_ecg(
+    db_cls: type,
+    db_path: Path,
+    dataset_name: str,
+    verbose: int,
+) -> None:
+    """Download dataset files using torch_ecg's ``http_get`` utility.
+
+    torch_ecg <= 0.0.31 crashes during ``__init__`` on pandas >= 2.0 when the
+    data directory is empty (the ``_ls_rec`` method uses a ``.at`` pattern
+    incompatible with modern pandas).  We work around this by fetching the
+    files *before* the database object is constructed so ``_ls_rec`` finds
+    real records and never enters the broken code-path.
+
+    The function first tries the URLs declared by the torch-ecg database class.
+    If those fail (e.g. Alibaba Cloud mirrors are offline), it falls back to
+    known Google Cloud Storage / PhysioNet mirrors listed in
+    ``_FALLBACK_MIRRORS``.
+    """
+    try:
+        from torch_ecg.utils.download import http_get
+    except ImportError as exc:
+        raise ImportError(
+            "torch-ecg is required for automatic dataset download. "
+            "Install it with `pip install torch-ecg`."
+        ) from exc
+
+    # Resolve download URLs from the class.  ``url`` is typically a @property
+    # that returns static URLs without referencing instance state, so we can
+    # read it from a bare (un-initialised) instance to avoid __init__.
+    urls: list[str] = []
+    try:
+        bare = object.__new__(db_cls)
+        url_val = bare.url
+        if isinstance(url_val, str):
+            urls = [url_val]
+        elif isinstance(url_val, (list, tuple)):
+            urls = list(url_val)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Also collect label URLs from ``_download_labels`` source.
+    label_urls: list[str] = []
+    if hasattr(db_cls, "_download_labels"):
+        try:
+            import re
+
+            src = inspect.getsource(db_cls._download_labels)
+            label_urls = re.findall(r'"(https?://[^"]+)"', src)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # Build (url, extract) download plan from the primary sources.
+    download_plan: list[tuple[str, bool]] = [(u, True) for u in urls] + [
+        (u, False) for u in label_urls
+    ]
+
+    if not download_plan and dataset_name not in _FALLBACK_SPECS:
+        raise FileNotFoundError(
+            f"torch-ecg data directory is empty: {db_path}. "
+            f"Could not automatically resolve download URLs for "
+            f"`{dataset_name}`. Please download the dataset files manually."
+        )
+
+    if verbose:
+        print(
+            f"[torch_ecg_data_example] Downloading {dataset_name} "
+            f"into {db_path} ..."
+        )
+
+    # Attempt primary URLs; fall back to mirrors on failure.
+    success = False
+    if download_plan:
+        try:
+            for url, extract in download_plan:
+                if verbose:
+                    print(f"[torch_ecg_data_example]   {url}")
+                http_get(url, str(db_path), extract=extract)
+            success = True
+        except Exception as primary_exc:  # noqa: BLE001
+            if verbose:
+                print(
+                    f"[torch_ecg_data_example] Primary URLs failed "
+                    f"({primary_exc}), trying fallback mirrors..."
+                )
+
+    if not success:
+        fallback = _FALLBACK_SPECS.get(dataset_name)
+        if not fallback:
+            raise FileNotFoundError(
+                f"torch-ecg data directory is empty: {db_path}. "
+                f"Primary download URLs for `{dataset_name}` are unreachable "
+                f"and no fallback mirrors are configured."
+            )
+        _download_from_physionet(fallback, db_path, verbose, http_get)
+
+    if verbose:
+        n_files = sum(1 for _ in db_path.iterdir())
+        print(
+            f"[torch_ecg_data_example] Download complete. "
+            f"{n_files} file(s) in {db_path}."
+        )
+
+
 def _prepare_torch_ecg_dataset(
     dataset_name: str,
     db_dir: str | None,
@@ -365,13 +641,40 @@ def _prepare_torch_ecg_dataset(
         init_kwargs.setdefault("working_dir", working_dir)
     if "verbose" in inspect.signature(db_cls).parameters:
         init_kwargs.setdefault("verbose", verbose)
+
+    # Early check: verify the data directory exists and contains data files.
+    # torch_ecg <= 0.0.31 has a pandas 2.x compatibility bug that crashes
+    # during __init__ when the directory is empty or annotations are missing,
+    # so we must download files *before* constructing the database object.
+    #
+    # We also detect partial downloads (data files present but no annotation
+    # file) since those cause a "No labels found" error downstream.
+    effective_db_dir = init_kwargs.get("db_dir")
+    if effective_db_dir is not None:
+        db_path = Path(effective_db_dir)
+        if not db_path.exists():
+            db_path.mkdir(parents=True, exist_ok=True)
+        # Determine the expected file extension from the class.
+        rec_ext = "mat"
+        try:
+            bare = object.__new__(db_cls)
+            rec_ext = getattr(bare, "rec_ext", rec_ext)
+        except Exception:  # noqa: BLE001
+            pass
+        has_data = any(db_path.rglob(f"*.{rec_ext}"))
+        has_annotations = any(db_path.rglob("*.csv"))
+        if db_path.is_dir() and (not has_data or not has_annotations):
+            _auto_download_torch_ecg(db_cls, db_path, dataset_name, verbose)
+
     try:
         db = db_cls(**init_kwargs)
     except Exception as exc:  # noqa: BLE001
         raise RuntimeError(
             f"Failed to initialize torch-ecg dataset `{dataset_name}` with "
             f"db_dir={db_dir!r}. Ensure the dataset files and annotations are "
-            "downloaded and accessible in this directory."
+            "downloaded and accessible in this directory. "
+            "Note: torch-ecg <= 0.0.31 has a known compatibility issue with "
+            "pandas >= 2.0 when annotation files are missing."
         ) from exc
 
     all_records = getattr(db, "all_records", None)
@@ -431,15 +734,27 @@ def _prepare_torch_ecg_dataset(
     split_features: dict[str, list[np.ndarray]] = {"train": [], "val": [], "test": []}
     split_labels: dict[str, list[list[str]]] = {"train": [], "val": [], "test": []}
 
+    # Shared format cache avoids re-probing .mat format on every record.
+    _fmt_cache: dict = {}
+
+    total_records = sum(len(v) for v in records_by_split.values())
+    loaded = 0
+
     for split_name, split_records in records_by_split.items():
         for record in split_records:
             labels = _load_record_labels(db, record)
             if not labels:
+                loaded += 1
                 continue
-            signal = _load_record_data(db, record)
+            signal = _load_record_data(db, record, _format_cache=_fmt_cache)
             features = _signal_to_flat_features(signal)
             split_features[split_name].append(features)
             split_labels[split_name].append(labels)
+            loaded += 1
+            if verbose and loaded % 500 == 0:
+                print(
+                    f"[torch_ecg_data_example] Loaded {loaded}/{total_records} records..."
+                )
 
     all_label_names: set[str] = set()
     for split_name in ("train", "val", "test"):
@@ -505,7 +820,7 @@ def torch_ecg_data_example(
     Build a NEAR-compatible ECG datamodule from a torch-ecg dataset.
 
     This loader converts per-record raw ECG waveforms into the same flattened
-    structure expected by ``simple_ecg_dsl``: ``(N, 12 * 6 * 2) = (N, 144)``,
+    structure expected by the ECG DSLs: ``(N, 12 * 6 * 2) = (N, 144)``,
     where each lead contributes six "interval-like" and six "amplitude-like"
     engineered features.
 

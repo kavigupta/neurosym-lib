@@ -81,7 +81,7 @@ def main() -> None:
         help="Path to the standardized ECG data directory",
     )
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--seed", type=int, default=0)

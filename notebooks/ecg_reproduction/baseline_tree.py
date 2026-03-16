@@ -54,7 +54,7 @@ def main() -> None:
         help="Path to the standardized ECG data directory",
     )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--n-estimators", type=int, default=100)
+    parser.add_argument("--n-estimators", type=int, default=200)
     parser.add_argument("--max-depth", type=int, default=15)
     parser.add_argument(
         "--output",
@@ -105,6 +105,13 @@ def main() -> None:
     if args.label_mode == "single":
         probs = estimator.predict_proba(x_test)
         preds = np.asarray(probs)
+        # Ensure predictions cover all classes even if the tree didn't see some.
+        n_classes_expected = int(y_test.max()) + 1
+        if preds.shape[-1] < n_classes_expected:
+            full_preds = np.zeros((preds.shape[0], n_classes_expected), dtype=preds.dtype)
+            for i, cls in enumerate(estimator.classes_):
+                full_preds[:, int(cls)] = preds[:, i]
+            preds = full_preds
     else:
         if hasattr(estimator, "predict_proba"):
             probs = estimator.predict_proba(x_test)

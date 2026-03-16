@@ -40,9 +40,6 @@ MAX_RECORDS="${MAX_RECORDS:-5000}"
 VAL_FRACTION="${VAL_FRACTION:-0.15}"
 TEST_FRACTION="${TEST_FRACTION:-0.15}"
 
-RUN_PROVENANCE_CHECK=1
-RUN_GENERAL_DIRECT=1
-
 usage() {
   cat <<'EOF'
 Run all ECG DSL and baseline experiments for:
@@ -69,8 +66,6 @@ Options:
   --test-fraction F            Test fraction when preparing extra datasets
   --split-seed N               Split seed for extra datasets
   --train-seed N               Train seed used by all scripts
-  --skip-provenance            Skip verify_ecg_provenance.py on local dataset
-  --skip-general-direct        Skip benchmark_ecg_general.py runs for extra datasets
   -h, --help                   Show this help
 
 Env vars with same names are also supported (e.g. DEVICE, EXTRA_DATASETS).
@@ -95,8 +90,6 @@ while [[ $# -gt 0 ]]; do
     --test-fraction) TEST_FRACTION="$2"; shift 2 ;;
     --split-seed) SPLIT_SEED="$2"; shift 2 ;;
     --train-seed) TRAIN_SEED="$2"; shift 2 ;;
-    --skip-provenance) RUN_PROVENANCE_CHECK=0; shift ;;
-    --skip-general-direct) RUN_GENERAL_DIRECT=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
@@ -225,20 +218,6 @@ run_all_for_dataset() {
     local mode_dir="$dataset_output_root/$mode"
     mkdir -p "$mode_dir"
 
-    run_cmd "$PYTHON_BIN" notebooks/ecg_reproduction/benchmark_ecg.py \
-      --data-dir "$data_dir" \
-      --label-mode "$mode" \
-      --output "$mode_dir/near_simple.pkl" \
-      --num-programs "$NUM_PROGRAMS" \
-      --hidden-dim "$HIDDEN_DIM" \
-      --neural-hidden-size "$NEURAL_HIDDEN_SIZE" \
-      --batch-size "$NEAR_BATCH_SIZE" \
-      --epochs "$NEAR_EPOCHS" \
-      --final-epochs "$NEAR_FINAL_EPOCHS" \
-      --lr "$NEAR_LR" \
-      --structural-cost-penalty "$STRUCTURAL_COST_PENALTY" \
-      --device "$DEVICE"
-
     run_cmd "$PYTHON_BIN" notebooks/ecg_reproduction/benchmark_attention_ecg.py \
       --data-dir "$data_dir" \
       --label-mode "$mode" \
@@ -308,10 +287,6 @@ run_all_for_dataset() {
   done
 }
 
-if [[ "$RUN_PROVENANCE_CHECK" -eq 1 ]]; then
-  run_cmd "$PYTHON_BIN" notebooks/ecg_reproduction/verify_ecg_provenance.py
-fi
-
 # 1) Local standardized ECG dataset
 run_all_for_dataset "local_ecg" "data/ecg_classification/ecg"
 
@@ -328,40 +303,6 @@ if [[ -n "$EXTRA_DATASETS" ]]; then
     prepared_dir="$OUTPUT_ROOT/prepared_data/$dataset_key"
     prepare_extra_dataset "$dataset_name" "$prepared_dir"
     run_all_for_dataset "$dataset_key" "$prepared_dir"
-
-    if [[ "$RUN_GENERAL_DIRECT" -eq 1 ]]; then
-      for mode in single multi; do
-        mode_dir="$OUTPUT_ROOT/$dataset_key/$mode"
-        mkdir -p "$mode_dir"
-        cmd=(
-          "$PYTHON_BIN" notebooks/ecg_reproduction/benchmark_ecg_general.py
-          --dataset-name "$dataset_name"
-          --dataset-kwargs-json "$DATASET_KWARGS_JSON"
-          --max-records "$MAX_RECORDS"
-          --val-fraction "$VAL_FRACTION"
-          --test-fraction "$TEST_FRACTION"
-          --split-seed "$SPLIT_SEED"
-          --output "$mode_dir/near_simple_general_direct.pkl"
-          --num-programs "$NUM_PROGRAMS"
-          --hidden-dim "$HIDDEN_DIM"
-          --neural-hidden-size "$NEURAL_HIDDEN_SIZE"
-          --batch-size "$NEAR_BATCH_SIZE"
-          --epochs "$NEAR_EPOCHS"
-          --final-epochs "$NEAR_FINAL_EPOCHS"
-          --lr "$NEAR_LR"
-          --structural-cost-penalty "$STRUCTURAL_COST_PENALTY"
-          --device "$DEVICE"
-          --label-mode "$mode"
-        )
-        if [[ -n "$DB_DIR" ]]; then
-          cmd+=(--db-dir "$DB_DIR")
-        fi
-        if [[ -n "$WORKING_DIR" ]]; then
-          cmd+=(--working-dir "$WORKING_DIR")
-        fi
-        run_cmd "${cmd[@]}"
-      done
-    fi
   done
 fi
 

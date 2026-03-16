@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import torch
 from torch import nn
 
@@ -26,8 +27,11 @@ class MaskedAttentionFeatureExtractor(nn.Module):
     """
     Attention feature extractor with explicit channel masking.
 
-    Input is expected to be flattened as [B, 12*6*2], corresponding to
-    [B, channels, features, value_type] with value_type in {"interval", "amplitude"}.
+    Input data is ``(B, 144)`` reshaped to ``(B, 12, 6, 2)``; the
+    *value_type* index selects interval (0) or amplitude (1) features,
+    yielding ``(B, 12, 6)``.  A learnable query vector computes attention
+    scores over channels, masked so that excluded channels get ``-inf``
+    before softmax.  An optional mask-prior further weights the attention.
     """
 
     def __init__(self, *, value_type: str, feature_dim: int = ECG_FEATURE_DIM):
@@ -50,7 +54,6 @@ class MaskedAttentionFeatureExtractor(nn.Module):
         type_idx = ECG_VALUE_TYPES.index(self.value_type)
         signal = structured_x[:, :, :, type_idx]  # [B, 12, 6]
 
-        # Hard include/exclude mask for interpretability.
         channel_mask = channel_mask.reshape(-1, ECG_NUM_CHANNELS)
         valid = channel_mask > 0
         has_valid = valid.any(dim=-1, keepdim=True)
@@ -60,7 +63,6 @@ class MaskedAttentionFeatureExtractor(nn.Module):
         masked_scores = scores.masked_fill(~valid, -1e9)
         attention = torch.softmax(masked_scores, dim=-1)
 
-        # Use mask magnitude as a prior and re-normalize.
         mask_prior = channel_mask.clamp(min=0.0)
         prior_sum = mask_prior.sum(dim=-1, keepdim=True)
         mask_prior = torch.where(prior_sum > 0, mask_prior / prior_sum, attention)
@@ -124,6 +126,9 @@ def attention_drop_eg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_d
     """
     An attention-based ECG DSL with explicit channel masking and ``drop_variables``.
 
+    Combines channel/group selectors with masked-attention feature extractors
+    so that program search can discover which ECG leads matter.
+
     :param input_dim: Number of input features (expected 12*6*2 = 144).
     :param num_classes: Number of output classes.
     :param hidden_dim: Unused, kept for API parity.
@@ -167,7 +172,7 @@ def attention_drop_eg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_d
         "attention_interval",
         "(() -> channel) -> ($fInp) -> $fFeat",
         lambda channel_selector, extractor: lambda x: extractor(x, channel_selector(x)),
-        parameters=dict(
+        dict(
             extractor=lambda: MaskedAttentionFeatureExtractor(value_type="interval")
         ),
     )
@@ -175,7 +180,7 @@ def attention_drop_eg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_d
         "attention_amplitude",
         "(() -> channel) -> ($fInp) -> $fFeat",
         lambda channel_selector, extractor: lambda x: extractor(x, channel_selector(x)),
-        parameters=dict(
+        dict(
             extractor=lambda: MaskedAttentionFeatureExtractor(value_type="amplitude")
         ),
     )
@@ -196,13 +201,13 @@ def attention_drop_eg_dsl(input_dim, num_classes, hidden_dim=None, max_overall_d
         "linear",
         "(($fInp) -> $fFeat) -> $fInp -> {f, 1}",
         lambda f, lin: lambda x: lin(f(x)),
-        parameters=dict(lin=lambda: nn.Linear(ECG_FEATURE_DIM, 1)),
+        dict(lin=lambda: nn.Linear(ECG_FEATURE_DIM, 1)),
     )
     dslf.production(
         "output",
         "(($fInp) -> $fFeat) -> $fInp -> $fOut",
         lambda f, lin: lambda x: lin(f(x)),
-        parameters=dict(lin=lambda: nn.Linear(ECG_FEATURE_DIM, num_classes)),
+        dict(lin=lambda: nn.Linear(ECG_FEATURE_DIM, num_classes)),
     )
 
     dslf.production(

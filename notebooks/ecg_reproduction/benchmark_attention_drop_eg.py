@@ -79,14 +79,14 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
 def run_experiment(
     output_path: str = "outputs/ecg_results/attention_drop_eg_reproduction.pkl",
     data_dir: str = "data/ecg_classification/ecg",
-    num_programs: int = 20,
-    hidden_dim: int = 16,
-    neural_hidden_size: int = 16,
+    num_programs: int = 200,
+    hidden_dim: int = 32,
+    neural_hidden_size: int = 32,
     batch_size: int = 1024,
     n_epochs: int = 30,
-    final_n_epochs: int = 40,
+    final_n_epochs: int = 60,
     lr: float = 1e-4,
-    structural_cost_penalty: float = 0.01,
+    structural_cost_penalty: float = 0.1,
     max_depth: int = 10,
     train_seed: int = 0,
     device: str = "cuda:0",
@@ -203,12 +203,12 @@ def main():
         default="data/ecg_classification/ecg",
         help="Directory containing standardized ECG .npz splits.",
     )
-    parser.add_argument("--num-programs", type=int, default=20)
-    parser.add_argument("--hidden-dim", type=int, default=16)
-    parser.add_argument("--neural-hidden-size", type=int, default=16)
+    parser.add_argument("--num-programs", type=int, default=200)
+    parser.add_argument("--hidden-dim", type=int, default=32)
+    parser.add_argument("--neural-hidden-size", type=int, default=32)
     parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--epochs", type=int, default=30)
-    parser.add_argument("--final-epochs", type=int, default=40)
+    parser.add_argument("--final-epochs", type=int, default=60)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--structural-cost-penalty", type=float, default=0.1)
     parser.add_argument("--max-depth", type=int, default=10)

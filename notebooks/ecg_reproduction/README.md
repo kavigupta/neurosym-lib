@@ -1,5 +1,36 @@
 # ECG NEAR Experiment Reproduction
 
+## Classification Tasks
+
+We evaluate two classification formulations on 12-lead ECG data:
+
+- **Single-label** (`--label-mode single`): Each recording is assigned one
+  diagnostic class (argmax of multi-hot labels). Trained with cross-entropy loss
+  and softmax output. This is a simplification -- ~6.9% of CPSC2018 records have
+  multiple diagnoses -- but serves as a standard multi-class baseline.
+
+- **Multi-label** (`--label-mode multi`): Each recording can carry multiple
+  simultaneous diagnoses (multi-hot encoding). Trained with BCE loss and sigmoid
+  output. This matches how CPSC2018 and the CinC 2020/2021 challenges were
+  originally framed, and is considered more clinically relevant since cardiac
+  conditions commonly co-occur.
+
+Both formulations are evaluated with **macro F1** (average of per-class F1 scores),
+consistent with the CPSC2018 challenge scoring.
+
+See [ECG_RELATED_WORK.md](ECG_RELATED_WORK.md) for detailed literature context on
+these task formulations.
+
+## Dataset Provenance
+
+The ECG dataset originates from **CPSC2018** (China Physiological Signal Challenge 2018):
+- **6,877 records** across **9 diagnostic classes**
+- Classes: SNR (Normal Sinus Rhythm), AF (Atrial Fibrillation), I-AVB (First-degree AV Block), LBBB (Left Bundle Branch Block), RBBB (Right Bundle Branch Block), PAC (Premature Atrial Contraction), PVC (Premature Ventricular Contraction), STD (ST Depression), STE (ST Elevation)
+- Train/test split: 4,813/2,064 records
+- Multi-label class totals: [918, 1221, 722, 236, 1857, 616, 700, 869, 220]
+
+Reference: https://torch-ecg.readthedocs.io/en/latest/api/generated/torch_ecg.databases.CPSC2018.html
+
 ## 1. Dataset Preparation
 
 To generate standardized train/val/test splits (plus single/multi label sets), run:
@@ -13,106 +44,141 @@ This exports:
 - `data/ecg_classification/ecg/*_ecg_labels_single.npz`
 - `data/ecg_classification/ecg/*_ecg_labels_multi.npz`
 
-## 2. Running the Experiment
+## 2. Running All Experiments (Recommended)
 
-Run the benchmark script (uses the channel/interval ECG DSL):
-```bash
-uv run python notebooks/ecg_reproduction/benchmark_ecg.py --num-programs 20 --epochs 30 --device cpu
-```
+Run the full suite of experiments across local ECG data and optional
+torch-ecg datasets (CPSC2018, CINC2021):
 
-Run all ECG experiments (all DSLs + all baselines, single/multi, with optional
-extra torch-ecg datasets):
 ```bash
 bash notebooks/ecg_reproduction/run_all_ecg_experiments.sh \
-  --device cpu \
-  --extra-datasets CPSC2018 \
-  --db-dir /path/to/torch-ecg/data
+  --device cuda:0 \
+  --extra-datasets CPSC2018,CINC2021 \
+  --db-dir data/ecg_classification/ecg_db/
 ```
 
-The ECG DSL now includes:
-- Channel-level selectors (`channel_0` ... `channel_11`)
-- Semantic channel groups (`channel_group_limb`, `channel_group_precordial`, etc.)
-- `drop_variables` for composing selectors while excluding channel subsets
+This runs, for each dataset and each label mode (single/multi):
+1. **NEAR attention ECG DSL** (`benchmark_attention_ecg.py`)
+2. **NEAR attention drop-eg DSL** (`benchmark_attention_drop_eg.py`)
+3. **MLP baseline** (`baseline_nn.py`)
+4. **Decision tree baseline** (`baseline_tree.py --model decision_tree`)
+5. **Random forest baseline** (`baseline_tree.py --model random_forest`)
+6. **torch-ecg CNN baselines** (`baseline_torch_ecg.py`)
 
-Run the attention + drop-variables benchmark:
+For extra torch-ecg datasets (CPSC2018, CINC2021), the script first prepares
+standardized `.npz` splits via `torch_ecg_data_example()`, then runs the
+same experiment suite on those splits.
+
+### Hyperparameters (defaults used by `run_all_ecg_experiments.sh`)
+
+| Parameter | NEAR | MLP | Tree | TorchECG |
+|-----------|------|-----|------|----------|
+| num_programs | 200 | — | — | — |
+| hidden_dim | 32 | 64 | — | — |
+| neural_hidden_size | 32 | — | — | — |
+| batch_size | 1024 | 256 | — | 256 |
+| epochs (search) | 30 | 20 | — | 20 |
+| epochs (final) | 60 | — | — | — |
+| lr | 1e-4 | 1e-3 | — | 1e-3 |
+| structural_cost | 0.1 | — | — | — |
+| n_estimators | — | — | 200 | — |
+| max_depth | — | — | 15 | — |
+| train_seed | 0 | 0 | 0 | 0 |
+| split_seed | 42 | — | — | 42 |
+| max_records | 5000 | — | — | — |
+
+### Output Structure
+
+```
+outputs/ecg_results/all_runs/
+├── local_ecg/
+│   ├── single/
+│   │   ├── near_attention.pkl
+│   │   ├── near_attention_summary.json
+│   │   ├── near_attention_drop_eg.pkl
+│   │   ├── near_attention_drop_eg_summary.json
+│   │   ├── baseline_nn.json
+│   │   ├── baseline_tree_decision_tree.json
+│   │   ├── baseline_tree_random_forest.json
+│   │   └── baseline_torch_ecg.json
+│   └── multi/
+│       └── (same files)
+├── cpsc2018/
+│   ├── single/
+│   └── multi/
+├── cinc2021/
+│   ├── single/
+│   └── multi/
+└── prepared_data/
+    ├── cpsc2018/
+    │   ├── *.npz
+    │   └── source_metadata.json
+    └── cinc2021/
+        └── ...
+```
+
+## 2b. Running Individual Experiments
+
+Run individual benchmarks directly:
+
 ```bash
-uv run python notebooks/ecg_reproduction/benchmark_attention_drop_eg.py --num-programs 20 --epochs 30 --device cpu
+# NEAR attention DSL
+uv run python notebooks/ecg_reproduction/benchmark_attention_ecg.py \
+  --num-programs 200 --epochs 30 --final-epochs 60 --device cuda:0
+
+# NEAR attention drop-eg DSL
+uv run python notebooks/ecg_reproduction/benchmark_attention_drop_eg.py \
+  --num-programs 200 --epochs 30 --final-epochs 60 --device cuda:0
+
+# MLP baseline
+uv run python notebooks/ecg_reproduction/baseline_nn.py --epochs 20 --device cuda:0
+
+# Tree baselines
+uv run python notebooks/ecg_reproduction/baseline_tree.py --model decision_tree
+uv run python notebooks/ecg_reproduction/baseline_tree.py --model random_forest
+
+# torch-ecg CNN baselines
+uv run python notebooks/ecg_reproduction/baseline_torch_ecg.py --device cuda:0
 ```
 
-### Arguments
-- `--output` (default: `outputs/ecg_results/reproduction.pkl`)
-- `--num-programs` (default: `20`)
-- `--hidden-dim` (default: `16`)
-- `--neural-hidden-size` (default: `16`)
-- `--batch-size` (default: `1024`)
-- `--epochs` (default: `30`)
-- `--final-epochs` (default: `40`)
-- `--lr` (default: `1e-4`)
-- `--structural-cost-penalty` (default: `0.1`)
-- `--device` (default: `cuda:0`)
+All scripts accept `--data-dir` to point at a different standardized split
+directory, and `--label-mode single|multi`.
+
+### Arguments (common across scripts)
+
+- `--output` — path for output file
+- `--data-dir` (default: `data/ecg_classification/ecg`)
 - `--label-mode` (`single` or `multi`, default: `single`)
+- `--device` (default: `cuda:0`)
 
-> Note: `label-mode=multi` uses a BCE loss and a regression-style validation metric
-> for search heuristics. Final evaluation still reports multilabel metrics.
+> Note: `label-mode=multi` uses BCE loss and regression-style validation
+> metrics for search heuristics. Final evaluation still reports multilabel
+> metrics.
 
-## 2b. Baseline Models
+## 3. Expected Results (Macro F1)
 
-These baselines use the same standardized ECG splits and label modes as the NEAR run.
+### Single-label
 
-MLP baseline (single-label by default):
-```bash
-uv run python notebooks/ecg_reproduction/baseline_nn.py --epochs 100 --device cpu
-```
+| Dataset | NEAR-Att | NEAR-Drop | MLP | DTree | RForest | TorchECG |
+|---------|----------|-----------|-----|-------|---------|----------|
+| local_ecg | **0.4025** | 0.2437 | 0.3191 | 0.1907 | 0.3218 | 0.1915 |
+| cpsc2018 | 0.3836 | 0.2925 | 0.3214 | 0.1774 | 0.3627 | **0.3642** |
+| cinc2021 | 0.2880 | 0.0890 | 0.3593 | 0.1940 | **0.4420** | 0.3333 |
 
-Tree baseline (decision tree or random forest):
-```bash
-uv run python notebooks/ecg_reproduction/baseline_tree.py --model decision_tree --label-mode single
-uv run python notebooks/ecg_reproduction/baseline_tree.py --model random_forest --label-mode multi
-```
+### Multi-label
 
-Each baseline writes metrics to `outputs/ecg_results/baseline_*.json`.
-All ECG baselines and NEAR evaluation now use torch-ecg classification metrics
-(`macro_f1`, `macro_acc`, `macro_prec`, `macro_sens`, `macro_auroc`, `macro_auprc`).
+| Dataset | NEAR-Att | NEAR-Drop | MLP | DTree | RForest | TorchECG |
+|---------|----------|-----------|-----|-------|---------|----------|
+| local_ecg | **0.2653** | 0.1854 | 0.0000 | 0.2005 | 0.2297 | 0.1661 |
+| cpsc2018 | 0.2202 | 0.2455 | 0.0000 | 0.1933 | **0.3360** | 0.3118 |
+| cinc2021 | 0.1437 | 0.1250 | 0.0000 | 0.1432 | 0.2096 | **0.2661** |
 
-torch-ecg baselines (MultiScopicCNN + ECG_CRNN multi-scopic):
-```bash
-python notebooks/ecg_reproduction/baseline_torch_ecg.py --label-mode single --device cpu
-python notebooks/ecg_reproduction/baseline_torch_ecg.py --label-mode multi --device cpu \
-  --output outputs/ecg_results/baseline_torch_ecg_multi.json
-```
+> These results were produced on a single NVIDIA GPU with `--device cuda:0`.
+> Minor floating-point variations are expected across hardware.
 
-To run these baselines on a torch-ecg dataset directly:
-```bash
-python notebooks/ecg_reproduction/baseline_torch_ecg.py \
-  --dataset-name CPSC2018 \
-  --db-dir /path/to/torch-ecg/data \
-  --label-mode single \
-  --device cpu
-```
+## 4. Analyzing Results
 
-## 2c. General Benchmark on torch-ecg Datasets
-
-You can benchmark NEAR on any torch-ecg dataset class (for example `CPSC2018`)
-using:
-
-```bash
-python notebooks/ecg_reproduction/benchmark_ecg_general.py \
-  --dataset-name CPSC2018 \
-  --db-dir /path/to/torch-ecg/data \
-  --device cpu \
-  --num-programs 10
-```
-
-Notes:
-- This path requires `torch-ecg` (`pip install torch-ecg`).
-- The loader converts raw signals into a standardized `(N, 144)` feature format
-  compatible with `simple_ecg_dsl`.
-- Labels support `--label-mode single` and `--label-mode multi`.
-- Use `--dataset-kwargs-json` to pass dataset-specific constructor args.
-
-## 3. Analyzing Results
-
-Open `analyze_ecg_results.ipynb` to inspect and compare discovered programs. It
-loads `outputs/ecg_results/reproduction.pkl` and writes:
-- `outputs/ecg_results/comparison.csv`
-- `outputs/ecg_results/comparison.md`
+Open `analyze_ecg_results.ipynb` (single-label) or
+`analyze_ecg_results_multi.ipynb` (multi-label) to inspect and compare
+results. The notebooks load from `outputs/ecg_results/all_runs/` and write:
+- `outputs/ecg_results/comparison_single.csv` / `comparison_single.md`
+- `outputs/ecg_results/comparison_multi.csv` / `comparison_multi.md`
