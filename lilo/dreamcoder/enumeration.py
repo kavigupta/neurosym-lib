@@ -6,6 +6,7 @@ from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
 from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
 from dreamcoder.neurosym.compression.process_abstraction import _StitchLambdaRewriter
 from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
+from dreamcoder.neurosym.types.type import ArrowType
 from dreamcoder.neurosym.types.type_with_environment import (
     StrictEnvironment,
     TypeWithEnvironment,
@@ -290,11 +291,8 @@ def multicoreEnumeration(
         dsl = dslf.finalize()
         dsl_dict[task] = dsl
 
-        max_arity = 3  # for toy 1
         primitive_list = [prod.symbol() for prod in dsl.productions]
-        num_productions = 1 + len(primitive_list)
-        # print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
-        # print(f"Primitive List: {[str(x.symbol()) + '----' for x in dsl.productions]} \n")
+        
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != "$":
                 # This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
@@ -303,27 +301,50 @@ def multicoreEnumeration(
                 if parsed_abstraction != None:
                     s_exp = ns.SExpression(k, [parsed_abstraction])
                     type_argument = [dsl.compute_type_abs(x) for x in s_exp.children][0]
-                    reversed_order_items = [
-                        value for _, value in type_argument.env._elements.items()
-                    ]
-                    new_type_env_dict = {}
-                    for key in type_argument.env._elements.keys():
-                        new_type_env_dict[key] = reversed_order_items.pop()
-                    corrected_type_argument = TypeWithEnvironment(
-                        typ=type_argument.typ,
-                        env=StrictEnvironment(_elements=new_type_env_dict),
-                    )
-                    type_signature = FunctionTypeSignature(
-                        [
-                            x[0]
-                            for _, x in corrected_type_argument.env._elements.items()
-                        ],
-                        corrected_type_argument.typ,
-                    )
-                    final = AbstractionProduction(k, type_signature, s_exp)
-                    dsl = dsl.add_productions(final)
-                    primitive_list.append(k)
+                    if type_argument is None:
+                        print(
+                            f"Skipping abstraction {k}: could not infer abstraction type."
+                        )
+                        continue
 
+                    if isinstance(type_argument.typ, ArrowType):
+                        type_signature = FunctionTypeSignature.from_type(
+                            type_argument.typ
+                        )
+                    else:
+                        # Build a function type from the inferred environment. Environment
+                        # index 0 is the most recent binder, so we order arguments by
+                        # descending environment index (outermost to innermost).
+                        assert isinstance(type_argument.env, StrictEnvironment), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
+                        env_elements = type_argument.env._elements
+                        argument_types = []
+                        for env_index in sorted(env_elements.keys(), reverse=True):
+                            env_typ = env_elements[env_index]
+                            if isinstance(env_typ, tuple):
+                                if len(env_typ) != 1:
+                                    raise ValueError(
+                                        f"Unexpected env type tuple at index {env_index}: {env_typ}"
+                                    )
+                                env_typ = env_typ[0]
+                            argument_types.append(env_typ)
+                        type_signature = FunctionTypeSignature(
+                            argument_types,
+                            type_argument.typ,
+                        )
+
+                    print(
+                        f"Parsed abstraction {k} to {s_exp} with type signature {type_signature}"
+                    )
+                    final = AbstractionProduction(str(k), type_signature, s_exp)
+                    dsl = dsl.add_productions(final)
+                    primitive_list.append(str(k))
+
+        max_arity = 3  # for toy 1
+        num_productions = 1 + len(dsl.productions)
+        
+        # print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
+        # print(f"Primitive List: {[str(x.symbol()) + '----' for x in dsl.productions]} \n")
+        
         # Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
         # family = ns.BigramProgramDistributionFamily(dsl)
         family = ns.BigramProgramDistributionFamily(
