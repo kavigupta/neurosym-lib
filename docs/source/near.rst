@@ -6,7 +6,6 @@
 .. autoclass:: neurosym.examples.near.NeuralDSL
     :members:
 .. autoclass:: neurosym.examples.near.NEARTrainerConfig
-.. autoclass:: neurosym.examples.near.ECGTrainerConfig
 .. autoclass:: neurosym.examples.near.TorchProgramModule
 .. autoclass:: neurosym.examples.near.PartialProgramNotFoundError
 .. autoclass:: neurosym.examples.near.TrainingError
@@ -28,8 +27,6 @@
 .. autoclass:: neurosym.examples.near.NearValidationHeuristic
     :members:
 .. autoclass:: neurosym.examples.near.ValidationCost
-    :members:
-.. autoclass:: neurosym.examples.near.ECGValidationCost
     :members:
 .. autoclass:: neurosym.examples.near.ProgramEmbedding
     :members:
@@ -106,7 +103,14 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
 .. autofunction:: neurosym.examples.near.simple_constants_dsl
 .. autofunction:: neurosym.examples.near.attention_ecg_dsl
-.. autofunction:: neurosym.examples.near.attention_drop_eg_dsl
+.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineChannelAttention
+    :members:
+.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineFeatureSelector
+.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineBoolSelector
+.. autoclass:: neurosym.examples.near.SoftChannelMask
+    :members:
+.. autoclass:: neurosym.examples.near.ChannelHoleFiller
+    :members:
 .. autofunction:: neurosym.examples.near.simple_flyvfly_dsl
 .. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
 .. autofunction:: neurosym.examples.near.adaptive_mice_dsl_builder
@@ -114,8 +118,8 @@ Example Datasets/DSLs
 Utilites
 --------------------------------------------
 .. autofunction:: neurosym.examples.near.classification_mse_loss
-.. autofunction:: neurosym.examples.near.ecg_cross_entropy_loss
 .. autofunction:: neurosym.examples.near.compute_ecg_metrics
+.. autofunction:: neurosym.examples.near.bootstrap_metrics
 .. autofunction:: neurosym.examples.near.schedule_optimizer
 
 For testing and demonstration purposes

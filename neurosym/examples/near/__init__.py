@@ -22,8 +22,11 @@ from .dsls.adaptive_mice_dsl import (
     adaptive_crim13_dsl,
     adaptive_mice_dsl_builder,
 )
-from .dsls.attention_drop_eg_dsl import attention_drop_ecg_dsl, attention_drop_eg_dsl
-from .dsls.attention_ecg_dsl import attention_ecg_dsl
+from .dsls.attention_ecg_dsl import (
+    ChannelHoleFiller,
+    SoftChannelMask,
+    attention_ecg_dsl,
+)
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_bball_dsl import simple_bball_dsl
 from .dsls.simple_calms21_dsl import simple_calms21_dsl
@@ -33,12 +36,8 @@ from .dsls.simple_differentiable_dsl import differentiable_arith_dsl
 from .dsls.simple_flyvfly_dsl import simple_flyvfly_dsl
 from .interface import NEAR
 from .methods.base_trainer import TrainingError
-from .methods.ecg_example_trainer import (
-    ECGTrainerConfig,
-    compute_ecg_metrics,
-    ecg_cross_entropy_loss,
-)
 from .methods.near_example_trainer import NEARTrainerConfig, classification_mse_loss
+from .metrics_ecg import bootstrap_metrics, compute_ecg_metrics
 from .models.constant import Constant, ConstantConfig, constant_factory
 from .models.mlp import MLP, MLPConfig, mlp_factory
 from .models.rnn import (
@@ -63,4 +62,3 @@ from .neural_hole_filler import (
     UnionNeuralHoleFiller,
 )
 from .search_graph import near_graph, validated_near_graph
-from .validation_ecg import ECGValidationCost
