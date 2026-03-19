@@ -2,8 +2,8 @@
 """
 Baseline MLP for ECG classification.
 
-Supports single-label (argmax) and multi-label (multi-hot) targets using the
-same standardized dataset splits as the NEAR reproduction.
+3-layer MLP (256-256-256) matching the ECG paper's MLP baseline.
+Evaluates with macro AUC (primary) and macro F1 (secondary).
 """
 
 import argparse
@@ -17,14 +17,17 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 import neurosym as ns
-from neurosym.examples.near.metrics_torch_ecg import (
-    compute_torch_ecg_classification_metrics,
+from neurosym.examples.near.metrics_ecg import (
+    bootstrap_metrics,
+    compute_ecg_metrics,
 )
 
 
 def build_model(input_dim: int, output_dim: int, hidden_dim: int) -> nn.Module:
     return nn.Sequential(
         nn.Linear(input_dim, hidden_dim),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, hidden_dim),
         nn.ReLU(),
         nn.Linear(hidden_dim, hidden_dim),
         nn.ReLU(),
@@ -72,18 +75,18 @@ def main() -> None:
         "--label-mode",
         choices=["single", "multi"],
         default="single",
-        help="Label mode to train against (single=argmax, multi=multi-hot)",
+        help="Label mode (single=filtered, multi=multi-hot)",
     )
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="data/ecg_classification/ecg",
-        help="Path to the standardized ECG data directory",
+        default="data/ecg",
+        help="Path to ECG data directory",
     )
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--hidden-dim", type=int, default=64)
+    parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
         "--device",
@@ -111,21 +114,26 @@ def main() -> None:
         label_mode=args.label_mode,
         is_regression=is_regression,
         data_dir=args.data_dir,
+        normalize=True,
         batch_size=args.batch_size,
     )
 
     x_train = datamodule.train.inputs
     y_train = datamodule.train.outputs
+    x_val = datamodule.val.inputs
+    y_val = datamodule.val.outputs
     x_test = datamodule.test.inputs
     y_test = datamodule.test.outputs
 
     if args.label_mode == "single":
         y_train = y_train.reshape(-1).astype(np.int64)
+        y_val = y_val.reshape(-1).astype(np.int64)
         y_test = y_test.reshape(-1).astype(np.int64)
         output_dim = int(y_train.max()) + 1
         criterion = nn.CrossEntropyLoss()
     else:
         y_train = y_train.astype(np.float32)
+        y_val = y_val.astype(np.float32)
         y_test = y_test.astype(np.float32)
         output_dim = y_train.shape[-1]
         criterion = nn.BCEWithLogitsLoss()
@@ -138,11 +146,16 @@ def main() -> None:
         torch.from_numpy(x_train).float(),
         torch.from_numpy(y_train),
     )
+    val_ds = TensorDataset(
+        torch.from_numpy(x_val).float(),
+        torch.from_numpy(y_val),
+    )
     test_ds = TensorDataset(
         torch.from_numpy(x_test).float(),
         torch.from_numpy(y_test),
     )
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size)
     test_loader = DataLoader(test_ds, batch_size=args.batch_size)
 
     print("=" * 80)
@@ -150,31 +163,58 @@ def main() -> None:
     print("=" * 80)
     print(f"Label mode: {args.label_mode}")
     print(f"Train size: {len(train_ds)}")
+    print(f"Val size: {len(val_ds)}")
     print(f"Test size: {len(test_ds)}")
     print(f"Input dim: {input_dim}")
     print(f"Output dim: {output_dim}")
+    print(f"Hidden dim: {args.hidden_dim}")
+    print(f"Epochs: {args.epochs}")
     print("=" * 80)
+
+    best_val_auc = -1.0
+    best_model_state = None
 
     start_time = time.time()
     for epoch in range(args.epochs):
         loss = train_epoch(
             model, train_loader, criterion, optimizer, args.device, args.label_mode
         )
-        print(f"Epoch {epoch + 1:03d}/{args.epochs}: loss={loss:.6f}")
+        if (epoch + 1) % 10 == 0 or epoch == 0:
+            val_preds, val_labels = predict(model, val_loader, args.device)
+            val_metrics = compute_ecg_metrics(
+                val_preds, val_labels, label_mode=args.label_mode
+            )
+            val_auc = val_metrics["macro_auc"]
+            print(
+                f"Epoch {epoch + 1:03d}/{args.epochs}: "
+                f"loss={loss:.6f}, val_auc={val_auc:.4f}"
+            )
+            if val_auc > best_val_auc:
+                best_val_auc = val_auc
+                best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
     train_time = time.time() - start_time
 
+    # Restore best model
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        model.to(args.device)
+
     preds, labels = predict(model, test_loader, args.device)
-    metrics = compute_torch_ecg_classification_metrics(
-        preds, labels, label_mode=args.label_mode
-    )
+    metrics = compute_ecg_metrics(preds, labels, label_mode=args.label_mode)
+
+    ci = bootstrap_metrics(preds, labels, label_mode=args.label_mode)
 
     print("=" * 80)
-    print("RESULTS")
+    print("RESULTS (Test Set - Fold 10)")
     print("=" * 80)
+    print(f"Macro AUC: {metrics.get('macro_auc', 0.0):.6f}")
     print(f"Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
-    print(f"Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
     print(f"Macro Precision: {metrics.get('macro_prec', 0.0):.6f}")
-    print(f"Macro Recall: {metrics.get('macro_sens', 0.0):.6f}")
+    print(f"Macro Recall: {metrics.get('macro_recall', 0.0):.6f}")
+    print(
+        f"Bootstrap AUC: {ci['mean_auc']:.3f} "
+        f"({ci['ci_5']:.3f} - {ci['ci_95']:.3f})"
+    )
     print("=" * 80)
 
     output_path = args.output
@@ -185,7 +225,9 @@ def main() -> None:
         "model": "mlp",
         "label_mode": args.label_mode,
         "train_time": train_time,
+        "best_val_auc": best_val_auc,
         "report": metrics,
+        "bootstrap": ci,
     }
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -2,8 +2,8 @@
 """
 Tree-based baseline for ECG classification.
 
-Supports single-label (argmax) and multi-label (multi-hot) targets using the
-same standardized dataset splits as the NEAR reproduction.
+Supports RandomForest and DecisionTree with macro AUC evaluation
+following the standard ECG evaluation protocol.
 """
 
 import argparse
@@ -14,8 +14,9 @@ from pathlib import Path
 import numpy as np
 
 import neurosym as ns
-from neurosym.examples.near.metrics_torch_ecg import (
-    compute_torch_ecg_classification_metrics,
+from neurosym.examples.near.metrics_ecg import (
+    bootstrap_metrics,
+    compute_ecg_metrics,
 )
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
@@ -38,24 +39,29 @@ def main() -> None:
     parser.add_argument(
         "--model",
         choices=["decision_tree", "random_forest"],
-        default="decision_tree",
+        default="random_forest",
         help="Which tree model to use",
     )
     parser.add_argument(
         "--label-mode",
         choices=["single", "multi"],
         default="single",
-        help="Label mode to train against (single=argmax, multi=multi-hot)",
+        help="Label mode (single=filtered, multi=multi-hot)",
     )
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="data/ecg_classification/ecg",
-        help="Path to the standardized ECG data directory",
+        default="data/ecg",
+        help="Path to ECG data directory",
     )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--n-estimators", type=int, default=200)
-    parser.add_argument("--max-depth", type=int, default=15)
+    parser.add_argument("--n-estimators", type=int, default=100)
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=None,
+        help="Max depth for tree (None=unlimited, matching sklearn default)",
+    )
     parser.add_argument(
         "--output",
         type=str,
@@ -65,11 +71,13 @@ def main() -> None:
     args = parser.parse_args()
 
     is_regression = args.label_mode == "multi"
+    # No normalization for tree models
     datamodule = ns.datasets.ecg_data_example(
         train_seed=args.seed,
         label_mode=args.label_mode,
         is_regression=is_regression,
         data_dir=args.data_dir,
+        normalize=False,
         batch_size=1024,
     )
 
@@ -77,6 +85,11 @@ def main() -> None:
     y_train = datamodule.train.outputs
     x_test = datamodule.test.inputs
     y_test = datamodule.test.outputs
+
+    # NaN imputation already done by the dataset loader
+    # Replace any remaining NaNs with 0 (shouldn't happen but safety check)
+    x_train = np.nan_to_num(x_train, nan=0.0)
+    x_test = np.nan_to_num(x_test, nan=0.0)
 
     if args.label_mode == "single":
         y_train = y_train.reshape(-1).astype(np.int64)
@@ -96,6 +109,8 @@ def main() -> None:
     print(f"Label mode: {args.label_mode}")
     print(f"Train size: {len(x_train)}")
     print(f"Test size: {len(x_test)}")
+    print(f"n_estimators: {args.n_estimators}")
+    print(f"max_depth: {args.max_depth}")
     print("=" * 80)
 
     start_time = time.time()
@@ -105,7 +120,7 @@ def main() -> None:
     if args.label_mode == "single":
         probs = estimator.predict_proba(x_test)
         preds = np.asarray(probs)
-        # Ensure predictions cover all classes even if the tree didn't see some.
+        # Ensure predictions cover all classes
         n_classes_expected = int(y_test.max()) + 1
         if preds.shape[-1] < n_classes_expected:
             full_preds = np.zeros((preds.shape[0], n_classes_expected), dtype=preds.dtype)
@@ -127,28 +142,34 @@ def main() -> None:
         else:
             preds = estimator.predict(x_test).astype(np.float32)
 
-    metrics = compute_torch_ecg_classification_metrics(
-        preds, y_test, label_mode=args.label_mode
-    )
+    metrics = compute_ecg_metrics(preds, y_test, label_mode=args.label_mode)
+    ci = bootstrap_metrics(preds, y_test, label_mode=args.label_mode)
 
     print("=" * 80)
-    print("RESULTS")
+    print("RESULTS (Test Set - Fold 10)")
     print("=" * 80)
+    print(f"Macro AUC: {metrics.get('macro_auc', 0.0):.6f}")
     print(f"Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
-    print(f"Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
     print(f"Macro Precision: {metrics.get('macro_prec', 0.0):.6f}")
-    print(f"Macro Recall: {metrics.get('macro_sens', 0.0):.6f}")
+    print(f"Macro Recall: {metrics.get('macro_recall', 0.0):.6f}")
+    print(
+        f"Bootstrap AUC: {ci['mean_auc']:.3f} "
+        f"({ci['ci_5']:.3f} - {ci['ci_95']:.3f})"
+    )
     print("=" * 80)
 
     output_path = args.output
     if not output_path:
-        output_path = f"outputs/ecg_results/baseline_tree_{args.model}_{args.label_mode}.json"
+        output_path = (
+            f"outputs/ecg_results/baseline_tree_{args.model}_{args.label_mode}.json"
+        )
 
     result = {
         "model": args.model,
         "label_mode": args.label_mode,
         "train_time": train_time,
         "report": metrics,
+        "bootstrap": ci,
     }
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

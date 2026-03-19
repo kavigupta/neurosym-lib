@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Reproduction script for NEAR experiments on the ECG dataset using the
-soft-attention ECG DSL.
+Reproduction script for NEAR experiments on ECG with the attention DSL.
+
+Uses ECGDeli pre-extracted features and evaluates with macro AUC (the
+standard PTB-XL metric).
 """
 
 import argparse
@@ -15,40 +17,36 @@ import torch
 
 import neurosym as ns
 from neurosym.examples import near
-from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl
-from neurosym.examples.near.metrics_torch_ecg import (
-    compute_torch_ecg_classification_metrics,
+from neurosym.examples.near.dsls.attention_ecg_dsl import (
+    ChannelHoleFiller,
+    attention_ecg_dsl,
+)
+from neurosym.examples.near.metrics_ecg import (
+    bootstrap_metrics,
+    compute_ecg_metrics,
 )
 
 
 def ce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    Cross-entropy loss for single-label ECG targets.
-    """
+    """Cross-entropy loss for single-label targets."""
     targets = targets.view(-1).long()
     predictions = predictions.view(-1, predictions.shape[-1])
     return torch.nn.functional.cross_entropy(predictions, targets)
 
 
 def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """
-    Binary cross-entropy loss for multi-label ECG targets.
-    """
+    """Binary cross-entropy loss for multi-label targets."""
     predictions = predictions.view(-1, predictions.shape[-1])
     targets = targets.view(-1, targets.shape[-1]).float()
     return torch.nn.functional.binary_cross_entropy_with_logits(predictions, targets)
 
 
 def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
-    """
-    Evaluate a program module on test data.
-    """
-    # Note: feature_data for simple_ecg was (B, 144)
-    # attention_ecg_dsl expects the same flattened input
+    """Evaluate a program module on test data."""
     predictions = (
         module(torch.tensor(feature_data), environment=()).detach().numpy()
     ).reshape(feature_data.shape[0], -1)
-    metrics = compute_torch_ecg_classification_metrics(
+    metrics = compute_ecg_metrics(
         predictions, labels, label_mode=label_mode
     )
     return metrics, predictions
@@ -56,9 +54,9 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
 
 def run_experiment(
     output_path: str = "outputs/ecg_results/reproduction_attention.pkl",
-    data_dir: str = "data/ecg_classification/ecg",
+    data_dir: str = "data/ecg",
     num_programs: int = 200,
-    hidden_dim: int = 32,
+    hidden_dim: int = 16,
     neural_hidden_size: int = 32,
     batch_size: int = 1024,
     n_epochs: int = 30,
@@ -70,11 +68,9 @@ def run_experiment(
     device: str = "cuda:0",
     label_mode: str = "single",
 ) -> List[Dict[str, Any]]:
-    """
-    Run the NEAR experiment on the ECG dataset with Attention DSL.
-    """
+    """Run the NEAR experiment on ECG with Attention DSL."""
     print("=" * 80)
-    print("ECG NEAR Experiment - Attention DSL Implementation")
+    print("ECG NEAR Experiment - Attention DSL")
     print("=" * 80)
     print("Configuration:")
     print(f"  Output path: {output_path}")
@@ -92,7 +88,7 @@ def run_experiment(
     print(f"  Label mode: {label_mode}")
     print("=" * 80)
 
-    # Prepare data and DSL
+    # Load data
     print("\n[1/5] Loading ECG dataset...")
     is_regression = label_mode == "multi"
     datamodule = ns.datasets.ecg_data_example(
@@ -103,6 +99,9 @@ def run_experiment(
         batch_size=batch_size,
     )
     input_dim = datamodule.train.inputs.shape[-1]
+    feature_groups = datamodule.feature_groups
+    per_lead_feature_groups = datamodule.per_lead_feature_groups
+
     if label_mode == "single":
         output_dim = int(datamodule.train.outputs.max()) + 1
         loss_fn = ce_loss
@@ -110,18 +109,20 @@ def run_experiment(
     else:
         output_dim = datamodule.train.outputs.shape[-1]
         loss_fn = bce_loss
-        # compute_metrics treats float labels as regression; use neg_l2_dist for search heuristic
         validation_metric = "neg_l2_dist"
 
-    # Use the NEW Attention DSL
+    # Build DSL
     original_dsl = attention_ecg_dsl(
         input_dim=input_dim,
         num_classes=output_dim,
+        feature_groups=feature_groups,
+        per_lead_feature_groups=per_lead_feature_groups,
         hidden_dim=hidden_dim,
         max_overall_depth=max_depth,
     )
     print(f"  Train samples: {len(datamodule.train.inputs)}")
-    print(f"  Test/Val samples: {len(datamodule.test.inputs)}")
+    print(f"  Val samples: {len(datamodule.val.inputs)}")
+    print(f"  Test samples: {len(datamodule.test.inputs)}")
     print(f"  Input features: {input_dim}")
     print(f"  Output dim: {output_dim}")
 
@@ -135,13 +136,13 @@ def run_experiment(
         validation_metric=validation_metric,
     )
 
-    # Note: We removed ChannelHoleFiller because the DSL no longer has Channel holes.
-    # The GenericMLPRNNNeuralHoleFiller will handle any other potential holes,
-    # though in this DSL most things are fully parameterized or concrete.
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=original_dsl,
-        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(
-            hidden_size=neural_hidden_size
+        neural_hole_filler=near.UnionNeuralHoleFiller(
+            ChannelHoleFiller(num_channels=12),
+            near.GenericMLPRNNNeuralHoleFiller(
+                hidden_size=neural_hidden_size
+            ),
         ),
     )
 
@@ -151,7 +152,7 @@ def run_experiment(
         structural_cost_penalty=structural_cost_penalty,
     )
 
-    # Create the NEAR graph
+    # Create NEAR graph
     print("\n[3/5] Creating NEAR search graph...")
     g = near.near_graph(
         neural_dsl,
@@ -160,7 +161,7 @@ def run_experiment(
         cost=cost,
     )
 
-    # Search for programs with bounded A*
+    # Search for programs
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
     iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
 
@@ -186,14 +187,13 @@ def run_experiment(
     print(f"\n  Total search time: {search_time:.2f} seconds")
     print(f"  Programs found: {len(programs_list)}")
 
-    # Evaluate each discovered program
+    # Evaluate programs
     print("\n[5/5] Evaluating programs on test set...")
     for i, d in enumerate(programs_list):
         print(f"\n  Evaluating program {i + 1}/{len(programs_list)}...")
         program = d["program"]
         initialized_program = neural_dsl.initialize(program)
 
-        # Train with final epoch count
         _ = cost.validation_heuristic.with_n_epochs(final_n_epochs).compute_cost(
             neural_dsl, initialized_program, cost.embedding
         )
@@ -208,10 +208,10 @@ def run_experiment(
         d["true_vals"] = labels.tolist()
         d["pred_vals"] = predictions.tolist()
 
+        print(f"    Macro AUC: {metrics.get('macro_auc', 0.0):.6f}")
         print(f"    Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
-        print(f"    Macro Accuracy: {metrics.get('macro_acc', 0.0):.6f}")
 
-    # Save final results
+    # Save results
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "wb") as f:
@@ -223,11 +223,24 @@ def run_experiment(
     print("RESULTS SUMMARY")
     print("=" * 80)
     if programs_list:
-        best_program = max(programs_list, key=lambda x: x["report"].get("macro_f1", 0.0))
+        best_program = max(
+            programs_list, key=lambda x: x["report"].get("macro_auc", 0.0)
+        )
         print(f"Best program: {best_program['program']}")
+        print(f"  Macro AUC: {best_program['report'].get('macro_auc', 0.0):.6f}")
         print(f"  Macro F1: {best_program['report'].get('macro_f1', 0.0):.6f}")
-        print(f"  Macro accuracy: {best_program['report'].get('macro_acc', 0.0):.6f}")
         print(f"  Discovery time: {best_program['time']:.2f}s")
+
+        # Bootstrap CIs for best program
+        ci = bootstrap_metrics(
+            best_program["pred_vals"],
+            best_program["true_vals"],
+            label_mode=label_mode,
+        )
+        print(
+            f"  Bootstrap AUC: {ci['mean_auc']:.3f} "
+            f"({ci['ci_5']:.3f} - {ci['ci_95']:.3f})"
+        )
     print("=" * 80)
 
     return programs_list
@@ -235,7 +248,7 @@ def run_experiment(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Reproduce NEAR results on ECG dataset with Attention DSL"
+        description="Reproduce NEAR results on ECG with Attention DSL"
     )
     parser.add_argument(
         "--output",
@@ -246,14 +259,14 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="data/ecg_classification/ecg",
-        help="Directory containing standardized ECG .npz splits.",
+        default="data/ecg",
+        help="Directory for ECG data.",
     )
     parser.add_argument(
         "--num-programs", type=int, default=200, help="Number of programs to discover"
     )
     parser.add_argument(
-        "--hidden-dim", type=int, default=32, help="Hidden dimension for DSL"
+        "--hidden-dim", type=int, default=16, help="Hidden dimension for DSL"
     )
     parser.add_argument(
         "--neural-hidden-size",
@@ -315,8 +328,8 @@ def main():
             {
                 "program": str(r["program"]),
                 "time": r["time"],
+                "macro_auc": r["report"].get("macro_auc", 0.0),
                 "macro_f1": r["report"].get("macro_f1", 0.0),
-                "macro_accuracy": r["report"].get("macro_acc", 0.0),
             }
             for r in results
         ],
