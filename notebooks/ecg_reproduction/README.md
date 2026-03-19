@@ -1,184 +1,160 @@
 # ECG NEAR Experiment Reproduction
 
-## Classification Tasks
+This directory contains scripts to reproduce the NEAR experiments on the ECG dataset for ECG diagnostic classification using pre-extracted ECGDeli features.
 
-We evaluate two classification formulations on 12-lead ECG data:
+## 1. Dataset
 
-- **Single-label** (`--label-mode single`): Each recording is assigned one
-  diagnostic class (argmax of multi-hot labels). Trained with cross-entropy loss
-  and softmax output. This is a simplification -- ~6.9% of CPSC2018 records have
-  multiple diagnoses -- but serves as a standard multi-class baseline.
+The experiments use the [PTB-XL](https://physionet.org/content/ptb-xl/1.0.3/) and [PTB-XL+](https://physionet.org/content/ptb-xl-plus/1.0.1/) datasets from PhysioNet, with pre-extracted ECGDeli features. The dataset contains:
 
-- **Multi-label** (`--label-mode multi`): Each recording can carry multiple
-  simultaneous diagnoses (multi-hot encoding). Trained with BCE loss and sigmoid
-  output. This matches how CPSC2018 and the CinC 2020/2021 challenges were
-  originally framed, and is considered more clinically relevant since cardiac
-  conditions commonly co-occur.
+- **21,799** 12-lead ECG records with **177 ECGDeli features** (14 per-lead types × 12 leads + 9 global)
+- **5 diagnostic superclasses**: NORM, MI, STTC, CD, HYP
+- **Standard split**: Folds 1-8 train, fold 9 validation, fold 10 test
 
-Both formulations are evaluated with **macro F1** (average of per-class F1 scores),
-consistent with the CPSC2018 challenge scoring.
+### Downloading the data
 
-See [ECG_RELATED_WORK.md](ECG_RELATED_WORK.md) for detailed literature context on
-these task formulations.
-
-## Dataset Provenance
-
-The ECG dataset originates from **CPSC2018** (China Physiological Signal Challenge 2018):
-- **6,877 records** across **9 diagnostic classes**
-- Classes: SNR (Normal Sinus Rhythm), AF (Atrial Fibrillation), I-AVB (First-degree AV Block), LBBB (Left Bundle Branch Block), RBBB (Right Bundle Branch Block), PAC (Premature Atrial Contraction), PVC (Premature Ventricular Contraction), STD (ST Depression), STE (ST Elevation)
-- Train/test split: 4,813/2,064 records
-- Multi-label class totals: [918, 1221, 722, 236, 1857, 616, 700, 869, 220]
-
-Reference: https://torch-ecg.readthedocs.io/en/latest/api/generated/torch_ecg.databases.CPSC2018.html
-
-## 1. Dataset Preparation
-
-To generate standardized train/val/test splits (plus single/multi label sets), run:
-```bash
-uv run jupyter nbconvert --execute --to notebook notebooks/get_ecg_datasets.ipynb
-```
-This exports:
-- `data/ecg_classification/ecg/train_ecg_data.npz`
-- `data/ecg_classification/ecg/valid_ecg_data.npz`
-- `data/ecg_classification/ecg/test_ecg_data.npz`
-- `data/ecg_classification/ecg/*_ecg_labels_single.npz`
-- `data/ecg_classification/ecg/*_ecg_labels_multi.npz`
-
-## 2. Running All Experiments (Recommended)
-
-Run the full suite of experiments across local ECG data and optional
-torch-ecg datasets (CPSC2018, CINC2021):
+The data is downloaded automatically on first run via `wget`. You can also download it manually:
 
 ```bash
-bash notebooks/ecg_reproduction/run_all_ecg_experiments.sh \
-  --device cuda:0 \
-  --extra-datasets CPSC2018,CINC2021 \
-  --db-dir data/ecg_classification/ecg_db/
+# Download PTB-XL (≈2 GB)
+wget -r -N -c -np -nH --cut-dirs=1 -P data/ecg \
+  https://physionet.org/files/ptb-xl/1.0.3/
+
+# Download PTB-XL+ (≈200 MB)
+wget -r -N -c -np -nH --cut-dirs=1 -P data/ecg \
+  https://physionet.org/files/ptb-xl-plus/1.0.1/
 ```
 
-This runs, for each dataset and each label mode (single/multi):
-1. **NEAR attention ECG DSL** (`benchmark_attention_ecg.py`)
-2. **NEAR attention drop-eg DSL** (`benchmark_attention_drop_eg.py`)
-3. **MLP baseline** (`baseline_nn.py`)
-4. **Decision tree baseline** (`baseline_tree.py --model decision_tree`)
-5. **Random forest baseline** (`baseline_tree.py --model random_forest`)
-6. **torch-ecg CNN baselines** (`baseline_torch_ecg.py`)
-
-For extra torch-ecg datasets (CPSC2018, CINC2021), the script first prepares
-standardized `.npz` splits via `torch_ecg_data_example()`, then runs the
-same experiment suite on those splits.
-
-### Hyperparameters (defaults used by `run_all_ecg_experiments.sh`)
-
-| Parameter | NEAR | MLP | Tree | TorchECG |
-|-----------|------|-----|------|----------|
-| num_programs | 200 | — | — | — |
-| hidden_dim | 32 | 64 | — | — |
-| neural_hidden_size | 32 | — | — | — |
-| batch_size | 1024 | 256 | — | 256 |
-| epochs (search) | 30 | 20 | — | 20 |
-| epochs (final) | 60 | — | — | — |
-| lr | 1e-4 | 1e-3 | — | 1e-3 |
-| structural_cost | 0.1 | — | — | — |
-| n_estimators | — | — | 200 | — |
-| max_depth | — | — | 15 | — |
-| train_seed | 0 | 0 | 0 | 0 |
-| split_seed | 42 | — | — | 42 |
-| max_records | 5000 | — | — | — |
-
-### Output Structure
+After downloading, the directory structure should be:
 
 ```
-outputs/ecg_results/all_runs/
-├── local_ecg/
-│   ├── single/
-│   │   ├── near_attention.pkl
-│   │   ├── near_attention_summary.json
-│   │   ├── near_attention_drop_eg.pkl
-│   │   ├── near_attention_drop_eg_summary.json
-│   │   ├── baseline_nn.json
-│   │   ├── baseline_tree_decision_tree.json
-│   │   ├── baseline_tree_random_forest.json
-│   │   └── baseline_torch_ecg.json
-│   └── multi/
-│       └── (same files)
-├── cpsc2018/
-│   ├── single/
-│   └── multi/
-├── cinc2021/
-│   ├── single/
-│   └── multi/
-└── prepared_data/
-    ├── cpsc2018/
-    │   ├── *.npz
-    │   └── source_metadata.json
-    └── cinc2021/
-        └── ...
+data/ecg/
+├── ptb-xl/1.0.3/       # ECG records + metadata
+│   ├── ptbxl_database.csv
+│   ├── scp_statements.csv
+│   └── records*/
+└── ptb-xl-plus/1.0.1/  # ECGDeli pre-extracted features
+    └── features/
 ```
 
-## 2b. Running Individual Experiments
+Data is cached in `data/ecg/` after the first download. No further preparation is needed.
 
-Run individual benchmarks directly:
+## 2. Running the Baselines
+
+### Random Forest
 
 ```bash
-# NEAR attention DSL
+uv run python notebooks/ecg_reproduction/baseline_tree.py \
+  --model random_forest --label-mode single
+```
+
+### Decision Tree
+
+```bash
+uv run python notebooks/ecg_reproduction/baseline_tree.py \
+  --model decision_tree --label-mode single
+```
+
+#### Tree Baseline Arguments
+
+* `--model` (str, default: `random_forest`, choices: `random_forest`, `decision_tree`): Which tree model to use.
+* `--label-mode` (str, default: `single`, choices: `single`, `multi`): Label mode (`single` = filtered to records with exactly 1 superclass; `multi` = multi-hot).
+* `--data-dir` (str, default: `data/ecg`): Path to ECG data directory.
+* `--seed` (int, default: `42`): Random seed.
+* `--n-estimators` (int, default: `100`): Number of estimators for Random Forest.
+* `--max-depth` (int, default: `None`): Max depth for tree (None = unlimited, matching sklearn default).
+* `--output` (str): Optional JSON path for metrics output.
+
+### MLP Baseline
+
+```bash
+uv run python notebooks/ecg_reproduction/baseline_nn.py \
+  --label-mode single --device cuda:0
+```
+
+#### MLP Baseline Arguments
+
+* `--label-mode` (str, default: `single`, choices: `single`, `multi`): Label mode.
+* `--data-dir` (str, default: `data/ecg`): Path to ECG data directory.
+* `--batch-size` (int, default: `256`): Training batch size.
+* `--epochs` (int, default: `300`): Maximum training epochs.
+* `--lr` (float, default: `1e-3`): Learning rate.
+* `--hidden-dim` (int, default: `256`): Hidden layer dimension (3 layers).
+* `--seed` (int, default: `42`): Random seed.
+* `--device` (str, default: `cuda:0`): Device for training.
+* `--output` (str): Optional JSON path for metrics output.
+
+## 3. Running the NEAR Experiment
+
+To run the NEAR experiment with the attention ECG DSL:
+
+```bash
 uv run python notebooks/ecg_reproduction/benchmark_attention_ecg.py \
-  --num-programs 200 --epochs 30 --final-epochs 60 --device cuda:0
-
-# NEAR attention drop-eg DSL
-uv run python notebooks/ecg_reproduction/benchmark_attention_drop_eg.py \
-  --num-programs 200 --epochs 30 --final-epochs 60 --device cuda:0
-
-# MLP baseline
-uv run python notebooks/ecg_reproduction/baseline_nn.py --epochs 20 --device cuda:0
-
-# Tree baselines
-uv run python notebooks/ecg_reproduction/baseline_tree.py --model decision_tree
-uv run python notebooks/ecg_reproduction/baseline_tree.py --model random_forest
-
-# torch-ecg CNN baselines
-uv run python notebooks/ecg_reproduction/baseline_torch_ecg.py --device cuda:0
+  --label-mode single --device cuda:0
 ```
 
-All scripts accept `--data-dir` to point at a different standardized split
-directory, and `--label-mode single|multi`.
+Recommended hyperparameters (from experiment tuning):
 
-### Arguments (common across scripts)
+```bash
+uv run python notebooks/ecg_reproduction/benchmark_attention_ecg.py \
+  --label-mode single --hidden-dim 32 --lr 1e-3 --batch-size 256 \
+  --epochs 50 --final-epochs 200 --num-programs 15 \
+  --structural-cost-penalty 0.1 --device cuda:0
+```
 
-- `--output` — path for output file
-- `--data-dir` (default: `data/ecg_classification/ecg`)
-- `--label-mode` (`single` or `multi`, default: `single`)
-- `--device` (default: `cuda:0`)
+### NEAR Arguments
 
-> Note: `label-mode=multi` uses BCE loss and regression-style validation
-> metrics for search heuristics. Final evaluation still reports multilabel
-> metrics.
+* `--output` (str, default: `outputs/ecg_results/reproduction_attention.pkl`): Path to save results.
+* `--data-dir` (str, default: `data/ecg`): Directory for ECG data.
+* `--num-programs` (int, default: `200`): Number of programs to discover during search.
+* `--hidden-dim` (int, default: `16`): Hidden dimension for the DSL.
+* `--neural-hidden-size` (int, default: `32`): Hidden size for the neural hole filler.
+* `--batch-size` (int, default: `1024`): Training batch size.
+* `--epochs` (int, default: `30`): Number of epochs for training during the search phase.
+* `--final-epochs` (int, default: `60`): Number of epochs for final training of discovered programs.
+* `--lr` (float, default: `1e-4`): Learning rate.
+* `--structural-cost-penalty` (float, default: `0.1`): Penalty multiplier for structural cost in search.
+* `--device` (str, default: `cuda:0`): Device to use for training (e.g., `cuda:0` or `cpu`).
+* `--label-mode` (str, default: `single`, choices: `single`, `multi`): Label mode.
 
-## 3. Expected Results (Macro F1)
+### Run All Experiments
 
-### Single-label
+To run all baselines and NEAR for both label modes:
 
-| Dataset | NEAR-Att | NEAR-Drop | MLP | DTree | RForest | TorchECG |
-|---------|----------|-----------|-----|-------|---------|----------|
-| local_ecg | **0.4025** | 0.2437 | 0.3191 | 0.1907 | 0.3218 | 0.1915 |
-| cpsc2018 | 0.3836 | 0.2925 | 0.3214 | 0.1774 | 0.3627 | **0.3642** |
-| cinc2021 | 0.2880 | 0.0890 | 0.3593 | 0.1940 | **0.4420** | 0.3333 |
+```bash
+bash notebooks/ecg_reproduction/run_all_ecg_experiments.sh --device cuda:0
+```
 
-### Multi-label
+## 4. Analyzing the Results
 
-| Dataset | NEAR-Att | NEAR-Drop | MLP | DTree | RForest | TorchECG |
-|---------|----------|-----------|-----|-------|---------|----------|
-| local_ecg | **0.2653** | 0.1854 | 0.0000 | 0.2005 | 0.2297 | 0.1661 |
-| cpsc2018 | 0.2202 | 0.2455 | 0.0000 | 0.1933 | **0.3360** | 0.3118 |
-| cinc2021 | 0.1437 | 0.1250 | 0.0000 | 0.1432 | 0.2096 | **0.2661** |
+The `analyze_ecg_results.ipynb` notebook loads baseline and NEAR results, generates comparison tables, and computes per-class AUC breakdowns.
 
-> These results were produced on a single NVIDIA GPU with `--device cuda:0`.
-> Minor floating-point variations are expected across hardware.
+Results are saved to:
+- `outputs/ecg_results/comparison.csv`
+- `outputs/ecg_results/comparison.md`
 
-## 4. Analyzing Results
+### Expected Results
 
-Open `analyze_ecg_results.ipynb` (single-label) or
-`analyze_ecg_results_multi.ipynb` (multi-label) to inspect and compare
-results. The notebooks load from `outputs/ecg_results/all_runs/` and write:
-- `outputs/ecg_results/comparison_single.csv` / `comparison_single.md`
-- `outputs/ecg_results/comparison_multi.csv` / `comparison_multi.md`
+After running all experiments, you can expect to see a table like:
+
+```
+================================================================================
+RESULTS COMPARISON (Macro AUC, fold 10 test set)
+================================================================================
+Method                                                  Label Mode  Macro AUC  Macro F1
+RandomForest (n=100)                                    single      0.888      0.572
+RandomForest (n=100)                                    multi       0.905      0.660
+MLP (3x256, 300ep)                                      single      0.900      0.611
+MLP (3x256, 300ep)                                      multi       0.902      0.675
+DecisionTree                                            single      0.677      0.473
+NEAR: (output (sub (affine_interval) (affine_amplitude))) single   0.900      0.622
+NEAR: (output (affine_amplitude))                       single      0.882      0.606
+================================================================================
+
+Reference: RF on ECGDeli features (Mehari 2023) = 0.899 macro AUC
+```
+
+### Key Findings
+
+1. **NEAR matches baselines**: The best discovered program achieves 0.900 macro AUC, matching the MLP baseline and exceeding the single-label Random Forest (0.888).
+2. **Amplitude features dominate**: Wave amplitudes across 12 leads (60 features) achieve 0.889 AUC alone. Combining with interval features via `add` or `sub` reaches 0.900.
+3. **Programs are interpretable**: Top programs like `(output (sub (affine_interval) (affine_amplitude)))` reveal that the model classifies by contrasting interval and amplitude features — aligning with clinical ECG interpretation.

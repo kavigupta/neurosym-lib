@@ -1,4 +1,4 @@
-# CRIM-13 (Mice) NEAR Experiment Reproduction
+. # CRIM-13 (Mice) NEAR Experiment Reproduction
 
 This directory contains scripts to reproduce the NEAR experiments on the CRIM-13 dataset for mice behavior classification.
 
