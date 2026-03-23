@@ -99,6 +99,9 @@ class TestNEARMiceDSL(unittest.TestCase):
             target_names=["not investigation", "investigation"],
             output_dict=True,
         )
+        print("Program selected", ns.render_s_expression(initialized_program))
+        print("Non-investigation F1-score:", report["not investigation"]["f1-score"])
+        print("Investigation F1-score:", report["investigation"]["f1-score"])
         self.assertGreaterEqual(
             report["not investigation"]["f1-score"], 0.76855895 * 0.9
         )
