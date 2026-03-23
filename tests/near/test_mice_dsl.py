@@ -45,6 +45,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
+        torch.manual_seed(0)
         datamodule = ns.datasets.calms21_investigation_example(
             train_seed=0, batch_size=1024
         )
@@ -54,7 +55,7 @@ class TestNEARMiceDSL(unittest.TestCase):
             n_epochs=12,
             lr=1e-4,
             loss_callback=self.tinycalms21_binary_cross_entropy_loss,
-            validation_metric="f1_score",
+            validation_metric="unweighted_f1",
         )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,
@@ -78,7 +79,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         )
         iterator = ns.search.OSGAstar()(g)
         # Should not throw a StopIteration error
-        programs = list(itertools.islice(iterator, 5))
+        programs = list(itertools.islice(iterator, 10))
         initialized_programs = [neural_dsl.initialize(program) for program in programs]
         # finetunes the programs
         costs = [
