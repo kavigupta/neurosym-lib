@@ -55,7 +55,6 @@ class TestNEARMiceDSL(unittest.TestCase):
             n_epochs=12,
             lr=1e-4,
             loss_callback=self.tinycalms21_binary_cross_entropy_loss,
-            validation_metric="unweighted_f1",
         )
         neural_dsl = near.NeuralDSL.from_dsl(
             dsl=original_dsl,

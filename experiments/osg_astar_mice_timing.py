@@ -92,6 +92,7 @@ def evaluate_programs(programs, neural_dsl, cost, datamodule):
 def run_search(name, strategy, n_programs, device="cpu"):
     print(f"\n--- {name} ---")
     print("Setting up...")
+    torch.manual_seed(0)
     datamodule, neural_dsl, cost = setup(device)
     g = near.near_graph(
         neural_dsl,
