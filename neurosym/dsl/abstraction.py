@@ -5,7 +5,6 @@ from ..programs.s_expression import InitializedSExpression, SExpression
 from ..programs.s_expression_render import render_s_expression
 from ..types.type_signature import TypeSignature
 from .production import FunctionLikeProduction
-from .abstraction import AbstractionIndexParameter, AbstractionParameter
 
 
 @dataclass
