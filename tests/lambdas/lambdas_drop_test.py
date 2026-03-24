@@ -6,6 +6,7 @@ from torch import nn
 
 import neurosym as ns
 from neurosym.examples import near
+from neurosym.examples.shield import remove_shield_productions, variable_indices
 
 
 class TestDSLWithShield(unittest.TestCase):
@@ -266,6 +267,12 @@ class TestShieldInterface(unittest.TestCase):
             max_iterations=1000,
         )
         self.assertEqual(len(result), 1)
+        program = result[0].uninitialize()
+        sanitized = remove_shield_productions(program)
+        print("Sanitized:", ns.render_s_expression(sanitized))
+        # lambda environment is reversed, so $i maps to column (count - 1 - i)
+        used_columns = {count - 1 - v for v in variable_indices(sanitized)}
+        self.assertEqual(used_columns, set(indices))
 
     def test_without_shield_occassionally_catastrophically_fails(self):
         for [index] in self.indices_all:
