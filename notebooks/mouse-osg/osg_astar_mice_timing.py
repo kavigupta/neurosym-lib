@@ -151,7 +151,7 @@ def main():
         "n_programs": args.n_programs,
         "strategies": results,
     }
-    output_path = "experiments/osg_astar_mice_results.json"
+    output_path = "notebooks/mouse-osg/osg_astar_mice_results.json"
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
     print(f"\nResults written to {output_path}")
