@@ -270,7 +270,9 @@ class TestShieldInterface(unittest.TestCase):
         sanitized = near.with_shield.remove_shield_productions(program)
         print("Sanitized:", ns.render_s_expression(sanitized))
         # lambda environment is reversed, so $i maps to column (count - 1 - i)
-        used_columns = {count - 1 - v for v in near.with_shield.variable_indices(sanitized)}
+        used_columns = {
+            count - 1 - v for v in near.with_shield.variable_indices(sanitized)
+        }
         self.assertEqual(used_columns, set(indices))
 
     def test_without_shield_occassionally_catastrophically_fails(self):
