@@ -39,12 +39,18 @@ class ChildrenInOrderMask(ns.PreorderMask):
 
     def compute_mask(self, position, symbols):
         if self.proper_context:
-            mask = []
-            for symbol in symbols:
-                symbol = self.tree_dist.symbols[symbol][0]
-                mask.append(int(symbol) == len(self.seen_symbols) + 1)
-            return mask
-        return [True] * len(symbols)
+            return np.array(
+                [
+                    (
+                        0.0
+                        if int(self.tree_dist.symbols[symbol][0])
+                        == len(self.seen_symbols) + 1
+                        else -np.inf
+                    )
+                    for symbol in symbols
+                ]
+            )
+        return np.zeros(len(symbols))
 
     def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol = self.tree_dist.symbols[symbol][0]
@@ -77,7 +83,7 @@ class ChildrenInOrderAsserterMask(ns.PreorderMask):
         self.seen_symbols = []
 
     def compute_mask(self, position, symbols):
-        return [True] * len(symbols)
+        return np.zeros(len(symbols))
 
     def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol = self.tree_dist.symbols[symbol][0]

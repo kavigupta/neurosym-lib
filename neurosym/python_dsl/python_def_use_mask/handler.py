@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Tuple
 
+import numpy as np
+
 from neurosym.python_dsl.python_ast_tools import fields_for_node
 
 from .names import match_either_name_or_global
@@ -172,18 +174,26 @@ class Handler(ABC):
             by providing a custom predicate for a given symbol as to whether
             it should be considered valid or not.
 
-        :return: A list of booleans, where ``True`` indicates that the symbol is valid.
+        :return: An np.ndarray of floats (0.0 = valid, -inf = invalid).
         """
         assert isinstance(special_case_predicates, list) and all(
             isinstance(x, SpecialCaseSymbolPredicate) for x in special_case_predicates
         )
         if self.is_defining(position):
-            return [True] * len(symbols)
+            return np.zeros(len(symbols))
         names = set(self.currently_defined_names())
-        return [
-            self._matches(names, symbol, idx_to_name, special_case_predicates)
-            for symbol in symbols
-        ]
+        return np.array(
+            [
+                (
+                    0.0
+                    if self._matches(
+                        names, symbol, idx_to_name, special_case_predicates
+                    )
+                    else -np.inf
+                )
+                for symbol in symbols
+            ]
+        )
 
 
 class ConstructHandler(Handler):

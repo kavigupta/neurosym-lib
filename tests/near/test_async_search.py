@@ -1,5 +1,5 @@
 """
-Test search/bounded_astar_async.py with NEAR search graph.
+Test search/astar_async.py with NEAR search graph.
 """
 
 import unittest
@@ -19,7 +19,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         goal = Fully symbolic program. (handled in: search_graph/dsl_search_graph.py)
         test_predicate = score on testing set
 
-        This tests an async version of bounded_astar search.
+        This tests an async version of A* search.
         """
         # pylint: disable=duplicate-code
         datamodule = ns.datasets.near_data_example(
@@ -53,7 +53,7 @@ class TestNEARAsyncSearch(unittest.TestCase):
         # succeed if this raises StopIteration
         with pytest.raises(StopIteration):
             n_iter = 0
-            iterator = ns.search.BoundedAStarAsync(max_depth, 4)(g)
+            iterator = ns.search.AStarAsync(4)(g)
             while True:
                 print("iteration: ", n_iter)
                 n_iter += 1
