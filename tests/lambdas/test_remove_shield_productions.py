@@ -1,13 +1,13 @@
 import unittest
 
 import neurosym as ns
-from neurosym.examples.shield import remove_shield_productions
+from neurosym.examples import near
 
 
 class TestRemoveShieldProductions(unittest.TestCase):
     def sanitize(self, expr_str):
         return ns.render_s_expression(
-            remove_shield_productions(ns.parse_s_expression(expr_str))
+            near.with_shield.remove_shield_productions(ns.parse_s_expression(expr_str))
         )
 
     def test_no_shields(self):

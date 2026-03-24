@@ -2,6 +2,8 @@ from neurosym.examples.shield import (
     ShieldProduction,
     ShieldTypeSignature,
     add_shield_productions,
+    remove_shield_productions,
+    variable_indices,
 )
 
 from .add_variables_domain import (
