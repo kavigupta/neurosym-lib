@@ -3,6 +3,8 @@ import numpy as np
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
 
+from .shield_production import add_shield_productions
+
 
 def add_variables_domain_datamodule(count, indices):
     """
@@ -48,9 +50,10 @@ def add_variables_domain_dsl(amount, is_vectorized=False, include_shield=True):
 
     dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
     dslf.lambdas(
-        include_shield=include_shield,
         max_type_depth=np.log2(amount) + 1,
     )
+    if include_shield:
+        add_shield_productions(dslf)
     if is_vectorized:
         dslf.production(
             "dispatch",

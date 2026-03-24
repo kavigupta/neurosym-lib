@@ -112,6 +112,8 @@ For testing and demonstration purposes
 
 With Shield example
 --------------------------------------------
+.. autoclass:: neurosym.examples.near.with_shield.ShieldProduction
+.. autoclass:: neurosym.examples.near.with_shield.ShieldTypeSignature
 .. autofunction:: neurosym.examples.near.with_shield.MinimalStepsNearStructuralCostWithShield
 .. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_datamodule
 .. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_dsl

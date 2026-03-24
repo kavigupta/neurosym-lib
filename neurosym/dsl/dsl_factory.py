@@ -8,7 +8,6 @@ from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
-    ShieldTypeSignature,
     VariableTypeSignature,
     _signature_expansions,
     _type_universe,
@@ -20,7 +19,6 @@ from .production import (
     LambdaProduction,
     ParameterizedProduction,
     Production,
-    ShieldProduction,
     VariableProduction,
 )
 
@@ -58,6 +56,7 @@ class DSLFactory:
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
+        self._extra_productions = []
 
     def typedef(self, key: str, type_str: str):
         """
@@ -102,7 +101,7 @@ class DSLFactory:
         """
         self._no_zeroadic = True
 
-    def lambdas(self, max_type_depth=4, include_shield=False):
+    def lambdas(self, max_type_depth=4):
         """
         Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
         productions for each argument type/arity combination, as well as
@@ -110,9 +109,19 @@ class DSLFactory:
 
         :param max_type_depth: The maximum depth of types to generate.
         """
-        self.lambda_parameters = dict(
-            max_type_depth=max_type_depth, include_shield=include_shield
-        )
+        self.lambda_parameters = dict(max_type_depth=max_type_depth)
+
+    def extra_productions(self, symbol: str, productions: List[Production], stable: bool = True):
+        """
+        Add custom productions to the DSL. These are added as-is without
+        type expansion. If stable is True, these productions will not be
+        reindexed during pruning.
+
+        :param symbol: The symbol group name for these productions (e.g., "<shield>").
+        :param productions: The list of productions to add.
+        :param stable: If True, these productions will not be reindexed during pruning.
+        """
+        self._extra_productions.append((symbol, productions, stable))
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
@@ -304,12 +313,10 @@ class DSLFactory:
             # don't prune and reindex variables
             stable_symbols.add("<variable>")
 
-            if self.lambda_parameters["include_shield"]:
-                sym_to_productions["<shield>"] = [
-                    ShieldProduction(ShieldTypeSignature(index_in_env))
-                    for index_in_env in range(self.max_env_depth)
-                ]
-                stable_symbols.add("<shield>")
+        for symbol, prods, stable in self._extra_productions:
+            sym_to_productions[symbol] = prods
+            if stable:
+                stable_symbols.add(symbol)
 
         if self.prune:
             assert self.target_types is not None
