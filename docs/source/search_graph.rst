@@ -20,6 +20,7 @@ Search Graph
 .. autoclass:: neurosym.search.AStar
 .. autoclass:: neurosym.search.AStarAsync
 .. autoclass:: neurosym.search.BFS
+.. autoclass:: neurosym.search.OSGAstar
 .. autoclass:: neurosym.MetadataComputer
     :members:
 .. autoclass:: neurosym.NoMetadataComputer
