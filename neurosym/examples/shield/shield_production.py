@@ -17,10 +17,7 @@ def add_shield_productions(dslf: DSLFactory):
     """
     dslf.extra_productions(
         "<shield>",
-        [
-            ShieldProduction(ShieldTypeSignature(i))
-            for i in range(dslf.max_env_depth)
-        ],
+        [ShieldProduction(ShieldTypeSignature(i)) for i in range(dslf.max_env_depth)],
     )
 
 

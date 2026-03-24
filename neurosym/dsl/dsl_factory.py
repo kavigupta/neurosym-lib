@@ -111,7 +111,9 @@ class DSLFactory:
         """
         self.lambda_parameters = dict(max_type_depth=max_type_depth)
 
-    def extra_productions(self, symbol: str, productions: List[Production], stable: bool = True):
+    def extra_productions(
+        self, symbol: str, productions: List[Production], stable: bool = True
+    ):
         """
         Add custom productions to the DSL. These are added as-is without
         type expansion. If stable is True, these productions will not be

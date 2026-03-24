@@ -2,7 +2,6 @@ import numpy as np
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.dsl.dsl_factory import DSLFactory
-
 from neurosym.examples.shield import add_shield_productions
 
 
