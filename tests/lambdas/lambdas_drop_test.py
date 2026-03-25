@@ -242,7 +242,7 @@ class TestShieldInterface(unittest.TestCase):
             dsl=original_dsl,
             type_env=ns.TypeDefiner(),
             neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(hidden_size=100),
-            search_strategy=near.with_shield.OSGAstar(max_iterations),
+            search_strategy=ns.search.OSGAstar(max_iterations=max_iterations),
             loss_callback=nn.functional.mse_loss,
             validation_params=dict(
                 cost=cost,

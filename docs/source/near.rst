@@ -120,4 +120,3 @@ With Shield example
 .. autofunction:: neurosym.examples.near.with_shield.MinimalStepsNearStructuralCostWithShield
 .. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_datamodule
 .. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_dsl
-.. autoclass:: neurosym.examples.near.with_shield.OSGAstar
