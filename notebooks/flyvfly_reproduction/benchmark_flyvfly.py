@@ -211,13 +211,14 @@ def run_experiment(
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
+        max_depth=max_depth,
         is_goal=lambda _: True,
         cost=cost,
     )
 
-    # Search for programs with bounded A*
+    # Search for programs with A*
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
+    iterator = ns.search.AStar()(g)
 
     programs_list = []
     start_time = time.time()
@@ -246,13 +247,9 @@ def run_experiment(
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
     raw_output_path = str(output_path_obj).replace(".pkl", "_raw.pkl")
-    # with open(raw_output_path, "wb") as f:
-    #     pickle.dump(programs_list, f)
-    # print(f"  Saved raw programs to: {raw_output_path}")
-    # load from saved raw programs for reproduction
-    with open(raw_output_path, "rb") as f:
-        programs_list = pickle.load(f)
-    print(f"  Loaded raw programs from: {raw_output_path}")
+    with open(raw_output_path, "wb") as f:
+        pickle.dump(programs_list, f)
+    print(f"  Saved raw programs to: {raw_output_path}")
 
     # Evaluate each discovered program
     print("\n[5/5] Evaluating programs on test set...")

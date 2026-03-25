@@ -58,11 +58,13 @@ def symbol_likelihood(tree_dist, parents, preorder_mask, start_position, top_sym
     if idx is None:
         return -float("inf")
     syms, log_probs = tree_dist.likelihood_arrays[parents]
-    mask = preorder_mask.compute_mask(start_position, syms)
-    if not mask[idx]:
+    mask_adj = preorder_mask.compute_mask(start_position, syms)
+    if not np.isfinite(mask_adj[idx]):
         return -float("inf")
-    denominator = np.logaddexp.reduce(log_probs[mask])
-    likelihood = log_probs[idx] - denominator
+    valid = np.isfinite(mask_adj)
+    adjusted = log_probs + mask_adj.astype(log_probs.dtype)
+    denominator = np.logaddexp.reduce(adjusted[valid])
+    likelihood = adjusted[idx] - denominator
 
     assert likelihood <= 0, f"Likelihood is {likelihood}, expected <= 0"
 

@@ -4,7 +4,7 @@ Test dsl/differentiable_dsl.py with NEAR search graph.
 We conduct the following tests:
 - Sanity check: We can find a simple program.
 - BFS: We can find a simple program with BFS.
-- Astar: We can find a simple program with bounded Astar search.
+- Astar: We can find a simple program with Astar search.
 - Enumerate: We can enumerate all programs of a certain size.
 NEAR Integration tests.
 """
@@ -83,8 +83,8 @@ class TestNEARSimpleDSL(unittest.TestCase):
             return False
 
         def cost(x):
-            if isinstance(x.program, ns.SExpression) and x.program.children:
-                return len(str(x.program.children[0]))
+            if isinstance(x.program, ns.SExpression):
+                return len(str(x.program))
             return 0
 
         max_depth = 7
@@ -96,7 +96,7 @@ class TestNEARSimpleDSL(unittest.TestCase):
             cost=cost,
         )
 
-        node = next(ns.search.BoundedAStar(max_depth=max_depth)(g))
+        node = next(ns.search.AStar()(g))
         self.assertEqual(node.children[0], ns.SExpression(symbol="ones", children=()))
 
     def test_simple_dsl_enumerate(self):

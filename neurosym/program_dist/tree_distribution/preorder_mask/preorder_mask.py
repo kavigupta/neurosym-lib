@@ -19,11 +19,14 @@ class PreorderMask(ABC):
         self.tree_dist = tree_dist
 
     @abstractmethod
-    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
+    def compute_mask(self, position: int, symbols: List[int]) -> np.ndarray:
         """
-        Compute the mask at the current position with the current symbols.
+        Compute an adjustment mask at the current position with the current symbols.
 
-        The mask should be True for symbols that are allowed and False for symbols that are not.
+        Returns an np.ndarray of floats:
+            0.0   = allowed, no adjustment
+            -inf  = disallowed
+            other = allowed with a pre-normalization log-prob adjustment
         """
 
     @abstractmethod
@@ -66,8 +69,8 @@ class NoopPreorderMask(PreorderMask):
     A preorder mask that does nothing.
     """
 
-    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
-        return [True] * len(symbols)
+    def compute_mask(self, position: int, symbols: List[int]) -> np.ndarray:
+        return np.zeros(len(symbols))
 
     def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
         return lambda: None
@@ -101,15 +104,14 @@ class ConjunctionPreorderMask(PreorderMask):
         super().__init__(tree_dist)
         self.masks = masks
 
-    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
+    def compute_mask(self, position: int, symbols: List[int]) -> np.ndarray:
         symbols = np.array(symbols)
-        mask = np.ones(len(symbols), dtype=bool)
+        combined = np.zeros(len(symbols))
         for m in self.masks:
-            [valid_symbol_idxs] = np.where(mask)
-            mask[valid_symbol_idxs] &= m.compute_mask(
-                position, symbols[valid_symbol_idxs]
-            )
-        return mask.tolist()
+            [valid_symbol_idxs] = np.where(np.isfinite(combined))
+            sub = m.compute_mask(position, symbols[valid_symbol_idxs])
+            combined[valid_symbol_idxs] += sub
+        return combined
 
     def on_entry(self, position: int, symbol: int) -> Callable[[], None]:
         undos = []

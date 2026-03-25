@@ -101,7 +101,7 @@ class DefUseChainPreorderMask(PreorderMask):
         """
         return self.handlers[-1].currently_defined_indices()
 
-    def compute_mask(self, position: int, symbols: List[int]) -> List[bool]:
+    def compute_mask(self, position: int, symbols: List[int]) -> "np.ndarray":
         """
         Compute the mask for the given position and symbols. If the last handler is
         defining, then all symbols are valid. Otherwise, only the symbols that
