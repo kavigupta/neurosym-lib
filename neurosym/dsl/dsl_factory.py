@@ -56,6 +56,7 @@ class DSLFactory:
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
+        self._extra_productions = []
 
     def typedef(self, key: str, type_str: str):
         """
@@ -109,6 +110,20 @@ class DSLFactory:
         :param max_type_depth: The maximum depth of types to generate.
         """
         self.lambda_parameters = dict(max_type_depth=max_type_depth)
+
+    def extra_productions(
+        self, symbol: str, productions: List[Production], stable: bool = True
+    ):
+        """
+        Add custom productions to the DSL. These are added as-is without
+        type expansion. If stable is True, these productions will not be
+        reindexed during pruning.
+
+        :param symbol: The symbol group name for these productions (e.g., "<shield>").
+        :param productions: The list of productions to add.
+        :param stable: If True, these productions will not be reindexed during pruning.
+        """
+        self._extra_productions.append((symbol, productions, stable))
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
@@ -299,6 +314,11 @@ class DSLFactory:
             ]
             # don't prune and reindex variables
             stable_symbols.add("<variable>")
+
+        for symbol, prods, stable in self._extra_productions:
+            sym_to_productions[symbol] = prods
+            if stable:
+                stable_symbols.add(symbol)
 
         if self.prune:
             assert self.target_types is not None

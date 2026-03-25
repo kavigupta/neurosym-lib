@@ -108,3 +108,15 @@ For testing and demonstration purposes
 .. autofunction:: neurosym.examples.near.debug_nested_dsl.get_variable_dsl
 .. autofunction:: neurosym.examples.near.debug_nested_dsl.get_dataset
 .. autofunction:: neurosym.examples.near.debug_nested_dsl.run_near_on_dsl
+
+
+With Shield example
+--------------------------------------------
+.. autoclass:: neurosym.examples.shield.ShieldProduction
+.. autoclass:: neurosym.examples.shield.ShieldTypeSignature
+.. autofunction:: neurosym.examples.shield.add_shield_productions
+.. autofunction:: neurosym.examples.shield.remove_shield_productions
+.. autofunction:: neurosym.examples.shield.variable_indices
+.. autofunction:: neurosym.examples.near.with_shield.MinimalStepsNearStructuralCostWithShield
+.. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_datamodule
+.. autofunction:: neurosym.examples.near.with_shield.add_variables_domain_dsl
