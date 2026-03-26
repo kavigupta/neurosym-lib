@@ -19,6 +19,7 @@ import neurosym as ns
 from neurosym.examples import near
 from neurosym.examples.near.dsls.attention_ecg_dsl import (
     ChannelHoleFiller,
+    ChannelUnpackEmbedding,
     attention_ecg_dsl,
 )
 from neurosym.examples.near.metrics_ecg import (
@@ -43,8 +44,9 @@ def bce_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
 
 def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
     """Evaluate a program module on test data."""
+    x = torch.tensor(feature_data)
     predictions = (
-        module(torch.tensor(feature_data), environment=()).detach().numpy()
+        module(x, environment=()).detach().numpy()
     ).reshape(feature_data.shape[0], -1)
     metrics = compute_ecg_metrics(
         predictions, labels, label_mode=label_mode
@@ -98,9 +100,8 @@ def run_experiment(
         data_dir=data_dir,
         batch_size=batch_size,
     )
-    input_dim = datamodule.train.inputs.shape[-1]
-    feature_groups = datamodule.feature_groups
-    per_lead_feature_groups = datamodule.per_lead_feature_groups
+    num_channels = datamodule.num_leads + datamodule.num_global_features
+    features_per_channel = datamodule.features_per_lead
 
     if label_mode == "single":
         output_dim = int(datamodule.train.outputs.max()) + 1
@@ -113,17 +114,16 @@ def run_experiment(
 
     # Build DSL
     original_dsl = attention_ecg_dsl(
-        input_dim=input_dim,
+        num_channels=num_channels,
+        features_per_channel=features_per_channel,
         num_classes=output_dim,
-        feature_groups=feature_groups,
-        per_lead_feature_groups=per_lead_feature_groups,
         hidden_dim=hidden_dim,
         max_overall_depth=max_depth,
     )
     print(f"  Train samples: {len(datamodule.train.inputs)}")
     print(f"  Val samples: {len(datamodule.val.inputs)}")
     print(f"  Test samples: {len(datamodule.test.inputs)}")
-    print(f"  Input features: {input_dim}")
+    print(f"  Channels: {num_channels} x {features_per_channel} features")
     print(f"  Output dim: {output_dim}")
 
     # Trainer configuration
@@ -139,7 +139,7 @@ def run_experiment(
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=original_dsl,
         neural_hole_filler=near.UnionNeuralHoleFiller(
-            ChannelHoleFiller(num_channels=12),
+            ChannelHoleFiller(num_channels=num_channels),
             near.GenericMLPRNNNeuralHoleFiller(
                 hidden_size=neural_hidden_size
             ),
@@ -150,6 +150,7 @@ def run_experiment(
         trainer_cfg=trainer_cfg,
         datamodule=datamodule,
         structural_cost_penalty=structural_cost_penalty,
+        embedding=ChannelUnpackEmbedding(),
     )
 
     # Create NEAR graph
@@ -201,7 +202,8 @@ def run_experiment(
         feature_data = datamodule.test.inputs
         labels = datamodule.test.outputs
 
-        module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
+        program_module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
+        module = ChannelUnpackEmbedding().embed_initialized_program(program_module)
         metrics, predictions = eval_program(module, feature_data, labels, label_mode)
 
         d["report"] = metrics

@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import torch
 
 from neurosym.datasets.load_data import DatasetFromNpy, DatasetWrapper
 from neurosym.utils.logging import log
@@ -56,19 +55,10 @@ _GLOBAL_FEATURES = (
     "HA__Global",
 )
 
-# Feature group assignments
-_AMPLITUDE_FEATURES = ("P_Amp", "Q_Amp", "R_Amp", "S_Amp", "T_Amp")
-_INTERVAL_FEATURES = (
-    "PQ_Int",
-    "PR_Int",
-    "QRS_Dur",
-    "QT_Int",
-    "QT_IntCorr",
-    "P_DurFull",
-    "T_DurFull",
-)
-_ST_FEATURES = ("ST_Elev",)
-_MORPHOLOGY_FEATURES = ("P_Morph",)
+NUM_LEADS = len(LEAD_NAMES)
+NUM_PER_LEAD_FEATURES = len(_PER_LEAD_FEATURES)
+NUM_GLOBAL_FEATURES = len(_GLOBAL_FEATURES)
+NUM_CHANNELS = NUM_LEADS + NUM_GLOBAL_FEATURES
 
 
 # --------------------------------------------------------------------------- #
@@ -204,75 +194,6 @@ def _load_ecgdeli_features(data_dir: str, record_ids):
     return feat_df
 
 
-def _classify_column(col_name):
-    """Return the feature group name for a column, or None if unrecognized."""
-    if col_name in _GLOBAL_FEATURES:
-        return "global"
-    for group_name, feature_set in (
-        ("amplitude", _AMPLITUDE_FEATURES),
-        ("interval", _INTERVAL_FEATURES),
-        ("st", _ST_FEATURES),
-        ("morphology", _MORPHOLOGY_FEATURES),
-    ):
-        for feat in feature_set:
-            if (
-                col_name.startswith(feat + "_")
-                and col_name[len(feat) + 1 :] in LEAD_NAMES
-            ):
-                return group_name
-    return None
-
-
-def _build_feature_group_index(columns: list[str]) -> dict[str, torch.LongTensor]:
-    """Map column names to feature group -> column indices."""
-    col_to_idx = {c: i for i, c in enumerate(columns)}
-    groups: dict[str, list[int]] = {
-        "amplitude": [],
-        "interval": [],
-        "st": [],
-        "morphology": [],
-        "global": [],
-    }
-
-    for col_name, idx in col_to_idx.items():
-        group = _classify_column(col_name)
-        if group is not None:
-            groups[group].append(idx)
-
-    return {k: torch.as_tensor(sorted(v), dtype=torch.long) for k, v in groups.items()}
-
-
-def _build_per_lead_feature_groups(
-    columns: list[str],
-    feature_groups: dict[str, torch.LongTensor],
-) -> dict[str, dict[str, torch.LongTensor]]:
-    """Build per-lead sub-indices within each per-lead feature group."""
-    col_to_idx = {c: i for i, c in enumerate(columns)}
-    result: dict[str, dict[str, torch.LongTensor]] = {}
-
-    for group_name, feature_set in [
-        ("amplitude", _AMPLITUDE_FEATURES),
-        ("interval", _INTERVAL_FEATURES),
-        ("st", _ST_FEATURES),
-        ("morphology", _MORPHOLOGY_FEATURES),
-    ]:
-        group_indices = feature_groups[group_name].tolist()
-        lead_map: dict[str, list[int]] = {}
-        for lead in LEAD_NAMES:
-            indices = []
-            for feat in feature_set:
-                col_name = f"{feat}_{lead}"
-                if col_name in col_to_idx:
-                    global_idx = col_to_idx[col_name]
-                    if global_idx in group_indices:
-                        indices.append(global_idx)
-            if indices:
-                lead_map[lead] = torch.as_tensor(sorted(indices), dtype=torch.long)
-        result[group_name] = lead_map
-
-    return result
-
-
 def _make_labels(metadata, scp_statements, label_mode: str):
     """Build label arrays and return (labels, valid_mask).
 
@@ -332,6 +253,23 @@ def _impute_and_normalize(x_train, x_val, x_test, normalize):
     return x_train, x_val, x_test
 
 
+def _reshape_to_channels(x):
+    """Reshape flat (B, 177) features to (B, 21, 14) channel layout.
+
+    Channels 0-11 are the 12 leads (14 features each, already contiguous).
+    Channels 12-20 are the 9 global features, each a scalar zero-padded to 14.
+    """
+    n = x.shape[0]
+    n_lead_feats = NUM_LEADS * NUM_PER_LEAD_FEATURES  # 168
+    leads = x[:, :n_lead_feats].reshape(n, NUM_LEADS, NUM_PER_LEAD_FEATURES)
+    globals_raw = x[:, n_lead_feats:]  # (B, 9)
+    globals_padded = np.zeros(
+        (n, NUM_GLOBAL_FEATURES, NUM_PER_LEAD_FEATURES), dtype=x.dtype
+    )
+    globals_padded[:, :, 0] = globals_raw
+    return np.concatenate([leads, globals_padded], axis=1)
+
+
 def _build_datamodule(
     x_train,
     x_val,
@@ -344,7 +282,7 @@ def _build_datamodule(
     columns,
     **kwargs,
 ):
-    """Build a DatasetWrapper with attached feature group metadata."""
+    """Build a DatasetWrapper with attached metadata."""
     train_ds = DatasetFromNpy.from_arrays(x_train, y_train, seed=train_seed)
     val_ds = DatasetFromNpy.from_arrays(x_val, y_val, seed=0)
     test_ds = DatasetFromNpy.from_arrays(x_test, y_test, seed=0)
@@ -354,13 +292,12 @@ def _build_datamodule(
 
     datamodule = DatasetWrapper(train_ds, test_ds, val=val_ds, **kwargs)
 
-    feature_groups = _build_feature_group_index(columns)
-    per_lead_feature_groups = _build_per_lead_feature_groups(columns, feature_groups)
-    datamodule.feature_groups = feature_groups
-    datamodule.per_lead_feature_groups = per_lead_feature_groups
     datamodule.class_names = list(PTB_XL_SUPERCLASSES)
     datamodule.lead_names = list(LEAD_NAMES)
     datamodule.feature_columns = columns
+    datamodule.num_leads = NUM_LEADS
+    datamodule.features_per_lead = NUM_PER_LEAD_FEATURES
+    datamodule.num_global_features = NUM_GLOBAL_FEATURES
     return datamodule
 
 
@@ -414,6 +351,16 @@ def ecg_data_example(
     feat_df = feat_df.loc[common_ids]
 
     labels, valid_mask = _make_labels(metadata, scp_statements, label_mode)
+
+    # Reorder columns to lead-major layout:
+    # [lead1_feat1, ..., lead1_feat14, lead2_feat1, ..., lead12_feat14, g1, ..., g9]
+    ordered_cols = []
+    for lead in LEAD_NAMES:
+        for feat in _PER_LEAD_FEATURES:
+            ordered_cols.append(f"{feat}_{lead}")
+    ordered_cols.extend(_GLOBAL_FEATURES)
+    feat_df = feat_df[ordered_cols]
+
     columns = list(feat_df.columns)
     features = feat_df.values.astype(np.float32)[valid_mask]
     metadata_filtered = metadata[valid_mask]
@@ -430,11 +377,20 @@ def ecg_data_example(
 
     x_train, x_val, x_test = _impute_and_normalize(x_train, x_val, x_test, normalize)
 
+    # Reshape from flat (B, 177) to channelised (B, 21, 14):
+    #   channels 0-11: 12 leads, each with 14 per-lead features
+    #   channels 12-20: 9 global features, each zero-padded to 14
+    x_train, x_val, x_test = (
+        _reshape_to_channels(arr) for arr in (x_train, x_val, x_test)
+    )
+
     if verbose:
         log(
             f"ECG dataset loaded: {x_train.shape[0]} train, "
             f"{x_val.shape[0]} val, {x_test.shape[0]} test, "
-            f"{x_train.shape[1]} features, label_mode={label_mode}"
+            f"{x_train.shape[1:]} per sample "
+            f"({NUM_CHANNELS} channels x {NUM_PER_LEAD_FEATURES} features), "
+            f"label_mode={label_mode}"
         )
 
     return _build_datamodule(

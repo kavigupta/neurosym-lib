@@ -5,30 +5,24 @@ Combines affine feature selectors with channel-aware attention over 12 ECG
 leads.  Each feature group (amplitude, interval, ST, morphology, global) gets
 both a flat affine selector and a masked-attention selector that respects lead
 groupings.
+[<-----lead1----->]...[<-----lead12----->][<--global feats->]
+[<f1><f2>....<f14>]...[<f1><f2>.....<f14>][<g1><g2>.....<g9>]
+
 """
 
 import torch
 from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
+from neurosym.examples.near.cost import ProgramEmbedding
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
 from neurosym.examples.near.operations.basic import ite_torch
 from neurosym.types.type import ArrowType, AtomicType
 
-NUM_LEADS = 12
-LEAD_NAMES = ("I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6")
-
-# Clinical lead groupings
-CHANNEL_GROUPS = {
-    "all": tuple(range(NUM_LEADS)),
-    "limb": (0, 1, 2),  # I, II, III
-    "precordial": (6, 7, 8, 9, 10, 11),  # V1-V6
-    "inferior": (1, 2, 5),  # II, III, aVF
-    "lateral": (0, 4, 10, 11),  # I, aVL, V5, V6
-    "septal": (6, 7),  # V1, V2
-    "anterior": (8, 9),  # V3, V4
-}
-
+from neurosym.datasets.ecg_data_example import (
+    LEAD_NAMES,
+    _GLOBAL_FEATURES
+)
 
 class AffineChannelAttention(nn.Module):
     """Masked attention over per-lead features within a feature group.
@@ -176,6 +170,32 @@ class ChannelHoleFiller(NeuralHoleFiller):
         return None
 
 
+class _ChannelUnpackModule(nn.Module):
+    """Wraps a TorchProgramModule to unpack (B, N, I) input into N separate (B, I) args."""
+
+    def __init__(self, inner):
+        super().__init__()
+        self.inner = inner
+
+    def forward(self, x, environment=()):
+        return self.inner(*x.unbind(dim=1), environment=environment)
+
+
+class ChannelUnpackEmbedding(ProgramEmbedding):
+    """ProgramEmbedding that unpacks channelised input for multi-variable lambdas.
+
+    The NEAR training loop passes a single tensor ``x`` of shape ``(B, N, I)``.
+    This embedding wraps the program module so that ``x`` is unpacked into
+    ``N`` separate ``(B, I)`` tensors, one per lambda variable.
+    """
+
+    def embed_program(self, program):
+        return program
+
+    def embed_initialized_program(self, program_module):
+        return _ChannelUnpackModule(program_module)
+
+
 def _channel_selector(channel_indices):
     """Create a function that returns a boolean mask for the given channel indices."""
     channel_indices = torch.as_tensor(channel_indices, dtype=torch.long)
@@ -183,7 +203,7 @@ def _channel_selector(channel_indices):
     def _selector(x):
         mask = torch.zeros(
             *x.shape[:-1],
-            NUM_LEADS,
+            len(LEAD_NAMES),
             device=x.device,
             dtype=torch.float32,
         )
@@ -196,9 +216,9 @@ def _channel_selector(channel_indices):
 def _guard_callables(fn, **kwargs):
     """Handle callable vs constant arguments for add/mul/sub."""
     if any(callable(value) for value in kwargs.values()):
-        return lambda z: fn(
+        return lambda *args: fn(
             **{
-                key: (value(z) if callable(value) else value)
+                key: (value(*args) if callable(value) else value)
                 for key, value in kwargs.items()
             }
         )
@@ -206,7 +226,8 @@ def _guard_callables(fn, **kwargs):
 
 
 def _allow_only_non_channel_types(typ):
-    """Filter type variable to exclude channel types."""
+    """TODO: Rename
+    Filter type variable to exclude channel types."""
     match typ:
         case ArrowType(input_type, output_type):
             return _allow_only_non_channel_types(
@@ -219,93 +240,36 @@ def _allow_only_non_channel_types(typ):
 
 
 def attention_ecg_dsl(
-    input_dim,
+    num_channels,
+    features_per_channel,
     num_classes,
-    feature_groups,
-    per_lead_feature_groups,
     hidden_dim=16,
     max_overall_depth=6,
 ):
-    """Build a DSL for ECG classification with affine selectors and channel attention.
+    """Build the attention ECG DSL.
 
-    Combines flat affine feature selectors with channel-aware masked attention
-    over the 12 ECG leads.  Feature groups correspond to clinical measurement
-    categories: amplitude, interval, ST elevation, morphology, and global.
+    Each lambda variable corresponds to one channel (12 leads + 9 globals).
+    Each channel is a feature vector of size ``features_per_channel``.
 
-    :param input_dim: Number of input features (177 for ECGDeli).
-    :param num_classes: Number of output classes (5 superclasses).
-    :param feature_groups: Dict mapping group name to column index tensor.
-    :param per_lead_feature_groups: Dict mapping group name to dict of
-        lead name to column index tensor.
+    :param num_channels: Number of input channels (leads + globals).
+    :param features_per_channel: Feature vector size per channel.
+    :param num_classes: Number of output classes.
     :param hidden_dim: Hidden dimension for affine projections.
     :param max_overall_depth: Maximum depth for DSL expansion.
     """
     dslf = DSLFactory(
-        I=input_dim,
+        I=features_per_channel,
         O=num_classes,
         H=hidden_dim,
         max_overall_depth=max_overall_depth,
+        max_env_depth=num_channels,
     )
     dslf.typedef("fInp", "{f, $I}")
     dslf.typedef("fOut", "{f, $O}")
     dslf.typedef("fHid", "{f, $H}")
 
-    # --- Channel selectors (individual leads) ---
-    for i, lead_name in enumerate(LEAD_NAMES):
-        dslf.production(
-            f"channel_{lead_name}",
-            "() -> () -> channel",
-            lambda i=i: _channel_selector((i,)),
-        )
-
-    # --- Channel group selectors ---
-    for group_name, channel_indices in CHANNEL_GROUPS.items():
-        dslf.production(
-            f"channel_group_{group_name}",
-            "() -> () -> channel",
-            lambda channel_indices=channel_indices: _channel_selector(channel_indices),
-        )
-
-    # --- Affine feature group selectors (flat, no channel awareness) ---
-    for group_name in ("amplitude", "interval", "st", "morphology", "global"):
-        group_idx = feature_groups[group_name]
-        dslf.production(
-            f"affine_{group_name}",
-            "() -> $fInp -> $fHid",
-            lambda sel: lambda x: sel(x),
-            dict(
-                sel=lambda group_idx=group_idx: AffineFeatureSelector(
-                    group_idx, hidden_dim, input_dim
-                )
-            ),
-        )
-        dslf.production(
-            f"affine_bool_{group_name}",
-            "() -> $fInp -> {f, 1}",
-            lambda sel: lambda x: sel(x),
-            dict(
-                sel=lambda group_idx=group_idx: AffineBoolSelector(group_idx, input_dim)
-            ),
-        )
-
-    # --- Channel-aware attention selectors (per-lead groups only) ---
-    for group_name in ("amplitude", "interval", "st", "morphology"):
-        per_lead = per_lead_feature_groups[group_name]
-        dslf.production(
-            f"select_{group_name}",
-            "(() -> channel) -> $fInp -> $fHid",
-            lambda channel_selector, extractor: lambda x: extractor(
-                x, channel_selector(x)
-            ),
-            dict(
-                extractor=lambda per_lead=per_lead: AffineChannelAttention(
-                    per_lead, hidden_dim, input_dim
-                )
-            ),
-        )
-
-    # --- Arithmetic ---
     dslf.filtered_type_variable("num", _allow_only_non_channel_types)
+
     dslf.production(
         "add",
         "(%num, %num) -> %num",
@@ -322,26 +286,27 @@ def attention_ecg_dsl(
         lambda x, y: _guard_callables(fn=lambda x, y: x - y, x=x, y=y),
     )
 
-    # --- Control flow ---
     dslf.production(
-        "ite",
-        "(#a -> {f, 1}, #a -> #b, #a -> #b) -> #a -> #b",
-        ite_torch,
+        "embed",
+        "$fInp -> $fHid",
+        lambda x, lin: lin(x),
+        dict(lin=lambda: nn.Linear(features_per_channel, hidden_dim)),
     )
 
-    # --- Projection ---
     dslf.production(
         "linear",
-        "(($fInp) -> $fHid) -> $fInp -> {f, 1}",
-        lambda f, lin: lambda x: lin(f(x)),
-        dict(lin=lambda: nn.Linear(hidden_dim, 1)),
+        "$fHid -> $fHid",
+        lambda x, lin: lin(x),
+        dict(lin=lambda: nn.Linear(hidden_dim, hidden_dim)),
     )
     dslf.production(
         "output",
-        "(($fInp) -> $fHid) -> $fInp -> $fOut",
-        lambda f, lin: lambda x: lin(f(x)),
+        "$fHid -> $fOut",
+        lambda x, lin: lin(x),
         dict(lin=lambda: nn.Linear(hidden_dim, num_classes)),
     )
-
-    dslf.prune_to("($fInp) -> $fOut")
+    # Target type ($fInp * num_channels) -> $fOut has depth log2(num_channels+2).
+    # With 21 channels that's ~4.52, so max_type_depth=5 is the minimum that works.
+    dslf.lambdas(max_type_depth=5)
+    dslf.prune_to(f"({'$fInp, ' * num_channels}) -> $fOut")
     return dslf.finalize()

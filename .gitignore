@@ -14,3 +14,4 @@ outputs/crim13_results/near_outputs/
 data/**/*.npy
 outputs/mice_results/near_outputs/*/log.txt
 outputs/mice_results/near_outputs/*/program.p
+data/
