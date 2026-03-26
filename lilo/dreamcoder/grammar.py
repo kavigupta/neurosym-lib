@@ -586,6 +586,9 @@ class Grammar(object):
             for f in frontiers:
                 f = f.normalize()
                 for e in f:
+                    assert not math.isnan(e.logPosterior), \
+                        f"NaN logPosterior in insideOutside (logPrior={e.logPrior}, logLikelihood={e.logLikelihood}). " \
+                        f"Frontier entries with -inf logLikelihood should be filtered before calling insideOutside."
                     _, eu = e.program
                     u += math.exp(e.logPosterior) * eu
 
