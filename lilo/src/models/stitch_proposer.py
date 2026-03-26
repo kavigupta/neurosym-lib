@@ -8,6 +8,7 @@ Updates GRAMMAR based on Stitch compression.
 
 import json
 import logging
+import math
 from collections import defaultdict
 
 import stitch_core as stitch
@@ -128,6 +129,9 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
         # NOTE(GG): Messy logic due to `include_samples=True` returns all samples; consider refactor.
         frontiers_rewritten, sample_frontiers_rewritten = [], []
         for task_id, program, likelihood in zip(tasks, programs_rewritten, rewritten_program_likelihoods):
+            if math.isinf(likelihood) and likelihood < 0:
+                # -inf log likelihood is nonexistent. Skip these programs to avoid numerical issues.
+                continue
             matching_tasks = experiment_state.get_tasks_for_ids(
                 task_splits[0],
                 [task_id],
