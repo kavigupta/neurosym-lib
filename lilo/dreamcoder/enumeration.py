@@ -1,18 +1,18 @@
 from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
 from dreamcoder.grammar import *
 from dreamcoder.utilities import get_root_dir, limit_virtual_memory_fn
-import dreamcoder.neurosym as ns
-from dreamcoder.neurosym.dsl.abstraction import _with_index_parameters
-from dreamcoder.neurosym.dsl.abstraction import AbstractionProduction
-from dreamcoder.neurosym.compression.process_abstraction import _StitchLambdaRewriter
-from dreamcoder.neurosym.types.type_signature import FunctionTypeSignature
-from dreamcoder.neurosym.types.type import ArrowType
-from dreamcoder.neurosym.types.type_with_environment import (
+import neurosym as ns
+from neurosym.dsl.abstraction import _with_index_parameters
+from neurosym.dsl.abstraction import AbstractionProduction
+from neurosym.compression.process_abstraction import _StitchLambdaRewriter
+from neurosym.types.type_signature import FunctionTypeSignature
+from neurosym.types.type import ArrowType
+from neurosym.types.type_with_environment import (
     StrictEnvironment,
     TypeWithEnvironment,
 )
-from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
-from dreamcoder.neurosym.programs.s_expression_render import render_s_expression
+from neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
+from neurosym.programs.s_expression_render import render_s_expression
 from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.program import Program
 import os

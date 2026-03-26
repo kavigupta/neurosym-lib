@@ -1,4 +1,4 @@
-from dreamcoder.neurosym.examples.dreamcoder.list_example import list_dsl
+from neurosym.examples.dreamcoder.list_example import list_dsl
 from dreamcoder.program import Primitive, Program
 from dreamcoder.grammar import Grammar
 from dreamcoder.type import TypeVariable, tlist, tint, tbool, arrow, t0, t1, t2
