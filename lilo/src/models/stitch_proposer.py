@@ -238,7 +238,6 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
         **stitch_kwargs,
         iterations=iterations,
         max_arity=max_arity,
-        no_other_util=True,
         )
         abstractions = [
             Invented.parse(abs["dreamcoder"])
