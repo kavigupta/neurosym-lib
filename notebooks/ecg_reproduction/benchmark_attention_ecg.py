@@ -69,6 +69,7 @@ def run_experiment(
     train_seed: int = 0,
     device: str = "cuda:0",
     label_mode: str = "single",
+    use_shields: bool = False,
 ) -> List[Dict[str, Any]]:
     """Run the NEAR experiment on ECG with Attention DSL."""
     print("=" * 80)
@@ -88,6 +89,7 @@ def run_experiment(
     print(f"  Max depth: {max_depth}")
     print(f"  Device: {device}")
     print(f"  Label mode: {label_mode}")
+    print(f"  Use shields: {use_shields}")
     print("=" * 80)
 
     # Load data
@@ -119,6 +121,7 @@ def run_experiment(
         num_classes=output_dim,
         hidden_dim=hidden_dim,
         max_overall_depth=max_depth,
+        use_shields=use_shields,
     )
     print(f"  Train samples: {len(datamodule.train.inputs)}")
     print(f"  Val samples: {len(datamodule.val.inputs)}")
@@ -158,13 +161,14 @@ def run_experiment(
     g = near.near_graph(
         neural_dsl,
         neural_dsl.valid_root_types[0],
+        max_depth=max_depth,
         is_goal=lambda _: True,
         cost=cost,
     )
 
     # Search for programs
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.BoundedAStar(max_depth=max_depth)(g)
+    iterator = ns.search.AStar()(g)
 
     programs_list = []
     start_time = time.time()
@@ -305,6 +309,12 @@ def main():
         choices=["single", "multi"],
         help="Label mode to use (single or multi)",
     )
+    parser.add_argument(
+        "--use-shields",
+        action="store_true",
+        default=False,
+        help="Enable shield productions in the DSL",
+    )
     args = parser.parse_args()
 
     results = run_experiment(
@@ -320,6 +330,7 @@ def main():
         lr=args.lr,
         device=args.device,
         label_mode=args.label_mode,
+        use_shields=args.use_shields,
     )
 
     summary_path = args.output.replace(".pkl", "_summary.json")
