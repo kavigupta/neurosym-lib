@@ -103,10 +103,6 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
 .. autofunction:: neurosym.examples.near.simple_constants_dsl
 .. autofunction:: neurosym.examples.near.attention_ecg_dsl
-.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineChannelAttention
-    :members:
-.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineFeatureSelector
-.. autoclass:: neurosym.examples.near.dsls.attention_ecg_dsl.AffineBoolSelector
 .. autoclass:: neurosym.examples.near.SoftChannelMask
     :members:
 .. autoclass:: neurosym.examples.near.ChannelHoleFiller
