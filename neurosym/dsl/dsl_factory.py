@@ -282,6 +282,13 @@ class DSLFactory:
                 if isinstance(x, ArrowType)
             ]
             top_levels = sorted(set(top_levels), key=str)
+            # Clamp the type expansion depth: lambda types deeper than
+            # max_overall_depth can never appear in valid programs and would
+            # be pruned, so generating them is pure overhead.
+            effective_type_depth = min(
+                self.lambda_parameters["max_type_depth"],
+                self.max_overall_depth,
+            )
             expanded = []
             for top_level in top_levels:
                 expanded += type_expansions(
@@ -289,7 +296,7 @@ class DSLFactory:
                     types,
                     constructors_lambda,
                     max_expansion_steps=self.max_expansion_steps,
-                    max_overall_depth=self.lambda_parameters["max_type_depth"],
+                    max_overall_depth=effective_type_depth,
                 )
             expanded = sorted(set(expanded), key=str)
             sym_to_productions["<lambda>"] = [
