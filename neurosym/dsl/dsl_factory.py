@@ -271,11 +271,7 @@ class DSLFactory:
                 # ArrowTypes are actually reachable, then only create
                 # lambda productions for those.  This avoids generating
                 # thousands of deep types that would be pruned anyway.
-                base_prods = [
-                    p
-                    for ps in sym_to_productions.values()
-                    for p in ps
-                ]
+                base_prods = [p for ps in sym_to_productions.values() for p in ps]
                 for _, prods, _ in self._extra_productions:
                     base_prods.extend(prods)
                 effective_type_depth = min(
@@ -409,11 +405,12 @@ def _discover_needed_arrow_types(
     matching the semantics of the ``max_type_depth`` parameter to
     :py:meth:`DSLFactory.lambdas`.
     """
-    from ..types.type_with_environment import PermissiveEnvironmment, TypeWithEnvironment
+    from ..types.type_with_environment import (
+        PermissiveEnvironmment,
+        TypeWithEnvironment,
+    )
 
-    worklist = [
-        TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types
-    ]
+    worklist = [TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types]
     visited = set()
     needed_input_types = set()
     while worklist:
