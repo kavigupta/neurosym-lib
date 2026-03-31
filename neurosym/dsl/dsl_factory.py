@@ -429,11 +429,7 @@ def _discover_needed_arrow_types(
             arg_types = prod.type_signature().unify_return(twe)
             if arg_types is not None:
                 worklist.extend(arg_types)
-        if (
-            isinstance(twe.typ, ArrowType)
-            and len(twe.typ.input_type) > 0
-            and twe.typ.depth < max_lambda_depth
-        ):
+        if isinstance(twe.typ, ArrowType) and twe.typ.depth < max_lambda_depth:
             needed_input_types.add(twe.typ.input_type)
             worklist.append(
                 TypeWithEnvironment(
@@ -463,79 +459,6 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
-def _constructible_symbols(
-    productions, target_types, type_depth_limit, env_depth_limit, care_about_variables
-):
-    """Compute constructible symbols via linear scan over productions.
-
-    This replaces building a full DSL (with expensive TreeTrie construction)
-    just to determine which symbols are reachable.  The TreeTrie build cost is
-    O(total type-tree nodes across all productions) which dominates when there
-    are many productions with deep types.  A linear scan is
-    O(reachable_types × n_productions) with cheap per-call rejection, which is
-    far cheaper when the number of reachable types is small.
-    """
-    from ..types.type_with_environment import (
-        PermissiveEnvironmment,
-        StrictEnvironment,
-        TypeWithEnvironment,
-    )
-
-    twes_to_expand = [
-        TypeWithEnvironment(
-            t,
-            (
-                StrictEnvironment.empty()
-                if care_about_variables
-                else PermissiveEnvironmment()
-            ),
-        )
-        for t in target_types
-    ]
-    rules = {}
-    while twes_to_expand:
-        twe = twes_to_expand.pop()
-        if (
-            twe.typ.depth > type_depth_limit
-            or len(twe.env) > env_depth_limit
-            or twe in rules
-        ):
-            continue
-        rules[twe] = []
-        for prod in productions:
-            arg_types = prod.type_signature().unify_return(twe)
-            if arg_types is not None:
-                rules[twe].append((prod.symbol(), arg_types))
-                twes_to_expand.extend(arg_types)
-    if not care_about_variables:
-        rules = {
-            out_twe.typ: [
-                (sym, [inp_twe.typ for inp_twe in inp_twes])
-                for sym, inp_twes in r
-            ]
-            for out_twe, r in rules.items()
-        }
-
-    constructible = set()
-    while True:
-        done = True
-        for out_t, type_rules in rules.items():
-            if out_t in constructible:
-                continue
-            for _, in_t in type_rules:
-                if set(in_t).issubset(constructible):
-                    constructible.add(out_t)
-                    done = False
-        if done:
-            break
-    return {
-        sym
-        for _, type_rules in rules.items()
-        for sym, in_t in type_rules
-        if all(t in constructible for t in in_t)
-    }
-
-
 def _prune(
     sym_to_productions,
     target_types,
@@ -546,10 +469,8 @@ def _prune(
     stable_symbols,
     tolerate_pruning_entire_productions,
 ):
-    all_prods = [prod for prods in sym_to_productions.values() for prod in prods]
-    symbols = _constructible_symbols(
-        all_prods, target_types, type_depth_limit, env_depth_limit, care_about_variables
-    )
+    dsl = _make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
+    symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
         new_sym_to_productions[original_symbol] = [
