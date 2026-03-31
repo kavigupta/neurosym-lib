@@ -266,39 +266,68 @@ class DSLFactory:
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
-            types, constructors_lambda = _type_universe(
-                known_types,
-                no_zeroadic=self._no_zeroadic,
-            )
-            top_levels = types + [
-                constructor(
-                    *[TypeVariable.fresh() for _ in range(arity)],
+            if self.prune and self.target_types is not None:
+                # Demand-driven: BFS from target types to discover which
+                # ArrowTypes are actually reachable, then only create
+                # lambda productions for those.  This avoids generating
+                # thousands of deep types that would be pruned anyway.
+                base_prods = [
+                    p
+                    for ps in sym_to_productions.values()
+                    for p in ps
+                ]
+                for _, prods, _ in self._extra_productions:
+                    base_prods.extend(prods)
+                effective_type_depth = min(
+                    self.lambda_parameters["max_type_depth"],
+                    self.max_overall_depth,
                 )
-                for arity, constructor in constructors_lambda
-            ]
-            top_levels = [
-                x.with_output_type(AtomicType("output_type"))
-                for x in top_levels
-                if isinstance(x, ArrowType)
-            ]
-            top_levels = sorted(set(top_levels), key=str)
-            # Clamp the type expansion depth: lambda types deeper than
-            # max_overall_depth can never appear in valid programs and would
-            # be pruned, so generating them is pure overhead.
-            effective_type_depth = min(
-                self.lambda_parameters["max_type_depth"],
-                self.max_overall_depth,
-            )
-            expanded = []
-            for top_level in top_levels:
-                expanded += type_expansions(
-                    top_level,
-                    types,
-                    constructors_lambda,
-                    max_expansion_steps=self.max_expansion_steps,
-                    max_overall_depth=effective_type_depth,
+                needed_input_types = _discover_needed_arrow_types(
+                    base_prods,
+                    self.target_types,
+                    self.max_overall_depth,
+                    self.max_env_depth,
+                    max_lambda_depth=effective_type_depth,
                 )
-            expanded = sorted(set(expanded), key=str)
+                expanded = sorted(
+                    [
+                        ArrowType(inp, AtomicType("output_type"))
+                        for inp in needed_input_types
+                    ],
+                    key=str,
+                )
+            else:
+                # No pruning target: enumerate all possible lambda types.
+                types, constructors_lambda = _type_universe(
+                    known_types,
+                    no_zeroadic=self._no_zeroadic,
+                )
+                top_levels = types + [
+                    constructor(
+                        *[TypeVariable.fresh() for _ in range(arity)],
+                    )
+                    for arity, constructor in constructors_lambda
+                ]
+                top_levels = [
+                    x.with_output_type(AtomicType("output_type"))
+                    for x in top_levels
+                    if isinstance(x, ArrowType)
+                ]
+                top_levels = sorted(set(top_levels), key=str)
+                effective_type_depth = min(
+                    self.lambda_parameters["max_type_depth"],
+                    self.max_overall_depth,
+                )
+                expanded = []
+                for top_level in top_levels:
+                    expanded += type_expansions(
+                        top_level,
+                        types,
+                        constructors_lambda,
+                        max_expansion_steps=self.max_expansion_steps,
+                        max_overall_depth=effective_type_depth,
+                    )
+                expanded = sorted(set(expanded), key=str)
             sym_to_productions["<lambda>"] = [
                 LambdaProduction(i, LambdaTypeSignature(x.input_type))
                 for i, x in enumerate(expanded)
@@ -361,6 +390,60 @@ class DSLFactory:
         return dsl
 
 
+def _discover_needed_arrow_types(
+    base_productions,
+    target_types,
+    type_depth_limit,
+    env_depth_limit,
+    max_lambda_depth,
+):
+    """BFS from *target_types* to discover which ArrowTypes need lambda productions.
+
+    Instead of enumerating all possible lambda types and pruning, this walks
+    reachable types from the root and only records ArrowTypes that are actually
+    encountered.  Any reachable ArrowType is decomposed (body becomes
+    reachable, input types enter the environment), so chained lambdas are
+    discovered automatically.
+
+    *max_lambda_depth* bounds which ArrowTypes may be decomposed as lambdas,
+    matching the semantics of the ``max_type_depth`` parameter to
+    :py:meth:`DSLFactory.lambdas`.
+    """
+    from ..types.type_with_environment import PermissiveEnvironmment, TypeWithEnvironment
+
+    worklist = [
+        TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types
+    ]
+    visited = set()
+    needed_input_types = set()
+    while worklist:
+        twe = worklist.pop()
+        if (
+            twe.typ.depth > type_depth_limit
+            or len(twe.env) > env_depth_limit
+            or twe in visited
+        ):
+            continue
+        visited.add(twe)
+        for prod in base_productions:
+            arg_types = prod.type_signature().unify_return(twe)
+            if arg_types is not None:
+                worklist.extend(arg_types)
+        if (
+            isinstance(twe.typ, ArrowType)
+            and len(twe.typ.input_type) > 0
+            and twe.typ.depth < max_lambda_depth
+        ):
+            needed_input_types.add(twe.typ.input_type)
+            worklist.append(
+                TypeWithEnvironment(
+                    twe.typ.output_type,
+                    twe.env.child(*twe.typ.input_type),
+                )
+            )
+    return needed_input_types
+
+
 def _clean_variables(variable_productions):
     type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
     type_to_idx = {t: i for i, t in enumerate(sorted(type_to_idx, key=str))}
@@ -380,6 +463,79 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
+def _constructible_symbols(
+    productions, target_types, type_depth_limit, env_depth_limit, care_about_variables
+):
+    """Compute constructible symbols via linear scan over productions.
+
+    This replaces building a full DSL (with expensive TreeTrie construction)
+    just to determine which symbols are reachable.  The TreeTrie build cost is
+    O(total type-tree nodes across all productions) which dominates when there
+    are many productions with deep types.  A linear scan is
+    O(reachable_types × n_productions) with cheap per-call rejection, which is
+    far cheaper when the number of reachable types is small.
+    """
+    from ..types.type_with_environment import (
+        PermissiveEnvironmment,
+        StrictEnvironment,
+        TypeWithEnvironment,
+    )
+
+    twes_to_expand = [
+        TypeWithEnvironment(
+            t,
+            (
+                StrictEnvironment.empty()
+                if care_about_variables
+                else PermissiveEnvironmment()
+            ),
+        )
+        for t in target_types
+    ]
+    rules = {}
+    while twes_to_expand:
+        twe = twes_to_expand.pop()
+        if (
+            twe.typ.depth > type_depth_limit
+            or len(twe.env) > env_depth_limit
+            or twe in rules
+        ):
+            continue
+        rules[twe] = []
+        for prod in productions:
+            arg_types = prod.type_signature().unify_return(twe)
+            if arg_types is not None:
+                rules[twe].append((prod.symbol(), arg_types))
+                twes_to_expand.extend(arg_types)
+    if not care_about_variables:
+        rules = {
+            out_twe.typ: [
+                (sym, [inp_twe.typ for inp_twe in inp_twes])
+                for sym, inp_twes in r
+            ]
+            for out_twe, r in rules.items()
+        }
+
+    constructible = set()
+    while True:
+        done = True
+        for out_t, type_rules in rules.items():
+            if out_t in constructible:
+                continue
+            for _, in_t in type_rules:
+                if set(in_t).issubset(constructible):
+                    constructible.add(out_t)
+                    done = False
+        if done:
+            break
+    return {
+        sym
+        for _, type_rules in rules.items()
+        for sym, in_t in type_rules
+        if all(t in constructible for t in in_t)
+    }
+
+
 def _prune(
     sym_to_productions,
     target_types,
@@ -390,8 +546,10 @@ def _prune(
     stable_symbols,
     tolerate_pruning_entire_productions,
 ):
-    dsl = _make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
-    symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
+    all_prods = [prod for prods in sym_to_productions.values() for prod in prods]
+    symbols = _constructible_symbols(
+        all_prods, target_types, type_depth_limit, env_depth_limit, care_about_variables
+    )
     new_sym_to_productions = {}
     for original_symbol, prods in sym_to_productions.items():
         new_sym_to_productions[original_symbol] = [
