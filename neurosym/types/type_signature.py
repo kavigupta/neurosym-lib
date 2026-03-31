@@ -270,25 +270,45 @@ def bottom_up_enumerate_types(
         for t, d, n in current_with_depth
         if d <= max_overall_depth and n <= max_expansion_steps
     ]
+
+    # Precompute minimum depth increase per constructor using a zero-depth
+    # probe type.  We can use log2(arity + 1), but this underestimates
+    # whenever the constructor template has more children than type-variable
+    # parameters (e.g. arity=1 but result is an ArrowType with 3 children).
+    _probe = TypeVariable("_depth_probe")
+    constructor_info = []
+    for arity, fn in constructors:
+        probe_result = fn(*[_probe] * arity)
+        num_children = len(list(probe_result.children()))
+        if num_children == 0:
+            # Optimization
+            # Identity constructor (template is a bare type variable).
+            # Cannot produce new types, so skip.
+            continue
+        min_depth_increase = np.log2(num_children + 1)
+        constructor_info.append((arity, fn, min_depth_increase))
+
     overall = set()
     while True:
         overall.update(current_with_depth)
         current_with_depth = []
-        for arity, fn in constructors:
-            additional_depth = np.log2(arity + 1)
+        for arity, fn, min_depth_increase in constructor_info:
+            if min_depth_increase > max_overall_depth:
+                continue
             will_work = [
                 (t, d, n)
                 for t, d, n in overall
-                if d + additional_depth <= max_overall_depth
+                if d + min_depth_increase <= max_overall_depth
                 and n + 1 <= max_expansion_steps
             ]
             for subentities in itertools.product(will_work, repeat=arity):
                 types = [t for t, _, _ in subentities]
-                depth = max((d for _, d, _ in subentities)) + additional_depth
+                new_type = fn(*types)
+                depth = new_type.depth
                 steps = max((n for _, _, n in subentities)) + 1
-                assert depth <= max_overall_depth
-                assert steps <= max_expansion_steps
-                res = (fn(*types), depth, steps)
+                if depth >= max_overall_depth or steps > max_expansion_steps:
+                    continue
+                res = (new_type, depth, steps)
                 if res in overall:
                     continue
                 current_with_depth.append(res)
