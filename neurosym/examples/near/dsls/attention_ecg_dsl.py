@@ -13,8 +13,8 @@ import torch
 from torch import nn
 
 from neurosym.dsl.dsl_factory import DSLFactory
-from neurosym.types.type import AtomicType, TensorType
 from neurosym.examples.shield import add_shield_productions
+from neurosym.types.type import AtomicType, TensorType
 
 
 def attention_ecg_dsl(
