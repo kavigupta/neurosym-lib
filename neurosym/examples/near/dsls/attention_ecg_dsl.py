@@ -102,14 +102,3 @@ def attention_ecg_dsl(
         add_shield_productions(dslf)
     dslf.prune_to(f"({'$fInp, ' * num_channels}) -> $fOut")
     return dslf.finalize()
-
-
-if __name__ == "__main__":
-    dsl = attention_ecg_dsl(
-        num_channels=21,
-        features_per_channel=14,
-        num_classes=5,
-        use_shields=True,
-        max_type_depth=10,
-    )
-    print(dsl.render())
