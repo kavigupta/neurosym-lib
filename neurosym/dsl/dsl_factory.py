@@ -468,9 +468,7 @@ def _discover_needed_arrow_types(
     # prune_variables pass prunes unreachable (type, index) combinations,
     # so an over-approximation here is safe and much simpler than tracing
     # exact nesting chains.
-    all_input_types = {
-        typ for at in reachable_arrow_types for typ in at.input_type
-    }
+    all_input_types = {typ for at in reachable_arrow_types for typ in at.input_type}
     valid_variable_positions = {
         (typ, idx) for typ in all_input_types for idx in range(env_depth_limit)
     }
