@@ -464,70 +464,18 @@ def _discover_needed_arrow_types(
                 )
             )
 
-    valid_variable_positions = _compute_valid_variable_positions(
-        base_productions,
-        visited,
-        reachable_arrow_types,
-        env_depth_limit,
-    )
+    # Collect all input types from reachable arrows. The subsequent
+    # prune_variables pass prunes unreachable (type, index) combinations,
+    # so an over-approximation here is safe and much simpler than tracing
+    # exact nesting chains.
+    all_input_types = {
+        typ for at in reachable_arrow_types for typ in at.input_type
+    }
+    valid_variable_positions = {
+        (typ, idx) for typ in all_input_types for idx in range(env_depth_limit)
+    }
 
     return needed_input_types, valid_variable_positions
-
-
-def _compute_valid_variable_positions(
-    base_productions,
-    visited_twes,
-    reachable_arrow_types,
-    env_depth_limit,
-):
-    """Compute valid (type, env_index) pairs via lambda nesting analysis.
-
-    BFS over (ArrowType, offset) to trace actual nesting chains.
-    A lambda's body type determines what can nest inside it:
-     - directly, if the body IS a reachable ArrowType
-     - indirectly, if base productions applied to the body produce
-       an ArrowType child (e.g., app needs a function argument)
-    """
-    # Map: type T -> reachable ArrowTypes that ARE T
-    type_to_arrows = {}
-    for at in reachable_arrow_types:
-        type_to_arrows.setdefault(at, []).append(at)
-
-    # Map: type T -> ArrowTypes reachable as children of base prods on T
-    children_arrows = {}
-    for twe in visited_twes:
-        for prod in base_productions:
-            arg_types = prod.type_signature().unify_return(twe)
-            if arg_types is not None:
-                for a in arg_types:
-                    if a.typ in type_to_arrows:
-                        children_arrows.setdefault(twe.typ, set()).update(
-                            type_to_arrows[a.typ]
-                        )
-
-    valid_variable_positions = set()
-    worklist = [(at, 0) for at in reachable_arrow_types]
-    visited = set()
-    while worklist:
-        arrow, offset = worklist.pop()
-        if (arrow, offset) in visited:
-            continue
-        visited.add((arrow, offset))
-        n_inputs = len(arrow.input_type)
-        for local_idx, typ in enumerate(reversed(arrow.input_type)):
-            global_idx = offset + local_idx
-            if global_idx < env_depth_limit:
-                valid_variable_positions.add((typ, global_idx))
-        inner_offset = offset + n_inputs
-        if inner_offset < env_depth_limit:
-            body = arrow.output_type
-            # Direct (body IS a reachable ArrowType) and indirect
-            # (base prods on body produce ArrowType children).
-            nested = list(type_to_arrows.get(body, []))
-            nested.extend(children_arrows.get(body, set()))
-            worklist.extend((inner, inner_offset) for inner in nested)
-
-    return valid_variable_positions
 
 
 def _clean_variables(variable_productions):
