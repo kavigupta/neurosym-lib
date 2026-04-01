@@ -256,7 +256,7 @@ class DSLFactory:
                 self.lambda_parameters["max_type_depth"],
                 self.max_overall_depth,
             )
-            needed_input_types, valid_var_positions = _discover_needed_arrow_types(
+            needed_input_types = _discover_needed_arrow_types(
                 base_prods,
                 self.target_types,
                 self.max_overall_depth,
@@ -271,7 +271,6 @@ class DSLFactory:
                 key=str,
             )
         else:
-            valid_var_positions = None
             # No pruning target: enumerate all possible lambda types.
             types, constructors_lambda = _type_universe(
                 known_types,
@@ -303,41 +302,23 @@ class DSLFactory:
                     max_overall_depth=effective_type_depth,
                 )
             expanded = sorted(set(expanded), key=str)
+
         sym_to_productions["<lambda>"] = [
             LambdaProduction(i, LambdaTypeSignature(x.input_type))
             for i, x in enumerate(expanded)
         ]
-
-        if valid_var_positions is not None:
-            # Demand-driven: only create variables at positions
-            # reachable via actual lambda nesting chains.
-            variable_positions = sorted(valid_var_positions, key=str)
-            variable_types = sorted({typ for typ, _ in variable_positions}, key=str)
-            type_to_id = {t: i for i, t in enumerate(variable_types)}
-            sym_to_productions["<variable>"] = [
-                VariableProduction(
-                    type_to_id[typ],
-                    VariableTypeSignature(typ, idx),
-                )
-                for typ, idx in variable_positions
-            ]
-        else:
-            variable_types = sorted(
-                {
-                    input_type
-                    for function_type in expanded
-                    for input_type in function_type.input_type
-                },
-                key=str,
+        variable_types = sorted(
+            {inp for at in expanded for inp in at.input_type},
+            key=str,
+        )
+        sym_to_productions["<variable>"] = [
+            VariableProduction(
+                type_id,
+                VariableTypeSignature(variable_type, index_in_env),
             )
-            sym_to_productions["<variable>"] = [
-                VariableProduction(
-                    type_id,
-                    VariableTypeSignature(variable_type, index_in_env),
-                )
-                for type_id, variable_type in enumerate(variable_types)
-                for index_in_env in range(self.max_env_depth)
-            ]
+            for type_id, variable_type in enumerate(variable_types)
+            for index_in_env in range(self.max_env_depth)
+        ]
         # don't prune and reindex variables
         stable_symbols.add("<variable>")
 
@@ -426,6 +407,8 @@ def _discover_needed_arrow_types(
     reachable, input types enter the environment), so chained lambdas are
     discovered automatically.
 
+    Returns the set of needed input_type tuples (one per reachable ArrowType).
+
     *max_lambda_depth* bounds which ArrowTypes may be decomposed as lambdas,
     matching the semantics of the ``max_type_depth`` parameter to
     :py:meth:`DSLFactory.lambdas`.
@@ -435,10 +418,7 @@ def _discover_needed_arrow_types(
         TypeWithEnvironment,
     )
 
-    # --- Pass 1: discover reachable types and needed lambda input types ---
     needed_input_types = set()
-    reachable_arrow_types = set()  # full ArrowTypes (for nesting analysis)
-
     worklist = [TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types]
     visited = set()
     while worklist:
@@ -456,7 +436,6 @@ def _discover_needed_arrow_types(
                 worklist.extend(arg_types)
         if isinstance(twe.typ, ArrowType) and twe.typ.depth < max_lambda_depth:
             needed_input_types.add(twe.typ.input_type)
-            reachable_arrow_types.add(twe.typ)
             worklist.append(
                 TypeWithEnvironment(
                     twe.typ.output_type,
@@ -464,16 +443,7 @@ def _discover_needed_arrow_types(
                 )
             )
 
-    # Collect all input types from reachable arrows. The subsequent
-    # prune_variables pass prunes unreachable (type, index) combinations,
-    # so an over-approximation here is safe and much simpler than tracing
-    # exact nesting chains.
-    all_input_types = {typ for at in reachable_arrow_types for typ in at.input_type}
-    valid_variable_positions = {
-        (typ, idx) for typ in all_input_types for idx in range(env_depth_limit)
-    }
-
-    return needed_input_types, valid_variable_positions
+    return needed_input_types
 
 
 def _clean_variables(variable_productions):
