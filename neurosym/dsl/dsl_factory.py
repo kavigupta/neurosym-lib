@@ -197,8 +197,9 @@ class DSLFactory:
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def _expansions_for_single_production(
-        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
+        self, universe, production_constructor, symbol, sig, *args
     ):
+        type_atoms, type_constructors = universe
         sigs = sorted(
             set(
                 _signature_expansions(
@@ -222,13 +223,11 @@ class DSLFactory:
 
         return {symbol: Production.reindex(prods)}
 
-    def _expansions_for_all_productions(
-        self, type_atoms, type_constructors, production_constructor, args
-    ):
+    def _expansions_for_all_productions(self, universe, production_constructor, args):
         result = {}
         for arg in args:
             for_prod = self._expansions_for_single_production(
-                type_atoms, type_constructors, production_constructor, *arg
+                universe, production_constructor, *arg
             )
             duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
             if duplicate_keys:
@@ -241,7 +240,9 @@ class DSLFactory:
                 result.update(for_prod)
         return result
 
-    def _build_lambda_productions(self, known_types, sym_to_productions, stable_symbols):
+    def _build_lambda_productions(
+        self, known_types, sym_to_productions, stable_symbols
+    ):
         """Build lambda and variable productions, adding them to sym_to_productions."""
         if self.prune and self.target_types is not None:
             # Demand-driven: BFS from target types to discover which
@@ -255,14 +256,12 @@ class DSLFactory:
                 self.lambda_parameters["max_type_depth"],
                 self.max_overall_depth,
             )
-            needed_input_types, valid_var_positions = (
-                _discover_needed_arrow_types(
-                    base_prods,
-                    self.target_types,
-                    self.max_overall_depth,
-                    self.max_env_depth,
-                    max_lambda_depth=effective_type_depth,
-                )
+            needed_input_types, valid_var_positions = _discover_needed_arrow_types(
+                base_prods,
+                self.target_types,
+                self.max_overall_depth,
+                self.max_env_depth,
+                max_lambda_depth=effective_type_depth,
             )
             expanded = sorted(
                 [
@@ -313,9 +312,7 @@ class DSLFactory:
             # Demand-driven: only create variables at positions
             # reachable via actual lambda nesting chains.
             variable_positions = sorted(valid_var_positions, key=str)
-            variable_types = sorted(
-                {typ for typ, _ in variable_positions}, key=str
-            )
+            variable_types = sorted({typ for typ, _ in variable_positions}, key=str)
             type_to_id = {t: i for i, t in enumerate(variable_types)}
             sym_to_productions["<variable>"] = [
                 VariableProduction(
@@ -362,7 +359,7 @@ class DSLFactory:
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
-                *universe, ParameterizedProduction.of, self._parameterized_productions
+                universe, ParameterizedProduction.of, self._parameterized_productions
             )
         )
 
@@ -370,7 +367,9 @@ class DSLFactory:
 
         if self.lambda_parameters is not None:
             self._build_lambda_productions(
-                known_types, sym_to_productions, stable_symbols,
+                known_types,
+                sym_to_productions,
+                stable_symbols,
             )
 
         for symbol, prods, stable in self._extra_productions:
@@ -440,9 +439,7 @@ def _discover_needed_arrow_types(
     needed_input_types = set()
     reachable_arrow_types = set()  # full ArrowTypes (for nesting analysis)
 
-    worklist = [
-        TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types
-    ]
+    worklist = [TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types]
     visited = set()
     while worklist:
         twe = worklist.pop()
@@ -467,13 +464,30 @@ def _discover_needed_arrow_types(
                 )
             )
 
-    # --- Pass 2: compute valid variable positions via lambda nesting ---
-    # BFS over (ArrowType, offset) to trace actual nesting chains.
-    # A lambda's body type determines what can nest inside it:
-    #  - directly, if the body IS a reachable ArrowType
-    #  - indirectly, if base productions applied to the body produce
-    #    an ArrowType child (e.g., app needs a function argument)
+    valid_variable_positions = _compute_valid_variable_positions(
+        base_productions,
+        visited,
+        reachable_arrow_types,
+        env_depth_limit,
+    )
 
+    return needed_input_types, valid_variable_positions
+
+
+def _compute_valid_variable_positions(
+    base_productions,
+    visited_twes,
+    reachable_arrow_types,
+    env_depth_limit,
+):
+    """Compute valid (type, env_index) pairs via lambda nesting analysis.
+
+    BFS over (ArrowType, offset) to trace actual nesting chains.
+    A lambda's body type determines what can nest inside it:
+     - directly, if the body IS a reachable ArrowType
+     - indirectly, if base productions applied to the body produce
+       an ArrowType child (e.g., app needs a function argument)
+    """
     # Map: type T -> reachable ArrowTypes that ARE T
     type_to_arrows = {}
     for at in reachable_arrow_types:
@@ -481,7 +495,7 @@ def _discover_needed_arrow_types(
 
     # Map: type T -> ArrowTypes reachable as children of base prods on T
     children_arrows = {}
-    for twe in visited:
+    for twe in visited_twes:
         for prod in base_productions:
             arg_types = prod.type_signature().unify_return(twe)
             if arg_types is not None:
@@ -492,13 +506,13 @@ def _discover_needed_arrow_types(
                         )
 
     valid_variable_positions = set()
-    nesting_worklist = [(at, 0) for at in reachable_arrow_types]
-    nesting_visited = set()
-    while nesting_worklist:
-        arrow, offset = nesting_worklist.pop()
-        if (arrow, offset) in nesting_visited:
+    worklist = [(at, 0) for at in reachable_arrow_types]
+    visited = set()
+    while worklist:
+        arrow, offset = worklist.pop()
+        if (arrow, offset) in visited:
             continue
-        nesting_visited.add((arrow, offset))
+        visited.add((arrow, offset))
         n_inputs = len(arrow.input_type)
         for local_idx, typ in enumerate(reversed(arrow.input_type)):
             global_idx = offset + local_idx
@@ -507,14 +521,13 @@ def _discover_needed_arrow_types(
         inner_offset = offset + n_inputs
         if inner_offset < env_depth_limit:
             body = arrow.output_type
-            # Direct: body IS a reachable ArrowType
-            for inner in type_to_arrows.get(body, []):
-                nesting_worklist.append((inner, inner_offset))
-            # Indirect: base prods on body produce ArrowType children
-            for inner in children_arrows.get(body, set()):
-                nesting_worklist.append((inner, inner_offset))
+            # Direct (body IS a reachable ArrowType) and indirect
+            # (base prods on body produce ArrowType children).
+            nested = list(type_to_arrows.get(body, []))
+            nested.extend(children_arrows.get(body, set()))
+            worklist.extend((inner, inner_offset) for inner in nested)
 
-    return needed_input_types, valid_variable_positions
+    return valid_variable_positions
 
 
 def _clean_variables(variable_productions):
