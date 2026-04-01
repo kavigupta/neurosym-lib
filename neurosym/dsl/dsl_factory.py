@@ -241,28 +241,10 @@ class DSLFactory:
         return result
 
     def _build_lambda_productions(
-        self, known_types, sym_to_productions, stable_symbols
+        self, known_types, sym_to_productions, stable_symbols, needed_input_types
     ):
-        """Build lambda and variable productions, adding them to sym_to_productions."""
-        if self.prune and self.target_types is not None:
-            # Demand-driven: BFS from target types to discover which
-            # ArrowTypes are actually reachable, then only create
-            # lambda productions for those.  This avoids generating
-            # thousands of deep types that would be pruned anyway.
-            base_prods = [p for ps in sym_to_productions.values() for p in ps]
-            for _, prods, _ in self._extra_productions:
-                base_prods.extend(prods)
-            effective_type_depth = min(
-                self.lambda_parameters["max_type_depth"],
-                self.max_overall_depth,
-            )
-            needed_input_types = _discover_needed_arrow_types(
-                base_prods,
-                self.target_types,
-                self.max_overall_depth,
-                self.max_env_depth,
-                max_lambda_depth=effective_type_depth,
-            )
+        """Build lambda and variable productions from discovered arrow types."""
+        if needed_input_types is not None:
             expanded = sorted(
                 [
                     ArrowType(inp, AtomicType("output_type"))
@@ -345,25 +327,60 @@ class DSLFactory:
         )
 
         stable_symbols = set()
+        needed_input_types = None
+        constructible_syms = None
+
+        if self.prune and self.target_types is not None:
+            # Demand-driven: BFS from target types + constructibility fixed
+            # point discovers which productions are reachable and which
+            # ArrowTypes need lambda productions — replacing generate-then-prune.
+            all_prods = [p for ps in sym_to_productions.values() for p in ps]
+            for _, prods, _ in self._extra_productions:
+                all_prods.extend(prods)
+
+            max_lambda_depth = None
+            if self.lambda_parameters is not None:
+                max_lambda_depth = min(
+                    self.lambda_parameters["max_type_depth"],
+                    self.max_overall_depth,
+                )
+
+            constructible_syms, needed_input_types = _discover_reachable(
+                all_prods,
+                self.target_types,
+                self.max_overall_depth,
+                self.max_env_depth,
+                max_lambda_depth=max_lambda_depth,
+            )
+
+            # Filter base productions to constructible only
+            sym_to_productions = _filter_to_constructible(
+                sym_to_productions,
+                constructible_syms,
+                stable_symbols,
+                self.tolerate_pruning_entire_productions,
+            )
 
         if self.lambda_parameters is not None:
             self._build_lambda_productions(
                 known_types,
                 sym_to_productions,
                 stable_symbols,
+                needed_input_types,
             )
 
         for symbol, prods, stable in self._extra_productions:
+            if constructible_syms is not None:
+                prods = [p for p in prods if p.symbol() in constructible_syms]
             sym_to_productions[symbol] = prods
             if stable:
                 stable_symbols.add(symbol)
 
-        if self.prune:
-            assert self.target_types is not None
+        if self.prune and self.prune_variables:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
-                care_about_variables=self.prune_variables,
+                care_about_variables=True,
                 type_depth_limit=self.max_overall_depth,
                 env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
@@ -382,26 +399,23 @@ class DSLFactory:
         return dsl
 
 
-def _discover_needed_arrow_types(
-    base_productions,
+def _discover_reachable(
+    all_productions,
     target_types,
     type_depth_limit,
     env_depth_limit,
-    max_lambda_depth,
+    *,
+    max_lambda_depth=None,
 ):
-    """BFS from *target_types* to discover which ArrowTypes need lambda productions.
+    """BFS from *target_types* through productions, then bottom-up constructibility.
 
-    Instead of enumerating all possible lambda types and pruning, this walks
-    reachable types from the root and only records ArrowTypes that are actually
-    encountered.  Any reachable ArrowType is decomposed (body becomes
-    reachable, input types enter the environment), so chained lambdas are
-    discovered automatically.
+    Combines top-down reachability with bottom-up constructibility in one pass,
+    replacing the old pattern of generate-everything-then-prune.
 
-    Returns the set of needed input_type tuples (one per reachable ArrowType).
-
-    *max_lambda_depth* bounds which ArrowTypes may be decomposed as lambdas,
-    matching the semantics of the ``max_type_depth`` parameter to
-    :py:meth:`DSLFactory.lambdas`.
+    Returns ``(constructible_symbols, needed_input_types)`` where
+    *needed_input_types* contains the input_type tuples of reachable ArrowTypes
+    (used to create lambda productions), and *constructible_symbols* is the set
+    of production symbol strings that survive constructibility analysis.
     """
     from ..types.type_with_environment import (
         PermissiveEnvironmment,
@@ -411,6 +425,8 @@ def _discover_needed_arrow_types(
     needed_input_types = set()
     worklist = [TypeWithEnvironment(t, PermissiveEnvironmment()) for t in target_types]
     visited = set()
+    # rules: bare Type -> [(symbol, [child Type, ...])]
+    rules = {}
     while worklist:
         twe = worklist.pop()
         if (
@@ -420,20 +436,85 @@ def _discover_needed_arrow_types(
         ):
             continue
         visited.add(twe)
-        for prod in base_productions:
+        typ = twe.typ
+        if typ not in rules:
+            rules[typ] = []
+        for prod in all_productions:
             arg_types = prod.type_signature().unify_return(twe)
             if arg_types is not None:
+                rules[typ].append((prod.symbol(), [a.typ for a in arg_types]))
                 worklist.extend(arg_types)
-        if isinstance(twe.typ, ArrowType) and twe.typ.depth < max_lambda_depth:
-            needed_input_types.add(twe.typ.input_type)
+        if (
+            max_lambda_depth is not None
+            and isinstance(typ, ArrowType)
+            and typ.depth < max_lambda_depth
+        ):
+            needed_input_types.add(typ.input_type)
+            # Lambda rule: the body type must be constructible
+            rules[typ].append(("<lambda>", [typ.output_type]))
             worklist.append(
                 TypeWithEnvironment(
-                    twe.typ.output_type,
-                    twe.env.child(*twe.typ.input_type),
+                    typ.output_type,
+                    twe.env.child(*typ.input_type),
                 )
             )
+            # Variable rules: leaves (always constructible within a lambda)
+            for inp in typ.input_type:
+                if inp not in rules:
+                    rules[inp] = []
+                rules[inp].append(("<variable>", []))
 
-    return needed_input_types
+    return _constructible_symbols(rules), needed_input_types
+
+
+def _constructible_symbols(rules):
+    """Bottom-up fixed point: find symbols whose arguments are all constructible."""
+    constructible = set()
+    changed = True
+    while changed:
+        changed = False
+        for out_t, type_rules in rules.items():
+            if out_t in constructible:
+                continue
+            for _, in_types in type_rules:
+                if all(t in constructible for t in in_types):
+                    constructible.add(out_t)
+                    changed = True
+                    break
+    return {
+        sym
+        for type_rules in rules.values()
+        for sym, in_types in type_rules
+        if all(t in constructible for t in in_types)
+    }
+
+
+def _filter_to_constructible(
+    sym_to_productions,
+    constructible_syms,
+    stable_symbols,
+    tolerate_pruning_entire_productions,
+):
+    """Keep only productions whose symbols are in *constructible_syms*."""
+    new_sym_to_productions = {}
+    for original_symbol, prods in sym_to_productions.items():
+        new_sym_to_productions[original_symbol] = [
+            x for x in prods if x.symbol() in constructible_syms
+        ]
+        if (
+            len(new_sym_to_productions[original_symbol]) == 0
+            and not tolerate_pruning_entire_productions
+        ):
+            raise TypeError(
+                f"All productions for {original_symbol} were pruned. "
+                f"Check that the target types are correct."
+            )
+        if original_symbol in stable_symbols:
+            continue
+        new_sym_to_productions[original_symbol] = Production.reindex(
+            new_sym_to_productions[original_symbol]
+        )
+    return new_sym_to_productions
 
 
 def _clean_variables(variable_productions):
