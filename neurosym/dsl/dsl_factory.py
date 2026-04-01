@@ -363,22 +363,12 @@ class DSLFactory:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
-                care_about_variables=False,
+                care_about_variables=self.prune_variables,
                 type_depth_limit=self.max_overall_depth,
                 env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
-            if self.prune_variables:
-                sym_to_productions = _prune(
-                    sym_to_productions,
-                    self.target_types,
-                    care_about_variables=True,
-                    type_depth_limit=self.max_overall_depth,
-                    env_depth_limit=self.max_env_depth,
-                    stable_symbols=stable_symbols,
-                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-                )
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
