@@ -241,6 +241,109 @@ class DSLFactory:
                 result.update(for_prod)
         return result
 
+    def _build_lambda_productions(self, known_types, sym_to_productions, stable_symbols):
+        """Build lambda and variable productions, adding them to sym_to_productions."""
+        if self.prune and self.target_types is not None:
+            # Demand-driven: BFS from target types to discover which
+            # ArrowTypes are actually reachable, then only create
+            # lambda productions for those.  This avoids generating
+            # thousands of deep types that would be pruned anyway.
+            base_prods = [p for ps in sym_to_productions.values() for p in ps]
+            for _, prods, _ in self._extra_productions:
+                base_prods.extend(prods)
+            effective_type_depth = min(
+                self.lambda_parameters["max_type_depth"],
+                self.max_overall_depth,
+            )
+            needed_input_types, valid_var_positions = (
+                _discover_needed_arrow_types(
+                    base_prods,
+                    self.target_types,
+                    self.max_overall_depth,
+                    self.max_env_depth,
+                    max_lambda_depth=effective_type_depth,
+                )
+            )
+            expanded = sorted(
+                [
+                    ArrowType(inp, AtomicType("output_type"))
+                    for inp in needed_input_types
+                ],
+                key=str,
+            )
+        else:
+            valid_var_positions = None
+            # No pruning target: enumerate all possible lambda types.
+            types, constructors_lambda = _type_universe(
+                known_types,
+                no_zeroadic=self._no_zeroadic,
+            )
+            top_levels = types + [
+                constructor(
+                    *[TypeVariable.fresh() for _ in range(arity)],
+                )
+                for arity, constructor in constructors_lambda
+            ]
+            top_levels = [
+                x.with_output_type(AtomicType("output_type"))
+                for x in top_levels
+                if isinstance(x, ArrowType)
+            ]
+            top_levels = sorted(set(top_levels), key=str)
+            effective_type_depth = min(
+                self.lambda_parameters["max_type_depth"],
+                self.max_overall_depth,
+            )
+            expanded = []
+            for top_level in top_levels:
+                expanded += type_expansions(
+                    top_level,
+                    types,
+                    constructors_lambda,
+                    max_expansion_steps=self.max_expansion_steps,
+                    max_overall_depth=effective_type_depth,
+                )
+            expanded = sorted(set(expanded), key=str)
+        sym_to_productions["<lambda>"] = [
+            LambdaProduction(i, LambdaTypeSignature(x.input_type))
+            for i, x in enumerate(expanded)
+        ]
+
+        if valid_var_positions is not None:
+            # Demand-driven: only create variables at positions
+            # reachable via actual lambda nesting chains.
+            variable_positions = sorted(valid_var_positions, key=str)
+            variable_types = sorted(
+                {typ for typ, _ in variable_positions}, key=str
+            )
+            type_to_id = {t: i for i, t in enumerate(variable_types)}
+            sym_to_productions["<variable>"] = [
+                VariableProduction(
+                    type_to_id[typ],
+                    VariableTypeSignature(typ, idx),
+                )
+                for typ, idx in variable_positions
+            ]
+        else:
+            variable_types = sorted(
+                {
+                    input_type
+                    for function_type in expanded
+                    for input_type in function_type.input_type
+                },
+                key=str,
+            )
+            sym_to_productions["<variable>"] = [
+                VariableProduction(
+                    type_id,
+                    VariableTypeSignature(variable_type, index_in_env),
+                )
+                for type_id, variable_type in enumerate(variable_types)
+                for index_in_env in range(self.max_env_depth)
+            ]
+        # don't prune and reindex variables
+        stable_symbols.add("<variable>")
+
     def finalize(self) -> DSL:
         """
         Produce the DSL from this factory. This will generate all productions and
@@ -266,106 +369,9 @@ class DSLFactory:
         stable_symbols = set()
 
         if self.lambda_parameters is not None:
-            if self.prune and self.target_types is not None:
-                # Demand-driven: BFS from target types to discover which
-                # ArrowTypes are actually reachable, then only create
-                # lambda productions for those.  This avoids generating
-                # thousands of deep types that would be pruned anyway.
-                base_prods = [p for ps in sym_to_productions.values() for p in ps]
-                for _, prods, _ in self._extra_productions:
-                    base_prods.extend(prods)
-                effective_type_depth = min(
-                    self.lambda_parameters["max_type_depth"],
-                    self.max_overall_depth,
-                )
-                needed_input_types, valid_var_positions = (
-                    _discover_needed_arrow_types(
-                        base_prods,
-                        self.target_types,
-                        self.max_overall_depth,
-                        self.max_env_depth,
-                        max_lambda_depth=effective_type_depth,
-                    )
-                )
-                expanded = sorted(
-                    [
-                        ArrowType(inp, AtomicType("output_type"))
-                        for inp in needed_input_types
-                    ],
-                    key=str,
-                )
-            else:
-                valid_var_positions = None
-                # No pruning target: enumerate all possible lambda types.
-                types, constructors_lambda = _type_universe(
-                    known_types,
-                    no_zeroadic=self._no_zeroadic,
-                )
-                top_levels = types + [
-                    constructor(
-                        *[TypeVariable.fresh() for _ in range(arity)],
-                    )
-                    for arity, constructor in constructors_lambda
-                ]
-                top_levels = [
-                    x.with_output_type(AtomicType("output_type"))
-                    for x in top_levels
-                    if isinstance(x, ArrowType)
-                ]
-                top_levels = sorted(set(top_levels), key=str)
-                effective_type_depth = min(
-                    self.lambda_parameters["max_type_depth"],
-                    self.max_overall_depth,
-                )
-                expanded = []
-                for top_level in top_levels:
-                    expanded += type_expansions(
-                        top_level,
-                        types,
-                        constructors_lambda,
-                        max_expansion_steps=self.max_expansion_steps,
-                        max_overall_depth=effective_type_depth,
-                    )
-                expanded = sorted(set(expanded), key=str)
-            sym_to_productions["<lambda>"] = [
-                LambdaProduction(i, LambdaTypeSignature(x.input_type))
-                for i, x in enumerate(expanded)
-            ]
-
-            if valid_var_positions is not None:
-                # Demand-driven: only create variables at positions
-                # reachable via actual lambda nesting chains.
-                variable_positions = sorted(valid_var_positions, key=str)
-                variable_types = sorted(
-                    {typ for typ, _ in variable_positions}, key=str
-                )
-                type_to_id = {t: i for i, t in enumerate(variable_types)}
-                sym_to_productions["<variable>"] = [
-                    VariableProduction(
-                        type_to_id[typ],
-                        VariableTypeSignature(typ, idx),
-                    )
-                    for typ, idx in variable_positions
-                ]
-            else:
-                variable_types = sorted(
-                    {
-                        input_type
-                        for function_type in expanded
-                        for input_type in function_type.input_type
-                    },
-                    key=str,
-                )
-                sym_to_productions["<variable>"] = [
-                    VariableProduction(
-                        type_id,
-                        VariableTypeSignature(variable_type, index_in_env),
-                    )
-                    for type_id, variable_type in enumerate(variable_types)
-                    for index_in_env in range(self.max_env_depth)
-                ]
-            # don't prune and reindex variables
-            stable_symbols.add("<variable>")
+            self._build_lambda_productions(
+                known_types, sym_to_productions, stable_symbols,
+            )
 
         for symbol, prods, stable in self._extra_productions:
             sym_to_productions[symbol] = prods
