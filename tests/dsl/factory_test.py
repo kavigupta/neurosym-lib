@@ -47,8 +47,7 @@ class TestPruning(unittest.TestCase):
             """
             1 :: () -> i
             add :: (i, i) -> i
-            convert_0 :: f -> f
-            convert_1 :: i -> f
+            convert :: #x -> f
             identity :: i -> i
             """,
         )

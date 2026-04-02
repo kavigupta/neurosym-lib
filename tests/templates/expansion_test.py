@@ -309,13 +309,7 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
             + :: i -> i -> i
-            first_0 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
-            first_1 :: (#a, (i -> i, i) -> i -> i) -> #a
-            first_2 :: (#a, (i, i -> i) -> i) -> #a
-            first_3 :: (#a, (i, i) -> i) -> #a
-            first_4 :: (#a, i -> i -> i) -> #a
-            first_5 :: (#a, i -> i) -> #a
-            first_6 :: (#a, i) -> #a
+            first :: (#a, #b) -> #a
             """,
         )
 
@@ -329,8 +323,7 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
             even? :: i -> b
-            first_0 :: (#a, b) -> #a
-            first_1 :: (#a, i) -> #a
+            first :: (#a, #b) -> #a
             """,
         )
 
@@ -344,13 +337,7 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
             1 :: () -> i
-            ite_0 :: (b, () -> i, #a, #a) -> #a
-            ite_1 :: (b, (b, b, b, b) -> b, #a, #a) -> #a
-            ite_2 :: (b, (b, b, i, i) -> i, #a, #a) -> #a
-            ite_3 :: (b, (b, i, b, b) -> b, #a, #a) -> #a
-            ite_4 :: (b, (b, i, i, i) -> i, #a, #a) -> #a
-            ite_5 :: (b, b, #a, #a) -> #a
-            ite_6 :: (b, i, #a, #a) -> #a
+            ite :: (b, #b, #a, #a) -> #a
             """,
         )
 
@@ -440,9 +427,7 @@ class TestDSLExpand(unittest.TestCase):
                 $2_2 :: V<i@2>
                 $3_2 :: V<i@3>
                 1 :: () -> i
-                id_0 :: ((i, () -> i) -> () -> i) -> i
-                id_1 :: ((i, i -> i) -> i -> i) -> i
-                id_2 :: ((i, i) -> i) -> i
+                id :: ((i, #a) -> #a) -> i
                 lam_0 :: L<#body|> -> () -> #body
                 lam_1 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
                 lam_2 :: L<#body|i;i -> i> -> (i, i -> i) -> #body

@@ -15,7 +15,7 @@ from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import GenericTypeVariable, Type
+from ..types.type import GenericTypeVariable, Type, TypeVariable
 from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
 
@@ -92,7 +92,13 @@ class DSL:
         ``production`` is a production that can be applied to the given type, and ``arg_types``
         is a list of types to fill in the holes of the production.
         """
-        for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
+        if typ.typ.has_type_vars():
+            # Query contains type variables: TreeTrie can't handle this,
+            # fall back to checking all productions
+            candidates = range(len(self.productions))
+        else:
+            candidates = sorted(self._out_type_to_prod_idx.query(typ.typ))
+        for idx in candidates:
             production = self.productions[idx]
             arg_types = production.type_signature().unify_return(typ)
             if arg_types is not None:
@@ -157,6 +163,19 @@ class DSL:
             self, program.state, program.children, environment=environment
         )
 
+    @staticmethod
+    def _canonicalize_type_for_rules(typ: Type) -> Type:
+        """
+        Replace all type variables in a type with a single sentinel
+        ``TypeVariable("_")``. This ensures that ``all_rules`` terminates
+        when productions have free type variables in their children.
+        """
+        var_names = typ.get_type_vars()
+        if not var_names:
+            return typ
+        sentinel = TypeVariable("_")
+        return typ.subst_type_vars({name: sentinel for name in var_names})
+
     def all_rules(
         self, care_about_variables, valid_root_types=None
     ) -> Dict[Type, List[Tuple[str, List[Type]]]]:
@@ -209,8 +228,15 @@ class DSL:
                 continue
             rules[twe] = []
             for prod, twes in self.productions_for_type(twe):
-                rules[twe].append((prod.symbol(), twes))
-                twes_to_expand.extend(twes)
+                # Canonicalize type variables in children to prevent infinite expansion
+                canon_twes = [
+                    TypeWithEnvironment(
+                        self._canonicalize_type_for_rules(t.typ), t.env
+                    )
+                    for t in twes
+                ]
+                rules[twe].append((prod.symbol(), canon_twes))
+                twes_to_expand.extend(canon_twes)
         if not care_about_variables:
             rules = {
                 out_twe.typ: [

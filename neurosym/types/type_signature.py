@@ -4,17 +4,40 @@ DSL.
 """
 
 import itertools
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from itertools import product
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import numpy as np
 from frozendict import frozendict
 from torch import NoneType
 
-from neurosym.types.type import ArrowType, Type, TypeVariable, UnificationError
+from neurosym.types.type import (
+    ArrowType,
+    FilteredTypeVariable,
+    GenericTypeVariable,
+    Type,
+    TypeVariable,
+    UnificationError,
+)
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
+
+
+def resolve_type(typ: Type, bindings: Dict[str, Type]) -> Type:
+    """
+    Transitively resolve type variables using the given bindings.
+
+    Follows chains like ``_w1 -> _f1 -> int`` until a fixed point is reached
+    (either a concrete type or an unbound variable).
+    """
+    for _ in range(100):
+        resolved = typ.subst_type_vars(bindings)
+        if resolved == typ:
+            return typ
+        typ = resolved
+    return typ
 
 
 class TypeSignature(ABC):
@@ -131,6 +154,36 @@ class FunctionTypeSignature(TypeSignature):
         """
         return ArrowType(tuple(self.arguments), self.return_type)
 
+    def alpha_rename(self) -> Tuple["FunctionTypeSignature", Dict[str, str]]:
+        """
+        Return a copy of this signature with all type variables replaced by
+        fresh names. Preserves FilteredTypeVariable filters.
+
+        Returns ``(fresh_signature, rename_map)`` where ``rename_map`` maps
+        old variable names to new variable names.
+        """
+        all_vars = {}
+        for arg in self.arguments:
+            all_vars.update(arg.collect_type_var_objects())
+        all_vars.update(self.return_type.collect_type_var_objects())
+
+        if not all_vars:
+            return self, {}
+
+        rename_map = {}
+        subst = {}
+        for name, var_obj in all_vars.items():
+            fresh_name = f"_{uuid.uuid4().hex}"
+            rename_map[name] = fresh_name
+            if isinstance(var_obj, FilteredTypeVariable):
+                subst[name] = FilteredTypeVariable(fresh_name, var_obj.type_filter)
+            else:
+                subst[name] = TypeVariable(fresh_name)
+
+        fresh_args = [arg.subst_type_vars(subst) for arg in self.arguments]
+        fresh_return = self.return_type.subst_type_vars(subst)
+        return FunctionTypeSignature(fresh_args, fresh_return), rename_map
+
     def render(self) -> str:
         # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
@@ -176,11 +229,24 @@ class LambdaTypeSignature(TypeSignature):
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if not isinstance(twe.typ, ArrowType):
             return None
-        if twe.typ.input_type != self.input_types:
+        if len(twe.typ.input_type) != len(self.input_types):
             return None
+        # Use unification instead of exact equality to handle type variables
+        # in the query type
+        try:
+            mapping = {}
+            for query_t, sig_t in zip(twe.typ.input_type, self.input_types):
+                for_pair = query_t.unify(sig_t)
+                for k, v in for_pair.items():
+                    if k in mapping and mapping[k] != v:
+                        return None
+                    mapping[k] = v
+        except UnificationError:
+            return None
+        output_type = twe.typ.output_type.subst_type_vars(mapping)
         return [
             TypeWithEnvironment(
-                twe.typ.output_type,
+                output_type,
                 twe.env.child(*self.input_types),
             )
         ]
@@ -226,7 +292,9 @@ class VariableTypeSignature(TypeSignature):
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        if twe.typ != self.variable_type:
+        try:
+            twe.typ.unify(self.variable_type)
+        except UnificationError:
             return None
         if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
             return None

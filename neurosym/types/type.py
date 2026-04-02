@@ -93,6 +93,18 @@ class Type(ABC):
         """
         return sorted({tv for tv, _ in self.depth_of_type_variables()})
 
+    def collect_type_var_objects(self):
+        """
+        Return a dictionary mapping type variable names to the actual
+        GenericTypeVariable objects found in this type tree. This preserves
+        the concrete class (TypeVariable vs FilteredTypeVariable).
+        """
+        result = {}
+        for node in self.walk_type_nodes():
+            if isinstance(node, GenericTypeVariable) and node.name not in result:
+                result[node.name] = node
+        return result
+
     def has_type_vars(self):
         """
         Return True if the type has type variables.

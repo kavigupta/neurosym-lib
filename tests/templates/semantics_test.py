@@ -20,8 +20,7 @@ class TestEnumeratability(unittest.TestCase):
                 1 :: () -> i -> i
                 + :: (#t -> i, #t -> i) -> #t -> i
                 id :: #a -> #a
-        compose_0 :: (#a -> i -> i, (i -> i) -> #c) -> #a -> #c
-        compose_1 :: (#a -> i, i -> #c) -> #a -> #c
+          compose :: (#a -> #b, #b -> #c) -> #a -> #c
         """
         actual = dsl.render()
         print(actual)
@@ -43,10 +42,9 @@ class TestEnumeratability(unittest.TestCase):
         self.assertSetEqual(
             expans,
             {
-                "(compose_1 ??::<i -> i> ??::<i -> i>)",
+                "(compose ??::<i -> #b> ??::<#b -> i>)",
                 "(1)",
                 "(id ??::<i -> i>)",
-                "(compose_0 ??::<i -> i -> i> ??::<(i -> i) -> i>)",
                 "(+ ??::<i -> i> ??::<i -> i>)",
             },
         )

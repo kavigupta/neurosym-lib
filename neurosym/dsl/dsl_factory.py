@@ -241,6 +241,23 @@ class DSLFactory:
                 result.update(for_prod)
         return result
 
+    @staticmethod
+    def _create_productions_without_expansion(production_constructor, args):
+        """
+        Create one production per declaration, keeping type variables unexpanded.
+        """
+        result = {}
+        for symbol, sig, *rest in args:
+            prod = production_constructor(symbol, sig, *rest)
+            if symbol in result:
+                if result[symbol] != [prod]:
+                    raise ValueError(
+                        f"Duplicate declarations for production: {symbol}"
+                    )
+            else:
+                result[symbol] = [prod]
+        return result
+
     def finalize(self) -> DSL:
         """
         Produce the DSL from this factory. This will generate all productions and
@@ -254,12 +271,10 @@ class DSLFactory:
             + (self.target_types if self.target_types is not None else [])
         )
 
-        universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
-
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
-            self._expansions_for_all_productions(
-                *universe, ParameterizedProduction.of, self._parameterized_productions
+            self._create_productions_without_expansion(
+                ParameterizedProduction.of, self._parameterized_productions
             )
         )
 
