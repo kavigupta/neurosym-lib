@@ -251,9 +251,7 @@ class DSLFactory:
             prod = production_constructor(symbol, sig, *rest)
             if symbol in result:
                 if result[symbol] != [prod]:
-                    raise ValueError(
-                        f"Duplicate declarations for production: {symbol}"
-                    )
+                    raise ValueError(f"Duplicate declarations for production: {symbol}")
             else:
                 result[symbol] = [prod]
         return result

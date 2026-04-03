@@ -108,9 +108,7 @@ class TypePreorderMask(PreorderMask):
 
             # Compute children types using the mapping
             children_types = [
-                TypeWithEnvironment(
-                    t.subst_type_vars(mapping), resolved_parent.env
-                )
+                TypeWithEnvironment(t.subst_type_vars(mapping), resolved_parent.env)
                 for t in fresh_sig.arguments
             ]
         else:
