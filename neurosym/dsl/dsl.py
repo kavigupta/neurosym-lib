@@ -92,12 +92,12 @@ class DSL:
         ``production`` is a production that can be applied to the given type, and ``arg_types``
         is a list of types to fill in the holes of the production.
         """
-        if typ.typ.has_type_vars():
-            # Query contains type variables: TreeTrie can't handle this,
-            # fall back to checking all productions
-            candidates = range(len(self.productions))
-        else:
-            candidates = sorted(self._out_type_to_prod_idx.query(typ.typ))
+        candidates = sorted(
+            self._out_type_to_prod_idx.query(
+                typ.typ,
+                is_wildcard_query=lambda x: isinstance(x, GenericTypeVariable),
+            )
+        )
         for idx in candidates:
             production = self.productions[idx]
             arg_types = production.type_signature().unify_return(typ)

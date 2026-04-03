@@ -53,9 +53,6 @@ class TypePreorderMask(PreorderMask):
         :param twe: The type to compute valid symbols for. Should already be resolved.
         :return: A list of valid productions.
         """
-        if isinstance(twe.typ, GenericTypeVariable):
-            # Unconstrained type variable: all productions are valid
-            return list(self.dsl.productions)
         return [prod for prod, _ in self.dsl.productions_for_type(twe)]
 
     def compute_mask(self, position, symbols):
