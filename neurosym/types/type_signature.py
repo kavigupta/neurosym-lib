@@ -17,14 +17,15 @@ from torch import NoneType
 from neurosym.types.type import (
     ArrowType,
     FilteredTypeVariable,
-    GenericTypeVariable,
     Type,
     TypeVariable,
     UnificationError,
 )
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
+from neurosym.utils.documentation import internal_only
 
 
+@internal_only
 def resolve_type(typ: Type, bindings: Dict[str, Type]) -> Type:
     """
     Transitively resolve type variables using the given bindings.
@@ -154,6 +155,7 @@ class FunctionTypeSignature(TypeSignature):
         """
         return ArrowType(tuple(self.arguments), self.return_type)
 
+    @internal_only
     def alpha_rename(self) -> Tuple["FunctionTypeSignature", Dict[str, str]]:
         """
         Return a copy of this signature with all type variables replaced by

@@ -4,7 +4,7 @@ import numpy as np
 
 from neurosym.dsl.dsl import ROOT_SYMBOL
 from neurosym.dsl.production import Production
-from neurosym.types.type import GenericTypeVariable, Type, UnificationError
+from neurosym.types.type import Type, UnificationError
 from neurosym.types.type_signature import FunctionTypeSignature, resolve_type
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
@@ -95,10 +95,10 @@ class TypePreorderMask(PreorderMask):
             # Unify the resolved parent type with the fresh return type
             try:
                 mapping = resolved_parent.typ.unify(fresh_sig.return_type)
-            except UnificationError:
+            except UnificationError as exc:
                 raise ValueError(
                     f"Type mismatch: {production} cannot produce {resolved_parent}"
-                )
+                ) from exc
 
             # Record new bindings
             for k, v in mapping.items():

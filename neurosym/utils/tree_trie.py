@@ -59,7 +59,7 @@ class TreeTrie(Generic[K, V]):
         :return: A set of values associated with the key.
         """
         if is_wildcard_query is not None and is_wildcard_query(key):
-            return self._all_values()
+            return self.all_values()
         children = list(key.children())
         summary = key.node_summary(), len(children)
         as_leaf = set() if summary not in self.leaves else set(self.leaves[summary])
@@ -82,12 +82,12 @@ class TreeTrie(Generic[K, V]):
             as_child = set()
         return as_leaf | as_wild | as_child
 
-    def _all_values(self) -> Set[V]:
+    def all_values(self) -> Set[V]:
         """Return all values stored in this trie and its descendants."""
         result = set(self.wild)
         for vals in self.leaves.values():
             result.update(vals)
         for children_tuple in self.trie_children.values():
             for child_trie in children_tuple:
-                result.update(child_trie._all_values())
+                result.update(child_trie.all_values())
         return result
