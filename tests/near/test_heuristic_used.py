@@ -93,7 +93,7 @@ class TestNeuralModels(unittest.TestCase):
         return ns.render_s_expression(expected)
 
     def compute_variable_soln(self, nesting):
-        expected = ns.SExpression("$0_0", ())
+        expected = ns.SExpression("$0", ())
         for i in range(1, nesting + 1):
             expected = ns.SExpression(f"correct_{i}", (expected,))
         expected = ns.SExpression("lam", (expected,))

@@ -259,6 +259,7 @@ class TestShieldInterface(unittest.TestCase):
 
     @parameterized.expand(indices_all)
     def test_with_shield_works(self, indices):
+        print("Testing with indices:", indices)
         result = self.run_search(
             indices,
             include_shield=True,
