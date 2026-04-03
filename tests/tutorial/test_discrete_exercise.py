@@ -38,13 +38,13 @@ class TestDiscreteExercise(unittest.TestCase):
            sqrt :: f -> f
               < :: (f, f) -> b
             ite :: (b, f, f) -> f
-            lam :: L<#body|f> -> f -> #body
-           $0_0 :: V<f@0>
-           __10 :: (f, f) -> f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
-           __20 :: () -> f = (lam-abstr () (sqrt (2)))
-           __30 :: (f, f) -> f -> f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0_0))))))
-           __40 :: (f, f) -> f = (lam-abstr (#0 #1) (ite (< #1 #0) (1) (0)))
-           __50 :: () -> f = (lam-abstr () (sin (1)))
+            lam :: L<#body|#_arg0> -> (#_arg0) -> #body
+             $0 :: V<@0>
+           __10 :: (#_var0, f) -> f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
+           __20 :: (f, f) -> f = (lam-abstr (#0 #1) (ite (< #1 #0) (1) (0)))
+           __30 :: () -> f = (lam-abstr () (sqrt (2)))
+           __40 :: #_var0 -> f = (lam-abstr (#0) (sin (** (sin (1)) #0)))
+           __50 :: () -> f = (lam-abstr () (+ (1) (2)))
         """
         actual_lines, expected_lines = [
             [line.strip() for line in text.split("\n") if line.strip()]
