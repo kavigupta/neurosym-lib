@@ -254,9 +254,7 @@ class LambdaTypeSignature(TypeSignature):
         # pylint: disable=protected-access
         input_types = []
         for i in reversed(range(self.num_args)):
-            input_types.append(
-                env._elements.get(i, TypeVariable(f"_lam_arg{i}"))
-            )
+            input_types.append(env._elements.get(i, TypeVariable(f"_lam_arg{i}")))
         parent = env.parent(tuple(input_types))
         return TypeWithEnvironment(ArrowType(tuple(input_types), twes[0].typ), parent)
 

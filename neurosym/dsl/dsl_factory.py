@@ -3,10 +3,7 @@ import warnings
 from typing import Callable, Dict, List, Tuple
 
 from ..types.type import Type
-from ..types.type_signature import (
-    LambdaTypeSignature,
-    VariableTypeSignature,
-)
+from ..types.type_signature import LambdaTypeSignature, VariableTypeSignature
 from ..types.type_string_repr import TypeDefiner
 from .dsl import DSL
 from .production import (
@@ -263,7 +260,6 @@ class DSLFactory:
             self.max_env_depth,
         )
         return dsl
-
 
 
 def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
