@@ -196,14 +196,14 @@ class FunctionTypeSignature(TypeSignature):
 @dataclass
 class LambdaTypeSignature(TypeSignature):
     """
-    Represents the type signature of the lambda production. This is a production that
-    matches any function type with the given input types, and returns the output type
-    of the matching function type, but with with the input types placed in the environment.
+    Represents the type signature of a lambda production. Matches any function
+    type (ArrowType) with the given number of input arguments. The actual input
+    types are extracted from the query type at unification time.
 
-    :param input_types: The types of the arguments to the lambda.
+    :param num_args: The number of arguments the lambda takes.
     """
 
-    input_types: List[ArrowType]
+    num_args: int
 
     def arity(self) -> int:
         # just the body
@@ -214,55 +214,51 @@ class LambdaTypeSignature(TypeSignature):
         Get the arity of the function represented by the lambda,
         i.e., the number of arguments.
         """
-        return len(self.input_types)
+        return self.num_args
 
     def render(self) -> str:
-        # pylint: disable=cyclic-import
-        from neurosym.types.type_string_repr import render_type
-
-        body = TypeVariable("body")
-        input_types = ";".join(render_type(x) for x in self.input_types)
-        lambda_type = f"L<{render_type(body)}|{input_types}>"
-
-        return f"{lambda_type} -> {render_type(ArrowType(self.input_types, body))}"
+        args = ";".join(f"#_arg{i}" for i in range(self.num_args))
+        return f"L<#body|{args}> -> ({args}) -> #body"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if not isinstance(twe.typ, ArrowType):
             return None
-        if len(twe.typ.input_type) != len(self.input_types):
+        if len(twe.typ.input_type) != self.num_args:
             return None
-        # Use unification instead of exact equality to handle type variables
-        # in the query type
-        try:
-            mapping = {}
-            for query_t, sig_t in zip(twe.typ.input_type, self.input_types):
-                for_pair = query_t.unify(sig_t)
-                for k, v in for_pair.items():
-                    if k in mapping and mapping[k] != v:
-                        return None
-                    mapping[k] = v
-        except UnificationError:
-            return None
-        output_type = twe.typ.output_type.subst_type_vars(mapping)
         return [
             TypeWithEnvironment(
-                output_type,
-                twe.env.child(*self.input_types),
+                twe.typ.output_type,
+                twe.env.child(*twe.typ.input_type),
             )
         ]
 
     def return_type_template(self) -> Type:
-        return ArrowType(self.input_types, TypeVariable("body"))
+        # Wildcard: matches any ArrowType. The arity check in unify_return
+        # handles filtering.
+        return TypeVariable("_lambda_return")
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 1:
             return None
-        parent = twes[0].env.parent(self.input_types)
-        return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
+        # Reconstruct the arrow type from the body type and environment.
+        # child(*input_types) inserts in order, each at index 0, so
+        # the last type ends up at index 0. We read them back in reverse
+        # index order to recover the original input_types ordering.
+        env = twes[0].env
+        if not isinstance(env, StrictEnvironment):
+            return None
+        # pylint: disable=protected-access
+        input_types = []
+        for i in reversed(range(self.num_args)):
+            input_types.append(
+                env._elements.get(i, TypeVariable(f"_lam_arg{i}"))
+            )
+        parent = env.parent(tuple(input_types))
+        return TypeWithEnvironment(ArrowType(tuple(input_types), twes[0].typ), parent)
 
 
 @dataclass
@@ -270,15 +266,11 @@ class VariableTypeSignature(TypeSignature):
     """
     Represents the type signature of a variable production.
 
-    This is a type signature where the return type is known, but the
-    environment must contain the given type at the given index in
-    order to be valid.
+    Matches any type that is present in the environment at the given index.
 
-    :param variable_type: The type of the variable.
     :param index_in_env: The index of the variable in the environment.
     """
 
-    variable_type: Type
     index_in_env: int
 
     def arity(self) -> int:
@@ -286,33 +278,40 @@ class VariableTypeSignature(TypeSignature):
         return 0
 
     def render(self) -> str:
-        # pylint: disable=cyclic-import
-        from neurosym.types.type_string_repr import render_type
-
-        return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
+        return f"V<@{self.index_in_env}>"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        try:
-            twe.typ.unify(self.variable_type)
-        except UnificationError:
+        if not isinstance(twe.env, StrictEnvironment):
+            # PermissiveEnvironment: always matches
+            return []
+        # pylint: disable=protected-access
+        if self.index_in_env not in twe.env._elements:
             return None
-        if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
+        env_type = twe.env._elements[self.index_in_env]
+        try:
+            twe.typ.unify(env_type)
+        except UnificationError:
             return None
         return []
 
     def return_type_template(self) -> Type:
-        return self.variable_type
+        # Wildcard: matches any type. The environment check in unify_return
+        # handles filtering.
+        return TypeVariable("_var_return")
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 0:
             return None
+        # Without a fixed type, return a type variable. The caller must
+        # resolve it from context (e.g., the environment).
+        var = TypeVariable(f"_var{self.index_in_env}")
         return TypeWithEnvironment(
-            self.variable_type,
-            StrictEnvironment(frozendict({self.index_in_env: self.variable_type})),
+            var,
+            StrictEnvironment(frozendict({self.index_in_env: var})),
         )
 
 

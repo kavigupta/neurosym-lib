@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# we don't care about duplicate code in test outputs
+
 import unittest
 
 import neurosym as ns
@@ -11,74 +14,35 @@ class EnumerationRegressionTest(unittest.TestCase):
             {line.strip() for line in expected.strip().split("\n")},
         )
 
-    def rendered_dsl(self, lambdas_kwargs=None, known_types=(), **kwargs):
-        if lambdas_kwargs is None:
-            lambdas_kwargs = {}
+    def rendered_dsl(self, **kwargs):
         dslf = ns.DSLFactory(**kwargs)
-        dslf.known_types(*known_types)
-        dslf.lambdas(**lambdas_kwargs)
+        dslf.lambdas()
         return dslf.finalize().render()
 
     def test_basic(self):
         self.assertRenderingEqual(
-            self.rendered_dsl(known_types=("i", "i -> i", "(i, i) -> i")),
+            self.rendered_dsl(),
             """
-            lam_0 :: L<#body|i;i> -> (i, i) -> #body
-            lam_1 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
+            lam_0 :: L<#body|> -> () -> #body
+            lam_1 :: L<#body|#_arg0> -> (#_arg0) -> #body
+            lam_2 :: L<#body|#_arg0;#_arg1> -> (#_arg0;#_arg1) -> #body
+            lam_3 :: L<#body|#_arg0;#_arg1;#_arg2> -> (#_arg0;#_arg1;#_arg2) -> #body
+            lam_4 :: L<#body|#_arg0;#_arg1;#_arg2;#_arg3> -> (#_arg0;#_arg1;#_arg2;#_arg3) -> #body
+            $0 :: V<@0>
+            $1 :: V<@1>
+            $2 :: V<@2>
+            $3 :: V<@3>
             """,
         )
 
-    def test_limited_arity(self):
+    def test_limited_env_depth(self):
         self.assertRenderingEqual(
-            self.rendered_dsl(known_types=("i", "i -> i -> i")),
+            self.rendered_dsl(max_env_depth=2),
             """
-            lam_0 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
-            """,
-        )
-
-    def test_limited_type_depth(self):
-        self.assertRenderingEqual(
-            self.rendered_dsl(
-                lambdas_kwargs=dict(max_type_depth=3.5),
-                known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
-            ),
-            """
-            lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
-            lam_1 :: L<#body|i;i> -> (i, i) -> #body
-            lam_2 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i -> i@0>
-            $1_0 :: V<i -> i@1>
-            $2_0 :: V<i -> i@2>
-            $3_0 :: V<i -> i@3>
-            $0_1 :: V<i@0>
-            $1_1 :: V<i@1>
-            $2_1 :: V<i@2>
-            $3_1 :: V<i@3>
-            """,
-        )
-
-    def test_limited_type_depth_env_depth(self):
-        self.assertRenderingEqual(
-            self.rendered_dsl(
-                lambdas_kwargs=dict(max_type_depth=3.5),
-                max_env_depth=2,
-                known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
-            ),
-            """
-            lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
-            lam_1 :: L<#body|i;i> -> (i, i) -> #body
-            lam_2 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i -> i@0>
-            $1_0 :: V<i -> i@1>
-            $0_1 :: V<i@0>
-            $1_1 :: V<i@1>
+            lam_0 :: L<#body|> -> () -> #body
+            lam_1 :: L<#body|#_arg0> -> (#_arg0) -> #body
+            lam_2 :: L<#body|#_arg0;#_arg1> -> (#_arg0;#_arg1) -> #body
+            $0 :: V<@0>
+            $1 :: V<@1>
             """,
         )
