@@ -6,10 +6,8 @@ import numpy as np
 
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable
 from ..types.type_signature import (
-    FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
-    _signature_expansions,
     _type_universe,
     type_expansions,
 )
@@ -195,51 +193,6 @@ class DSLFactory:
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
-
-    def _expansions_for_single_production(
-        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
-    ):
-        sigs = sorted(
-            set(
-                _signature_expansions(
-                    sig,
-                    type_atoms,
-                    type_constructors,
-                    max_expansion_steps=self.max_expansion_steps,
-                    max_overall_depth=self.max_overall_depth,
-                )
-            ),
-            key=str,
-        )
-        assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
-
-        prods = [
-            production_constructor(
-                symbol, FunctionTypeSignature.from_type(expansion), *args
-            )
-            for expansion in sigs
-        ]
-
-        return {symbol: Production.reindex(prods)}
-
-    def _expansions_for_all_productions(
-        self, type_atoms, type_constructors, production_constructor, args
-    ):
-        result = {}
-        for arg in args:
-            for_prod = self._expansions_for_single_production(
-                type_atoms, type_constructors, production_constructor, *arg
-            )
-            duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
-            if duplicate_keys:
-                for key in duplicate_keys:
-                    if for_prod[key] != result[key]:
-                        raise ValueError(
-                            f"Duplicate declarations for production: {key}"
-                        )
-            else:
-                result.update(for_prod)
-        return result
 
     @staticmethod
     def _create_productions_without_expansion(production_constructor, args):

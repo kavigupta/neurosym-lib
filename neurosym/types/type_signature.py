@@ -367,34 +367,6 @@ def bottom_up_enumerate_types(
     return sorted([t for t, _, _ in overall if t.depth < max_overall_depth], key=str)
 
 
-def _signature_expansions(
-    sig: FunctionTypeSignature,
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-):
-    """
-    Returns a list of all possible expansions of the given type signature.
-
-    Any type variables that appear in both the arguments and return type
-        will be kept, while any other type variables will be expanded.
-    """
-    variables_in_arguments = {
-        var for arg in sig.arguments for var in arg.max_depth_per_type_variable()
-    }
-    variables_in_return = set(sig.return_type.max_depth_per_type_variable())
-    exclude_variables = variables_in_arguments & variables_in_return
-    return type_expansions(
-        sig.astype(),
-        terminals,
-        constructors,
-        max_expansion_steps,
-        max_overall_depth,
-        exclude_variables,
-    )
-
-
 def type_expansions(
     sig: Type,
     terminals: List[Type],
