@@ -304,6 +304,7 @@ class DSLFactory:
 
     def _finalize_with_pruning(self, has_lambdas):
         """New pruning path using constructibility analysis."""
+        # pylint: disable=too-many-branches
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
