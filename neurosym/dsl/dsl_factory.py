@@ -1,4 +1,5 @@
 import copy
+import itertools
 import warnings
 from typing import Callable, Dict, List, Tuple
 
@@ -371,6 +372,123 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
         max_type_depth,
         max_env_depth=max_env_depth,
     )
+
+
+def _directly_constructible_types(signatures, has_lambdas, max_depth):
+    """
+    Compute the set of constructible types per environment via a bottom-up fixed point,
+    working directly from raw production signatures (which may contain type variables).
+
+    A type is constructible in environment E if:
+    - It is constructible in a sub-environment of E (including the empty env), OR
+    - It is a member of E (a variable), OR
+    - It is an arrow type ``(A1, ..., An) -> B`` where ``B`` is constructible in
+      ``E ∪ {A1, ..., An}`` (when has_lambdas is True), OR
+    - Some production can output it with all inputs constructible in E.
+
+    Returns a dict mapping each environment (frozenset of Types) to the set of types
+    nontrivially constructible in that environment — excluding types that are members
+    of the environment or constructible in a strict sub-environment.
+    The empty-env entry (``frozenset()``) holds the directly constructible types.
+    """
+    from ..types.type import UnificationError
+
+    # constructible[env] = types nontrivially constructible in env
+    constructible = {frozenset(): set()}
+
+    def _all_constructible_in(env):
+        """All types constructible in env (including env members and sub-envs)."""
+        result = set(env)
+        for tracked_env, types in constructible.items():
+            if tracked_env <= env:
+                result |= types
+        return result
+
+    def _is_constructible(t, env=frozenset()):
+        if t in env:
+            return True
+        for tracked_env, types in constructible.items():
+            if tracked_env <= env and t in types:
+                return True
+        if has_lambdas and isinstance(t, ArrowType):
+            new_env = env | frozenset(t.input_type)
+            if new_env not in constructible:
+                constructible[new_env] = set()
+            return _is_constructible(t.output_type, new_env)
+        return False
+
+    def _merge_subst(base, extension):
+        """Merge two substitutions, return None if inconsistent."""
+        merged = dict(base)
+        for k, v in extension.items():
+            if k in merged:
+                if merged[k] != v:
+                    return None
+            else:
+                merged[k] = v
+        return merged
+
+    def _bindings_for(pattern, subst, env=frozenset()):
+        """Yield extended substitutions that make pattern constructible in env."""
+        resolved = pattern.subst_type_vars(subst)
+        if not resolved.get_type_vars():
+            if _is_constructible(resolved, env):
+                yield subst
+            return
+        # Try unifying against each type constructible in env
+        for t in _all_constructible_in(env):
+            try:
+                new_bindings = resolved.unify(t)
+            except UnificationError:
+                continue
+            merged = _merge_subst(subst, new_bindings)
+            if merged is not None:
+                yield merged
+        # Lambda rule: an arrow type is constructible if its output is
+        if has_lambdas and isinstance(resolved, ArrowType):
+            yield from _bindings_for(
+                resolved.output_type, subst,
+                env | frozenset(resolved.input_type),
+            )
+
+    while True:
+        prev_env_count = len(constructible)
+        done = True
+        for env in list(constructible.keys()):
+            for sig in signatures:
+                substs = [{}]
+                for arg in sig.arguments:
+                    next_substs = []
+                    for subst in substs:
+                        next_substs.extend(_bindings_for(arg, subst, env))
+                    substs = next_substs
+                    if not substs:
+                        break
+                for subst in substs:
+                    out_t = sig.return_type.subst_type_vars(subst)
+                    if out_t.get_type_vars() or out_t.depth > max_depth:
+                        continue
+                    if not _is_constructible(out_t, env):
+                        constructible[env].add(out_t)
+                        done = False
+        # Also iterate if new envs were discovered (by _is_constructible)
+        if len(constructible) != prev_env_count:
+            done = False
+        if done:
+            break
+
+    # Clean up: remove types constructible in a strict sub-env,
+    # and remove empty env entries (except the root empty env)
+    for env in constructible:
+        for sub_env in constructible:
+            if sub_env < env:
+                constructible[env] -= constructible[sub_env]
+    constructible = {
+        env: types for env, types in constructible.items()
+        if types or env == frozenset()
+    }
+
+    return constructible
 
 
 def _prune(
