@@ -526,14 +526,15 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         )
 
     def test_rnn_dsl(self):
-        # Nullary: ({f,12},{f,12})->{f,12}, {f,12}->f, {f,12}->{f,12}.
-        # fold, map, compose, output chain these through list levels.
+        # RNN DSL with scan (not fold). Nullary prods, scan, map, compose,
+        # output, ite chain through list levels. scan keeps output as list
+        # (unlike fold which reduced to scalar).
         t = ns.TypeDefiner(L=12, O=4)
         t.typedef("fL", "{f, $L}")
         sigs = [
             t.sig("() -> ($fL, $fL) -> $fL"),
             t.sig("() -> ($fL, $fL) -> $fL"),
-            t.sig("((#a, #a) -> #a) -> [#a] -> #a"),
+            t.sig("((#a, #a) -> #a) -> [#a] -> [#a]"),  # scan
             t.sig("() -> $fL -> f"),
             t.sig("() -> $fL -> $fL"),
             t.sig("(([$fL]) -> [$fL]) -> [$fL] -> [{f, $O}]"),
@@ -544,37 +545,15 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
             {frozenset(): _t(
-                # nullary
                 "({f, 12}, {f, 12}) -> {f, 12}",
                 "{f, 12} -> f",
                 "{f, 12} -> {f, 12}",
-                # fold: [{f,12}] -> {f,12}
-                # map: [{f,12}] -> [{f,12}], [{f,12}] -> [f]
-                # compose: {f,12} -> f (already), [{f,12}] -> f, etc.
-                # output: [{f,12}] -> [{f,4}]
-                "[{f, 12}] -> f",
-                "[{f, 12}] -> {f, 12}",
                 "[{f, 12}] -> [f]",
                 "[{f, 12}] -> [{f, 12}]",
                 "[{f, 12}] -> [{f, 4}]",
-                # depth 2 list nesting
-                "[[{f, 12}]] -> f",
-                "[[{f, 12}]] -> {f, 12}",
-                "[[{f, 12}]] -> [f]",
-                "[[{f, 12}]] -> [{f, 12}]",
-                "[[{f, 12}]] -> [{f, 4}]",
                 "[[{f, 12}]] -> [[f]]",
                 "[[{f, 12}]] -> [[{f, 12}]]",
                 "[[{f, 12}]] -> [[{f, 4}]]",
-                # depth 3 list nesting
-                "[[[{f, 12}]]] -> f",
-                "[[[{f, 12}]]] -> {f, 12}",
-                "[[[{f, 12}]]] -> [f]",
-                "[[[{f, 12}]]] -> [{f, 12}]",
-                "[[[{f, 12}]]] -> [{f, 4}]",
-                "[[[{f, 12}]]] -> [[f]]",
-                "[[[{f, 12}]]] -> [[{f, 12}]]",
-                "[[[{f, 12}]]] -> [[{f, 4}]]",
                 "[[[{f, 12}]]] -> [[[f]]]",
                 "[[[{f, 12}]]] -> [[[{f, 12}]]]",
                 "[[[{f, 12}]]] -> [[[{f, 4}]]]",
@@ -703,12 +682,13 @@ class TestReachableSymbols(unittest.TestCase):
         ))
 
     def test_rnn_dsl_target(self):
+        # RNN DSL with scan (not fold) so all productions are reachable.
         t = ns.TypeDefiner(L=12, O=4)
         t.typedef("fL", "{f, $L}")
         sigs = [
             ("add", t.sig("() -> ($fL, $fL) -> $fL")),
             ("mul", t.sig("() -> ($fL, $fL) -> $fL")),
-            ("fold", t.sig("((#a, #a) -> #a) -> [#a] -> #a")),
+            ("scan", t.sig("((#a, #a) -> #a) -> [#a] -> [#a]")),
             ("sum", t.sig("() -> $fL -> f")),
             ("linear", t.sig("() -> $fL -> $fL")),
             ("output", t.sig("(([$fL]) -> [$fL]) -> [$fL] -> [{f, $O}]")),
@@ -723,6 +703,9 @@ class TestReachableSymbols(unittest.TestCase):
             has_lambdas=False, max_depth=5,
         )
         self.assertEqual(prods, {
+            _p("add"),
+            _p("mul"),
+            _p("scan", a="{f, 12}"),
             _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[f]"),
             _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 12}]"),
             _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 4}]"),
