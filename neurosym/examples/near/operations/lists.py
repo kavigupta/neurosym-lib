@@ -15,6 +15,20 @@ def fold_torch(func, lst):  # noqa: E741
     return result
 
 
+def scan_torch(func, lst):  # noqa: E741
+    """
+    Runs a scan (prefix fold) on a list of tensors, keeping all intermediate results.
+
+    :param func: ``((N, *C), (N, *C)) -> (N, *C)``
+    :param lst: ``(N, L, *C)``
+    :returns: ``(N, L, *C)``
+    """
+    results = [lst[:, 0, :]]
+    for i in range(1, lst.shape[1]):
+        results.append(func(results[-1], lst[:, i, :]))
+    return torch.stack(results, dim=1)
+
+
 def map_torch(func, lst):  # noqa: E741
     """
 
