@@ -303,26 +303,26 @@ class DSLFactory:
         return sym_to_productions
 
     def _finalize_with_pruning(self, has_lambdas):
-        # pylint: disable=too-many-branches
-        """New path: compute constructible types, then only create needed productions."""
-        # Build (symbol, sig) pairs for the new functions
-        named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
+        """New pruning path using constructibility analysis."""
+        named_sigs = [
+            (sym, sig) for sym, sig, _, _ in self._parameterized_productions
+        ]
 
         # Check for duplicate declarations
         seen = {}
         for sym, sig in named_sigs:
             if sym in seen:
                 if seen[sym] != sig:
-                    raise ValueError(f"Duplicate declarations for production: {sym}")
+                    raise ValueError(
+                        f"Duplicate declarations for production: {sym}"
+                    )
             else:
                 seen[sym] = sig
 
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
         constructible = directly_constructible_types(
-            sigs_only,
-            has_lambdas,
-            self.max_overall_depth,
+            sigs_only, has_lambdas, self.max_overall_depth
         )
 
         # Top-down: find reachable productions and lambdas
@@ -334,16 +334,16 @@ class DSLFactory:
             self.max_overall_depth,
         )
 
-        # Group reachable substitutions by symbol
+        # Group reachable substitutions by symbol, dedup by concrete type
         reachable_by_sym = {}
         for sym, subst_frozen in reachable_prods:
-            reachable_by_sym.setdefault(sym, []).append(dict(subst_frozen))
+            reachable_by_sym.setdefault(sym, set()).add(subst_frozen)
 
         # Build concrete Production objects, preserving declaration order
         sym_to_productions: Dict[str, List[Production]] = {}
         for sym, sig, semantics, parameters in self._parameterized_productions:
-            substs = reachable_by_sym.get(sym, [])
-            if not substs:
+            subst_set = reachable_by_sym.get(sym, set())
+            if not subst_set:
                 if not self.tolerate_pruning_entire_productions:
                     raise TypeError(
                         f"All productions for {sym} were pruned. "
@@ -351,15 +351,30 @@ class DSLFactory:
                     )
                 sym_to_productions[sym] = []
                 continue
-            prods = []
-            for subst in substs:
-                concrete_type = sig.astype().subst_type_vars(subst)
-                concrete_sig = FunctionTypeSignature.from_type(concrete_type)
-                prods.append(
-                    ParameterizedProduction.of(sym, concrete_sig, semantics, parameters)
-                )
+
+            # Shared type variables (in both args and return) should be preserved
+            arg_vars = {v for a in sig.arguments for v in a.get_type_vars()}
+            ret_vars = set(sig.return_type.get_type_vars())
+            shared_vars = arg_vars & ret_vars
+
+            prods = {}
+            for subst_frozen in subst_set:
+                subst = dict(subst_frozen)
+                filtered_subst = {
+                    k: v for k, v in subst.items() if k not in shared_vars
+                }
+                concrete_type = sig.astype().subst_type_vars(filtered_subst)
+                key = str(concrete_type)
+                if key not in prods:
+                    concrete_sig = FunctionTypeSignature.from_type(concrete_type)
+                    prods[key] = ParameterizedProduction.of(
+                        sym, concrete_sig, semantics, parameters
+                    )
             sym_to_productions[sym] = Production.reindex(
-                sorted(prods, key=lambda p: str(p.type_signature().astype()))
+                sorted(
+                    prods.values(),
+                    key=lambda p: str(p.type_signature().astype()),
+                )
             )
 
         # Add lambda and variable productions from reachable lambdas

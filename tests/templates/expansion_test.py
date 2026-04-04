@@ -433,21 +433,13 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<() -> i@0>
-                $0_1 :: V<i -> i@0>
-                $0_2 :: V<i@0>
-                $1_2 :: V<i@1>
-                $2_2 :: V<i@2>
-                $3_2 :: V<i@3>
+                $0_0 :: V<i@0>
+                $1_0 :: V<i@1>
+                $2_0 :: V<i@2>
                 1 :: () -> i
-                id_0 :: ((i, () -> i) -> () -> i) -> i
-                id_1 :: ((i, i -> i) -> i -> i) -> i
-                id_2 :: ((i, i) -> i) -> i
-                lam_0 :: L<#body|> -> () -> #body
-                lam_1 :: L<#body|i;() -> i> -> (i, () -> i) -> #body
-                lam_2 :: L<#body|i;i -> i> -> (i, i -> i) -> #body
-                lam_3 :: L<#body|i;i> -> (i, i) -> #body
-                lam_4 :: L<#body|i> -> i -> #body
+                id :: ((i, i) -> i) -> i
+                lam_0 :: L<#body|i;i> -> (i, i) -> #body
+                lam_1 :: L<#body|i> -> i -> #body
             """,
         )
 
