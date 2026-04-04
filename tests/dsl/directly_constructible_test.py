@@ -1,8 +1,6 @@
 import unittest
 
 import neurosym as ns
-from neurosym.dsl.dsl_factory import _directly_constructible_types, _reachable_symbols
-from neurosym.types.type_signature import FunctionTypeSignature
 
 
 def _t(*type_strs):
@@ -15,116 +13,116 @@ def _env(*type_strs):
 
 class TestDirectlyConstructibleTypes(unittest.TestCase):
     def _sigs(self, *type_strs):
-        return [FunctionTypeSignature.from_type(ns.parse_type(t)) for t in type_strs]
+        return [ns.FunctionTypeSignature.from_type(ns.parse_type(t)) for t in type_strs]
 
     def test_nullary_production(self):
         sigs = self._sigs("() -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_chain(self):
         sigs = self._sigs("() -> i", "i -> f")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i", "f")})
 
     def test_unreachable_type(self):
         sigs = self._sigs("() -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_mutual_dependency(self):
         sigs = self._sigs("a -> b", "b -> a")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): set()})
 
     def test_multi_arg_production(self):
         sigs = self._sigs("() -> i", "(i, i) -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_arrow_type_not_constructible_without_lambdas(self):
         sigs = self._sigs("() -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_arrow_type_constructible_with_lambdas(self):
         sigs = self._sigs("() -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_lambdas_unlock_production(self):
         sigs = self._sigs("() -> i", "(i -> i, i) -> i")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i")},
         )
 
     def test_nested_arrow_with_lambdas(self):
         sigs = self._sigs("() -> i", "(i -> i) -> f")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
 
     def test_type_variable_no_base(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("#x -> f")]
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): set()})
 
     def test_type_variable_with_base(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("#x -> f"), t.sig("() -> i")]
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i", "f")})
 
     def test_shared_type_variable(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("(#x, #x) -> #x"), t.sig("() -> i")]
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_shared_variable_produces_new_types(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("(#x) -> [#x]"), t.sig("() -> i")]
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=3)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=3)
         self.assertEqual(result, {frozenset(): _t("i", "[i]", "[[i]]", "[[[i]]]")})
 
     def test_shared_variable_with_lambdas(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("(#x -> #x) -> f"), t.sig("() -> i")]
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i", "f")})
 
     def test_depth_bound(self):
         t = ns.TypeDefiner()
         sigs = [t.sig("(#x) -> [#x]"), t.sig("() -> i")]
-        result = _directly_constructible_types(sigs, has_lambdas=False, max_depth=1)
+        result = ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=1)
         self.assertEqual(result, {frozenset(): _t("i", "[i]")})
 
     def test_call_needs_lambda(self):
         sigs = self._sigs("() -> i", "() -> f", "(i -> f, i) -> f")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
 
     def test_lambda_unlocks_new_output(self):
         sigs = self._sigs("() -> i", "() -> f", "(i -> f) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f", "g")},
         )
 
@@ -132,11 +130,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         t = ns.TypeDefiner()
         sigs = [t.sig("() -> i"), t.sig("() -> [i]"), t.sig("(#a -> #b, [#a]) -> [#b]")]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=2),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=2),
             {frozenset(): _t("i", "[i]")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=2),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=2),
             {frozenset(): _t("i", "[i]", "[[i]]")},
         )
 
@@ -149,11 +147,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(#a -> #b, [#a]) -> [#b]"),
         ]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=1),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=1),
             {frozenset(): _t("i", "f", "[i]")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=1),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=1),
             {frozenset(): _t("i", "f", "[i]", "[f]")},
         )
 
@@ -165,11 +163,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("((#a, #a) -> #a, [#a]) -> #a"),
         ]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "[i]")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "[i]")},
         )
 
@@ -181,22 +179,22 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(#a -> #b, #b -> #c) -> #a -> #c"),
         ]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
 
     def test_lambda_chain_unlocks_deep(self):
         sigs = self._sigs("() -> i", "(i -> i) -> f", "(i -> f) -> g", "(i -> g) -> h")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f", "g", "h")},
         )
 
@@ -205,11 +203,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             "() -> i", "() -> f", "() -> g", "((i -> f) -> g, i -> f) -> g"
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f", "g")},
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f", "g")},
         )
 
@@ -217,7 +215,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         t = ns.TypeDefiner()
         sigs = [t.sig("() -> i"), t.sig("() -> f"), t.sig("(#x -> f) -> #x -> f")]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
 
@@ -225,7 +223,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         t = ns.TypeDefiner()
         sigs = [t.sig("() -> i"), t.sig("(#x) -> [#x]")]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=2),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=2),
             {frozenset(): _t("i", "[i]", "[[i]]")},
         )
 
@@ -234,7 +232,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (i -> f) -> g can then consume it.
         sigs = self._sigs("() -> i -> f", "(i -> f) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i -> f", "g")},
         )
 
@@ -245,7 +243,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (a -> f) -> g: a -> f is constructible (f constructible in env {a}), so g fires.
         sigs = self._sigs("() -> i", "(a, i) -> f", "(a -> f) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a"): _t("f")},
         )
 
@@ -254,7 +252,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # So a -> c constructible, and (a -> c) -> g fires.
         sigs = self._sigs("() -> i", "a -> b", "b -> c", "(a -> c) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a"): _t("b", "c")},
         )
 
@@ -262,7 +260,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (a, b) -> f: in env {a, b}, both available, production fires.
         sigs = self._sigs("() -> i", "(a, b) -> f", "((a, b) -> f) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a", "b"): _t("f")},
         )
 
@@ -270,7 +268,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # a -> a: a is in env {a}, trivially constructible. (a -> a) -> g fires.
         sigs = self._sigs("() -> i", "(a -> a) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g")},
         )
 
@@ -279,7 +277,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # So env {a} is never explored.
         sigs = self._sigs("() -> i", "(a, i) -> f")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i")},
         )
 
@@ -289,7 +287,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # In env {a}: a -> b -> c -> d. (a -> d) -> g should fire.
         sigs = self._sigs("() -> i", "a -> b", "b -> c", "c -> d", "(a -> d) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a"): _t("b", "c", "d")},
         )
 
@@ -301,7 +299,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             "() -> i", "a -> b", "b -> a", "(a -> b) -> g", "(b -> a) -> h"
         )
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {
                 frozenset(): _t("i", "g", "h"),
                 _env("a"): _t("b"),
@@ -316,7 +314,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # 3. (a, b) -> c fires in env {a, b}
         sigs = self._sigs("() -> i", "(a, b) -> c", "(a -> (b -> c)) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a", "b"): _t("c")},
         )
 
@@ -330,7 +328,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(a, i) -> f"),
             self._sigs("(a -> [f]) -> g")[0],
         ]
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         # (a -> [f]) -> g needs [f] constructible in env {a}. No production
         # creates [f], so g is NOT constructible.
         self.assertEqual(
@@ -353,7 +351,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             "(i -> f) -> g",
             "(a -> g) -> k",
         )
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(
             result,
             {
@@ -370,7 +368,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # lambda, so h is directly constructible.
         # (a, i) -> f: f is constructible in env {a}.
         sigs = self._sigs("() -> i", "(a, i) -> f", "(f -> f) -> g", "(a -> g) -> h")
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(
             result,
             {
@@ -385,7 +383,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # Also test that single-arg arrows work: (a) -> c with (b -> c) in env...
         # Actually let's keep it simple.
         sigs = self._sigs("() -> i", "(a, b) -> c", "((a, b) -> c, i) -> g")
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(
             result,
             {
@@ -398,7 +396,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (i -> i) -> i: with lambdas, i -> i is constructible (i is constructible).
         # So this just produces i (already constructible). Should terminate.
         sigs = self._sigs("() -> i", "(i -> i) -> i")
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         self.assertEqual(result, {frozenset(): _t("i")})
 
     def test_thunk_constructible(self):
@@ -406,7 +404,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # if i is constructible (env doesn't grow). So (() -> i) -> f fires.
         sigs = self._sigs("() -> i", "(() -> i) -> f")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "f")},
         )
 
@@ -414,7 +412,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # a -> (b -> (c -> d)) requires envs {a}, {a,b}, {a,b,c} to be discovered.
         sigs = self._sigs("() -> i", "(a, b, c) -> d", "(a -> (b -> (c -> d))) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a", "b", "c"): _t("d")},
         )
 
@@ -422,7 +420,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # a -> b, (b, i) -> c: in env {a}, b produced, then c produced using b + i.
         sigs = self._sigs("() -> i", "a -> b", "(b, i) -> c", "(a -> c) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g"), _env("a"): _t("b", "c")},
         )
 
@@ -436,7 +434,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(#x) -> [#x]"),
             self._sigs("(a -> [b]) -> g")[0],
         ]
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=2)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=2)
         self.assertIn(ns.parse_type("g"), result[frozenset()])
         self.assertIn(ns.parse_type("[b]"), result[_env("a")])
 
@@ -446,7 +444,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # a is trivially constructible in env {a}.
         sigs = self._sigs("() -> i", "a -> a", "(a -> a) -> g")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i", "g")},
         )
 
@@ -457,12 +455,12 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # via lambda (x is in env {x}), so x becomes directly constructible.
         sigs = self._sigs("(x -> x) -> x")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("x")},
         )
         # Without lambdas, x -> x is not constructible, so x is not constructible.
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): set()},
         )
 
@@ -470,7 +468,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (x -> x) -> x bootstraps x. Then (x) -> y fires.
         sigs = self._sigs("(x -> x) -> x", "x -> y")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("x", "y")},
         )
 
@@ -479,7 +477,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # because x is in env {x, y}. So x becomes directly constructible.
         sigs = self._sigs("((x, y) -> x) -> x")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("x")},
         )
 
@@ -488,7 +486,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # y -> x is constructible in env {x} (x is in env {x, y}).
         sigs = self._sigs("(x -> y -> x) -> x")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("x")},
         )
 
@@ -498,7 +496,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # makes it. So x is NOT constructible.
         sigs = self._sigs("(x -> y) -> x")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): set()},
         )
 
@@ -507,7 +505,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
     def test_basic_arith_no_lambdas(self):
         sigs = self._sigs("(i, i) -> i", "() -> i")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i")},
         )
 
@@ -516,7 +514,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # but not directly constructible (no production outputs them).
         sigs = self._sigs("(i, i) -> i", "() -> i")
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {frozenset(): _t("i")},
         )
 
@@ -535,7 +533,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             "(f, f) -> b",  # <
             "(b, f, f) -> f",  # ite
         )
-        result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
+        result = ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         direct = result[frozenset()]
         # f and b are the only non-arrow types that should be directly constructible
         self.assertEqual(direct, _t("f", "b"))
@@ -552,7 +550,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(#a -> #b) -> [#a] -> [#b]"),
         ]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
             {
                 frozenset(): _t(
                     "{f, 4} -> {f, 1}",
@@ -585,7 +583,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             t.sig("(#a -> #b, #b -> #c) -> #a -> #c"),
         ]
         self.assertEqual(
-            _directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
+            ns.directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
             {
                 frozenset(): _t(
                     "({f, 12}, {f, 12}) -> {f, 12}",
@@ -617,16 +615,16 @@ class TestReachableSymbols(unittest.TestCase):
         for s in named_type_strs:
             name, type_str = s.split(" :: ", 1)
             result.append(
-                (name, FunctionTypeSignature.from_type(ns.parse_type(type_str)))
+                (name, ns.FunctionTypeSignature.from_type(ns.parse_type(type_str)))
             )
         return result
 
     def _run(self, named_sigs, targets, has_lambdas=False, max_depth=6):
         sigs_only = [s for _, s in named_sigs]
-        ct = _directly_constructible_types(
+        ct = ns.directly_constructible_types(
             sigs_only, has_lambdas=has_lambdas, max_depth=max_depth
         )
-        return _reachable_symbols(
+        return ns.reachable_symbols(
             named_sigs,
             ct,
             [ns.parse_type(t) for t in targets],
@@ -688,9 +686,9 @@ class TestReachableSymbols(unittest.TestCase):
         t = ns.TypeDefiner()
         sigs = [("one", t.sig("() -> i")), ("convert", t.sig("#x -> f"))]
         sigs_only = [s for _, s in sigs]
-        ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
+        ct = ns.directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
         self.assertEqual(
-            _reachable_symbols(
+            ns.reachable_symbols(
                 sigs, ct, [ns.parse_type("f")], has_lambdas=False, max_depth=6
             ),
             (
@@ -707,9 +705,9 @@ class TestReachableSymbols(unittest.TestCase):
             ("convert", t.sig("#x -> g")),
         ]
         sigs_only = [s for _, s in sigs]
-        ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
+        ct = ns.directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
         self.assertEqual(
-            _reachable_symbols(
+            ns.reachable_symbols(
                 sigs, ct, [ns.parse_type("g")], has_lambdas=False, max_depth=6
             ),
             (
@@ -793,8 +791,8 @@ class TestReachableSymbols(unittest.TestCase):
             ("compose", t.sig("(#a -> #b, #b -> #c) -> #a -> #c")),
         ]
         sigs_only = [s for _, s in sigs]
-        ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=5)
-        prods, lams = _reachable_symbols(
+        ct = ns.directly_constructible_types(sigs_only, has_lambdas=False, max_depth=5)
+        prods, lams = ns.reachable_symbols(
             sigs,
             ct,
             [ns.parse_type("[{f, 12}] -> [{f, 4}]")],

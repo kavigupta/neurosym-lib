@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple
 import numpy as np
 
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable, UnificationError
+from ..utils.documentation import internal_only
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
@@ -319,14 +320,14 @@ class DSLFactory:
 
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
-        constructible = _directly_constructible_types(
+        constructible = directly_constructible_types(
             sigs_only,
             has_lambdas,
             self.max_overall_depth,
         )
 
         # Top-down: find reachable productions and lambdas
-        reachable_prods, reachable_lambdas = _reachable_symbols(
+        reachable_prods, reachable_lambdas = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
@@ -458,7 +459,8 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
-class _ConstructibilityChecker:
+@internal_only
+class ConstructibilityChecker:
     """Shared logic for checking type constructibility with environment support.
 
     Tracks a dict mapping environments (frozensets of Types) to sets of types
@@ -505,7 +507,7 @@ class _ConstructibilityChecker:
                 new_bindings = resolved.unify(t)
             except UnificationError:
                 continue
-            merged = _merge_subst(subst, new_bindings)
+            merged = merge_subst(subst, new_bindings)
             if merged is not None:
                 yield merged
         if self.has_lambdas and isinstance(resolved, ArrowType):
@@ -532,7 +534,8 @@ class _ConstructibilityChecker:
         return substs
 
 
-def _merge_subst(base, extension):
+@internal_only
+def merge_subst(base, extension):
     """Merge two substitutions, return None if inconsistent."""
     merged = dict(base)
     for k, v in extension.items():
@@ -544,7 +547,8 @@ def _merge_subst(base, extension):
     return merged
 
 
-def _directly_constructible_types(signatures, has_lambdas, max_depth):
+@internal_only
+def directly_constructible_types(signatures, has_lambdas, max_depth):
     """
     Compute the set of constructible types per environment via a bottom-up fixed point,
     working directly from raw production signatures (which may contain type variables).
@@ -561,7 +565,7 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
     of the environment or constructible in a strict sub-environment.
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
-    checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
+    checker = ConstructibilityChecker(has_lambdas, register_envs=True)
     constructible = checker.constructible
 
     while True:
@@ -595,7 +599,8 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
     }
 
 
-def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
+@internal_only
+def add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     """Add (type, env) pairs to frontier for constructing t in env.
 
     For arrow types with lambdas, records the lambda and recurses on the body.
@@ -603,7 +608,7 @@ def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     frontier.append((t, env))
     if has_lambdas and isinstance(t, ArrowType):
         lambdas.add(t.input_type)
-        _add_targets_needed(
+        add_targets_needed(
             t.output_type,
             env | frozenset(t.input_type),
             frontier,
@@ -612,7 +617,8 @@ def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
         )
 
 
-def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max_depth):
+@internal_only
+def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_depth):
     """
     Top-down search from target types through signatures, collecting concrete
     production instantiations and lambda argument types that are reachable.
@@ -624,7 +630,7 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
 
     :param signatures: List of (symbol, FunctionTypeSignature) pairs.
     :param constructible: Dict from env (frozenset) to set of nontrivially
-        constructible types, as returned by ``_directly_constructible_types``.
+        constructible types, as returned by ``directly_constructible_types``.
     :param target_types: List of Type objects to start the search from.
     :param has_lambdas: Whether lambdas are enabled.
     :param max_depth: Maximum type depth.
@@ -637,7 +643,7 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
           types of a lambda that is needed (i.e., the argument types of an arrow
           type that is constructed via lambda).
     """
-    checker = _ConstructibilityChecker(has_lambdas)
+    checker = ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
     productions = set()
@@ -667,7 +673,7 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
                 for arg in sig.arguments:
                     resolved_arg = arg.subst_type_vars(subst)
                     if not resolved_arg.get_type_vars():
-                        _add_targets_needed(
+                        add_targets_needed(
                             resolved_arg, env, frontier, lambdas, has_lambdas
                         )
 
