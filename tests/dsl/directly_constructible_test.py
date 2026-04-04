@@ -143,7 +143,9 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
     def test_map_produces_new_list_type(self):
         t = ns.TypeDefiner()
         sigs = [
-            t.sig("() -> i"), t.sig("() -> f"), t.sig("() -> [i]"),
+            t.sig("() -> i"),
+            t.sig("() -> f"),
+            t.sig("() -> [i]"),
             t.sig("(#a -> #b, [#a]) -> [#b]"),
         ]
         self.assertEqual(
@@ -157,7 +159,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
 
     def test_fold_with_lambdas(self):
         t = ns.TypeDefiner()
-        sigs = [t.sig("() -> i"), t.sig("() -> [i]"), t.sig("((#a, #a) -> #a, [#a]) -> #a")]
+        sigs = [
+            t.sig("() -> i"),
+            t.sig("() -> [i]"),
+            t.sig("((#a, #a) -> #a, [#a]) -> #a"),
+        ]
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "[i]")},
@@ -169,7 +175,11 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
 
     def test_compose_with_lambdas(self):
         t = ns.TypeDefiner()
-        sigs = [t.sig("() -> i"), t.sig("() -> f"), t.sig("(#a -> #b, #b -> #c) -> #a -> #c")]
+        sigs = [
+            t.sig("() -> i"),
+            t.sig("() -> f"),
+            t.sig("(#a -> #b, #b -> #c) -> #a -> #c"),
+        ]
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f")},
@@ -191,7 +201,9 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         )
 
     def test_higher_order_needs_lambda_for_arg(self):
-        sigs = self._sigs("() -> i", "() -> f", "() -> g", "((i -> f) -> g, i -> f) -> g")
+        sigs = self._sigs(
+            "() -> i", "() -> f", "() -> g", "((i -> f) -> g, i -> f) -> g"
+        )
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=6),
             {frozenset(): _t("i", "f", "g")},
@@ -285,7 +297,9 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (a) -> b and (b) -> a are mutually recursive.
         # In env {a}: b is producible. In env {b}: a is producible.
         # (a -> b) -> g and (b -> a) -> h should both fire.
-        sigs = self._sigs("() -> i", "a -> b", "b -> a", "(a -> b) -> g", "(b -> a) -> h")
+        sigs = self._sigs(
+            "() -> i", "a -> b", "b -> a", "(a -> b) -> g", "(b -> a) -> h"
+        )
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
             {
@@ -319,10 +333,13 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         # (a -> [f]) -> g needs [f] constructible in env {a}. No production
         # creates [f], so g is NOT constructible.
-        self.assertEqual(result, {
-            frozenset(): _t("i"),
-            _env("a"): _t("f"),
-        })
+        self.assertEqual(
+            result,
+            {
+                frozenset(): _t("i"),
+                _env("a"): _t("f"),
+            },
+        )
 
     def test_env_production_output_is_arrow(self):
         # Production (a) -> i -> f: in env {a}, this directly produces the arrow type i -> f.
@@ -331,13 +348,19 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # constructible in env {a} (it's directly produced there).
         # But also (a -> g) -> k should fire since g is constructible in env {a}.
         sigs = self._sigs(
-            "() -> i", "(a) -> i -> f", "(i -> f) -> g", "(a -> g) -> k",
+            "() -> i",
+            "(a) -> i -> f",
+            "(i -> f) -> g",
+            "(a -> g) -> k",
         )
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
-        self.assertEqual(result, {
-            frozenset(): _t("i", "k"),
-            _env("a"): _t("i -> f", "g"),
-        })
+        self.assertEqual(
+            result,
+            {
+                frozenset(): _t("i", "k"),
+                _env("a"): _t("i -> f", "g"),
+            },
+        )
 
     def test_lambda_and_env_interact(self):
         # (f -> f) -> g: f -> f is constructible even in empty env via lambda
@@ -348,10 +371,13 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # (a, i) -> f: f is constructible in env {a}.
         sigs = self._sigs("() -> i", "(a, i) -> f", "(f -> f) -> g", "(a -> g) -> h")
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
-        self.assertEqual(result, {
-            frozenset(): _t("i", "g", "h"),
-            _env("a"): _t("f"),
-        })
+        self.assertEqual(
+            result,
+            {
+                frozenset(): _t("i", "g", "h"),
+                _env("a"): _t("f"),
+            },
+        )
 
     def test_two_arg_lambda_env(self):
         # (a, b) -> c is a production. Arrow type (a, b) -> c is constructible:
@@ -360,10 +386,13 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # Actually let's keep it simple.
         sigs = self._sigs("() -> i", "(a, b) -> c", "((a, b) -> c, i) -> g")
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
-        self.assertEqual(result, {
-            frozenset(): _t("i", "g"),
-            _env("a", "b"): _t("c"),
-        })
+        self.assertEqual(
+            result,
+            {
+                frozenset(): _t("i", "g"),
+                _env("a", "b"): _t("c"),
+            },
+        )
 
     def test_no_infinite_loop_on_self_referential(self):
         # (i -> i) -> i: with lambdas, i -> i is constructible (i is constructible).
@@ -402,7 +431,9 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # to produce [b]. Then (a -> [b]) -> g fires.
         t = ns.TypeDefiner()
         sigs = [
-            t.sig("() -> i"), t.sig("a -> b"), t.sig("(#x) -> [#x]"),
+            t.sig("() -> i"),
+            t.sig("a -> b"),
+            t.sig("(#x) -> [#x]"),
             self._sigs("(a -> [b]) -> g")[0],
         ]
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=2)
@@ -491,13 +522,18 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
 
     def test_dreamcoder_dsl(self):
         sigs = self._sigs(
-            "() -> f", "() -> f", "() -> f",      # constants
-            "(f, f) -> f", "(f, f) -> f",          # arith ops
-            "(f, f) -> f", "(f, f) -> f",
+            "() -> f",
+            "() -> f",
+            "() -> f",  # constants
             "(f, f) -> f",
-            "f -> f", "f -> f",                    # sin, sqrt
-            "(f, f) -> b",                         # <
-            "(b, f, f) -> f",                      # ite
+            "(f, f) -> f",  # arith ops
+            "(f, f) -> f",
+            "(f, f) -> f",
+            "(f, f) -> f",
+            "f -> f",
+            "f -> f",  # sin, sqrt
+            "(f, f) -> b",  # <
+            "(b, f, f) -> f",  # ite
         )
         result = _directly_constructible_types(sigs, has_lambdas=True, max_depth=6)
         direct = result[frozenset()]
@@ -517,12 +553,18 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         ]
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
-            {frozenset(): _t(
-                "{f, 4} -> {f, 1}", "{f, 4} -> {f, 4}",
-                "[{f, 4}] -> [{f, 1}]", "[{f, 4}] -> [{f, 4}]",
-                "[[{f, 4}]] -> [[{f, 1}]]", "[[{f, 4}]] -> [[{f, 4}]]",
-                "[[[{f, 4}]]] -> [[[{f, 1}]]]", "[[[{f, 4}]]] -> [[[{f, 4}]]]",
-            )},
+            {
+                frozenset(): _t(
+                    "{f, 4} -> {f, 1}",
+                    "{f, 4} -> {f, 4}",
+                    "[{f, 4}] -> [{f, 1}]",
+                    "[{f, 4}] -> [{f, 4}]",
+                    "[[{f, 4}]] -> [[{f, 1}]]",
+                    "[[{f, 4}]] -> [[{f, 4}]]",
+                    "[[[{f, 4}]]] -> [[[{f, 1}]]]",
+                    "[[[{f, 4}]]] -> [[[{f, 4}]]]",
+                )
+            },
         )
 
     def test_rnn_dsl(self):
@@ -544,20 +586,22 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         ]
         self.assertEqual(
             _directly_constructible_types(sigs, has_lambdas=False, max_depth=5),
-            {frozenset(): _t(
-                "({f, 12}, {f, 12}) -> {f, 12}",
-                "{f, 12} -> f",
-                "{f, 12} -> {f, 12}",
-                "[{f, 12}] -> [f]",
-                "[{f, 12}] -> [{f, 12}]",
-                "[{f, 12}] -> [{f, 4}]",
-                "[[{f, 12}]] -> [[f]]",
-                "[[{f, 12}]] -> [[{f, 12}]]",
-                "[[{f, 12}]] -> [[{f, 4}]]",
-                "[[[{f, 12}]]] -> [[[f]]]",
-                "[[[{f, 12}]]] -> [[[{f, 12}]]]",
-                "[[[{f, 12}]]] -> [[[{f, 4}]]]",
-            )},
+            {
+                frozenset(): _t(
+                    "({f, 12}, {f, 12}) -> {f, 12}",
+                    "{f, 12} -> f",
+                    "{f, 12} -> {f, 12}",
+                    "[{f, 12}] -> [f]",
+                    "[{f, 12}] -> [{f, 12}]",
+                    "[{f, 12}] -> [{f, 4}]",
+                    "[[{f, 12}]] -> [[f]]",
+                    "[[{f, 12}]] -> [[{f, 12}]]",
+                    "[[{f, 12}]] -> [[{f, 4}]]",
+                    "[[[{f, 12}]]] -> [[[f]]]",
+                    "[[[{f, 12}]]] -> [[[{f, 12}]]]",
+                    "[[[{f, 12}]]] -> [[[{f, 4}]]]",
+                )
+            },
         )
 
 
@@ -572,50 +616,73 @@ class TestReachableSymbols(unittest.TestCase):
         result = []
         for s in named_type_strs:
             name, type_str = s.split(" :: ", 1)
-            result.append((name, FunctionTypeSignature.from_type(ns.parse_type(type_str))))
+            result.append(
+                (name, FunctionTypeSignature.from_type(ns.parse_type(type_str)))
+            )
         return result
 
     def _run(self, named_sigs, targets, has_lambdas=False, max_depth=6):
         sigs_only = [s for _, s in named_sigs]
-        ct = _directly_constructible_types(sigs_only, has_lambdas=has_lambdas, max_depth=max_depth)
+        ct = _directly_constructible_types(
+            sigs_only, has_lambdas=has_lambdas, max_depth=max_depth
+        )
         return _reachable_symbols(
-            named_sigs, ct, [ns.parse_type(t) for t in targets],
-            has_lambdas=has_lambdas, max_depth=max_depth,
+            named_sigs,
+            ct,
+            [ns.parse_type(t) for t in targets],
+            has_lambdas=has_lambdas,
+            max_depth=max_depth,
         )
 
     def test_basic(self):
         sigs = self._named_sigs("one :: () -> i", "add :: (i, i) -> i")
-        self.assertEqual(self._run(sigs, ["i"]), (
-            {_p("one"), _p("add")},
-            set(),
-        ))
+        self.assertEqual(
+            self._run(sigs, ["i"]),
+            (
+                {_p("one"), _p("add")},
+                set(),
+            ),
+        )
 
     def test_unreachable_production(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f")
-        self.assertEqual(self._run(sigs, ["i"]), (
-            {_p("one")},
-            set(),
-        ))
+        self.assertEqual(
+            self._run(sigs, ["i"]),
+            (
+                {_p("one")},
+                set(),
+            ),
+        )
 
     def test_chain(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f")
-        self.assertEqual(self._run(sigs, ["f"]), (
-            {_p("one"), _p("to_f")},
-            set(),
-        ))
+        self.assertEqual(
+            self._run(sigs, ["f"]),
+            (
+                {_p("one"), _p("to_f")},
+                set(),
+            ),
+        )
 
     def test_lambda_reaches_base(self):
         sigs = self._named_sigs("one :: () -> i", "use_fn :: (i -> i) -> f")
-        self.assertEqual(self._run(sigs, ["f"], has_lambdas=True), (
-            {_p("one"), _p("use_fn")},
-            {(ns.parse_type("i"),)},
-        ))
+        self.assertEqual(
+            self._run(sigs, ["f"], has_lambdas=True),
+            (
+                {_p("one"), _p("use_fn")},
+                {(ns.parse_type("i"),)},
+            ),
+        )
 
     def test_lambda_not_available_without_flag(self):
         sigs = self._named_sigs("one :: () -> i", "use_fn :: (i -> i) -> f")
-        self.assertEqual(self._run(sigs, ["f"], has_lambdas=False), (
-            set(), set(),
-        ))
+        self.assertEqual(
+            self._run(sigs, ["f"], has_lambdas=False),
+            (
+                set(),
+                set(),
+            ),
+        )
 
     def test_type_variable_substs(self):
         t = ns.TypeDefiner()
@@ -623,7 +690,9 @@ class TestReachableSymbols(unittest.TestCase):
         sigs_only = [s for _, s in sigs]
         ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
         self.assertEqual(
-            _reachable_symbols(sigs, ct, [ns.parse_type("f")], has_lambdas=False, max_depth=6),
+            _reachable_symbols(
+                sigs, ct, [ns.parse_type("f")], has_lambdas=False, max_depth=6
+            ),
             (
                 {_p("one"), _p("convert", x="i"), _p("convert", x="f")},
                 set(),
@@ -632,14 +701,25 @@ class TestReachableSymbols(unittest.TestCase):
 
     def test_multiple_bases_reachable(self):
         t = ns.TypeDefiner()
-        sigs = [("one_i", t.sig("() -> i")), ("one_f", t.sig("() -> f")), ("convert", t.sig("#x -> g"))]
+        sigs = [
+            ("one_i", t.sig("() -> i")),
+            ("one_f", t.sig("() -> f")),
+            ("convert", t.sig("#x -> g")),
+        ]
         sigs_only = [s for _, s in sigs]
         ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=6)
         self.assertEqual(
-            _reachable_symbols(sigs, ct, [ns.parse_type("g")], has_lambdas=False, max_depth=6),
+            _reachable_symbols(
+                sigs, ct, [ns.parse_type("g")], has_lambdas=False, max_depth=6
+            ),
             (
-                {_p("one_i"), _p("one_f"),
-                 _p("convert", x="i"), _p("convert", x="f"), _p("convert", x="g")},
+                {
+                    _p("one_i"),
+                    _p("one_f"),
+                    _p("convert", x="i"),
+                    _p("convert", x="f"),
+                    _p("convert", x="g"),
+                },
                 set(),
             ),
         )
@@ -650,36 +730,52 @@ class TestReachableSymbols(unittest.TestCase):
 
     def test_env_aware_reachability(self):
         sigs = self._named_sigs(
-            "one :: () -> i", "make_f :: (a, i) -> f", "use_fn :: (a -> f) -> g",
+            "one :: () -> i",
+            "make_f :: (a, i) -> f",
+            "use_fn :: (a -> f) -> g",
         )
-        self.assertEqual(self._run(sigs, ["g"], has_lambdas=True), (
-            {_p("one"), _p("make_f"), _p("use_fn")},
-            {(ns.parse_type("a"),)},
-        ))
+        self.assertEqual(
+            self._run(sigs, ["g"], has_lambdas=True),
+            (
+                {_p("one"), _p("make_f"), _p("use_fn")},
+                {(ns.parse_type("a"),)},
+            ),
+        )
 
     def test_bootstrap_reachable(self):
         sigs = self._named_sigs("boot :: (x -> x) -> x", "to_f :: x -> f")
-        self.assertEqual(self._run(sigs, ["f"], has_lambdas=True), (
-            {_p("boot"), _p("to_f")},
-            {(ns.parse_type("x"),)},
-        ))
+        self.assertEqual(
+            self._run(sigs, ["f"], has_lambdas=True),
+            (
+                {_p("boot"), _p("to_f")},
+                {(ns.parse_type("x"),)},
+            ),
+        )
 
     def test_multiple_targets(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f", "to_g :: f -> g")
-        self.assertEqual(self._run(sigs, ["i", "g"]), (
-            {_p("one"), _p("to_f"), _p("to_g")},
-            set(),
-        ))
+        self.assertEqual(
+            self._run(sigs, ["i", "g"]),
+            (
+                {_p("one"), _p("to_f"), _p("to_g")},
+                set(),
+            ),
+        )
 
     def test_nested_lambda_types(self):
         sigs = self._named_sigs(
-            "one :: () -> i", "one_f :: () -> f", "one_g :: () -> g",
+            "one :: () -> i",
+            "one_f :: () -> f",
+            "one_g :: () -> g",
             "use :: (i -> (f -> g)) -> h",
         )
-        self.assertEqual(self._run(sigs, ["h"], has_lambdas=True), (
-            {_p("one_g"), _p("use")},
-            {(ns.parse_type("i"),), (ns.parse_type("f"),)},
-        ))
+        self.assertEqual(
+            self._run(sigs, ["h"], has_lambdas=True),
+            (
+                {_p("one_g"), _p("use")},
+                {(ns.parse_type("i"),), (ns.parse_type("f"),)},
+            ),
+        )
 
     def test_rnn_dsl_target(self):
         # RNN DSL with scan (not fold) so all productions are reachable.
@@ -699,25 +795,31 @@ class TestReachableSymbols(unittest.TestCase):
         sigs_only = [s for _, s in sigs]
         ct = _directly_constructible_types(sigs_only, has_lambdas=False, max_depth=5)
         prods, lams = _reachable_symbols(
-            sigs, ct, [ns.parse_type("[{f, 12}] -> [{f, 4}]")],
-            has_lambdas=False, max_depth=5,
+            sigs,
+            ct,
+            [ns.parse_type("[{f, 12}] -> [{f, 4}]")],
+            has_lambdas=False,
+            max_depth=5,
         )
-        self.assertEqual(prods, {
-            _p("add"),
-            _p("mul"),
-            _p("scan", a="{f, 12}"),
-            _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[f]"),
-            _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 12}]"),
-            _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 4}]"),
-            _p("compose", a="{f, 12}", b="{f, 12}", c="f"),
-            _p("compose", a="{f, 12}", b="{f, 12}", c="{f, 12}"),
-            _p("ite", a="[{f, 12}]"),
-            _p("linear"),
-            _p("map", a="{f, 12}", b="{f, 12}"),
-            _p("map", a="{f, 12}", b="f"),
-            _p("output"),
-            _p("sum"),
-        })
+        self.assertEqual(
+            prods,
+            {
+                _p("add"),
+                _p("mul"),
+                _p("scan", a="{f, 12}"),
+                _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[f]"),
+                _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 12}]"),
+                _p("compose", a="[{f, 12}]", b="[{f, 12}]", c="[{f, 4}]"),
+                _p("compose", a="{f, 12}", b="{f, 12}", c="f"),
+                _p("compose", a="{f, 12}", b="{f, 12}", c="{f, 12}"),
+                _p("ite", a="[{f, 12}]"),
+                _p("linear"),
+                _p("map", a="{f, 12}", b="{f, 12}"),
+                _p("map", a="{f, 12}", b="f"),
+                _p("output"),
+                _p("sum"),
+            },
+        )
         self.assertEqual(lams, set())
 
     def test_basic_arith_with_lambdas(self):
@@ -737,21 +839,36 @@ class TestReachableSymbols(unittest.TestCase):
         # All productions are reachable since they all produce f or b
         # (and b is needed by ite).
         sigs = self._named_sigs(
-            "zero :: () -> f", "one :: () -> f", "two :: () -> f",
-            "plus :: (f, f) -> f", "minus :: (f, f) -> f",
-            "times :: (f, f) -> f", "power :: (f, f) -> f",
+            "zero :: () -> f",
+            "one :: () -> f",
+            "two :: () -> f",
+            "plus :: (f, f) -> f",
+            "minus :: (f, f) -> f",
+            "times :: (f, f) -> f",
+            "power :: (f, f) -> f",
             "divide :: (f, f) -> f",
-            "sin :: f -> f", "sqrt :: f -> f",
+            "sin :: f -> f",
+            "sqrt :: f -> f",
             "lt :: (f, f) -> b",
             "ite :: (b, f, f) -> f",
         )
         self.assertEqual(
             self._run(sigs, ["f -> f"], has_lambdas=True),
             (
-                {_p("zero"), _p("one"), _p("two"),
-                 _p("plus"), _p("minus"), _p("times"), _p("power"), _p("divide"),
-                 _p("sin"), _p("sqrt"),
-                 _p("lt"), _p("ite")},
+                {
+                    _p("zero"),
+                    _p("one"),
+                    _p("two"),
+                    _p("plus"),
+                    _p("minus"),
+                    _p("times"),
+                    _p("power"),
+                    _p("divide"),
+                    _p("sin"),
+                    _p("sqrt"),
+                    _p("lt"),
+                    _p("ite"),
+                },
                 {(ns.parse_type("f"),)},
             ),
         )

@@ -262,11 +262,14 @@ class DSLFactory:
         if self.prune:
             assert self.target_types is not None
             sym_to_productions = self._finalize_with_pruning(
-                universe, has_lambdas,
+                universe,
+                has_lambdas,
             )
         else:
             sym_to_productions = self._finalize_without_pruning(
-                universe, has_lambdas, known_types,
+                universe,
+                has_lambdas,
+                known_types,
             )
 
         if "<variable>" in sym_to_productions:
@@ -291,7 +294,8 @@ class DSLFactory:
 
         if has_lambdas:
             self._add_all_lambda_variable_productions(
-                sym_to_productions, known_types,
+                sym_to_productions,
+                known_types,
             )
 
         for symbol, prods, stable in self._extra_productions:
@@ -316,13 +320,18 @@ class DSLFactory:
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
         constructible = _directly_constructible_types(
-            sigs_only, has_lambdas, self.max_overall_depth,
+            sigs_only,
+            has_lambdas,
+            self.max_overall_depth,
         )
 
         # Top-down: find reachable productions and lambdas
         reachable_prods, reachable_lambdas = _reachable_symbols(
-            named_sigs, constructible, self.target_types,
-            has_lambdas, self.max_overall_depth,
+            named_sigs,
+            constructible,
+            self.target_types,
+            has_lambdas,
+            self.max_overall_depth,
         )
 
         # Group reachable substitutions by symbol
@@ -356,10 +365,12 @@ class DSLFactory:
         # Add lambda and variable productions from reachable lambdas
         if has_lambdas and reachable_lambdas:
             lambda_input_types = sorted(reachable_lambdas, key=str)
-            sym_to_productions["<lambda>"] = Production.reindex([
-                LambdaProduction(i, LambdaTypeSignature(input_types))
-                for i, input_types in enumerate(lambda_input_types)
-            ])
+            sym_to_productions["<lambda>"] = Production.reindex(
+                [
+                    LambdaProduction(i, LambdaTypeSignature(input_types))
+                    for i, input_types in enumerate(lambda_input_types)
+                ]
+            )
 
             variable_types = sorted(
                 {t for input_types in reachable_lambdas for t in input_types},
@@ -499,7 +510,8 @@ class _ConstructibilityChecker:
                 yield merged
         if self.has_lambdas and isinstance(resolved, ArrowType):
             yield from self.bindings_for(
-                resolved.output_type, subst,
+                resolved.output_type,
+                subst,
                 env | frozenset(resolved.input_type),
             )
 
@@ -577,7 +589,8 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
                 constructible[env] -= constructible[sub_env]
 
     return {
-        env: types for env, types in constructible.items()
+        env: types
+        for env, types in constructible.items()
         if types or env == frozenset()
     }
 
@@ -591,8 +604,11 @@ def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     if has_lambdas and isinstance(t, ArrowType):
         lambdas.add(t.input_type)
         _add_targets_needed(
-            t.output_type, env | frozenset(t.input_type),
-            frontier, lambdas, has_lambdas,
+            t.output_type,
+            env | frozenset(t.input_type),
+            frontier,
+            lambdas,
+            has_lambdas,
         )
 
 
