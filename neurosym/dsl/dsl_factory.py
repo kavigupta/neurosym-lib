@@ -688,6 +688,7 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
           types of a lambda that is needed (i.e., the argument types of an arrow
           type that is constructed via lambda).
     """
+    # pylint: disable=too-many-branches,too-many-nested-blocks
     checker = _ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
