@@ -560,7 +560,7 @@ class _ConstructibilityChecker:
         return substs
 
 
-def __merge_subst(base, extension):
+def _merge_subst(base, extension):
     """Merge two substitutions, return None if inconsistent."""
     merged = dict(base)
     for k, v in extension.items():
@@ -624,7 +624,7 @@ def directly_constructible_types(signatures, has_lambdas, max_depth):
     }
 
 
-def __add_targets_needed(t, env, frontier, lambdas, has_lambdas):
+def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     """Add (type, env) pairs to frontier for constructing t in env.
 
     For arrow types with lambdas, records the lambda and recurses on the body.
