@@ -5,7 +5,7 @@ from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
-from ..types.type import ArrowType, AtomicType, Type, TypeVariable
+from ..types.type import ArrowType, AtomicType, Type, TypeVariable, UnificationError
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
@@ -374,6 +374,91 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
+class _ConstructibilityChecker:
+    """Shared logic for checking type constructibility with environment support.
+
+    Tracks a dict mapping environments (frozensets of Types) to sets of types
+    nontrivially constructible in that environment. Provides methods for
+    checking constructibility and finding type variable bindings.
+    """
+
+    def __init__(self, has_lambdas, register_envs=False):
+        self.has_lambdas = has_lambdas
+        self.register_envs = register_envs
+        self.constructible = {frozenset(): set()}
+
+    def all_constructible_in(self, env):
+        """All types constructible in env (including env members and sub-envs)."""
+        result = set(env)
+        for tracked_env, types in self.constructible.items():
+            if tracked_env <= env:
+                result |= types
+        return result
+
+    def is_constructible(self, t, env=frozenset()):
+        """Check if type t is constructible in the given environment."""
+        if t in env:
+            return True
+        for tracked_env, types in self.constructible.items():
+            if tracked_env <= env and t in types:
+                return True
+        if self.has_lambdas and isinstance(t, ArrowType):
+            new_env = env | frozenset(t.input_type)
+            if self.register_envs and new_env not in self.constructible:
+                self.constructible[new_env] = set()
+            return self.is_constructible(t.output_type, new_env)
+        return False
+
+    def bindings_for(self, pattern, subst, env=frozenset()):
+        """Yield extended substitutions that make pattern constructible in env."""
+        resolved = pattern.subst_type_vars(subst)
+        if not resolved.get_type_vars():
+            if self.is_constructible(resolved, env):
+                yield subst
+            return
+        for t in self.all_constructible_in(env):
+            try:
+                new_bindings = resolved.unify(t)
+            except UnificationError:
+                continue
+            merged = _merge_subst(subst, new_bindings)
+            if merged is not None:
+                yield merged
+        if self.has_lambdas and isinstance(resolved, ArrowType):
+            yield from self.bindings_for(
+                resolved.output_type, subst,
+                env | frozenset(resolved.input_type),
+            )
+
+    def find_valid_substs(self, sig, env=frozenset()):
+        """Yield substitutions that make all arguments of sig constructible in env."""
+        return self.find_valid_substs_with_initial(sig, {}, env)
+
+    def find_valid_substs_with_initial(self, sig, initial_subst, env=frozenset()):
+        """Like find_valid_substs but starting from an initial substitution."""
+        substs = [initial_subst]
+        for arg in sig.arguments:
+            next_substs = []
+            for subst in substs:
+                next_substs.extend(self.bindings_for(arg, subst, env))
+            substs = next_substs
+            if not substs:
+                break
+        return substs
+
+
+def _merge_subst(base, extension):
+    """Merge two substitutions, return None if inconsistent."""
+    merged = dict(base)
+    for k, v in extension.items():
+        if k in merged:
+            if merged[k] != v:
+                return None
+        else:
+            merged[k] = v
+    return merged
+
+
 def _directly_constructible_types(signatures, has_lambdas, max_depth):
     """
     Compute the set of constructible types per environment via a bottom-up fixed point,
@@ -391,87 +476,21 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
     of the environment or constructible in a strict sub-environment.
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
-    from ..types.type import UnificationError
-
-    # constructible[env] = types nontrivially constructible in env
-    constructible = {frozenset(): set()}
-
-    def _all_constructible_in(env):
-        """All types constructible in env (including env members and sub-envs)."""
-        result = set(env)
-        for tracked_env, types in constructible.items():
-            if tracked_env <= env:
-                result |= types
-        return result
-
-    def _is_constructible(t, env=frozenset()):
-        if t in env:
-            return True
-        for tracked_env, types in constructible.items():
-            if tracked_env <= env and t in types:
-                return True
-        if has_lambdas and isinstance(t, ArrowType):
-            new_env = env | frozenset(t.input_type)
-            if new_env not in constructible:
-                constructible[new_env] = set()
-            return _is_constructible(t.output_type, new_env)
-        return False
-
-    def _merge_subst(base, extension):
-        """Merge two substitutions, return None if inconsistent."""
-        merged = dict(base)
-        for k, v in extension.items():
-            if k in merged:
-                if merged[k] != v:
-                    return None
-            else:
-                merged[k] = v
-        return merged
-
-    def _bindings_for(pattern, subst, env=frozenset()):
-        """Yield extended substitutions that make pattern constructible in env."""
-        resolved = pattern.subst_type_vars(subst)
-        if not resolved.get_type_vars():
-            if _is_constructible(resolved, env):
-                yield subst
-            return
-        # Try unifying against each type constructible in env
-        for t in _all_constructible_in(env):
-            try:
-                new_bindings = resolved.unify(t)
-            except UnificationError:
-                continue
-            merged = _merge_subst(subst, new_bindings)
-            if merged is not None:
-                yield merged
-        # Lambda rule: an arrow type is constructible if its output is
-        if has_lambdas and isinstance(resolved, ArrowType):
-            yield from _bindings_for(
-                resolved.output_type, subst,
-                env | frozenset(resolved.input_type),
-            )
+    checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
+    constructible = checker.constructible
 
     while True:
         prev_env_count = len(constructible)
         done = True
         for env in list(constructible.keys()):
             for sig in signatures:
-                substs = [{}]
-                for arg in sig.arguments:
-                    next_substs = []
-                    for subst in substs:
-                        next_substs.extend(_bindings_for(arg, subst, env))
-                    substs = next_substs
-                    if not substs:
-                        break
-                for subst in substs:
+                for subst in checker.find_valid_substs(sig, env):
                     out_t = sig.return_type.subst_type_vars(subst)
                     if out_t.get_type_vars() or out_t.depth > max_depth:
                         continue
-                    if not _is_constructible(out_t, env):
+                    if not checker.is_constructible(out_t, env):
                         constructible[env].add(out_t)
                         done = False
-        # Also iterate if new envs were discovered (by _is_constructible)
         if len(constructible) != prev_env_count:
             done = False
         if done:
@@ -483,12 +502,25 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
         for sub_env in constructible:
             if sub_env < env:
                 constructible[env] -= constructible[sub_env]
-    constructible = {
+
+    return {
         env: types for env, types in constructible.items()
         if types or env == frozenset()
     }
 
-    return constructible
+
+def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
+    """Add (type, env) pairs to frontier for constructing t in env.
+
+    For arrow types with lambdas, records the lambda and recurses on the body.
+    """
+    frontier.append((t, env))
+    if has_lambdas and isinstance(t, ArrowType):
+        lambdas.add(t.input_type)
+        _add_targets_needed(
+            t.output_type, env | frozenset(t.input_type),
+            frontier, lambdas, has_lambdas,
+        )
 
 
 def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max_depth):
@@ -516,68 +548,8 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
           types of a lambda that is needed (i.e., the argument types of an arrow
           type that is constructed via lambda).
     """
-    from ..types.type import UnificationError
-
-    def _all_constructible_in(env):
-        result = set(env)
-        for tracked_env, types in constructible.items():
-            if tracked_env <= env:
-                result |= types
-        return result
-
-    def _is_constructible(t, env=frozenset()):
-        if t in env:
-            return True
-        for tracked_env, types in constructible.items():
-            if tracked_env <= env and t in types:
-                return True
-        if has_lambdas and isinstance(t, ArrowType):
-            return _is_constructible(t.output_type, env | frozenset(t.input_type))
-        return False
-
-    def _merge_subst(base, extension):
-        merged = dict(base)
-        for k, v in extension.items():
-            if k in merged:
-                if merged[k] != v:
-                    return None
-            else:
-                merged[k] = v
-        return merged
-
-    def _bindings_for(pattern, subst, env=frozenset()):
-        resolved = pattern.subst_type_vars(subst)
-        if not resolved.get_type_vars():
-            if _is_constructible(resolved, env):
-                yield subst
-            return
-        for t in _all_constructible_in(env):
-            try:
-                new_bindings = resolved.unify(t)
-            except UnificationError:
-                continue
-            merged = _merge_subst(subst, new_bindings)
-            if merged is not None:
-                yield merged
-        if has_lambdas and isinstance(resolved, ArrowType):
-            yield from _bindings_for(
-                resolved.output_type, subst,
-                env | frozenset(resolved.input_type),
-            )
-
-    def _targets_needed(t, env=frozenset()):
-        """Yield (type, env) pairs we need to produce to construct t in env.
-
-        For non-arrow types, that's (t, env).
-        For arrow types with lambdas, we also need the output type
-        in the extended env (the lambda body), and record the lambda.
-        """
-        yield (t, env)
-        if has_lambdas and isinstance(t, ArrowType):
-            lambdas.add(t.input_type)
-            yield from _targets_needed(
-                t.output_type, env | frozenset(t.input_type)
-            )
+    checker = _ConstructibilityChecker(has_lambdas)
+    checker.constructible = constructible
 
     productions = set()
     lambdas = set()
@@ -593,8 +565,7 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
         # Arrow targets can be constructed via lambda
         if has_lambdas and isinstance(target, ArrowType):
             lambdas.add(target.input_type)
-            new_env = env | frozenset(target.input_type)
-            frontier.append((target.output_type, new_env))
+            frontier.append((target.output_type, env | frozenset(target.input_type)))
 
         for sym, sig in signatures:
             try:
@@ -602,22 +573,14 @@ def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max
             except UnificationError:
                 continue
 
-            substs = [ret_subst]
-            for arg in sig.arguments:
-                next_substs = []
-                for subst in substs:
-                    next_substs.extend(_bindings_for(arg, subst, env))
-                substs = next_substs
-                if not substs:
-                    break
-
-            for subst in substs:
+            for subst in checker.find_valid_substs_with_initial(sig, ret_subst, env):
                 productions.add((sym, frozenset(subst.items())))
                 for arg in sig.arguments:
                     resolved_arg = arg.subst_type_vars(subst)
                     if not resolved_arg.get_type_vars():
-                        for needed in _targets_needed(resolved_arg, env):
-                            frontier.append(needed)
+                        _add_targets_needed(
+                            resolved_arg, env, frontier, lambdas, has_lambdas
+                        )
 
     return productions, lambdas
 
