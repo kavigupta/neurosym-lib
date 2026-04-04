@@ -361,6 +361,8 @@ class DSLFactory:
                     k: v for k, v in subst.items() if k not in shared_vars
                 }
                 concrete_type = sig.astype().subst_type_vars(filtered_subst)
+                if concrete_type.depth > self.max_overall_depth:
+                    continue
                 key = str(concrete_type)
                 if key not in prods:
                     concrete_sig = FunctionTypeSignature.from_type(concrete_type)
@@ -376,6 +378,16 @@ class DSLFactory:
 
         # Add lambda and variable productions from reachable lambdas
         if has_lambdas and reachable_lambdas:
+            # Filter lambdas by max_type_depth: the arrow type with a
+            # dummy output must fit within the lambda depth bound
+            max_lambda_depth = self.lambda_parameters.get(
+                "max_type_depth", self.max_overall_depth
+            )
+            reachable_lambdas = {
+                inp
+                for inp in reachable_lambdas
+                if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
+            }
             lambda_input_types = sorted(reachable_lambdas, key=str)
             sym_to_productions["<lambda>"] = Production.reindex(
                 [
@@ -692,19 +704,22 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
         visited.add((t, env))
         frontier.append((t, env))
 
-    def _enqueue_targets_needed(t, env):
-        """Enqueue t and, for arrow types with lambdas, its body."""
+    def _enqueue_with_lambda(t, env):
+        """Enqueue t. If arrow type with lambdas, record the lambda and enqueue body."""
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
             lambdas.add(t.input_type)
-            _enqueue_targets_needed(t.output_type, env | frozenset(t.input_type))
+            _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     frontier = []
     for t in target_types:
-        _enqueue_targets_needed(t, frozenset())
+        _enqueue_with_lambda(t, frozenset())
 
     while frontier:
         target, env = frontier.pop()
+
+        # Arrow targets can be produced by lambda (already recorded above)
+        # but also by productions — so we search for both.
 
         for sym, sig in signatures:
             try:
@@ -715,12 +730,12 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
             for subst in checker.find_valid_substs_with_initial(sig, ret_subst, env):
                 is_new = (sym, frozenset(subst.items())) not in productions
                 productions.add((sym, frozenset(subst.items())))
-                # Only explore argument types for NEW production instantiations
                 if is_new:
                     for arg in sig.arguments:
                         resolved_arg = arg.subst_type_vars(subst)
                         if not resolved_arg.get_type_vars():
-                            _enqueue_targets_needed(resolved_arg, env)
+                            # Record lambdas only for direct production arguments
+                            _enqueue_with_lambda(resolved_arg, env)
 
     return productions, lambdas
 
