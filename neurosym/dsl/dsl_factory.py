@@ -590,6 +590,7 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
     of the environment or constructible in a strict sub-environment.
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
+    # pylint: disable=too-many-branches
     checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
     constructible = checker.constructible
 
