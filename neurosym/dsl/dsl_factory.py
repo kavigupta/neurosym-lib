@@ -1,12 +1,10 @@
 import copy
-import itertools
 import warnings
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
 from ..types.type import ArrowType, AtomicType, Type, TypeVariable, UnificationError
-from ..utils.documentation import internal_only
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
@@ -16,6 +14,7 @@ from ..types.type_signature import (
     type_expansions,
 )
 from ..types.type_string_repr import TypeDefiner
+from ..utils.documentation import internal_only
 from .dsl import DSL
 from .production import (
     LambdaProduction,
@@ -263,7 +262,6 @@ class DSLFactory:
         if self.prune:
             assert self.target_types is not None
             sym_to_productions = self._finalize_with_pruning(
-                universe,
                 has_lambdas,
             )
         else:
@@ -299,12 +297,12 @@ class DSLFactory:
                 known_types,
             )
 
-        for symbol, prods, stable in self._extra_productions:
+        for symbol, prods, _stable in self._extra_productions:
             sym_to_productions[symbol] = prods
 
         return sym_to_productions
 
-    def _finalize_with_pruning(self, universe, has_lambdas):
+    def _finalize_with_pruning(self, has_lambdas):
         """New path: compute constructible types, then only create needed productions."""
         # Build (symbol, sig) pairs for the new functions
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
@@ -385,7 +383,7 @@ class DSLFactory:
                 for index_in_env in range(self.max_env_depth)
             ]
 
-        for symbol, prods, stable in self._extra_productions:
+        for symbol, prods, _stable in self._extra_productions:
             sym_to_productions[symbol] = prods
 
         return sym_to_productions
