@@ -304,18 +304,14 @@ class DSLFactory:
 
     def _finalize_with_pruning(self, has_lambdas):
         """New pruning path using constructibility analysis."""
-        named_sigs = [
-            (sym, sig) for sym, sig, _, _ in self._parameterized_productions
-        ]
+        named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
         seen = {}
         for sym, sig in named_sigs:
             if sym in seen:
                 if seen[sym] != sig:
-                    raise ValueError(
-                        f"Duplicate declarations for production: {sym}"
-                    )
+                    raise ValueError(f"Duplicate declarations for production: {sym}")
             else:
                 seen[sym] = sig
 
