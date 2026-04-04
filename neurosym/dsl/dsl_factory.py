@@ -257,6 +257,31 @@ class DSLFactory:
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
+        has_lambdas = self.lambda_parameters is not None
+
+        if self.prune:
+            assert self.target_types is not None
+            sym_to_productions = self._finalize_with_pruning(
+                universe, has_lambdas,
+            )
+        else:
+            sym_to_productions = self._finalize_without_pruning(
+                universe, has_lambdas, known_types,
+            )
+
+        if "<variable>" in sym_to_productions:
+            sym_to_productions["<variable>"] = _clean_variables(
+                sym_to_productions["<variable>"]
+            )
+        return _make_dsl(
+            sym_to_productions,
+            copy.copy(self.target_types),
+            self.max_overall_depth,
+            self.max_env_depth,
+        )
+
+    def _finalize_without_pruning(self, universe, has_lambdas, known_types):
+        """Original expansion path: expand everything, no pruning."""
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
@@ -264,46 +289,80 @@ class DSLFactory:
             )
         )
 
-        stable_symbols = set()
-
-        if self.lambda_parameters is not None:
-            types, constructors_lambda = _type_universe(
-                known_types,
-                no_zeroadic=self._no_zeroadic,
+        if has_lambdas:
+            self._add_all_lambda_variable_productions(
+                sym_to_productions, known_types,
             )
-            top_levels = types + [
-                constructor(
-                    *[TypeVariable.fresh() for _ in range(arity)],
+
+        for symbol, prods, stable in self._extra_productions:
+            sym_to_productions[symbol] = prods
+
+        return sym_to_productions
+
+    def _finalize_with_pruning(self, universe, has_lambdas):
+        """New path: compute constructible types, then only create needed productions."""
+        # Build (symbol, sig) pairs for the new functions
+        named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
+
+        # Check for duplicate declarations
+        seen = {}
+        for sym, sig in named_sigs:
+            if sym in seen:
+                if seen[sym] != sig:
+                    raise ValueError(f"Duplicate declarations for production: {sym}")
+            else:
+                seen[sym] = sig
+
+        # Bottom-up: compute constructible types
+        sigs_only = [sig for _, sig in named_sigs]
+        constructible = _directly_constructible_types(
+            sigs_only, has_lambdas, self.max_overall_depth,
+        )
+
+        # Top-down: find reachable productions and lambdas
+        reachable_prods, reachable_lambdas = _reachable_symbols(
+            named_sigs, constructible, self.target_types,
+            has_lambdas, self.max_overall_depth,
+        )
+
+        # Group reachable substitutions by symbol
+        reachable_by_sym = {}
+        for sym, subst_frozen in reachable_prods:
+            reachable_by_sym.setdefault(sym, []).append(dict(subst_frozen))
+
+        # Build concrete Production objects, preserving declaration order
+        sym_to_productions: Dict[str, List[Production]] = {}
+        for sym, sig, semantics, parameters in self._parameterized_productions:
+            substs = reachable_by_sym.get(sym, [])
+            if not substs:
+                if not self.tolerate_pruning_entire_productions:
+                    raise TypeError(
+                        f"All productions for {sym} were pruned. "
+                        f"Check that the target types are correct."
+                    )
+                sym_to_productions[sym] = []
+                continue
+            prods = []
+            for subst in substs:
+                concrete_type = sig.astype().subst_type_vars(subst)
+                concrete_sig = FunctionTypeSignature.from_type(concrete_type)
+                prods.append(
+                    ParameterizedProduction.of(sym, concrete_sig, semantics, parameters)
                 )
-                for arity, constructor in constructors_lambda
-            ]
-            top_levels = [
-                x.with_output_type(AtomicType("output_type"))
-                for x in top_levels
-                if isinstance(x, ArrowType)
-            ]
-            top_levels = sorted(set(top_levels), key=str)
-            expanded = []
-            for top_level in top_levels:
-                expanded += type_expansions(
-                    top_level,
-                    types,
-                    constructors_lambda,
-                    max_expansion_steps=self.max_expansion_steps,
-                    max_overall_depth=self.lambda_parameters["max_type_depth"],
-                )
-            expanded = sorted(set(expanded), key=str)
-            sym_to_productions["<lambda>"] = [
-                LambdaProduction(i, LambdaTypeSignature(x.input_type))
-                for i, x in enumerate(expanded)
-            ]
+            sym_to_productions[sym] = Production.reindex(
+                sorted(prods, key=lambda p: str(p.type_signature().astype()))
+            )
+
+        # Add lambda and variable productions from reachable lambdas
+        if has_lambdas and reachable_lambdas:
+            lambda_input_types = sorted(reachable_lambdas, key=str)
+            sym_to_productions["<lambda>"] = Production.reindex([
+                LambdaProduction(i, LambdaTypeSignature(input_types))
+                for i, input_types in enumerate(lambda_input_types)
+            ])
 
             variable_types = sorted(
-                {
-                    input_type
-                    for function_type in expanded
-                    for input_type in function_type.input_type
-                },
+                {t for input_types in reachable_lambdas for t in input_types},
                 key=str,
             )
             sym_to_productions["<variable>"] = [
@@ -313,46 +372,60 @@ class DSLFactory:
                 for type_id, variable_type in enumerate(variable_types)
                 for index_in_env in range(self.max_env_depth)
             ]
-            # don't prune and reindex variables
-            stable_symbols.add("<variable>")
 
         for symbol, prods, stable in self._extra_productions:
             sym_to_productions[symbol] = prods
-            if stable:
-                stable_symbols.add(symbol)
 
-        if self.prune:
-            assert self.target_types is not None
-            sym_to_productions = _prune(
-                sym_to_productions,
-                self.target_types,
-                care_about_variables=False,
-                type_depth_limit=self.max_overall_depth,
-                env_depth_limit=self.max_env_depth,
-                stable_symbols=stable_symbols,
-                tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-            )
-            if self.prune_variables:
-                sym_to_productions = _prune(
-                    sym_to_productions,
-                    self.target_types,
-                    care_about_variables=True,
-                    type_depth_limit=self.max_overall_depth,
-                    env_depth_limit=self.max_env_depth,
-                    stable_symbols=stable_symbols,
-                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-                )
-        if "<variable>" in sym_to_productions:
-            sym_to_productions["<variable>"] = _clean_variables(
-                sym_to_productions["<variable>"]
-            )
-        dsl = _make_dsl(
-            sym_to_productions,
-            copy.copy(self.target_types),
-            self.max_overall_depth,
-            self.max_env_depth,
+        return sym_to_productions
+
+    def _add_all_lambda_variable_productions(self, sym_to_productions, known_types):
+        """Add all possible lambda and variable productions (old expansion path)."""
+        types, constructors_lambda = _type_universe(
+            known_types,
+            no_zeroadic=self._no_zeroadic,
         )
-        return dsl
+        top_levels = types + [
+            constructor(
+                *[TypeVariable.fresh() for _ in range(arity)],
+            )
+            for arity, constructor in constructors_lambda
+        ]
+        top_levels = [
+            x.with_output_type(AtomicType("output_type"))
+            for x in top_levels
+            if isinstance(x, ArrowType)
+        ]
+        top_levels = sorted(set(top_levels), key=str)
+        expanded = []
+        for top_level in top_levels:
+            expanded += type_expansions(
+                top_level,
+                types,
+                constructors_lambda,
+                max_expansion_steps=self.max_expansion_steps,
+                max_overall_depth=self.lambda_parameters["max_type_depth"],
+            )
+        expanded = sorted(set(expanded), key=str)
+        sym_to_productions["<lambda>"] = [
+            LambdaProduction(i, LambdaTypeSignature(x.input_type))
+            for i, x in enumerate(expanded)
+        ]
+
+        variable_types = sorted(
+            {
+                input_type
+                for function_type in expanded
+                for input_type in function_type.input_type
+            },
+            key=str,
+        )
+        sym_to_productions["<variable>"] = [
+            VariableProduction(
+                type_id, VariableTypeSignature(variable_type, index_in_env)
+            )
+            for type_id, variable_type in enumerate(variable_types)
+            for index_in_env in range(self.max_env_depth)
+        ]
 
 
 def _clean_variables(variable_productions):
