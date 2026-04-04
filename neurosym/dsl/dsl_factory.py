@@ -486,8 +486,7 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
-@internal_only
-class ConstructibilityChecker:
+class _ConstructibilityChecker:
     """Shared logic for checking type constructibility with environment support.
 
     Tracks a dict mapping environments (frozensets of Types) to sets of types
@@ -534,7 +533,7 @@ class ConstructibilityChecker:
                 new_bindings = resolved.unify(t)
             except UnificationError:
                 continue
-            merged = merge_subst(subst, new_bindings)
+            merged = _merge_subst(subst, new_bindings)
             if merged is not None:
                 yield merged
         if self.has_lambdas and isinstance(resolved, ArrowType):
@@ -561,8 +560,7 @@ class ConstructibilityChecker:
         return substs
 
 
-@internal_only
-def merge_subst(base, extension):
+def __merge_subst(base, extension):
     """Merge two substitutions, return None if inconsistent."""
     merged = dict(base)
     for k, v in extension.items():
@@ -592,7 +590,7 @@ def directly_constructible_types(signatures, has_lambdas, max_depth):
     of the environment or constructible in a strict sub-environment.
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
-    checker = ConstructibilityChecker(has_lambdas, register_envs=True)
+    checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
     constructible = checker.constructible
 
     while True:
@@ -626,8 +624,7 @@ def directly_constructible_types(signatures, has_lambdas, max_depth):
     }
 
 
-@internal_only
-def add_targets_needed(t, env, frontier, lambdas, has_lambdas):
+def __add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     """Add (type, env) pairs to frontier for constructing t in env.
 
     For arrow types with lambdas, records the lambda and recurses on the body.
@@ -635,7 +632,7 @@ def add_targets_needed(t, env, frontier, lambdas, has_lambdas):
     frontier.append((t, env))
     if has_lambdas and isinstance(t, ArrowType):
         lambdas.add(t.input_type)
-        add_targets_needed(
+        _add_targets_needed(
             t.output_type,
             env | frozenset(t.input_type),
             frontier,
@@ -670,7 +667,7 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
           types of a lambda that is needed (i.e., the argument types of an arrow
           type that is constructed via lambda).
     """
-    checker = ConstructibilityChecker(has_lambdas)
+    checker = _ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
     productions = set()
@@ -700,7 +697,7 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
                 for arg in sig.arguments:
                     resolved_arg = arg.subst_type_vars(subst)
                     if not resolved_arg.get_type_vars():
-                        add_targets_needed(
+                        _add_targets_needed(
                             resolved_arg, env, frontier, lambdas, has_lambdas
                         )
 
