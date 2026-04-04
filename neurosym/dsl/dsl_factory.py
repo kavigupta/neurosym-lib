@@ -303,6 +303,7 @@ class DSLFactory:
         return sym_to_productions
 
     def _finalize_with_pruning(self, has_lambdas):
+        # pylint: disable=too-many-branches
         """New path: compute constructible types, then only create needed productions."""
         # Build (symbol, sig) pairs for the new functions
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
