@@ -303,8 +303,8 @@ class DSLFactory:
         return sym_to_productions
 
     def _finalize_with_pruning(self, has_lambdas):
-        """New pruning path using constructibility analysis."""
-        # pylint: disable=too-many-branches
+        """Pruning path using constructibility analysis."""
+        # pylint: disable=too-many-branches,too-many-nested-blocks
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
@@ -682,18 +682,29 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     productions = set()
     lambdas = set()
     visited = set()
-    frontier = [(t, frozenset()) for t in target_types]
+
+    def _enqueue(t, env):
+        """Add (type, env) to frontier if not already visited and constructible."""
+        if (t, env) in visited or t.depth > max_depth:
+            return
+        if not checker.is_constructible(t, env):
+            return
+        visited.add((t, env))
+        frontier.append((t, env))
+
+    def _enqueue_targets_needed(t, env):
+        """Enqueue t and, for arrow types with lambdas, its body."""
+        _enqueue(t, env)
+        if has_lambdas and isinstance(t, ArrowType):
+            lambdas.add(t.input_type)
+            _enqueue_targets_needed(t.output_type, env | frozenset(t.input_type))
+
+    frontier = []
+    for t in target_types:
+        _enqueue_targets_needed(t, frozenset())
 
     while frontier:
         target, env = frontier.pop()
-        if (target, env) in visited or target.depth > max_depth:
-            continue
-        visited.add((target, env))
-
-        # Arrow targets can be constructed via lambda
-        if has_lambdas and isinstance(target, ArrowType):
-            lambdas.add(target.input_type)
-            frontier.append((target.output_type, env | frozenset(target.input_type)))
 
         for sym, sig in signatures:
             try:
@@ -702,13 +713,14 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
                 continue
 
             for subst in checker.find_valid_substs_with_initial(sig, ret_subst, env):
+                is_new = (sym, frozenset(subst.items())) not in productions
                 productions.add((sym, frozenset(subst.items())))
-                for arg in sig.arguments:
-                    resolved_arg = arg.subst_type_vars(subst)
-                    if not resolved_arg.get_type_vars():
-                        _add_targets_needed(
-                            resolved_arg, env, frontier, lambdas, has_lambdas
-                        )
+                # Only explore argument types for NEW production instantiations
+                if is_new:
+                    for arg in sig.arguments:
+                        resolved_arg = arg.subst_type_vars(subst)
+                        if not resolved_arg.get_type_vars():
+                            _enqueue_targets_needed(resolved_arg, env)
 
     return productions, lambdas
 

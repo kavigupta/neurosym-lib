@@ -877,6 +877,57 @@ class TestReachableSymbols(unittest.TestCase):
         )
         self.assertEqual(lams, set())
 
+    def test_type_variable_combinatorial(self):
+        # List DSL with type variables, lambdas, and multi-arg higher-order
+        # productions. This tests that reachable_symbols doesn't hang from
+        # combinatorial explosion of type variable bindings.
+        t = ns.TypeDefiner()
+        sigs = [
+            ("zero", t.sig("() -> i")),
+            ("true", t.sig("() -> b")),
+            ("empty", t.sig("() -> [#T]")),
+            ("singleton", t.sig("#T -> [#T]")),
+            ("range", t.sig("i -> [i]")),
+            ("concat", t.sig("([#T], [#T]) -> [#T]")),
+            ("mapi", t.sig("((i, #T) -> #R, [#T]) -> [#R]")),
+            ("reducei", t.sig("((i, #R, #T) -> #R, #R, [#T]) -> #R")),
+            ("sort", t.sig("[#T] -> [#T]")),
+            ("reverse", t.sig("[#T] -> [#T]")),
+            ("sum", t.sig("[i] -> i")),
+            ("index", t.sig("(i, [#T]) -> #T")),
+            ("filter", t.sig("(#T -> b, [#T]) -> [#T]")),
+            ("all", t.sig("((#T) -> b, [#T]) -> b")),
+            ("any", t.sig("((#T) -> b, [#T]) -> b")),
+            ("slice", t.sig("(i, i, [#T]) -> [#T]")),
+            ("ite", t.sig("(b, #T, #T) -> #T")),
+            ("not", t.sig("b -> b")),
+            ("and", t.sig("(b, b) -> b")),
+            ("or", t.sig("(b, b) -> b")),
+            ("eq", t.sig("(i, i) -> b")),
+            ("gt", t.sig("(i, i) -> b")),
+            ("add", t.sig("(i, i) -> i")),
+            ("mul", t.sig("(i, i) -> i")),
+            ("negate", t.sig("i -> i")),
+            ("mod", t.sig("(i, i) -> i")),
+        ]
+        sigs_only = [s for _, s in sigs]
+        ct = ns.directly_constructible_types(
+            sigs_only,
+            has_lambdas=True,
+            max_depth=5,
+            target_types=[ns.parse_type("[i] -> i")],
+        )
+        prods, _ = ns.reachable_symbols(
+            sigs,
+            ct,
+            [ns.parse_type("[i] -> i")],
+            has_lambdas=True,
+            max_depth=5,
+        )
+        names = {sym for sym, _ in prods}
+        # All productions should be reachable
+        self.assertEqual(names, {s for s, _ in sigs})
+
     def test_basic_arith_with_lambdas(self):
         # Targets include arrow types: i -> i needs lambda (i,),
         # (i, i) -> i needs lambda (i, i).
