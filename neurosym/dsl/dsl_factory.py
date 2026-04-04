@@ -491,6 +491,137 @@ def _directly_constructible_types(signatures, has_lambdas, max_depth):
     return constructible
 
 
+def _reachable_symbols(signatures, constructible, target_types, has_lambdas, max_depth):
+    """
+    Top-down search from target types through signatures, collecting concrete
+    production instantiations and lambda argument types that are reachable.
+
+    Starting from ``target_types``, find all signatures whose return type
+    unifies with a needed type and whose arguments are all constructible
+    (according to ``constructible``). Record the symbol with its type variable
+    bindings, and recurse on the argument types.
+
+    :param signatures: List of (symbol, FunctionTypeSignature) pairs.
+    :param constructible: Dict from env (frozenset) to set of nontrivially
+        constructible types, as returned by ``_directly_constructible_types``.
+    :param target_types: List of Type objects to start the search from.
+    :param has_lambdas: Whether lambdas are enabled.
+    :param max_depth: Maximum type depth.
+
+    :return: A tuple of ``(productions, lambdas)`` where:
+        - ``productions`` is a set of ``(symbol, subst)`` pairs, where ``subst``
+          is a frozenset of ``(var_name, Type)`` items representing the type
+          variable bindings for that instantiation.
+        - ``lambdas`` is a set of tuples of Types, each representing the input
+          types of a lambda that is needed (i.e., the argument types of an arrow
+          type that is constructed via lambda).
+    """
+    from ..types.type import UnificationError
+
+    def _all_constructible_in(env):
+        result = set(env)
+        for tracked_env, types in constructible.items():
+            if tracked_env <= env:
+                result |= types
+        return result
+
+    def _is_constructible(t, env=frozenset()):
+        if t in env:
+            return True
+        for tracked_env, types in constructible.items():
+            if tracked_env <= env and t in types:
+                return True
+        if has_lambdas and isinstance(t, ArrowType):
+            return _is_constructible(t.output_type, env | frozenset(t.input_type))
+        return False
+
+    def _merge_subst(base, extension):
+        merged = dict(base)
+        for k, v in extension.items():
+            if k in merged:
+                if merged[k] != v:
+                    return None
+            else:
+                merged[k] = v
+        return merged
+
+    def _bindings_for(pattern, subst, env=frozenset()):
+        resolved = pattern.subst_type_vars(subst)
+        if not resolved.get_type_vars():
+            if _is_constructible(resolved, env):
+                yield subst
+            return
+        for t in _all_constructible_in(env):
+            try:
+                new_bindings = resolved.unify(t)
+            except UnificationError:
+                continue
+            merged = _merge_subst(subst, new_bindings)
+            if merged is not None:
+                yield merged
+        if has_lambdas and isinstance(resolved, ArrowType):
+            yield from _bindings_for(
+                resolved.output_type, subst,
+                env | frozenset(resolved.input_type),
+            )
+
+    def _targets_needed(t, env=frozenset()):
+        """Yield (type, env) pairs we need to produce to construct t in env.
+
+        For non-arrow types, that's (t, env).
+        For arrow types with lambdas, we also need the output type
+        in the extended env (the lambda body), and record the lambda.
+        """
+        yield (t, env)
+        if has_lambdas and isinstance(t, ArrowType):
+            lambdas.add(t.input_type)
+            yield from _targets_needed(
+                t.output_type, env | frozenset(t.input_type)
+            )
+
+    productions = set()
+    lambdas = set()
+    visited = set()
+    frontier = [(t, frozenset()) for t in target_types]
+
+    while frontier:
+        target, env = frontier.pop()
+        if (target, env) in visited or target.depth > max_depth:
+            continue
+        visited.add((target, env))
+
+        # Arrow targets can be constructed via lambda
+        if has_lambdas and isinstance(target, ArrowType):
+            lambdas.add(target.input_type)
+            new_env = env | frozenset(target.input_type)
+            frontier.append((target.output_type, new_env))
+
+        for sym, sig in signatures:
+            try:
+                ret_subst = sig.return_type.unify(target)
+            except UnificationError:
+                continue
+
+            substs = [ret_subst]
+            for arg in sig.arguments:
+                next_substs = []
+                for subst in substs:
+                    next_substs.extend(_bindings_for(arg, subst, env))
+                substs = next_substs
+                if not substs:
+                    break
+
+            for subst in substs:
+                productions.add((sym, frozenset(subst.items())))
+                for arg in sig.arguments:
+                    resolved_arg = arg.subst_type_vars(subst)
+                    if not resolved_arg.get_type_vars():
+                        for needed in _targets_needed(resolved_arg, env):
+                            frontier.append(needed)
+
+    return productions, lambdas
+
+
 def _prune(
     sym_to_productions,
     target_types,
