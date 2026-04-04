@@ -461,7 +461,9 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         # With target_types, env {{f,1}} is seeded and the chain fires
         self.assertEqual(
             ns.directly_constructible_types(
-                sigs, has_lambdas=True, max_depth=6,
+                sigs,
+                has_lambdas=True,
+                max_depth=6,
                 target_types=[ns.parse_type("{f, 1} -> {f, 4}")],
             ),
             {
@@ -481,14 +483,26 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
         sigs_only = [s for _, s in named_sigs]
         target = ns.parse_type("{f, 1} -> {f, 4}")
         ct = ns.directly_constructible_types(
-            sigs_only, has_lambdas=True, max_depth=6, target_types=[target],
+            sigs_only,
+            has_lambdas=True,
+            max_depth=6,
+            target_types=[target],
         )
         prods, lams = ns.reachable_symbols(
-            named_sigs, ct, [target], has_lambdas=True, max_depth=6,
+            named_sigs,
+            ct,
+            [target],
+            has_lambdas=True,
+            max_depth=6,
         )
-        self.assertEqual(prods, {
-            _p("step1"), _p("step2"), _p("step3"),
-        })
+        self.assertEqual(
+            prods,
+            {
+                _p("step1"),
+                _p("step2"),
+                _p("step3"),
+            },
+        )
         self.assertEqual(lams, {(ns.parse_type("{f, 1}"),)})
 
     # --- Bootstrap tests (types constructed from nothing via lambda) ---
