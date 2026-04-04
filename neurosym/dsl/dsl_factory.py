@@ -383,8 +383,24 @@ class DSLFactory:
                 for index_in_env in range(self.max_env_depth)
             ]
 
-        for symbol, prods, _stable in self._extra_productions:
+        stable_symbols = set()
+        for symbol, prods, stable in self._extra_productions:
             sym_to_productions[symbol] = prods
+            if stable:
+                stable_symbols.add(symbol)
+
+        # Prune unreachable variable productions using env-aware analysis
+        if self.prune_variables and "<variable>" in sym_to_productions:
+            stable_symbols.add("<variable>")
+            sym_to_productions = _prune(
+                sym_to_productions,
+                self.target_types,
+                care_about_variables=True,
+                type_depth_limit=self.max_overall_depth,
+                env_depth_limit=self.max_env_depth,
+                stable_symbols=stable_symbols,
+                tolerate_pruning_entire_productions=True,
+            )
 
         return sym_to_productions
 
