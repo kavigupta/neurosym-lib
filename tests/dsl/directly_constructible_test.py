@@ -448,6 +448,49 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             {frozenset(): _t("i", "g")},
         )
 
+    def test_no_nullary_productions_with_target_env(self):
+        # No nullary productions: {f,1} -> {f,2}, {f,2} -> {f,3}, {f,3} -> {f,4}.
+        # Nothing is directly constructible in empty env.
+        # But with target {f,1} -> {f,4}, env {{f,1}} is seeded and the chain fires.
+        sigs = self._sigs("{f, 1} -> {f, 2}", "{f, 2} -> {f, 3}", "{f, 3} -> {f, 4}")
+        # Without target_types, nothing is constructible
+        self.assertEqual(
+            ns.directly_constructible_types(sigs, has_lambdas=True, max_depth=6),
+            {frozenset(): set()},
+        )
+        # With target_types, env {{f,1}} is seeded and the chain fires
+        self.assertEqual(
+            ns.directly_constructible_types(
+                sigs, has_lambdas=True, max_depth=6,
+                target_types=[ns.parse_type("{f, 1} -> {f, 4}")],
+            ),
+            {
+                frozenset(): set(),
+                _env("{f, 1}"): _t("{f, 2}", "{f, 3}", "{f, 4}"),
+            },
+        )
+
+    def test_no_nullary_reachable_with_target_env(self):
+        # Same as above but checking reachable_symbols finds all productions.
+        t = ns.TypeDefiner()
+        named_sigs = [
+            ("step1", t.sig("{f, 1} -> {f, 2}")),
+            ("step2", t.sig("{f, 2} -> {f, 3}")),
+            ("step3", t.sig("{f, 3} -> {f, 4}")),
+        ]
+        sigs_only = [s for _, s in named_sigs]
+        target = ns.parse_type("{f, 1} -> {f, 4}")
+        ct = ns.directly_constructible_types(
+            sigs_only, has_lambdas=True, max_depth=6, target_types=[target],
+        )
+        prods, lams = ns.reachable_symbols(
+            named_sigs, ct, [target], has_lambdas=True, max_depth=6,
+        )
+        self.assertEqual(prods, {
+            _p("step1"), _p("step2"), _p("step3"),
+        })
+        self.assertEqual(lams, {(ns.parse_type("{f, 1}"),)})
+
     # --- Bootstrap tests (types constructed from nothing via lambda) ---
 
     def test_bootstrap_identity_lambda(self):

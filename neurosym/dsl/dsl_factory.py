@@ -319,7 +319,7 @@ class DSLFactory:
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
         constructible = directly_constructible_types(
-            sigs_only, has_lambdas, self.max_overall_depth
+            sigs_only, has_lambdas, self.max_overall_depth, self.target_types
         )
 
         # Top-down: find reachable productions and lambdas
@@ -573,7 +573,7 @@ def _merge_subst(base, extension):
 
 
 @internal_only
-def directly_constructible_types(signatures, has_lambdas, max_depth):
+def directly_constructible_types(signatures, has_lambdas, max_depth, target_types=None):
     """
     Compute the set of constructible types per environment via a bottom-up fixed point,
     working directly from raw production signatures (which may contain type variables).
@@ -592,6 +592,14 @@ def directly_constructible_types(signatures, has_lambdas, max_depth):
     """
     checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
     constructible = checker.constructible
+
+    # Seed envs from arrow-typed targets so their bodies get explored
+    if has_lambdas and target_types:
+        for t in target_types:
+            if isinstance(t, ArrowType):
+                env = frozenset(t.input_type)
+                if env not in constructible:
+                    constructible[env] = set()
 
     while True:
         prev_env_count = len(constructible)
