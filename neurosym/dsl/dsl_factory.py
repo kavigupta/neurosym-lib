@@ -364,49 +364,22 @@ class DSLFactory:
 
         return sym_to_productions
 
-    def _build_concrete_productions(self, reachable_prods):
-        """Build concrete Production objects from reachable (symbol, subst) pairs."""
-        reachable_by_sym = {}
-        for sym, subst_frozen in reachable_prods:
-            reachable_by_sym.setdefault(sym, set()).add(subst_frozen)
-
+    def _build_concrete_productions(self, prod_sigs):
+        """Build concrete Production objects from {sym: [FunctionTypeSignature]}."""
         sym_to_productions: Dict[str, List[Production]] = {}
-        for sym, sig, semantics, parameters in self._parameterized_productions:
-            subst_set = reachable_by_sym.get(sym, set())
-            if not subst_set:
-                if not self.tolerate_pruning_entire_productions:
-                    raise TypeError(
-                        f"All productions for {sym} were pruned. "
-                        f"Check that the target types are correct."
-                    )
-                sym_to_productions[sym] = []
-                continue
-
-            # Shared type variables (in both args and return) should be preserved
-            arg_vars = {v for a in sig.arguments for v in a.get_type_vars()}
-            ret_vars = set(sig.return_type.get_type_vars())
-            shared_vars = arg_vars & ret_vars
-
-            prods = {}
-            for subst_frozen in subst_set:
-                subst = dict(subst_frozen)
-                filtered_subst = {
-                    k: v for k, v in subst.items() if k not in shared_vars
-                }
-                concrete_type = sig.astype().subst_type_vars(filtered_subst)
-                if concrete_type.depth > self.max_overall_depth:
-                    continue
-                if set(concrete_type.get_type_vars()) - shared_vars:
-                    continue
-                key = str(concrete_type)
-                if key not in prods:
-                    concrete_sig = FunctionTypeSignature.from_type(concrete_type)
-                    prods[key] = ParameterizedProduction.of(
-                        sym, concrete_sig, semantics, parameters
-                    )
+        for sym, _sig, semantics, parameters in self._parameterized_productions:
+            concrete_sigs = prod_sigs.get(sym, [])
+            if not concrete_sigs and not self.tolerate_pruning_entire_productions:
+                raise TypeError(
+                    f"All productions for {sym} were pruned. "
+                    f"Check that the target types are correct."
+                )
             sym_to_productions[sym] = Production.reindex(
                 sorted(
-                    prods.values(),
+                    [
+                        ParameterizedProduction.of(sym, cs, semantics, parameters)
+                        for cs in concrete_sigs
+                    ],
                     key=lambda p: str(p.type_signature().astype()),
                 )
             )
@@ -742,10 +715,11 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     :param has_lambdas: Whether lambdas are enabled.
     :param max_depth: Maximum type depth.
 
-    :return: A tuple of ``(productions, lambdas)`` where:
-        - ``productions`` is a set of ``(symbol, subst)`` pairs, where ``subst``
-          is a frozenset of ``(var_name, Type)`` items representing the type
-          variable bindings for that instantiation.
+    :return: A tuple of ``(prod_sigs, lambdas)`` where:
+        - ``prod_sigs`` is a dict mapping each symbol name to a list of
+          concrete ``FunctionTypeSignature`` objects. Type variables that
+          appear in both arguments and return type (e.g. ``#a`` in
+          ``#a -> #a``) are preserved as polymorphic.
         - ``lambdas`` is a set of tuples of Types, each representing the input
           types of a lambda that is needed (i.e., the argument types of an arrow
           type that is constructed via lambda).
@@ -754,12 +728,19 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     checker = _ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
-    productions = set()
+    # Precompute shared type vars per signature (vars in both args and return
+    # are preserved as polymorphic, not substituted).
+    shared_vars_by_sym = {}
+    for sym, sig in signatures:
+        arg_vars = {v for a in sig.arguments for v in a.get_type_vars()}
+        shared_vars_by_sym[sym] = arg_vars & set(sig.return_type.get_type_vars())
+
+    seen_substs = set()
+    prod_sigs = {}  # sym -> {type_str: FunctionTypeSignature}
     lambdas = set()
     visited = set()
 
     def _enqueue(t, env):
-        """Add (type, env) to frontier if not already visited and constructible."""
         if (t, env) in visited or t.depth > max_depth:
             return
         if not checker.is_constructible(t, env):
@@ -768,11 +749,30 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
         frontier.append((t, env))
 
     def _enqueue_with_lambda(t, env):
-        """Enqueue t. If arrow type with lambdas, record the lambda and enqueue body."""
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
             lambdas.add(t.input_type)
             _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
+
+    def _record(sym, sig, subst):
+        """Record a concrete production, return True if new (for exploration)."""
+        subst_key = (sym, frozenset(subst.items()))
+        if subst_key in seen_substs:
+            return False
+        seen_substs.add(subst_key)
+
+        shared_vars = shared_vars_by_sym[sym]
+        filtered = {k: v for k, v in subst.items() if k not in shared_vars}
+        concrete_type = sig.astype().subst_type_vars(filtered)
+        if concrete_type.depth > max_depth:
+            return True
+        if set(concrete_type.get_type_vars()) - shared_vars:
+            return True
+        key = str(concrete_type)
+        prod_sigs.setdefault(sym, {})[key] = FunctionTypeSignature.from_type(
+            concrete_type
+        )
+        return True
 
     frontier = []
     for t in target_types:
@@ -781,9 +781,6 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     while frontier:
         target, env = frontier.pop()
 
-        # Arrow targets can be produced by lambda (already recorded above)
-        # but also by productions — so we search for both.
-
         for sym, sig in signatures:
             try:
                 ret_subst = sig.return_type.unify(target)
@@ -791,13 +788,10 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
                 continue
 
             for subst in checker.find_valid_substs_with_initial(sig, ret_subst, env):
-                is_new = (sym, frozenset(subst.items())) not in productions
-                productions.add((sym, frozenset(subst.items())))
-                if is_new:
+                if _record(sym, sig, subst):
                     for arg in sig.arguments:
                         resolved_arg = arg.subst_type_vars(subst)
                         if not resolved_arg.get_type_vars():
-                            # Record lambdas only for direct production arguments
                             _enqueue_with_lambda(resolved_arg, env)
 
-    return productions, lambdas
+    return {sym: list(sigs.values()) for sym, sigs in prod_sigs.items()}, lambdas
