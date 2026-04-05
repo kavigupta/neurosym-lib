@@ -481,7 +481,9 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
-def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, max_env_depth):
+def _add_lambda_variable_productions(
+    sym_to_productions, reachable_lambdas, max_env_depth
+):
     """Add lambda and variable productions for the given reachable lambda types."""
     lambda_input_types = sorted(reachable_lambdas, key=str)
     sym_to_productions["<lambda>"] = Production.reindex(
@@ -495,9 +497,7 @@ def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, max_
         key=str,
     )
     sym_to_productions["<variable>"] = [
-        VariableProduction(
-            type_id, VariableTypeSignature(variable_type, index_in_env)
-        )
+        VariableProduction(type_id, VariableTypeSignature(variable_type, index_in_env))
         for type_id, variable_type in enumerate(variable_types)
         for index_in_env in range(max_env_depth)
     ]
@@ -529,16 +529,12 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
                     if inp_t not in consumed_types:
                         consumed_types.add(inp_t)
                         changed = True
-    return {
-        inp
-        for inp in reachable_lambdas
-        if any(t in consumed_types for t in inp)
-    }
+    return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}
 
 
 def _prune_variable_productions(
     sym_to_productions, reachable_lambdas, max_env_depth, stable_symbols
-):
+):  # pylint: disable=too-many-branches
     """Prune unreachable variable/shield productions via BFS over lambda nestings.
 
     Enumerates all (type, index) pairs reachable by nesting reachable lambdas,
@@ -573,9 +569,7 @@ def _prune_variable_productions(
                     continue
             elif hasattr(ts, "index_in_env"):
                 # Shield: keep if any type at this index is reachable
-                if not any(
-                    idx == ts.index_in_env for _, idx in reachable_var_slots
-                ):
+                if not any(idx == ts.index_in_env for _, idx in reachable_var_slots):
                     continue
             filtered.append(prod)
         if symbol not in stable_symbols:
