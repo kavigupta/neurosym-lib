@@ -304,7 +304,7 @@ class DSLFactory:
 
     def _finalize_with_pruning(self, has_lambdas):
         """Pruning path using constructibility analysis."""
-        # pylint: disable=too-many-branches,too-many-nested-blocks
+        # pylint: disable=too-many-branches,too-many-nested-blocks,too-many-statements
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
@@ -444,7 +444,10 @@ class DSLFactory:
                 for prod in sig_list:
                     ts = prod.type_signature()
                     if hasattr(ts, "index_in_env") and hasattr(ts, "variable_type"):
-                        if (ts.variable_type, ts.index_in_env) not in reachable_var_slots:
+                        if (
+                            ts.variable_type,
+                            ts.index_in_env,
+                        ) not in reachable_var_slots:
                             continue
                     elif hasattr(ts, "index_in_env"):
                         # Shield: keep if any type at this index is reachable
@@ -769,5 +772,3 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
                             _enqueue_with_lambda(resolved_arg, env)
 
     return productions, lambdas
-
-
