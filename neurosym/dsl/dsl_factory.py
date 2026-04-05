@@ -429,7 +429,7 @@ class DSLFactory:
                 while frontier:
                     env = frontier.pop()
                     for inp in lambda_inputs:
-                        new_env = inp + env
+                        new_env = tuple(reversed(inp)) + env
                         if len(new_env) > self.max_env_depth:
                             continue
                         if new_env not in seen:
