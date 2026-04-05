@@ -390,20 +390,32 @@ class DSLFactory:
                 for inp in reachable_lambdas
                 if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
             }
-            # Filter lambdas whose input types are never consumed as an
-            # argument by any concrete production.  Such lambdas introduce
-            # environment bindings that nothing in the DSL can use.
+            # Filter lambdas whose input types are never consumed by any
+            # production, even transitively through lambda nesting.  A type
+            # is "consumed" if it appears as an argument to some production,
+            # or as an input element of an arrow type that is consumed.
             consumed_types = {
                 arg
                 for prods in sym_to_productions.values()
                 for prod in prods
                 for arg in prod.type_signature().arguments
             }
-            reachable_lambdas = {
-                inp
-                for inp in reachable_lambdas
-                if any(t in consumed_types for t in inp)
-            }
+            if not any(t.has_type_vars() for t in consumed_types):
+                # Expand consumed set: arrow types consume their input types
+                changed = True
+                while changed:
+                    changed = False
+                    for t in list(consumed_types):
+                        if isinstance(t, ArrowType):
+                            for inp_t in t.input_type:
+                                if inp_t not in consumed_types:
+                                    consumed_types.add(inp_t)
+                                    changed = True
+                reachable_lambdas = {
+                    inp
+                    for inp in reachable_lambdas
+                    if any(t in consumed_types for t in inp)
+                }
             lambda_input_types = sorted(reachable_lambdas, key=str)
             sym_to_productions["<lambda>"] = Production.reindex(
                 [
