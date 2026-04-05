@@ -304,7 +304,6 @@ class DSLFactory:
 
     def _finalize_with_pruning(self, has_lambdas):
         """Pruning path using constructibility analysis."""
-        # pylint: disable=too-many-branches,too-many-nested-blocks,too-many-statements
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
@@ -331,12 +330,46 @@ class DSLFactory:
             self.max_overall_depth,
         )
 
-        # Group reachable substitutions by symbol, dedup by concrete type
+        sym_to_productions = self._build_concrete_productions(reachable_prods)
+
+        if has_lambdas and reachable_lambdas:
+            max_lambda_depth = self.lambda_parameters.get(
+                "max_type_depth", self.max_overall_depth
+            )
+            reachable_lambdas = {
+                inp
+                for inp in reachable_lambdas
+                if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
+            }
+            reachable_lambdas = _filter_useless_lambdas(
+                reachable_lambdas, sym_to_productions
+            )
+            _add_lambda_variable_productions(
+                sym_to_productions, reachable_lambdas, self.max_env_depth
+            )
+
+        stable_symbols = set()
+        for symbol, prods, stable in self._extra_productions:
+            sym_to_productions[symbol] = prods
+            if stable:
+                stable_symbols.add(symbol)
+
+        if self.prune_variables and "<variable>" in sym_to_productions:
+            _prune_variable_productions(
+                sym_to_productions,
+                reachable_lambdas,
+                self.max_env_depth,
+                stable_symbols,
+            )
+
+        return sym_to_productions
+
+    def _build_concrete_productions(self, reachable_prods):
+        """Build concrete Production objects from reachable (symbol, subst) pairs."""
         reachable_by_sym = {}
         for sym, subst_frozen in reachable_prods:
             reachable_by_sym.setdefault(sym, set()).add(subst_frozen)
 
-        # Build concrete Production objects, preserving declaration order
         sym_to_productions: Dict[str, List[Production]] = {}
         for sym, sig, semantics, parameters in self._parameterized_productions:
             subst_set = reachable_by_sym.get(sym, set())
@@ -377,115 +410,6 @@ class DSLFactory:
                     key=lambda p: str(p.type_signature().astype()),
                 )
             )
-
-        # Add lambda and variable productions from reachable lambdas
-        if has_lambdas and reachable_lambdas:
-            # Filter lambdas by max_type_depth: the arrow type with a
-            # dummy output must fit within the lambda depth bound
-            max_lambda_depth = self.lambda_parameters.get(
-                "max_type_depth", self.max_overall_depth
-            )
-            reachable_lambdas = {
-                inp
-                for inp in reachable_lambdas
-                if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
-            }
-            # Filter lambdas whose input types are never consumed by any
-            # production, even transitively through lambda nesting.  A type
-            # is "consumed" if it appears as an argument to some production,
-            # or as an input element of an arrow type that is consumed.
-            consumed_types = {
-                arg
-                for prods in sym_to_productions.values()
-                for prod in prods
-                for arg in prod.type_signature().arguments
-            }
-            if not any(t.has_type_vars() for t in consumed_types):
-                # Expand consumed set: arrow types consume their input types
-                changed = True
-                while changed:
-                    changed = False
-                    for t in list(consumed_types):
-                        if isinstance(t, ArrowType):
-                            for inp_t in t.input_type:
-                                if inp_t not in consumed_types:
-                                    consumed_types.add(inp_t)
-                                    changed = True
-                reachable_lambdas = {
-                    inp
-                    for inp in reachable_lambdas
-                    if any(t in consumed_types for t in inp)
-                }
-            lambda_input_types = sorted(reachable_lambdas, key=str)
-            sym_to_productions["<lambda>"] = Production.reindex(
-                [
-                    LambdaProduction(i, LambdaTypeSignature(input_types))
-                    for i, input_types in enumerate(lambda_input_types)
-                ]
-            )
-
-            variable_types = sorted(
-                {t for input_types in reachable_lambdas for t in input_types},
-                key=str,
-            )
-            sym_to_productions["<variable>"] = [
-                VariableProduction(
-                    type_id, VariableTypeSignature(variable_type, index_in_env)
-                )
-                for type_id, variable_type in enumerate(variable_types)
-                for index_in_env in range(self.max_env_depth)
-            ]
-
-        stable_symbols = set()
-        for symbol, prods, stable in self._extra_productions:
-            sym_to_productions[symbol] = prods
-            if stable:
-                stable_symbols.add(symbol)
-
-        # Prune unreachable variable/shield productions.
-        # Enumerate all (type, index) pairs reachable by nesting reachable lambdas.
-        if self.prune_variables and "<variable>" in sym_to_productions:
-            reachable_var_slots = set()
-            if reachable_lambdas:
-                lambda_inputs = sorted(reachable_lambdas, key=str)
-                # BFS over lambda nestings. Each lambda can be nested multiple
-                # times (e.g., lam(call(lam(...), x)) nests two copies).
-                seen = {()}
-                frontier = [()]
-                while frontier:
-                    env = frontier.pop()
-                    for inp in lambda_inputs:
-                        new_env = tuple(reversed(inp)) + env
-                        if len(new_env) > self.max_env_depth:
-                            continue
-                        if new_env not in seen:
-                            seen.add(new_env)
-                            frontier.append(new_env)
-                for env in seen:
-                    for idx, typ in enumerate(env):
-                        reachable_var_slots.add((typ, idx))
-            for symbol in list(sym_to_productions):
-                sig_list = sym_to_productions[symbol]
-                filtered = []
-                for prod in sig_list:
-                    ts = prod.type_signature()
-                    if hasattr(ts, "index_in_env") and hasattr(ts, "variable_type"):
-                        if (
-                            ts.variable_type,
-                            ts.index_in_env,
-                        ) not in reachable_var_slots:
-                            continue
-                    elif hasattr(ts, "index_in_env"):
-                        # Shield: keep if any type at this index is reachable
-                        if not any(
-                            idx == ts.index_in_env for _, idx in reachable_var_slots
-                        ):
-                            continue
-                    filtered.append(prod)
-                if symbol not in stable_symbols:
-                    filtered = Production.reindex(filtered)
-                sym_to_productions[symbol] = filtered
-
         return sym_to_productions
 
     def _add_all_lambda_variable_productions(self, sym_to_productions, known_types):
@@ -555,6 +479,108 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
         max_type_depth,
         max_env_depth=max_env_depth,
     )
+
+
+def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, max_env_depth):
+    """Add lambda and variable productions for the given reachable lambda types."""
+    lambda_input_types = sorted(reachable_lambdas, key=str)
+    sym_to_productions["<lambda>"] = Production.reindex(
+        [
+            LambdaProduction(i, LambdaTypeSignature(input_types))
+            for i, input_types in enumerate(lambda_input_types)
+        ]
+    )
+    variable_types = sorted(
+        {t for input_types in reachable_lambdas for t in input_types},
+        key=str,
+    )
+    sym_to_productions["<variable>"] = [
+        VariableProduction(
+            type_id, VariableTypeSignature(variable_type, index_in_env)
+        )
+        for type_id, variable_type in enumerate(variable_types)
+        for index_in_env in range(max_env_depth)
+    ]
+
+
+def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
+    """Filter lambdas whose input types are never consumed by any production.
+
+    A type is "consumed" if it appears as an argument to some concrete
+    production, or as an input element of an arrow type that is consumed
+    (transitively). Lambdas that only introduce unconsumed types into the
+    environment are useless — nothing in the DSL can use those variables.
+    """
+    consumed_types = {
+        arg
+        for prods in sym_to_productions.values()
+        for prod in prods
+        for arg in prod.type_signature().arguments
+    }
+    if any(t.has_type_vars() for t in consumed_types):
+        return reachable_lambdas
+    # Expand: arrow types transitively consume their input element types
+    changed = True
+    while changed:
+        changed = False
+        for t in list(consumed_types):
+            if isinstance(t, ArrowType):
+                for inp_t in t.input_type:
+                    if inp_t not in consumed_types:
+                        consumed_types.add(inp_t)
+                        changed = True
+    return {
+        inp
+        for inp in reachable_lambdas
+        if any(t in consumed_types for t in inp)
+    }
+
+
+def _prune_variable_productions(
+    sym_to_productions, reachable_lambdas, max_env_depth, stable_symbols
+):
+    """Prune unreachable variable/shield productions via BFS over lambda nestings.
+
+    Enumerates all (type, index) pairs reachable by nesting reachable lambdas,
+    then removes variable and shield productions that can never be reached.
+    """
+    reachable_var_slots = set()
+    if reachable_lambdas:
+        lambda_inputs = sorted(reachable_lambdas, key=str)
+        # BFS: each lambda can be nested multiple times
+        seen = {()}
+        frontier = [()]
+        while frontier:
+            env = frontier.pop()
+            for inp in lambda_inputs:
+                new_env = tuple(reversed(inp)) + env
+                if len(new_env) > max_env_depth:
+                    continue
+                if new_env not in seen:
+                    seen.add(new_env)
+                    frontier.append(new_env)
+        for env in seen:
+            for idx, typ in enumerate(env):
+                reachable_var_slots.add((typ, idx))
+
+    for symbol in list(sym_to_productions):
+        sig_list = sym_to_productions[symbol]
+        filtered = []
+        for prod in sig_list:
+            ts = prod.type_signature()
+            if hasattr(ts, "index_in_env") and hasattr(ts, "variable_type"):
+                if (ts.variable_type, ts.index_in_env) not in reachable_var_slots:
+                    continue
+            elif hasattr(ts, "index_in_env"):
+                # Shield: keep if any type at this index is reachable
+                if not any(
+                    idx == ts.index_in_env for _, idx in reachable_var_slots
+                ):
+                    continue
+            filtered.append(prod)
+        if symbol not in stable_symbols:
+            filtered = Production.reindex(filtered)
+        sym_to_productions[symbol] = filtered
 
 
 class _ConstructibilityChecker:
@@ -702,23 +728,6 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
         for env, types in constructible.items()
         if types or env == frozenset()
     }
-
-
-def _add_targets_needed(t, env, frontier, lambdas, has_lambdas):
-    """Add (type, env) pairs to frontier for constructing t in env.
-
-    For arrow types with lambdas, records the lambda and recurses on the body.
-    """
-    frontier.append((t, env))
-    if has_lambdas and isinstance(t, ArrowType):
-        lambdas.add(t.input_type)
-        _add_targets_needed(
-            t.output_type,
-            env | frozenset(t.input_type),
-            frontier,
-            lambdas,
-            has_lambdas,
-        )
 
 
 @internal_only
