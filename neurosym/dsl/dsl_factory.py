@@ -363,6 +363,8 @@ class DSLFactory:
                 concrete_type = sig.astype().subst_type_vars(filtered_subst)
                 if concrete_type.depth > self.max_overall_depth:
                     continue
+                if set(concrete_type.get_type_vars()) - shared_vars:
+                    continue
                 key = str(concrete_type)
                 if key not in prods:
                     concrete_sig = FunctionTypeSignature.from_type(concrete_type)
@@ -414,18 +416,46 @@ class DSLFactory:
             if stable:
                 stable_symbols.add(symbol)
 
-        # Prune unreachable variable productions using env-aware analysis
+        # Prune unreachable variable/shield productions.
+        # Enumerate all (type, index) pairs reachable by nesting reachable lambdas.
         if self.prune_variables and "<variable>" in sym_to_productions:
-            stable_symbols.add("<variable>")
-            sym_to_productions = _prune(
-                sym_to_productions,
-                self.target_types,
-                care_about_variables=True,
-                type_depth_limit=self.max_overall_depth,
-                env_depth_limit=self.max_env_depth,
-                stable_symbols=stable_symbols,
-                tolerate_pruning_entire_productions=True,
-            )
+            reachable_var_slots = set()
+            if reachable_lambdas:
+                lambda_inputs = sorted(reachable_lambdas, key=str)
+                # BFS over lambda nestings. Each lambda can be nested multiple
+                # times (e.g., lam(call(lam(...), x)) nests two copies).
+                seen = {()}
+                frontier = [()]
+                while frontier:
+                    env = frontier.pop()
+                    for inp in lambda_inputs:
+                        new_env = inp + env
+                        if len(new_env) > self.max_env_depth:
+                            continue
+                        if new_env not in seen:
+                            seen.add(new_env)
+                            frontier.append(new_env)
+                for env in seen:
+                    for idx, typ in enumerate(env):
+                        reachable_var_slots.add((typ, idx))
+            for symbol in list(sym_to_productions):
+                sig_list = sym_to_productions[symbol]
+                filtered = []
+                for prod in sig_list:
+                    ts = prod.type_signature()
+                    if hasattr(ts, "index_in_env") and hasattr(ts, "variable_type"):
+                        if (ts.variable_type, ts.index_in_env) not in reachable_var_slots:
+                            continue
+                    elif hasattr(ts, "index_in_env"):
+                        # Shield: keep if any type at this index is reachable
+                        if not any(
+                            idx == ts.index_in_env for _, idx in reachable_var_slots
+                        ):
+                            continue
+                    filtered.append(prod)
+                if symbol not in stable_symbols:
+                    filtered = Production.reindex(filtered)
+                sym_to_productions[symbol] = filtered
 
         return sym_to_productions
 
@@ -741,34 +771,3 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     return productions, lambdas
 
 
-def _prune(
-    sym_to_productions,
-    target_types,
-    *,
-    care_about_variables,
-    type_depth_limit,
-    env_depth_limit,
-    stable_symbols,
-    tolerate_pruning_entire_productions,
-):
-    dsl = _make_dsl(sym_to_productions, target_types, type_depth_limit, env_depth_limit)
-    symbols = dsl.constructible_symbols(care_about_variables=care_about_variables)
-    new_sym_to_productions = {}
-    for original_symbol, prods in sym_to_productions.items():
-        new_sym_to_productions[original_symbol] = [
-            x for x in prods if x.symbol() in symbols
-        ]
-        if (
-            len(new_sym_to_productions[original_symbol]) == 0
-            and not tolerate_pruning_entire_productions
-        ):
-            raise TypeError(
-                f"All productions for {original_symbol} were pruned. "
-                f"Check that the target types are correct."
-            )
-        if original_symbol in stable_symbols:
-            continue
-        new_sym_to_productions[original_symbol] = Production.reindex(
-            new_sym_to_productions[original_symbol]
-        )
-    return new_sym_to_productions

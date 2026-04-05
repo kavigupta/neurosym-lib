@@ -385,6 +385,9 @@ class TestDSLExpand(unittest.TestCase):
             dsl.render(),
             """
                 $0_0 :: V<i@0>
+                $1_0 :: V<i@1>
+                $2_0 :: V<i@2>
+                $3_0 :: V<i@3>
                 1 :: () -> i
                 id :: #a -> #a
                 lam :: L<#body|i> -> i -> #body
@@ -436,6 +439,7 @@ class TestDSLExpand(unittest.TestCase):
                 $0_0 :: V<i@0>
                 $1_0 :: V<i@1>
                 $2_0 :: V<i@2>
+                $3_0 :: V<i@3>
                 1 :: () -> i
                 id :: ((i, i) -> i) -> i
                 lam_0 :: L<#body|i;i> -> (i, i) -> #body
