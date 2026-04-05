@@ -4,6 +4,7 @@ from typing import Callable, Dict, Union
 
 from torch import NoneType
 
+from ..types.type import TypeVariable
 from ..types.type_signature import (
     LambdaTypeSignature,
     TypeSignature,
@@ -206,8 +207,15 @@ class LambdaProduction(Production):
         # pylint: disable=cyclic-import
         from neurosym.dsl.lambdas import LambdaFunction
 
+        num_args = self._type_signature.function_arity()
+        # Input types are not known statically with generic lambdas;
+        # use placeholder types.
+        unknown = TypeVariable("unknown")
+        input_types = tuple(unknown for _ in range(num_args))
         [body] = children
-        return LambdaFunction.of(dsl, body, self._type_signature, environment)
+        return LambdaFunction.of(
+            dsl=dsl, body=body, input_types=input_types, parent_environment=environment
+        )
 
     def render(self):
         return f"{self.symbol():>15} :: {self._type_signature.render()}"
@@ -221,17 +229,17 @@ class VariableProduction(Production):
     :py:meth:`neurosym.DSLFactory.lambdas` is called.
     """
 
-    _unique_id: int
     _type_signature: VariableTypeSignature
 
     def base_symbol(self):
         return f"${self._type_signature.index_in_env}"
 
     def get_index(self):
-        return self._unique_id
+        return None
 
     def with_index(self, index):
-        return VariableProduction(index, self._type_signature)
+        del index
+        return self
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature

@@ -92,7 +92,13 @@ class DSL:
         ``production`` is a production that can be applied to the given type, and ``arg_types``
         is a list of types to fill in the holes of the production.
         """
-        for idx in sorted(self._out_type_to_prod_idx.query(typ.typ)):
+        candidates = sorted(
+            self._out_type_to_prod_idx.query(
+                typ.typ,
+                is_wildcard_query=lambda x: isinstance(x, GenericTypeVariable),
+            )
+        )
+        for idx in candidates:
             production = self.productions[idx]
             arg_types = production.type_signature().unify_return(typ)
             if arg_types is not None:

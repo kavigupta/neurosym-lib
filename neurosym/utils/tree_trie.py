@@ -49,13 +49,17 @@ class TreeTrie(Generic[K, V]):
         for child, trie_child in zip(children, trie_children):
             trie_child.insert(child, value, is_wildcard_predicate=is_wildcard_predicate)
 
-    def query(self, key: K) -> Set[V]:
+    def query(self, key: K, *, is_wildcard_query=None) -> Set[V]:
         """
         Query the tree trie for values associated with a key.
 
         :param key: The key to query.
+        :param is_wildcard_query: Optional predicate that returns True if a query
+            node should match all entries (i.e., acts as a wildcard on the query side).
         :return: A set of values associated with the key.
         """
+        if is_wildcard_query is not None and is_wildcard_query(key):
+            return self.all_values()
         children = list(key.children())
         summary = key.node_summary(), len(children)
         as_leaf = set() if summary not in self.leaves else set(self.leaves[summary])
@@ -65,7 +69,9 @@ class TreeTrie(Generic[K, V]):
             trie_children = self.trie_children[summary]
             assert len(trie_children) == len(children)
             for child, trie_child in zip(children, trie_children):
-                query_finding = trie_child.query(child)
+                query_finding = trie_child.query(
+                    child, is_wildcard_query=is_wildcard_query
+                )
                 if as_child is None:
                     as_child = query_finding
                 else:
@@ -75,3 +81,13 @@ class TreeTrie(Generic[K, V]):
         else:
             as_child = set()
         return as_leaf | as_wild | as_child
+
+    def all_values(self) -> Set[V]:
+        """Return all values stored in this trie and its descendants."""
+        result = set(self.wild)
+        for vals in self.leaves.values():
+            result.update(vals)
+        for children_tuple in self.trie_children.values():
+            for child_trie in children_tuple:
+                result.update(child_trie.all_values())
+        return result

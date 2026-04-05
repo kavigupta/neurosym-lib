@@ -47,8 +47,7 @@ class TestPruning(unittest.TestCase):
             """
             1 :: () -> i
             add :: (i, i) -> i
-            convert_0 :: f -> f
-            convert_1 :: i -> f
+            convert :: #x -> f
             identity :: i -> i
             """,
         )
@@ -105,12 +104,12 @@ class TestPruning(unittest.TestCase):
             self,
             dsl.render(),
             """
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
+            $0 :: V<@0>
+            $1 :: V<@1>
+            $2 :: V<@2>
+            $3 :: V<@3>
             1 :: () -> i
             call :: (i -> i, i) -> i
-            lam :: L<#body|i> -> i -> #body
+            lam :: L<#body|#_arg0> -> (#_arg0) -> #body
             """,
         )
