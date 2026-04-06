@@ -47,6 +47,7 @@ include = ["*"]
 [dependency-groups]
 test = [
   "pytest",
+  "pytest-timeout",
   "parameterized",
   "matplotlib", # needed for tutorial test
   "sphobjinv",
