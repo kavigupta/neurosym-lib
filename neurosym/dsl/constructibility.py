@@ -11,8 +11,9 @@ class _ConstructibilityChecker:
     checking constructibility and finding type variable bindings.
     """
 
-    def __init__(self, has_lambdas, register_envs=False):
+    def __init__(self, has_lambdas, max_lambda_depth, register_envs=False):
         self.has_lambdas = has_lambdas
+        self.max_lambda_depth = max_lambda_depth
         self.register_envs = register_envs
         self.constructible = {frozenset(): set()}
 
@@ -32,6 +33,8 @@ class _ConstructibilityChecker:
             if tracked_env <= env and t in types:
                 return True
         if self.has_lambdas and isinstance(t, ArrowType):
+            if t.depth >= self.max_lambda_depth:
+                return False
             new_env = env | frozenset(t.input_type)
             if self.register_envs and new_env not in self.constructible:
                 self.constructible[new_env] = set()
@@ -54,11 +57,12 @@ class _ConstructibilityChecker:
             if merged is not None:
                 yield merged
         if self.has_lambdas and isinstance(resolved, ArrowType):
-            yield from self.bindings_for(
-                resolved.output_type,
-                subst,
-                env | frozenset(resolved.input_type),
-            )
+            if resolved.depth < self.max_lambda_depth:
+                yield from self.bindings_for(
+                    resolved.output_type,
+                    subst,
+                    env | frozenset(resolved.input_type),
+                )
 
     def find_valid_substs(self, sig, env=frozenset()):
         """Yield substitutions that make all arguments of sig constructible in env."""
@@ -90,7 +94,9 @@ def _merge_subst(base, extension):
 
 
 @internal_only
-def directly_constructible_types(signatures, has_lambdas, max_depth, target_types=None):
+def directly_constructible_types(
+    signatures, has_lambdas, max_depth, max_lambda_depth, target_types=None
+):
     """
     Compute the set of constructible types per environment via a bottom-up fixed point,
     working directly from raw production signatures (which may contain type variables).
@@ -99,7 +105,8 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
     - It is constructible in a sub-environment of E (including the empty env), OR
     - It is a member of E (a variable), OR
     - It is an arrow type ``(A1, ..., An) -> B`` where ``B`` is constructible in
-      ``E ∪ {A1, ..., An}`` (when has_lambdas is True), OR
+      ``E ∪ {A1, ..., An}`` (when has_lambdas is True and the arrow type's depth
+      is below ``max_lambda_depth``), OR
     - Some production can output it with all inputs constructible in E.
 
     Returns a dict mapping each environment (frozenset of Types) to the set of types
@@ -108,7 +115,9 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
     # pylint: disable=too-many-branches
-    checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
+    checker = _ConstructibilityChecker(
+        has_lambdas, max_lambda_depth, register_envs=True
+    )
     constructible = checker.constructible
 
     # Seed envs from arrow-typed targets so their bodies get explored
@@ -151,7 +160,14 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
 
 
 @internal_only
-def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_depth):
+def reachable_symbols(
+    signatures,
+    constructible,
+    target_types,
+    has_lambdas,
+    max_depth,
+    max_lambda_depth,
+):
     """
     Top-down search from target types through signatures, collecting concrete
     production instantiations and lambda argument types that are reachable.
@@ -167,6 +183,7 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     :param target_types: List of Type objects to start the search from.
     :param has_lambdas: Whether lambdas are enabled.
     :param max_depth: Maximum type depth.
+    :param max_lambda_depth: Maximum depth for arrow types treated as lambdas.
 
     :return: A tuple of ``(prod_sigs, lambdas)`` where:
         - ``prod_sigs`` is a dict mapping each symbol name to a list of
@@ -178,7 +195,7 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
           type that is constructed via lambda).
     """
     # pylint: disable=too-many-branches,too-many-nested-blocks
-    checker = _ConstructibilityChecker(has_lambdas)
+    checker = _ConstructibilityChecker(has_lambdas, max_lambda_depth)
     checker.constructible = constructible
 
     # Precompute shared type vars per signature (vars in both args and return
@@ -204,8 +221,9 @@ def reachable_symbols(signatures, constructible, target_types, has_lambdas, max_
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
-            lambdas.add(t.input_type)
-            _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
+            if t.depth < max_lambda_depth:
+                lambdas.add(t.input_type)
+                _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):
         """Record a concrete production, return True if new (for exploration)."""

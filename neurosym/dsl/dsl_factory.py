@@ -2,7 +2,7 @@ import copy
 import warnings
 from typing import Callable, Dict, List, Tuple
 
-from ..types.type import ArrowType, AtomicType, Type
+from ..types.type import ArrowType, Type
 from ..types.type_signature import LambdaTypeSignature, VariableTypeSignature
 from ..types.type_string_repr import TypeDefiner
 from .constructibility import directly_constructible_types, reachable_symbols
@@ -204,34 +204,37 @@ class DSLFactory:
             else:
                 seen[sym] = sig
 
+        if has_lambdas:
+            max_lambda_depth = self.lambda_parameters.get(
+                "max_type_depth", self.max_overall_depth
+            )
+        else:
+            max_lambda_depth = self.max_overall_depth
+
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
         constructible = directly_constructible_types(
-            sigs_only, has_lambdas, self.max_overall_depth, self.target_types
+            sigs_only,
+            has_lambdas,
+            self.max_overall_depth,
+            max_lambda_depth,
+            self.target_types,
         )
 
         # Top-down: find reachable productions and lambdas
-        reachable_prods, reachable_lambdas_raw = reachable_symbols(
+        reachable_prods, reachable_lambdas = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
             has_lambdas,
             self.max_overall_depth,
+            max_lambda_depth,
         )
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
-        reachable_lambdas = set()
         var_slots = set()
-        if has_lambdas and reachable_lambdas_raw:
-            max_lambda_depth = self.lambda_parameters.get(
-                "max_type_depth", self.max_overall_depth
-            )
-            reachable_lambdas = {
-                inp
-                for inp in reachable_lambdas_raw
-                if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
-            }
+        if has_lambdas and reachable_lambdas:
             reachable_lambdas = _filter_useless_lambdas(
                 reachable_lambdas, sym_to_productions
             )
