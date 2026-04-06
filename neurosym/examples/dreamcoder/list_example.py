@@ -90,8 +90,6 @@ def list_dsl(*output_types):
     #     empty
     #     $0))))
 
-    dslf.no_zeroadic()
-
     dslf.lambdas(max_type_depth=3)
     dslf.prune_to(*output_types, prune_variables=False)
 

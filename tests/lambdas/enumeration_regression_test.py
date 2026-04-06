@@ -15,7 +15,6 @@ class EnumerationRegressionTest(unittest.TestCase):
         if lambdas_kwargs is None:
             lambdas_kwargs = {}
         dslf = ns.DSLFactory(**kwargs)
-        dslf.known_types(*known_types)
         dslf.lambdas(**lambdas_kwargs)
         dslf.prune_to(*known_types, tolerate_pruning_entire_productions=True)
         return dslf.finalize().render()

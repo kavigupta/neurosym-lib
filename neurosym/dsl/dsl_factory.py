@@ -2,14 +2,11 @@ import copy
 import warnings
 from typing import Callable, Dict, List, Tuple
 
-import numpy as np
-
 from ..types.type import ArrowType, AtomicType, Type, UnificationError
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
-    _signature_expansions,
 )
 from ..types.type_string_repr import TypeDefiner
 from ..utils.documentation import internal_only
@@ -39,16 +36,10 @@ class DSLFactory:
         dslf.finalize()
     """
 
-    def __init__(
-        self, max_expansion_steps=np.inf, max_env_depth=4, max_overall_depth=6, **env
-    ):
+    def __init__(self, max_env_depth=4, max_overall_depth=6, **env):
         self.t = TypeDefiner(**env)
         self._parameterized_productions = []
-        self._signatures = []
-        self._known_types = []
-        self._no_zeroadic = False
         self.lambda_parameters = None
-        self.max_expansion_steps = max_expansion_steps
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
         self.prune = False
@@ -86,19 +77,6 @@ class DSLFactory:
             dslf.production("+", "%num -> %num -> %num", lambda x: x)
         """
         self.t.filtered_type_variable(key, type_filter)
-
-    def known_types(self, *types: Tuple[str, ...]):
-        """
-        Make this DSLFactory aware of the given types. These types will be used to
-        generate expansions for any productions need to be template-expanded.
-        """
-        self._known_types.extend(self.t(typ) for typ in types)
-
-    def no_zeroadic(self):
-        """
-        Disable zeroadic types (types with no arguments).
-        """
-        self._no_zeroadic = True
 
     def lambdas(self, max_type_depth=4):
         """
@@ -178,7 +156,6 @@ class DSLFactory:
                 parameters,
             )
         )
-        self._signatures.append(sig)
 
     def prune_to(
         self,
@@ -194,51 +171,6 @@ class DSLFactory:
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
-
-    def _expansions_for_single_production(
-        self, type_atoms, type_constructors, production_constructor, symbol, sig, *args
-    ):
-        sigs = sorted(
-            set(
-                _signature_expansions(
-                    sig,
-                    type_atoms,
-                    type_constructors,
-                    max_expansion_steps=self.max_expansion_steps,
-                    max_overall_depth=self.max_overall_depth,
-                )
-            ),
-            key=str,
-        )
-        assert len(sigs) > 0, f"No expansions within depth/step bounds for {symbol}"
-
-        prods = [
-            production_constructor(
-                symbol, FunctionTypeSignature.from_type(expansion), *args
-            )
-            for expansion in sigs
-        ]
-
-        return {symbol: Production.reindex(prods)}
-
-    def _expansions_for_all_productions(
-        self, type_atoms, type_constructors, production_constructor, args
-    ):
-        result = {}
-        for arg in args:
-            for_prod = self._expansions_for_single_production(
-                type_atoms, type_constructors, production_constructor, *arg
-            )
-            duplicate_keys = sorted(set(for_prod.keys()) & set(result.keys()))
-            if duplicate_keys:
-                for key in duplicate_keys:
-                    if for_prod[key] != result[key]:
-                        raise ValueError(
-                            f"Duplicate declarations for production: {key}"
-                        )
-            else:
-                result.update(for_prod)
-        return result
 
     def finalize(self) -> DSL:
         """
