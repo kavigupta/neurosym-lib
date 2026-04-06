@@ -87,7 +87,8 @@ from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.tree_trie import TreeTrie
 
 from . import compression, datasets, examples, search
-from .dsl.dsl_factory import DSLFactory, directly_constructible_types, reachable_symbols
+from .dsl.constructibility import directly_constructible_types, reachable_symbols
+from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import (
     BigramProgramCounts,
     BigramProgramCountsBatch,
