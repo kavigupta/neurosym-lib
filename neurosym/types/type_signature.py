@@ -62,6 +62,14 @@ class TypeSignature(ABC):
         Render this type signature as a string.
         """
 
+    def required_env_index(self) -> Union[int, None]:
+        """
+        Return the environment index this signature requires, or None if it
+        does not depend on a specific environment slot. Used to prune
+        productions that reference unreachable environment indices.
+        """
+        return None
+
 
 @dataclass
 class FunctionTypeSignature(TypeSignature):
@@ -212,6 +220,9 @@ class VariableTypeSignature(TypeSignature):
 
     variable_type: Type
     index_in_env: int
+
+    def required_env_index(self) -> Union[int, None]:
+        return self.index_in_env
 
     def arity(self) -> int:
         # leaf

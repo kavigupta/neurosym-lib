@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Optional, Union
 
 from torch import NoneType
 
@@ -33,6 +33,9 @@ class ShieldTypeSignature(TypeSignature):
         body = TypeVariable("body")
 
         return f"D<{render_type(body)}, ${self.index_in_env}> -> {render_type(body)}"
+
+    def required_env_index(self) -> Optional[int]:
+        return self.index_in_env
 
     def unify_return(
         self, twe: TypeWithEnvironment

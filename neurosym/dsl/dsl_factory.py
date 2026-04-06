@@ -226,6 +226,7 @@ class DSLFactory:
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
         reachable_lambdas = set()
+        var_slots = set()
         if has_lambdas and reachable_lambdas_raw:
             max_lambda_depth = self.lambda_parameters.get(
                 "max_type_depth", self.max_overall_depth
@@ -248,19 +249,18 @@ class DSLFactory:
                 sym_to_productions, reachable_lambdas, var_slots
             )
 
-        stable_symbols = set()
+        reachable_indices = {idx for _, idx in var_slots}
         for symbol, prods, stable in self._extra_productions:
+            if self.prune_variables:
+                prods = [
+                    p
+                    for p in prods
+                    if (idx := p.type_signature().required_env_index()) is None
+                    or idx in reachable_indices
+                ]
+                if not stable:
+                    prods = Production.reindex(prods)
             sym_to_productions[symbol] = prods
-            if stable:
-                stable_symbols.add(symbol)
-
-        if self.prune_variables:
-            _prune_shield_productions(
-                sym_to_productions,
-                reachable_lambdas,
-                self.max_env_depth,
-                stable_symbols,
-            )
 
         return sym_to_productions
 
@@ -360,31 +360,6 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
                         consumed_types.add(inp_t)
                         changed = True
     return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}
-
-
-def _prune_shield_productions(
-    sym_to_productions, reachable_lambdas, max_env_depth, stable_symbols
-):
-    """Prune unreachable shield productions based on reachable env indices."""
-    reachable_indices = {
-        idx for _, idx in _reachable_var_slots(reachable_lambdas, max_env_depth)
-    }
-    for symbol in list(sym_to_productions):
-        sig_list = sym_to_productions[symbol]
-        filtered = []
-        for prod in sig_list:
-            ts = prod.type_signature()
-            if (
-                hasattr(ts, "index_in_env")
-                and not hasattr(ts, "variable_type")
-                and ts.index_in_env not in reachable_indices
-            ):
-                continue
-            filtered.append(prod)
-        if filtered != sig_list:
-            if symbol not in stable_symbols:
-                filtered = Production.reindex(filtered)
-            sym_to_productions[symbol] = filtered
 
 
 class _ConstructibilityChecker:
