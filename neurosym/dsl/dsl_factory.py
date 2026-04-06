@@ -188,10 +188,6 @@ class DSLFactory:
             has_lambdas,
         )
 
-        if "<variable>" in sym_to_productions:
-            sym_to_productions["<variable>"] = _clean_variables(
-                sym_to_productions["<variable>"]
-            )
         return _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
@@ -219,7 +215,7 @@ class DSLFactory:
         )
 
         # Top-down: find reachable productions and lambdas
-        reachable_prods, reachable_lambdas = reachable_symbols(
+        reachable_prods, reachable_lambdas_raw = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
@@ -229,20 +225,27 @@ class DSLFactory:
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
-        if has_lambdas and reachable_lambdas:
+        reachable_lambdas = set()
+        if has_lambdas and reachable_lambdas_raw:
             max_lambda_depth = self.lambda_parameters.get(
                 "max_type_depth", self.max_overall_depth
             )
             reachable_lambdas = {
                 inp
-                for inp in reachable_lambdas
+                for inp in reachable_lambdas_raw
                 if ArrowType(inp, AtomicType("_")).depth < max_lambda_depth
             }
             reachable_lambdas = _filter_useless_lambdas(
                 reachable_lambdas, sym_to_productions
             )
+            var_slots = _reachable_var_slots(reachable_lambdas, self.max_env_depth)
+            if not self.prune_variables:
+                all_types = {t for inp in reachable_lambdas for t in inp}
+                var_slots = {
+                    (t, i) for t in all_types for i in range(self.max_env_depth)
+                }
             _add_lambda_variable_productions(
-                sym_to_productions, reachable_lambdas, self.max_env_depth
+                sym_to_productions, reachable_lambdas, var_slots
             )
 
         stable_symbols = set()
@@ -251,8 +254,8 @@ class DSLFactory:
             if stable:
                 stable_symbols.add(symbol)
 
-        if self.prune_variables and "<variable>" in sym_to_productions:
-            _prune_variable_productions(
+        if self.prune_variables:
+            _prune_shield_productions(
                 sym_to_productions,
                 reachable_lambdas,
                 self.max_env_depth,
@@ -283,16 +286,6 @@ class DSLFactory:
         return sym_to_productions
 
 
-def _clean_variables(variable_productions):
-    type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
-    type_to_idx = {t: i for i, t in enumerate(sorted(type_to_idx, key=str))}
-    variable_productions = [
-        prod.with_index(type_to_idx[prod.type_signature().variable_type])
-        for prod in variable_productions
-    ]
-    return variable_productions
-
-
 def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
     return DSL(
         [prod for prods in sym_to_productions.values() for prod in prods],
@@ -302,9 +295,26 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
     )
 
 
-def _add_lambda_variable_productions(
-    sym_to_productions, reachable_lambdas, max_env_depth
-):
+def _reachable_var_slots(reachable_lambdas, max_env_depth):
+    """BFS over lambda nestings to find reachable (type, env_index) pairs."""
+    if not reachable_lambdas:
+        return set()
+    lambda_inputs = sorted(reachable_lambdas, key=str)
+    seen = {()}
+    frontier = [()]
+    while frontier:
+        env = frontier.pop()
+        for inp in lambda_inputs:
+            new_env = tuple(reversed(inp)) + env
+            if len(new_env) > max_env_depth:
+                continue
+            if new_env not in seen:
+                seen.add(new_env)
+                frontier.append(new_env)
+    return {(typ, idx) for env in seen for idx, typ in enumerate(env)}
+
+
+def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_slots):
     """Add lambda and variable productions for the given reachable lambda types."""
     lambda_input_types = sorted(reachable_lambdas, key=str)
     sym_to_productions["<lambda>"] = Production.reindex(
@@ -313,14 +323,11 @@ def _add_lambda_variable_productions(
             for i, input_types in enumerate(lambda_input_types)
         ]
     )
-    variable_types = sorted(
-        {t for input_types in reachable_lambdas for t in input_types},
-        key=str,
-    )
+    variable_types = sorted({t for t, _ in var_slots}, key=str)
+    type_to_idx = {t: i for i, t in enumerate(variable_types)}
     sym_to_productions["<variable>"] = [
-        VariableProduction(type_id, VariableTypeSignature(variable_type, index_in_env))
-        for type_id, variable_type in enumerate(variable_types)
-        for index_in_env in range(max_env_depth)
+        VariableProduction(type_to_idx[typ], VariableTypeSignature(typ, idx))
+        for typ, idx in sorted(var_slots, key=lambda s: (s[1], str(s[0])))
     ]
 
 
@@ -355,49 +362,29 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
     return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}
 
 
-def _prune_variable_productions(
+def _prune_shield_productions(
     sym_to_productions, reachable_lambdas, max_env_depth, stable_symbols
-):  # pylint: disable=too-many-branches
-    """Prune unreachable variable/shield productions via BFS over lambda nestings.
-
-    Enumerates all (type, index) pairs reachable by nesting reachable lambdas,
-    then removes variable and shield productions that can never be reached.
-    """
-    reachable_var_slots = set()
-    if reachable_lambdas:
-        lambda_inputs = sorted(reachable_lambdas, key=str)
-        # BFS: each lambda can be nested multiple times
-        seen = {()}
-        frontier = [()]
-        while frontier:
-            env = frontier.pop()
-            for inp in lambda_inputs:
-                new_env = tuple(reversed(inp)) + env
-                if len(new_env) > max_env_depth:
-                    continue
-                if new_env not in seen:
-                    seen.add(new_env)
-                    frontier.append(new_env)
-        for env in seen:
-            for idx, typ in enumerate(env):
-                reachable_var_slots.add((typ, idx))
-
+):
+    """Prune unreachable shield productions based on reachable env indices."""
+    reachable_indices = {
+        idx for _, idx in _reachable_var_slots(reachable_lambdas, max_env_depth)
+    }
     for symbol in list(sym_to_productions):
         sig_list = sym_to_productions[symbol]
         filtered = []
         for prod in sig_list:
             ts = prod.type_signature()
-            if hasattr(ts, "index_in_env") and hasattr(ts, "variable_type"):
-                if (ts.variable_type, ts.index_in_env) not in reachable_var_slots:
-                    continue
-            elif hasattr(ts, "index_in_env"):
-                # Shield: keep if any type at this index is reachable
-                if not any(idx == ts.index_in_env for _, idx in reachable_var_slots):
-                    continue
+            if (
+                hasattr(ts, "index_in_env")
+                and not hasattr(ts, "variable_type")
+                and ts.index_in_env not in reachable_indices
+            ):
+                continue
             filtered.append(prod)
-        if symbol not in stable_symbols:
-            filtered = Production.reindex(filtered)
-        sym_to_productions[symbol] = filtered
+        if filtered != sig_list:
+            if symbol not in stable_symbols:
+                filtered = Production.reindex(filtered)
+            sym_to_productions[symbol] = filtered
 
 
 class _ConstructibilityChecker:
