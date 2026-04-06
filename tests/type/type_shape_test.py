@@ -4,7 +4,6 @@ import neurosym as ns
 
 
 class TestComputeTypeShapeTensor(unittest.TestCase):
-
     def test_exact_tensor_direct_works(self):
         self.assertEqual(
             ns.compute_type_shape(ns.parse_type("{f, 24, 32}"), (24, 32)),

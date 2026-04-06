@@ -77,7 +77,6 @@ def predicate_dsl():
 
 
 class TestHierarchicalBouncingBall(unittest.TestCase):
-
     def check_ground_bounce(self, node):
         cond, cons, alt = node.children
         cond = cond.children[0].state["lin"]

@@ -138,7 +138,6 @@ class NEAR:
         return sexprs
 
     def _get_validator(self, datamodule):
-
         validation_cost = default_near_cost(
             trainer_cfg=self._trainer_config(),
             datamodule=datamodule,

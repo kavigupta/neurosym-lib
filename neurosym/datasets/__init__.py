@@ -1,5 +1,6 @@
 from .bball_data_example import bball_data_example
 from .calms21_investigation_example import calms21_investigation_example
 from .crim13_data_example import crim13_data_example
+from .ecg_data_example import ecg_data_example
 from .flyvfly_data_example import flyvfly_data_example
 from .near_data_example import near_data_example

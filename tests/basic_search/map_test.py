@@ -6,9 +6,7 @@ from .bind_test import simple_test_graph
 
 
 class TestSearch(unittest.TestCase):
-
     def test_basic(self):
-
         seen = []
 
         def map_fn(x):

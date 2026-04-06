@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from neurosym.utils.documentation import internal_only
 
 from ...dsl.dsl import DSL
 from ...programs.hole import Hole
 from ...programs.s_expression import InitializedSExpression, SExpression
-from ...types.type import ArrowType, ListType, TensorType, Type
+from ...types.type import ArrowType, AtomicType, ListType, TensorType, Type
 from .neural_hole_filler import DictionaryNeuralHoleFiller, NeuralHoleFiller
 
 
@@ -115,12 +115,13 @@ def create_modules(types: List[Type], module_factory):
 
 
 @internal_only
-def compute_io_shape(t):
+def compute_io_shape(t, known_atom_shapes=None):
     """
     t : ArrowType
     returns: dict(input_shape, output_shape)
         input_shape: list of tuples (shape, type)
         output_shape: tuple (shape, type)
+    known_atom_shapes: optional mapping of AtomicType names to shapes.
     """
     assert isinstance(t, ArrowType)
     input_types = t.input_type
@@ -132,8 +133,16 @@ def compute_io_shape(t):
                 return shape
             case ListType(element_type):
                 return get_shape(element_type)
+            case t if isinstance(t, Tuple):
+                return len(t)
+            case AtomicType(k):
+                assert (
+                    known_atom_shapes is not None
+                ), "known_atom_shapes must be provided for AtomicType"
+                assert k in known_atom_shapes, f"Unknown shape for type {k}"
+                return known_atom_shapes[k]
             case _:
-                raise NotImplementedError(f"Cannot compute shape for type {t}")
+                raise NotImplementedError(f"Cannot compute shape for type {type(t)}")
 
     input_shape = [get_shape(t) for t in input_types]
     output_shape = get_shape(output_type)

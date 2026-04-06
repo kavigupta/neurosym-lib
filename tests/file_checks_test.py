@@ -39,6 +39,11 @@ def read_python_file(path):
     raise ValueError(f"Unknown file type: {path}")
 
 
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+DOCS_DIR = os.path.join(PROJECT_ROOT, "docs")
+DOCS_OBJECTS_INV = os.path.join(DOCS_DIR, "build", "html", "objects.inv")
+
+
 class GatherImports(ast.NodeVisitor):
     def __init__(self):
         self.imports = set()
@@ -146,9 +151,7 @@ def lookup_qualified_neurosym_name(qualified_name):
 
 @lru_cache(None)
 def read_obj_inv():
-    path = "docs/build/html/objects.inv"
-
-    inv = sphobjinv.Inventory(path)
+    inv = sphobjinv.Inventory(DOCS_OBJECTS_INV)
     return [
         lookup_qualified_neurosym_name(x.name)
         for x in inv.objects
@@ -174,10 +177,11 @@ objects = get_objects()
 
 
 class AllImplicitlyReferencedFunctionsDocumentedTest(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
-        subprocess.run(["make", "html"], cwd="docs", check=True)
+        if not os.path.isdir(DOCS_DIR):
+            raise unittest.SkipTest("docs directory not found; skipping docs checks")
+        subprocess.run(["make", "html"], cwd=DOCS_DIR, check=True)
 
     @parameterized.parameterized.expand([(i,) for i in range(len(objects))])
     def test_documented(self, i):
