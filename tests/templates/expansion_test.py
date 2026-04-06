@@ -303,7 +303,7 @@ class TestDSLExpand(unittest.TestCase):
         dslf = ns.DSLFactory()
         dslf.production("1", "() -> i", lambda: 1)
         dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
-        dslf.production("to_f", "i -> f", lambda x: float(x))
+        dslf.production("to_f", "i -> f", float)
         dslf.prune_to("i", tolerate_pruning_entire_productions=True)
         dsl = dslf.finalize()
         assertDSL(
@@ -318,7 +318,7 @@ class TestDSLExpand(unittest.TestCase):
     def test_prune_keeps_reachable_chain(self):
         dslf = ns.DSLFactory()
         dslf.production("1", "() -> i", lambda: 1)
-        dslf.production("to_f", "i -> f", lambda x: float(x))
+        dslf.production("to_f", "i -> f", float)
         dslf.production("to_g", "f -> g", lambda x: x)
         dslf.prune_to("g")
         dsl = dslf.finalize()
