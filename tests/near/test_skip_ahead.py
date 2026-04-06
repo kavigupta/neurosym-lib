@@ -17,6 +17,9 @@ class TestSkipAhead(unittest.TestCase):
 
     def basicSkipAheadDSL(self):
         dslf = ns.DSLFactory()
+        dslf.production("a1", "() -> a1", None)
+        dslf.production("a2", "() -> a2", None)
+        dslf.production("f2", "() -> f2", None)
         dslf.production("a1Tob", "a1 -> b", None)
         dslf.production("a2Tob", "a2 -> b", None)
         dslf.production("bToc", "b -> c", None)
@@ -25,6 +28,7 @@ class TestSkipAhead(unittest.TestCase):
         dslf.production("eTof", "e -> f", None)
         dslf.production("fTog", "f -> g", None)
         dslf.production("f2Tog", "f2 -> g", None)
+        dslf.prune_to("g")
         return dslf.finalize()
 
     def assertNodes(self, nodes, expected_reprs):
@@ -46,7 +50,7 @@ class TestSkipAhead(unittest.TestCase):
 
         self.assertNodes(
             g.expand_node(g.initial_node()),
-            ["(fTog (eTof (dToe (cTod (bToc ??::<b>)))))", "(f2Tog ??::<f2>)"],
+            ["(fTog (eTof (dToe (cTod (bToc ??::<b>)))))", "(f2Tog (f2))"],
         )
 
     def deadEndLoopDSL(self):

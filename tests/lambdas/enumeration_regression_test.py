@@ -17,6 +17,7 @@ class EnumerationRegressionTest(unittest.TestCase):
         dslf = ns.DSLFactory(**kwargs)
         dslf.known_types(*known_types)
         dslf.lambdas(**lambdas_kwargs)
+        dslf.prune_to(*known_types, tolerate_pruning_entire_productions=True)
         return dslf.finalize().render()
 
     def test_basic(self):
@@ -27,8 +28,6 @@ class EnumerationRegressionTest(unittest.TestCase):
             lam_1 :: L<#body|i> -> i -> #body
             $0_0 :: V<i@0>
             $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
             """,
         )
 
@@ -36,11 +35,9 @@ class EnumerationRegressionTest(unittest.TestCase):
         self.assertRenderingEqual(
             self.rendered_dsl(known_types=("i", "i -> i -> i")),
             """
-            lam_0 :: L<#body|i> -> i -> #body
+            lam :: L<#body|i> -> i -> #body
             $0_0 :: V<i@0>
             $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
             """,
         )
 
@@ -51,17 +48,10 @@ class EnumerationRegressionTest(unittest.TestCase):
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),
             """
-            lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
-            lam_1 :: L<#body|i;i> -> (i, i) -> #body
-            lam_2 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i -> i@0>
-            $1_0 :: V<i -> i@1>
-            $2_0 :: V<i -> i@2>
-            $3_0 :: V<i -> i@3>
-            $0_1 :: V<i@0>
-            $1_1 :: V<i@1>
-            $2_1 :: V<i@2>
-            $3_1 :: V<i@3>
+            lam_0 :: L<#body|i;i> -> (i, i) -> #body
+            lam_1 :: L<#body|i> -> i -> #body
+            $0_0 :: V<i@0>
+            $1_0 :: V<i@1>
             """,
         )
 
@@ -73,12 +63,9 @@ class EnumerationRegressionTest(unittest.TestCase):
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),
             """
-            lam_0 :: L<#body|i -> i> -> (i -> i) -> #body
-            lam_1 :: L<#body|i;i> -> (i, i) -> #body
-            lam_2 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i -> i@0>
-            $1_0 :: V<i -> i@1>
-            $0_1 :: V<i@0>
-            $1_1 :: V<i@1>
+            lam_0 :: L<#body|i;i> -> (i, i) -> #body
+            lam_1 :: L<#body|i> -> i -> #body
+            $0_0 :: V<i@0>
+            $1_0 :: V<i@1>
             """,
         )

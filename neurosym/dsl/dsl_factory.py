@@ -56,6 +56,7 @@ class DSLFactory:
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
+        self._extra_productions = []
 
     def typedef(self, key: str, type_str: str):
         """
@@ -109,6 +110,20 @@ class DSLFactory:
         :param max_type_depth: The maximum depth of types to generate.
         """
         self.lambda_parameters = dict(max_type_depth=max_type_depth)
+
+    def extra_productions(
+        self, symbol: str, productions: List[Production], stable: bool = True
+    ):
+        """
+        Add custom productions to the DSL. These are added as-is without
+        type expansion. If stable is True, these productions will not be
+        reindexed during pruning.
+
+        :param symbol: The symbol group name for these productions (e.g., "<shield>").
+        :param productions: The list of productions to add.
+        :param stable: If True, these productions will not be reindexed during pruning.
+        """
+        self._extra_productions.append((symbol, productions, stable))
 
     def concrete(self, symbol: str, type_str: str, semantics: object):
         """
@@ -241,6 +256,9 @@ class DSLFactory:
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
+        if not self.prune:
+            raise TypeError("prune_to() must be called before finalize()")
+
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
@@ -300,38 +318,40 @@ class DSLFactory:
             # don't prune and reindex variables
             stable_symbols.add("<variable>")
 
-        if self.prune:
-            assert self.target_types is not None
+        for symbol, prods, stable in self._extra_productions:
+            sym_to_productions[symbol] = prods
+            if stable:
+                stable_symbols.add(symbol)
+
+        sym_to_productions = _prune(
+            sym_to_productions,
+            self.target_types,
+            care_about_variables=False,
+            type_depth_limit=self.max_overall_depth,
+            env_depth_limit=self.max_env_depth,
+            stable_symbols=stable_symbols,
+            tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
+        )
+        if self.prune_variables:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
-                care_about_variables=False,
+                care_about_variables=True,
                 type_depth_limit=self.max_overall_depth,
                 env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
-            if self.prune_variables:
-                sym_to_productions = _prune(
-                    sym_to_productions,
-                    self.target_types,
-                    care_about_variables=True,
-                    type_depth_limit=self.max_overall_depth,
-                    env_depth_limit=self.max_env_depth,
-                    stable_symbols=stable_symbols,
-                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-                )
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = _make_dsl(
+        return _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
             self.max_overall_depth,
             self.max_env_depth,
         )
-        return dsl
 
 
 def _clean_variables(variable_productions):

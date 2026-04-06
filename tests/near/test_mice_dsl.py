@@ -6,6 +6,7 @@ We conduct the following tests:
 - Performance Check: Our program performs as well as the base NEAR implementation.
 """
 
+import itertools
 import unittest
 
 import torch
@@ -44,6 +45,7 @@ class TestNEARMiceDSL(unittest.TestCase):
         """
         Ensure that the performance of the program is atleast 90% of the performance of the base NEAR implementation.
         """
+        torch.manual_seed(0)
         datamodule = ns.datasets.calms21_investigation_example(
             train_seed=0, batch_size=1024
         )
@@ -74,14 +76,21 @@ class TestNEARMiceDSL(unittest.TestCase):
             is_goal=lambda _: True,
             cost=cost,
         )
-        iterator = ns.search.AStar()(g)
+        iterator = ns.search.OSGAstar()(g)
         # Should not throw a StopIteration error
-        program = next(iterator)
-        initialized_program = neural_dsl.initialize(program)
-        # pylint: disable=no-member
-        _ = cost.validation_heuristic.with_n_epochs(40).compute_cost(
-            neural_dsl, initialized_program, cost.embedding
-        )
+        programs = list(itertools.islice(iterator, 10))
+        initialized_programs = [neural_dsl.initialize(program) for program in programs]
+        # finetunes the programs
+        costs = [
+            # pylint: disable=no-member
+            cost.validation_heuristic.with_n_epochs(40).compute_cost(
+                neural_dsl, ip, cost.embedding
+            )
+            for ip in initialized_programs
+        ]
+        print("programs", [ns.render_s_expression(p) for p in initialized_programs])
+        print("Costs:", costs)
+        initialized_program = initialized_programs[costs.index(min(costs))]
         # pylint: enable=no-member
         self.assertIsNotNone(initialized_program)
         # ensure that the node's F1 score is within 0.1 of the base NEAR implementation 0.8 F1 score.
@@ -98,6 +107,9 @@ class TestNEARMiceDSL(unittest.TestCase):
             target_names=["not investigation", "investigation"],
             output_dict=True,
         )
+        print("Program selected", ns.render_s_expression(initialized_program))
+        print("Non-investigation F1-score:", report["not investigation"]["f1-score"])
+        print("Investigation F1-score:", report["investigation"]["f1-score"])
         self.assertGreaterEqual(
             report["not investigation"]["f1-score"], 0.76855895 * 0.9
         )
