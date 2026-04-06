@@ -264,6 +264,8 @@ def multicoreEnumeration(
     frontiers = {}
     dist_dict = {}
 
+    # Collect all unique types from all tasks so the DSL covers the full type space.
+    all_output_types = set()
     for task in g.keys():
         dslf = ns.DSLFactory()
         # Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
@@ -279,15 +281,21 @@ def multicoreEnumeration(
         example_for_type = task.examples[0]
         print(f"Task: {task}, Example: {example_for_type}")
         if type(example_for_type[0][0]) == list:
+            assert isinstance(example_for_type[0][0][0], int), f"Expected input type to be list of integers, but got {type(example_for_type[0][0][0])}"
             input_type = "[i]"
         else:
             input_type = "i"
         if type(example_for_type[1]) == list:
+            assert isinstance(example_for_type[1][0], int), f"Expected output type to be list of integers, but got {type(example_for_type[1][0])}"
             output_type = "[i]"
         else:
             output_type = "i"
-        print(f"Task input type: {input_type}, output type: {output_type}")
-        dslf = list_dslf(f"{input_type} -> {output_type}")
+        all_output_types.add(f"{input_type} -> {output_type}")
+    all_output_types = sorted(all_output_types)
+    print(f"All DSL output types: {all_output_types}")
+
+    for task in g.keys():
+        dslf = list_dslf(*all_output_types)
         dsl = dslf.finalize()
         dsl_dict[task] = dsl
 
