@@ -53,6 +53,7 @@ class DSLFactory:
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
         self.prune = False
+        self.actually_prune = True
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
@@ -186,12 +187,18 @@ class DSLFactory:
         *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
+        actually_prune=True,
     ):
         """
         Direct the current DSLFactory to prune any productions p such that there does not exist some
         program s and type t in target_types such that s :: t and s contains p as a production.
+
+        If ``actually_prune`` is False, the target types are set (as valid root types for the DSL)
+        but no productions are removed. This is useful for test DSLs with intentionally
+        unconstructible types.
         """
         self.prune = True
+        self.actually_prune = actually_prune
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
@@ -255,6 +262,9 @@ class DSLFactory:
         )
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
+
+        if not self.prune:
+            raise TypeError("prune_to() must be called before finalize()")
 
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
@@ -320,8 +330,7 @@ class DSLFactory:
             if stable:
                 stable_symbols.add(symbol)
 
-        if self.prune:
-            assert self.target_types is not None
+        if self.actually_prune:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
@@ -345,13 +354,12 @@ class DSLFactory:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = _make_dsl(
+        return _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
             self.max_overall_depth,
             self.max_env_depth,
         )
-        return dsl
 
 
 def _clean_variables(variable_productions):

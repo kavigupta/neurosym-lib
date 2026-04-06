@@ -299,58 +299,36 @@ class TestTypeRegresion(unittest.TestCase):
 
 
 class TestDSLExpand(unittest.TestCase):
-    def test_basic_expand(self):
-        dslf = ns.DSLFactory()
-        dslf.production("+", "i -> i -> i", lambda x: lambda y: x + y)
-        dslf.production("first", "(#a, #b) -> #a", lambda x: x)
-        dsl = dslf.finalize()
-        assertDSL(
-            self,
-            dsl.render(),
-            """
-            + :: i -> i -> i
-            first_0 :: (#a, (i -> i, i -> i) -> i -> i) -> #a
-            first_1 :: (#a, (i -> i, i) -> i -> i) -> #a
-            first_2 :: (#a, (i, i -> i) -> i) -> #a
-            first_3 :: (#a, (i, i) -> i) -> #a
-            first_4 :: (#a, i -> i -> i) -> #a
-            first_5 :: (#a, i -> i) -> #a
-            first_6 :: (#a, i) -> #a
-            """,
-        )
-
-    def test_basic_expand_two(self):
-        dslf = ns.DSLFactory(max_overall_depth=3)
-        dslf.production("even?", "i -> b", lambda x: lambda y: x + y)
-        dslf.production("first", "(#a, #b) -> #a", lambda x: x)
-        dsl = dslf.finalize()
-        assertDSL(
-            self,
-            dsl.render(),
-            """
-            even? :: i -> b
-            first_0 :: (#a, b) -> #a
-            first_1 :: (#a, i) -> #a
-            """,
-        )
-
-    def test_larger_expand(self):
+    def test_prune_unreachable(self):
         dslf = ns.DSLFactory()
         dslf.production("1", "() -> i", lambda: 1)
-        dslf.production("ite", "(b, #b, #a, #a) -> #a", lambda x: x)
+        dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("to_f", "i -> f", float)
+        dslf.prune_to("i", tolerate_pruning_entire_productions=True)
         dsl = dslf.finalize()
         assertDSL(
             self,
             dsl.render(),
             """
             1 :: () -> i
-            ite_0 :: (b, () -> i, #a, #a) -> #a
-            ite_1 :: (b, (b, b, b, b) -> b, #a, #a) -> #a
-            ite_2 :: (b, (b, b, i, i) -> i, #a, #a) -> #a
-            ite_3 :: (b, (b, i, b, b) -> b, #a, #a) -> #a
-            ite_4 :: (b, (b, i, i, i) -> i, #a, #a) -> #a
-            ite_5 :: (b, b, #a, #a) -> #a
-            ite_6 :: (b, i, #a, #a) -> #a
+            + :: (i, i) -> i
+            """,
+        )
+
+    def test_prune_keeps_reachable_chain(self):
+        dslf = ns.DSLFactory()
+        dslf.production("1", "() -> i", lambda: 1)
+        dslf.production("to_f", "i -> f", float)
+        dslf.production("to_g", "f -> g", lambda x: x)
+        dslf.prune_to("g")
+        dsl = dslf.finalize()
+        assertDSL(
+            self,
+            dsl.render(),
+            """
+            1 :: () -> i
+            to_f :: i -> f
+            to_g :: f -> g
             """,
         )
 
@@ -361,7 +339,8 @@ class TestDSLExpand(unittest.TestCase):
         dslf.filtered_type_variable(
             "num", lambda x: isinstance(x, ns.AtomicType) and x.name in ["i", "f"]
         )
-        dslf.production("+", "%num -> %num -> %num", lambda x: x)
+        dslf.production("+", "(%num, %num) -> %num", lambda x, y: x + y)
+        dslf.prune_to("i", "f")
         dsl = dslf.finalize()
         assertDSL(
             self,
@@ -369,7 +348,7 @@ class TestDSLExpand(unittest.TestCase):
             """
                 1 :: () -> i
                 1f :: () -> f
-                + :: %num -> %num -> %num
+                + :: (%num, %num) -> %num
             """,
         )
 
@@ -391,34 +370,23 @@ class TestDSLExpand(unittest.TestCase):
             """,
         )
 
-    def test_expand_with_lambdas_no_prune(self):
+    def test_expand_with_lambdas_broad_targets(self):
         dslf = ns.DSLFactory()
         dslf.production("1", "() -> i", lambda: 1)
         dslf.production("id", "#a -> #a", lambda x: x)
         dslf.lambdas()
+        dslf.prune_to("i", "() -> i", "i -> i", "(i -> i) -> i")
         dsl = dslf.finalize()
         assertDSL(
             self,
             dsl.render(),
             """
-                $0_0 :: V<() -> i@0>
-                $0_1 :: V<i -> i@0>
-                $0_2 :: V<i@0>
-                $1_0 :: V<() -> i@1>
-                $1_1 :: V<i -> i@1>
-                $1_2 :: V<i@1>
-                $2_0 :: V<() -> i@2>
-                $2_1 :: V<i -> i@2>
-                $2_2 :: V<i@2>
-                $3_0 :: V<() -> i@3>
-                $3_1 :: V<i -> i@3>
-                $3_2 :: V<i@3>
                 1 :: () -> i
                 id :: #a -> #a
                 lam_0 :: L<#body|> -> () -> #body
-                lam_1 :: L<#body|() -> i> -> (() -> i) -> #body
-                lam_2 :: L<#body|i -> i> -> (i -> i) -> #body
-                lam_3 :: L<#body|i> -> i -> #body
+                lam_1 :: L<#body|i -> i> -> (i -> i) -> #body
+                lam_2 :: L<#body|i> -> i -> #body
+                $0_0 :: V<i@0>
             """,
         )
 

@@ -25,6 +25,7 @@ class TestSkipAhead(unittest.TestCase):
         dslf.production("eTof", "e -> f", None)
         dslf.production("fTog", "f -> g", None)
         dslf.production("f2Tog", "f2 -> g", None)
+        dslf.prune_to("g", actually_prune=False)
         return dslf.finalize()
 
     def assertNodes(self, nodes, expected_reprs):

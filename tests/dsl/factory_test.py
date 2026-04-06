@@ -11,6 +11,7 @@ class TestDuplicateProduction(unittest.TestCase):
         ident = lambda x: x
         dslf.production("1", "() -> i", ident)
         dslf.production("1", "() -> f", ident)
+        dslf.prune_to("i", "f")
         self.assertRaisesRegex(
             ValueError,
             "^Duplicate declarations for production: 1$",
@@ -22,6 +23,7 @@ class TestDuplicateProduction(unittest.TestCase):
         ident = lambda x: x
         dslf.production("1", "() -> i", ident)
         dslf.production("1", "() -> i", ident)
+        dslf.prune_to("i")
         dsl = dslf.finalize()
         assertDSL(
             self,
