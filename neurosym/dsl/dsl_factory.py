@@ -10,7 +10,6 @@ from ..types.type_signature import (
     LambdaTypeSignature,
     VariableTypeSignature,
     _signature_expansions,
-    _type_universe,
 )
 from ..types.type_string_repr import TypeDefiner
 from ..utils.documentation import internal_only
@@ -53,7 +52,6 @@ class DSLFactory:
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
         self.prune = False
-        self.actually_prune = True
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
@@ -187,18 +185,12 @@ class DSLFactory:
         *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
-        actually_prune=True,
     ):
         """
         Direct the current DSLFactory to prune any productions p such that there does not exist some
         program s and type t in target_types such that s :: t and s contains p as a production.
-
-        If ``actually_prune`` is False, the target types are set (as valid root types for the DSL)
-        but no productions are removed. This is useful for test DSLs with intentionally
-        unconstructible types.
         """
         self.prune = True
-        self.actually_prune = actually_prune
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
@@ -260,14 +252,9 @@ class DSLFactory:
 
         has_lambdas = self.lambda_parameters is not None
 
-        if self.actually_prune:
-            sym_to_productions = self._finalize_with_pruning(
-                has_lambdas,
-            )
-        else:
-            sym_to_productions = self._finalize_without_pruning(
-                has_lambdas,
-            )
+        sym_to_productions = self._finalize_with_pruning(
+            has_lambdas,
+        )
 
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
@@ -279,25 +266,6 @@ class DSLFactory:
             self.max_overall_depth,
             self.max_env_depth,
         )
-
-    def _finalize_without_pruning(self, _has_lambdas):
-        """Non-pruning path: expand all productions using type universe.
-
-        Used when actually_prune=False to set target types without removing
-        any productions (e.g., for test DSLs with intentionally unconstructible types).
-        """
-        known_types = (
-            [x.astype() for x in self._signatures]
-            + self._known_types
-            + (self.target_types if self.target_types is not None else [])
-        )
-        universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
-        sym_to_productions = self._expansions_for_all_productions(
-            *universe, ParameterizedProduction.of, self._parameterized_productions
-        )
-        for symbol, prods, _stable in self._extra_productions:
-            sym_to_productions[symbol] = prods
-        return sym_to_productions
 
     def _finalize_with_pruning(self, has_lambdas):
         """Pruning path using constructibility analysis."""
