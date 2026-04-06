@@ -256,6 +256,9 @@ class DSLFactory:
 
         universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
 
+        if not self.prune:
+            raise TypeError("prune_to() must be called before finalize()")
+
         sym_to_productions: Dict[str, List[Production]] = {}
         sym_to_productions.update(
             self._expansions_for_all_productions(
@@ -320,38 +323,35 @@ class DSLFactory:
             if stable:
                 stable_symbols.add(symbol)
 
-        if self.prune:
-            assert self.target_types is not None
+        sym_to_productions = _prune(
+            sym_to_productions,
+            self.target_types,
+            care_about_variables=False,
+            type_depth_limit=self.max_overall_depth,
+            env_depth_limit=self.max_env_depth,
+            stable_symbols=stable_symbols,
+            tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
+        )
+        if self.prune_variables:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
-                care_about_variables=False,
+                care_about_variables=True,
                 type_depth_limit=self.max_overall_depth,
                 env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
-            if self.prune_variables:
-                sym_to_productions = _prune(
-                    sym_to_productions,
-                    self.target_types,
-                    care_about_variables=True,
-                    type_depth_limit=self.max_overall_depth,
-                    env_depth_limit=self.max_env_depth,
-                    stable_symbols=stable_symbols,
-                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-                )
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
             )
-        dsl = _make_dsl(
+        return _make_dsl(
             sym_to_productions,
             copy.copy(self.target_types),
             self.max_overall_depth,
             self.max_env_depth,
         )
-        return dsl
 
 
 def _clean_variables(variable_productions):

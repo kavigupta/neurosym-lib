@@ -55,6 +55,7 @@ def _create_mutable_arith_combinators_dsl():
         lambda counter: lambda t: _increment_and_return(counter),
         dict(counter=lambda: [0]),
     )
+    dslf.prune_to("$fn")
     return dslf.finalize()
 
 

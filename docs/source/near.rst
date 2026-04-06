@@ -50,6 +50,7 @@ NEAR Operations
 .. autofunction:: neurosym.examples.near.operations.map_torch
 .. autofunction:: neurosym.examples.near.operations.map_prefix_torch
 .. autofunction:: neurosym.examples.near.operations.fold_torch
+.. autofunction:: neurosym.examples.near.operations.scan_torch
 .. autofunction:: neurosym.examples.near.operations.running_agg_torch
 .. autoclass:: neurosym.examples.near.operations.SymmetricMorletFilter
     :members:
