@@ -356,5 +356,3 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
                         consumed_types.add(inp_t)
                         changed = True
     return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}
-
-
