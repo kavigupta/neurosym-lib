@@ -308,34 +308,6 @@ def bottom_up_enumerate_types(
     return sorted([t for t, _, _ in overall if t.depth < max_overall_depth], key=str)
 
 
-def _signature_expansions(
-    sig: FunctionTypeSignature,
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-):
-    """
-    Returns a list of all possible expansions of the given type signature.
-
-    Any type variables that appear in both the arguments and return type
-        will be kept, while any other type variables will be expanded.
-    """
-    variables_in_arguments = {
-        var for arg in sig.arguments for var in arg.max_depth_per_type_variable()
-    }
-    variables_in_return = set(sig.return_type.max_depth_per_type_variable())
-    exclude_variables = variables_in_arguments & variables_in_return
-    return type_expansions(
-        sig.astype(),
-        terminals,
-        constructors,
-        max_expansion_steps,
-        max_overall_depth,
-        exclude_variables,
-    )
-
-
 def type_expansions(
     sig: Type,
     terminals: List[Type],
@@ -385,42 +357,3 @@ def type_expansions(
     for types in product(*enumerations):
         remap = dict(zip(variables, types))
         yield sig.subst_type_vars(remap)
-
-
-def _all_available_types(types: List[Type]):
-    available_types = set()
-    for typ in types:
-        for t in typ.walk_type_nodes():
-            available_types.add(t)
-    return sorted(available_types, key=str)
-
-
-def _type_universe(types: List[Type], no_zeroadic=False):
-    """
-    Produce a type universe from the given types.
-
-    :param types: The types to use.
-    :param no_zeroadic: If True, do not include zero-arity constructors.
-
-    :return: A tuple of ``(atomic_types, constructors)``, where ``atomic_types``
-        represents the atomic types in the universe, and ``constructors``
-        is a list of tuples of the form ``(arity, constructor)``, where
-        constructor is a function that takes ``arity`` types and
-        produces a new type.
-    """
-    available_types = _all_available_types(types)
-
-    constructors = []
-    for t in available_types:
-        if isinstance(t, TypeVariable):
-            continue
-        if no_zeroadic and isinstance(t, ArrowType) and len(t.input_type) == 0:
-            continue
-        tv = t.get_type_vars()
-        constructors.append(
-            (len(tv), lambda *args, t=t, tv=tv: t.subst_type_vars(dict(zip(tv, args))))
-        )
-
-    return [c() for count, c in constructors if count == 0], [
-        (count, c) for count, c in constructors if count > 0
-    ]
