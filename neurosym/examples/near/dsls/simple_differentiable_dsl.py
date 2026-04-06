@@ -27,4 +27,5 @@ def differentiable_arith_dsl(length):
         lambda linear: linear,
         dict(linear=lambda: nn.Linear(length, length)),
     )
+    dslf.prune_to("{f, $L} -> {f, $L}")
     return dslf.finalize()
