@@ -53,7 +53,6 @@ class DSLFactory:
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
         self.prune = False
-        self.actually_prune = True
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
@@ -187,18 +186,12 @@ class DSLFactory:
         *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
-        actually_prune=True,
     ):
         """
         Direct the current DSLFactory to prune any productions p such that there does not exist some
         program s and type t in target_types such that s :: t and s contains p as a production.
-
-        If ``actually_prune`` is False, the target types are set (as valid root types for the DSL)
-        but no productions are removed. This is useful for test DSLs with intentionally
-        unconstructible types.
         """
         self.prune = True
-        self.actually_prune = actually_prune
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
@@ -330,26 +323,25 @@ class DSLFactory:
             if stable:
                 stable_symbols.add(symbol)
 
-        if self.actually_prune:
+        sym_to_productions = _prune(
+            sym_to_productions,
+            self.target_types,
+            care_about_variables=False,
+            type_depth_limit=self.max_overall_depth,
+            env_depth_limit=self.max_env_depth,
+            stable_symbols=stable_symbols,
+            tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
+        )
+        if self.prune_variables:
             sym_to_productions = _prune(
                 sym_to_productions,
                 self.target_types,
-                care_about_variables=False,
+                care_about_variables=True,
                 type_depth_limit=self.max_overall_depth,
                 env_depth_limit=self.max_env_depth,
                 stable_symbols=stable_symbols,
                 tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
             )
-            if self.prune_variables:
-                sym_to_productions = _prune(
-                    sym_to_productions,
-                    self.target_types,
-                    care_about_variables=True,
-                    type_depth_limit=self.max_overall_depth,
-                    env_depth_limit=self.max_env_depth,
-                    stable_symbols=stable_symbols,
-                    tolerate_pruning_entire_productions=self.tolerate_pruning_entire_productions,
-                )
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
                 sym_to_productions["<variable>"]
