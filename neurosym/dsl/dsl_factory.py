@@ -4,14 +4,12 @@ from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
-from ..types.type import ArrowType, AtomicType, Type, TypeVariable, UnificationError
+from ..types.type import ArrowType, AtomicType, Type, UnificationError
 from ..types.type_signature import (
     FunctionTypeSignature,
     LambdaTypeSignature,
     VariableTypeSignature,
     _signature_expansions,
-    _type_universe,
-    type_expansions,
 )
 from ..types.type_string_repr import TypeDefiner
 from ..utils.documentation import internal_only
@@ -54,6 +52,7 @@ class DSLFactory:
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
         self.prune = False
+        self.actually_prune = True
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
@@ -187,12 +186,18 @@ class DSLFactory:
         *target_types: Tuple[str, ...],
         prune_variables=True,
         tolerate_pruning_entire_productions=False,
+        actually_prune=True,
     ):
         """
         Direct the current DSLFactory to prune any productions p such that there does not exist some
         program s and type t in target_types such that s :: t and s contains p as a production.
+
+        If ``actually_prune`` is False, the target types are set (as valid root types for the DSL)
+        but no productions are removed. This is useful for test DSLs with intentionally
+        unconstructible types.
         """
         self.prune = True
+        self.actually_prune = actually_prune
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
@@ -249,27 +254,14 @@ class DSLFactory:
         constructed.
         """
 
-        known_types = (
-            [x.astype() for x in self._signatures]
-            + self._known_types
-            + (self.target_types if self.target_types is not None else [])
-        )
-
-        universe = _type_universe(known_types, no_zeroadic=self._no_zeroadic)
+        if not self.prune:
+            raise TypeError("prune_to() must be called before finalize()")
 
         has_lambdas = self.lambda_parameters is not None
 
-        if self.prune:
-            assert self.target_types is not None
-            sym_to_productions = self._finalize_with_pruning(
-                has_lambdas,
-            )
-        else:
-            sym_to_productions = self._finalize_without_pruning(
-                universe,
-                has_lambdas,
-                known_types,
-            )
+        sym_to_productions = self._finalize_with_pruning(
+            has_lambdas,
+        )
 
         if "<variable>" in sym_to_productions:
             sym_to_productions["<variable>"] = _clean_variables(
@@ -281,26 +273,6 @@ class DSLFactory:
             self.max_overall_depth,
             self.max_env_depth,
         )
-
-    def _finalize_without_pruning(self, universe, has_lambdas, known_types):
-        """Original expansion path: expand everything, no pruning."""
-        sym_to_productions: Dict[str, List[Production]] = {}
-        sym_to_productions.update(
-            self._expansions_for_all_productions(
-                *universe, ParameterizedProduction.of, self._parameterized_productions
-            )
-        )
-
-        if has_lambdas:
-            self._add_all_lambda_variable_productions(
-                sym_to_productions,
-                known_types,
-            )
-
-        for symbol, prods, _stable in self._extra_productions:
-            sym_to_productions[symbol] = prods
-
-        return sym_to_productions
 
     def _finalize_with_pruning(self, has_lambdas):
         """Pruning path using constructibility analysis."""
@@ -385,55 +357,6 @@ class DSLFactory:
             )
         return sym_to_productions
 
-    def _add_all_lambda_variable_productions(self, sym_to_productions, known_types):
-        """Add all possible lambda and variable productions (old expansion path)."""
-        types, constructors_lambda = _type_universe(
-            known_types,
-            no_zeroadic=self._no_zeroadic,
-        )
-        top_levels = types + [
-            constructor(
-                *[TypeVariable.fresh() for _ in range(arity)],
-            )
-            for arity, constructor in constructors_lambda
-        ]
-        top_levels = [
-            x.with_output_type(AtomicType("output_type"))
-            for x in top_levels
-            if isinstance(x, ArrowType)
-        ]
-        top_levels = sorted(set(top_levels), key=str)
-        expanded = []
-        for top_level in top_levels:
-            expanded += type_expansions(
-                top_level,
-                types,
-                constructors_lambda,
-                max_expansion_steps=self.max_expansion_steps,
-                max_overall_depth=self.lambda_parameters["max_type_depth"],
-            )
-        expanded = sorted(set(expanded), key=str)
-        sym_to_productions["<lambda>"] = [
-            LambdaProduction(i, LambdaTypeSignature(x.input_type))
-            for i, x in enumerate(expanded)
-        ]
-
-        variable_types = sorted(
-            {
-                input_type
-                for function_type in expanded
-                for input_type in function_type.input_type
-            },
-            key=str,
-        )
-        sym_to_productions["<variable>"] = [
-            VariableProduction(
-                type_id, VariableTypeSignature(variable_type, index_in_env)
-            )
-            for type_id, variable_type in enumerate(variable_types)
-            for index_in_env in range(self.max_env_depth)
-        ]
-
 
 def _clean_variables(variable_productions):
     type_to_idx = {prod.type_signature().variable_type for prod in variable_productions}
@@ -490,6 +413,8 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
         for prod in prods
         for arg in prod.type_signature().arguments
     }
+    if not consumed_types:
+        return reachable_lambdas
     if any(t.has_type_vars() for t in consumed_types):
         return reachable_lambdas
     # Expand: arrow types transitively consume their input element types

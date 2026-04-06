@@ -17,6 +17,7 @@ class EnumerationRegressionTest(unittest.TestCase):
         dslf = ns.DSLFactory(**kwargs)
         dslf.known_types(*known_types)
         dslf.lambdas(**lambdas_kwargs)
+        dslf.prune_to(*known_types, tolerate_pruning_entire_productions=True)
         return dslf.finalize().render()
 
     def test_basic(self):
@@ -36,7 +37,7 @@ class EnumerationRegressionTest(unittest.TestCase):
         self.assertRenderingEqual(
             self.rendered_dsl(known_types=("i", "i -> i -> i")),
             """
-            lam_0 :: L<#body|i> -> i -> #body
+            lam :: L<#body|i> -> i -> #body
             $0_0 :: V<i@0>
             $1_0 :: V<i@1>
             $2_0 :: V<i@2>

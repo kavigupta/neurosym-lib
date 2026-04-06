@@ -55,6 +55,7 @@ class TestReplaceFirst(unittest.TestCase):
             lambda x, y, counter: x + y + counter_fn(counter),
             dict(counter=lambda: [0]),
         )
+        dslf.prune_to("i")
         dsl = dslf.finalize()
         return dsl
 

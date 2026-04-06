@@ -11,6 +11,7 @@ dslf.production("id", "#a -> #a", lambda x: x)
 dslf.production(
     "compose", "(#a -> #b, #b -> #c) -> #a -> #c", lambda f, g: lambda x: f(g(x))
 )
+dslf.prune_to("i -> i")
 dsl = dslf.finalize()
 
 
@@ -20,8 +21,7 @@ class TestEnumeratability(unittest.TestCase):
                 1 :: () -> i -> i
                 + :: (#t -> i, #t -> i) -> #t -> i
                 id :: #a -> #a
-        compose_0 :: (#a -> i -> i, (i -> i) -> #c) -> #a -> #c
-        compose_1 :: (#a -> i, i -> #c) -> #a -> #c
+        compose :: (#a -> i, i -> #c) -> #a -> #c
         """
         actual = dsl.render()
         print(actual)
@@ -43,10 +43,9 @@ class TestEnumeratability(unittest.TestCase):
         self.assertSetEqual(
             expans,
             {
-                "(compose_1 ??::<i -> i> ??::<i -> i>)",
+                "(compose ??::<i -> i> ??::<i -> i>)",
                 "(1)",
                 "(id ??::<i -> i>)",
-                "(compose_0 ??::<i -> i -> i> ??::<(i -> i) -> i>)",
                 "(+ ??::<i -> i> ??::<i -> i>)",
             },
         )
@@ -60,6 +59,7 @@ class TestEnumeratability(unittest.TestCase):
         )
         dslf_2.production("+", "(%num, %num) -> %num", lambda x, y: x + y)
         dslf_2.production("*", "(#a, #a) -> #a", lambda x, y: x + y)
+        dslf_2.prune_to("i", "f", "() -> i", "() -> f")
         dsl_2 = dslf_2.finalize()
         expans = {
             ns.render_s_expression(prog)
