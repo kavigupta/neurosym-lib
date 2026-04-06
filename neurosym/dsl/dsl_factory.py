@@ -217,7 +217,6 @@ class DSLFactory:
             sigs_only,
             has_lambdas,
             self.max_overall_depth,
-            max_lambda_depth,
             self.target_types,
         )
 

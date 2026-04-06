@@ -1,4 +1,4 @@
-from ..types.type import ArrowType, UnificationError
+from ..types.type import ArrowType, AtomicType, UnificationError
 from ..types.type_signature import FunctionTypeSignature
 from ..utils.documentation import internal_only
 
@@ -11,9 +11,8 @@ class _ConstructibilityChecker:
     checking constructibility and finding type variable bindings.
     """
 
-    def __init__(self, has_lambdas, max_lambda_depth, register_envs=False):
+    def __init__(self, has_lambdas, register_envs=False):
         self.has_lambdas = has_lambdas
-        self.max_lambda_depth = max_lambda_depth
         self.register_envs = register_envs
         self.constructible = {frozenset(): set()}
 
@@ -33,8 +32,6 @@ class _ConstructibilityChecker:
             if tracked_env <= env and t in types:
                 return True
         if self.has_lambdas and isinstance(t, ArrowType):
-            if t.depth >= self.max_lambda_depth:
-                return False
             new_env = env | frozenset(t.input_type)
             if self.register_envs and new_env not in self.constructible:
                 self.constructible[new_env] = set()
@@ -57,12 +54,11 @@ class _ConstructibilityChecker:
             if merged is not None:
                 yield merged
         if self.has_lambdas and isinstance(resolved, ArrowType):
-            if resolved.depth < self.max_lambda_depth:
-                yield from self.bindings_for(
-                    resolved.output_type,
-                    subst,
-                    env | frozenset(resolved.input_type),
-                )
+            yield from self.bindings_for(
+                resolved.output_type,
+                subst,
+                env | frozenset(resolved.input_type),
+            )
 
     def find_valid_substs(self, sig, env=frozenset()):
         """Yield substitutions that make all arguments of sig constructible in env."""
@@ -94,9 +90,7 @@ def _merge_subst(base, extension):
 
 
 @internal_only
-def directly_constructible_types(
-    signatures, has_lambdas, max_depth, max_lambda_depth, target_types=None
-):
+def directly_constructible_types(signatures, has_lambdas, max_depth, target_types=None):
     """
     Compute the set of constructible types per environment via a bottom-up fixed point,
     working directly from raw production signatures (which may contain type variables).
@@ -115,9 +109,7 @@ def directly_constructible_types(
     The empty-env entry (``frozenset()``) holds the directly constructible types.
     """
     # pylint: disable=too-many-branches
-    checker = _ConstructibilityChecker(
-        has_lambdas, max_lambda_depth, register_envs=True
-    )
+    checker = _ConstructibilityChecker(has_lambdas, register_envs=True)
     constructible = checker.constructible
 
     # Seed envs from arrow-typed targets so their bodies get explored
@@ -195,7 +187,7 @@ def reachable_symbols(
           type that is constructed via lambda).
     """
     # pylint: disable=too-many-branches,too-many-nested-blocks
-    checker = _ConstructibilityChecker(has_lambdas, max_lambda_depth)
+    checker = _ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
     # Precompute shared type vars per signature (vars in both args and return
@@ -221,7 +213,7 @@ def reachable_symbols(
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
-            if t.depth < max_lambda_depth:
+            if ArrowType(t.input_type, AtomicType("_")).depth < max_lambda_depth:
                 lambdas.add(t.input_type)
                 _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
