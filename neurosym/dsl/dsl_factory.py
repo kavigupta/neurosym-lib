@@ -216,18 +216,17 @@ class DSLFactory:
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
-        var_slots = set()
         if has_lambdas and reachable_lambdas:
             reachable_lambdas = _filter_useless_lambdas(
                 reachable_lambdas, sym_to_productions
             )
-            all_types = {t for inp in reachable_lambdas for t in inp}
-            var_slots = {(t, i) for t in all_types for i in range(self.max_env_depth)}
             _add_lambda_variable_productions(
-                sym_to_productions, reachable_lambdas, var_slots
+                sym_to_productions, reachable_lambdas, self.max_env_depth
             )
 
-        reachable_indices = {idx for _, idx in var_slots}
+        reachable_indices = (
+            set(range(self.max_env_depth)) if reachable_lambdas else set()
+        )
         for symbol, prods, stable in self._extra_productions:
             if self.prune_variables:
                 prods = [
@@ -269,7 +268,9 @@ class DSLFactory:
         return sym_to_productions
 
 
-def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_slots):
+def _add_lambda_variable_productions(
+    sym_to_productions, reachable_lambdas, max_env_depth
+):
     """Add lambda and variable productions for the given reachable lambda types."""
     lambda_input_types = sorted(reachable_lambdas, key=str)
     sym_to_productions["<lambda>"] = Production.reindex(
@@ -278,11 +279,8 @@ def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_
             for i, input_types in enumerate(lambda_input_types)
         ]
     )
-    variable_types = sorted({t for t, _ in var_slots}, key=str)
-    type_to_idx = {t: i for i, t in enumerate(variable_types)}
     sym_to_productions["<variable>"] = [
-        VariableProduction(type_to_idx[typ], VariableTypeSignature(typ, idx))
-        for typ, idx in sorted(var_slots, key=lambda s: (s[1], str(s[0])))
+        VariableProduction(VariableTypeSignature(idx)) for idx in range(max_env_depth)
     ]
 
 

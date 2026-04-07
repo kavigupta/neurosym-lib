@@ -207,15 +207,12 @@ class VariableTypeSignature(TypeSignature):
     """
     Represents the type signature of a variable production.
 
-    This is a type signature where the return type is known, but the
-    environment must contain the given type at the given index in
-    order to be valid.
+    This is a polymorphic type signature that matches any type present
+    at the given index in the environment.
 
-    :param variable_type: The type of the variable.
     :param index_in_env: The index of the variable in the environment.
     """
 
-    variable_type: Type
     index_in_env: int
 
     def required_env_index(self) -> Union[int, None]:
@@ -226,29 +223,25 @@ class VariableTypeSignature(TypeSignature):
         return 0
 
     def render(self) -> str:
-        # pylint: disable=cyclic-import
-        from neurosym.types.type_string_repr import render_type
-
-        return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
+        return f"V<${self.index_in_env}>"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        if twe.typ != self.variable_type:
-            return None
-        if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
+        if not twe.env.contains_type_at(twe.typ, self.index_in_env):
             return None
         return []
 
     def return_type_template(self) -> Type:
-        return self.variable_type
+        return TypeVariable(f"__var_{self.index_in_env}")
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 0:
             return None
+        typ = TypeVariable(f"__var_{self.index_in_env}")
         return TypeWithEnvironment(
-            self.variable_type,
-            StrictEnvironment(frozendict({self.index_in_env: self.variable_type})),
+            typ,
+            StrictEnvironment(frozendict({self.index_in_env: typ})),
         )

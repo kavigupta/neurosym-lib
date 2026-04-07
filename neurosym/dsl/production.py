@@ -221,17 +221,17 @@ class VariableProduction(Production):
     :py:meth:`neurosym.DSLFactory.lambdas` is called.
     """
 
-    _unique_id: int
     _type_signature: VariableTypeSignature
 
     def base_symbol(self):
         return f"${self._type_signature.index_in_env}"
 
     def get_index(self):
-        return self._unique_id
+        return None
 
     def with_index(self, index):
-        return VariableProduction(index, self._type_signature)
+        assert index is None
+        return self
 
     def type_signature(self) -> TypeSignature:
         return self._type_signature
