@@ -3,13 +3,10 @@ Type signatures are used to represent the types of functions in the
 DSL.
 """
 
-import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from itertools import product
-from typing import Callable, List, Tuple, Union
+from typing import List, Union
 
-import numpy as np
 from frozendict import frozendict
 from torch import NoneType
 
@@ -255,105 +252,3 @@ class VariableTypeSignature(TypeSignature):
             self.variable_type,
             StrictEnvironment(frozendict({self.index_in_env: self.variable_type})),
         )
-
-
-def bottom_up_enumerate_types(
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-):
-    """
-    Returns a list of all possible expansions of the given terminals
-    using the given constructors.
-
-    :param terminals: The atomic types to use.
-    :param constructors: The constructors to use.
-    :param max_expansion_steps: The maximum number of times to apply a constructor.
-    :param max_overall_depth: The maximum depth of the resulting types.
-    """
-    assert (
-        min(max_expansion_steps, max_overall_depth) < np.inf
-    ), "must specify either max_expansion_steps or max_overall_depth"
-    current_with_depth = [(t, t.depth, 0) for t in terminals]
-    current_with_depth = [
-        (t, d, n)
-        for t, d, n in current_with_depth
-        if d <= max_overall_depth and n <= max_expansion_steps
-    ]
-    overall = set()
-    while True:
-        overall.update(current_with_depth)
-        current_with_depth = []
-        for arity, fn in constructors:
-            additional_depth = np.log2(arity + 1)
-            will_work = [
-                (t, d, n)
-                for t, d, n in overall
-                if d + additional_depth <= max_overall_depth
-                and n + 1 <= max_expansion_steps
-            ]
-            for subentities in itertools.product(will_work, repeat=arity):
-                types = [t for t, _, _ in subentities]
-                depth = max((d for _, d, _ in subentities)) + additional_depth
-                steps = max((n for _, _, n in subentities)) + 1
-                assert depth <= max_overall_depth
-                assert steps <= max_expansion_steps
-                res = (fn(*types), depth, steps)
-                if res in overall:
-                    continue
-                current_with_depth.append(res)
-        if len(current_with_depth) == 0:
-            break
-    return sorted([t for t, _, _ in overall if t.depth < max_overall_depth], key=str)
-
-
-def type_expansions(
-    sig: Type,
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-    exclude_variables=(),
-):
-    """
-    Returns a list of all possible expansions of the given type, where the
-    variables in exclude_variables are not expanded.
-
-    This is useful for expanding a type signature, where some of the type
-    variables should not be expanded.
-
-    :param sig: The type to expand.
-    :param terminals: The atomic types to use.
-    :param constructors: The constructors to use.
-    :param max_expansion_steps: The maximum number of times to apply a constructor.
-    :param max_overall_depth: The maximum depth of the resulting types.
-    :param exclude_variables: The type variables to exclude from expansion.
-
-    :return: A list of all possible expansions of the given type.
-    """
-    # pylint: disable=cyclic-import
-    from neurosym.types.type_string_repr import render_type
-
-    depth_by_var = sig.max_depth_per_type_variable()
-    for var in exclude_variables:
-        if var not in depth_by_var:
-            raise ValueError(
-                f"Variable {var} not in type signature {render_type(sig)}, "
-                + f"cannot exclude. Valid options: {sorted(depth_by_var)}"
-            )
-        del depth_by_var[var]
-    enumerations_by_var = {
-        ty_var: bottom_up_enumerate_types(
-            terminals,
-            constructors,
-            max_expansion_steps,
-            max_overall_depth - depth_by_var[ty_var],
-        )
-        for ty_var in depth_by_var.keys()
-    }
-    variables = list(depth_by_var.keys())
-    enumerations = [enumerations_by_var[ty_var] for ty_var in variables]
-    for types in product(*enumerations):
-        remap = dict(zip(variables, types))
-        yield sig.subst_type_vars(remap)

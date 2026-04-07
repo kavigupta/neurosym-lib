@@ -128,8 +128,6 @@ from .types.type_signature import (
     LambdaTypeSignature,
     TypeSignature,
     VariableTypeSignature,
-    bottom_up_enumerate_types,
-    type_expansions,
 )
 from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_type
 from .types.type_with_environment import (
