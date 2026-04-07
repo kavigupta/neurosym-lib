@@ -38,7 +38,6 @@ class DSLFactory:
         self.lambda_parameters = None
         self.max_overall_depth = max_overall_depth
         self.max_env_depth = max_env_depth
-        self.prune = False
         self.target_types = None
         self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
@@ -163,7 +162,6 @@ class DSLFactory:
         Direct the current DSLFactory to prune any productions p such that there does not exist some
         program s and type t in target_types such that s :: t and s contains p as a production.
         """
-        self.prune = True
         self.target_types = [self.t(x) for x in target_types]
         self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
@@ -175,24 +173,10 @@ class DSLFactory:
         constructed.
         """
 
-        if not self.prune:
+        if self.target_types is None:
             raise TypeError("prune_to() must be called before finalize()")
 
         has_lambdas = self.lambda_parameters is not None
-
-        sym_to_productions = self._finalize_with_pruning(
-            has_lambdas,
-        )
-
-        return _make_dsl(
-            sym_to_productions,
-            copy.copy(self.target_types),
-            self.max_overall_depth,
-            self.max_env_depth,
-        )
-
-    def _finalize_with_pruning(self, has_lambdas):
-        """Pruning path using constructibility analysis."""
         named_sigs = [(sym, sig) for sym, sig, _, _ in self._parameterized_productions]
 
         # Check for duplicate declarations
@@ -237,7 +221,8 @@ class DSLFactory:
             reachable_lambdas = _filter_useless_lambdas(
                 reachable_lambdas, sym_to_productions
             )
-            var_slots = _reachable_var_slots(reachable_lambdas, self.max_env_depth)
+            all_types = {t for inp in reachable_lambdas for t in inp}
+            var_slots = {(t, i) for t in all_types for i in range(self.max_env_depth)}
             _add_lambda_variable_productions(
                 sym_to_productions, reachable_lambdas, var_slots
             )
@@ -255,7 +240,12 @@ class DSLFactory:
                     prods = Production.reindex(prods)
             sym_to_productions[symbol] = prods
 
-        return sym_to_productions
+        return DSL(
+            [prod for prods in sym_to_productions.values() for prod in prods],
+            copy.copy(self.target_types),
+            self.max_overall_depth,
+            max_env_depth=self.max_env_depth,
+        )
 
     def _build_concrete_productions(self, prod_sigs):
         """Build concrete Production objects from {sym: [FunctionTypeSignature]}."""
@@ -277,27 +267,6 @@ class DSLFactory:
                 )
             )
         return sym_to_productions
-
-
-def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_depth):
-    return DSL(
-        [prod for prods in sym_to_productions.values() for prod in prods],
-        valid_root_types,
-        max_type_depth,
-        max_env_depth=max_env_depth,
-    )
-
-
-def _reachable_var_slots(reachable_lambdas, max_env_depth):
-    """Compute reachable (type, env_index) pairs from lambda input types.
-
-    Every type introduced by any lambda can in principle appear at any
-    environment index. Slots that are unreachable due to arity constraints
-    are harmless — they produce variable productions that never match
-    during enumeration.
-    """
-    all_types = {t for inp in reachable_lambdas for t in inp}
-    return {(t, i) for t in all_types for i in range(max_env_depth)}
 
 
 def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_slots):
