@@ -200,28 +200,7 @@ class TestScalability(unittest.TestCase):
 
     @pytest.mark.timeout(10)
     def test_list_dsl_higher_depth(self):
-        dslf = ns.DSLFactory(max_overall_depth=7)
-        # Replicate list_dsl productions but with higher depth
-        for i in range(6):
-            dslf.production(str(i), "() -> i", lambda i=i: i)
-        dslf.production("empty", "() -> [#T]", lambda: [])
-        dslf.production("singleton", "#T -> [#T]", lambda x: [x])
-        dslf.production("range", "i -> [i]", lambda x: list(range(x)))
-        dslf.production("++", "([#T], [#T]) -> [#T]", lambda x, y: x + y)
-        dslf.production("true", "() -> b", lambda: True)
-        dslf.production("not", "b -> b", lambda x: not x)
-        dslf.production("and", "(b, b) -> b", lambda x, y: x and y)
-        dslf.production("or", "(b, b) -> b", lambda x, y: x or y)
-        dslf.production("i", "(b, #T, #T) -> #T", lambda x, y, z: y if x else z)
-        dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
-        dslf.production("*", "(i, i) -> i", lambda x, y: x * y)
-        dslf.production("negate", "i -> i", lambda x: -x)
-        dslf.production("eq?", "(i, i) -> b", lambda x, y: x == y)
-        dslf.production("gt?", "(i, i) -> b", lambda x, y: x > y)
-        dslf.production("sum", "[i] -> i", sum)
-        dslf.production("reverse", "[#T] -> [#T]", lambda x: x[::-1])
-        dslf.production("index", "(i, [#T]) -> #T", lambda x, y: y[x])
-        dslf.lambdas(max_type_depth=3)
-        dslf.prune_to("[i] -> i", "[i] -> [i]", "i -> i", prune_variables=False)
-        dsl = dslf.finalize()
+        dsl = ns.examples.dreamcoder.list_dsl(
+            "[i] -> i", "[i] -> [i]", "i -> i", max_overall_depth=7
+        )
         self.assertGreater(len(dsl.productions), 30)
