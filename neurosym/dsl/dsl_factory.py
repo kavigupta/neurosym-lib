@@ -2,7 +2,7 @@ import copy
 import warnings
 from typing import Callable, Dict, List, Tuple
 
-from ..types.type import Type
+from ..types.type import ArrowType, Type
 from ..types.type_signature import LambdaTypeSignature, VariableTypeSignature
 from ..types.type_string_repr import TypeDefiner
 from .constructibility import directly_constructible_types, reachable_symbols
@@ -40,6 +40,7 @@ class DSLFactory:
         self.max_env_depth = max_env_depth
         self.prune = False
         self.target_types = None
+        self.prune_variables = False
         self.tolerate_pruning_entire_productions = False
         self._extra_productions = []
 
@@ -164,7 +165,7 @@ class DSLFactory:
         """
         self.prune = True
         self.target_types = [self.t(x) for x in target_types]
-        del prune_variables  # no longer used; variable slots are not pruned
+        self.prune_variables = prune_variables
         self.tolerate_pruning_entire_productions = tolerate_pruning_entire_productions
 
     def finalize(self) -> DSL:
@@ -231,13 +232,27 @@ class DSLFactory:
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
+        var_slots = set()
         if has_lambdas and reachable_lambdas:
+            reachable_lambdas = _filter_useless_lambdas(
+                reachable_lambdas, sym_to_productions
+            )
             var_slots = _reachable_var_slots(reachable_lambdas, self.max_env_depth)
             _add_lambda_variable_productions(
                 sym_to_productions, reachable_lambdas, var_slots
             )
 
-        for symbol, prods, _stable in self._extra_productions:
+        reachable_indices = {idx for _, idx in var_slots}
+        for symbol, prods, stable in self._extra_productions:
+            if self.prune_variables:
+                prods = [
+                    p
+                    for p in prods
+                    if (idx := p.type_signature().required_env_index()) is None
+                    or idx in reachable_indices
+                ]
+                if not stable:
+                    prods = Production.reindex(prods)
             sym_to_productions[symbol] = prods
 
         return sym_to_productions
@@ -300,3 +315,34 @@ def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_
         VariableProduction(type_to_idx[typ], VariableTypeSignature(typ, idx))
         for typ, idx in sorted(var_slots, key=lambda s: (s[1], str(s[0])))
     ]
+
+
+def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
+    """Filter lambdas whose input types are never consumed by any production.
+
+    A type is "consumed" if it appears as an argument to some concrete
+    production, or as an input element of an arrow type that is consumed
+    (transitively). Lambdas that only introduce unconsumed types into the
+    environment are useless — nothing in the DSL can use those variables.
+    """
+    consumed_types = {
+        arg
+        for prods in sym_to_productions.values()
+        for prod in prods
+        for arg in prod.type_signature().arguments
+    }
+    if not consumed_types:
+        return reachable_lambdas
+    if any(t.has_type_vars() for t in consumed_types):
+        return reachable_lambdas
+    # Expand: arrow types transitively consume their input element types
+    changed = True
+    while changed:
+        changed = False
+        for t in list(consumed_types):
+            if isinstance(t, ArrowType):
+                for inp_t in t.input_type:
+                    if inp_t not in consumed_types:
+                        consumed_types.add(inp_t)
+                        changed = True
+    return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}

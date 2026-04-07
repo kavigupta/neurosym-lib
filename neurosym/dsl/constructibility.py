@@ -99,7 +99,8 @@ def directly_constructible_types(signatures, has_lambdas, max_depth, target_type
     - It is constructible in a sub-environment of E (including the empty env), OR
     - It is a member of E (a variable), OR
     - It is an arrow type ``(A1, ..., An) -> B`` where ``B`` is constructible in
-      ``E ∪ {A1, ..., An}`` (when has_lambdas is True), OR
+      ``E ∪ {A1, ..., An}`` (when has_lambdas is True and the arrow type's depth
+      is below ``max_lambda_depth``), OR
     - Some production can output it with all inputs constructible in E.
 
     Returns a dict mapping each environment (frozenset of Types) to the set of types
