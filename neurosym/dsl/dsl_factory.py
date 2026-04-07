@@ -238,11 +238,6 @@ class DSLFactory:
                 reachable_lambdas, sym_to_productions
             )
             var_slots = _reachable_var_slots(reachable_lambdas, self.max_env_depth)
-            if not self.prune_variables:
-                all_types = {t for inp in reachable_lambdas for t in inp}
-                var_slots = {
-                    (t, i) for t in all_types for i in range(self.max_env_depth)
-                }
             _add_lambda_variable_productions(
                 sym_to_productions, reachable_lambdas, var_slots
             )
@@ -294,22 +289,15 @@ def _make_dsl(sym_to_productions, valid_root_types, max_type_depth, max_env_dept
 
 
 def _reachable_var_slots(reachable_lambdas, max_env_depth):
-    """BFS over lambda nestings to find reachable (type, env_index) pairs."""
-    if not reachable_lambdas:
-        return set()
-    lambda_inputs = sorted(reachable_lambdas, key=str)
-    seen = {()}
-    frontier = [()]
-    while frontier:
-        env = frontier.pop()
-        for inp in lambda_inputs:
-            new_env = tuple(reversed(inp)) + env
-            if len(new_env) > max_env_depth:
-                continue
-            if new_env not in seen:
-                seen.add(new_env)
-                frontier.append(new_env)
-    return {(typ, idx) for env in seen for idx, typ in enumerate(env)}
+    """Compute reachable (type, env_index) pairs from lambda input types.
+
+    Every type introduced by any lambda can in principle appear at any
+    environment index. Slots that are unreachable due to arity constraints
+    are harmless — they produce variable productions that never match
+    during enumeration.
+    """
+    all_types = {t for inp in reachable_lambdas for t in inp}
+    return {(t, i) for t in all_types for i in range(max_env_depth)}
 
 
 def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_slots):

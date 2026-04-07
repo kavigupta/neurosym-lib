@@ -21,9 +21,11 @@ class TestDSLWithShield(unittest.TestCase):
                 "           $0_0 :: V<f@0>",
                 "           $1_0 :: V<f@1>",
                 "           $2_0 :: V<f@2>",
+                "           $3_0 :: V<f@3>",
                 "        shield0 :: D<#body, $0> -> #body",
                 "        shield1 :: D<#body, $1> -> #body",
                 "        shield2 :: D<#body, $2> -> #body",
+                "        shield3 :: D<#body, $3> -> #body",
             ],
         )
 

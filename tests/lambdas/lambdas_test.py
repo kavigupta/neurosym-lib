@@ -244,6 +244,7 @@ class TestVariedTypes(unittest.TestCase):
            $0_1 :: V<i@0>
            $1_1 :: V<i@1>
            $2_1 :: V<i@2>
+           $3_1 :: V<i@3>
         """
         actual = make_varied_type_dsl().render()
         print(actual)
