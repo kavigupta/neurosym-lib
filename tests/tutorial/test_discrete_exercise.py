@@ -1,6 +1,3 @@
-# pylint: disable=duplicate-code
-# DSL rendering strings naturally overlap across test files
-
 import json
 import unittest
 
