@@ -91,15 +91,13 @@ class Environment(ABC):
         Return the types at the top of the environment (indices 0..count-1),
         or None if the environment doesn't have types at all those indices.
         """
-        # Reversed because parent() removes in reverse order
-        types = []
-        for i in range(count - 1, -1, -1):
-            if not isinstance(self, StrictEnvironment):
+        if not isinstance(self, StrictEnvironment):
+            return None
+        elements = self._elements  # pylint: disable=no-member
+        for i in range(count):
+            if i not in elements:
                 return None
-            if i not in self._elements:
-                return None
-            types.append(self._elements[i])
-        return tuple(reversed(types))
+        return tuple(elements[i] for i in range(count))
 
     def parent(self, new_types) -> "StrictEnvironment":
         """
