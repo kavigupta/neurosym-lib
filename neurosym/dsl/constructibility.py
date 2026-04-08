@@ -1,4 +1,4 @@
-from ..types.type import ArrowType, AtomicType, UnificationError
+from ..types.type import ArrowType, UnificationError
 from ..types.type_signature import FunctionTypeSignature
 from ..utils.documentation import internal_only
 
@@ -157,7 +157,6 @@ def reachable_symbols(
     target_types,
     has_lambdas,
     max_depth,
-    max_lambda_depth,
 ):
     """
     Top-down search from target types through signatures, collecting concrete
@@ -174,7 +173,6 @@ def reachable_symbols(
     :param target_types: List of Type objects to start the search from.
     :param has_lambdas: Whether lambdas are enabled.
     :param max_depth: Maximum type depth.
-    :param max_lambda_depth: Maximum depth for arrow types treated as lambdas.
 
     :return: A tuple of ``(prod_sigs, lambda_arities)`` where:
         - ``prod_sigs`` is a dict mapping each symbol name to a list of
@@ -211,9 +209,8 @@ def reachable_symbols(
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
-            if ArrowType(t.input_type, AtomicType("_")).depth < max_lambda_depth:
-                lambda_arities.add(len(t.input_type))
-                _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
+            lambda_arities.add(len(t.input_type))
+            _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):
         """Record a concrete production, return True if new (for exploration)."""

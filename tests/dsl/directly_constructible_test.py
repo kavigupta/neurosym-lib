@@ -494,7 +494,6 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             [target],
             has_lambdas=True,
             max_depth=6,
-            max_lambda_depth=6,
         )
         self.assertEqual(
             _render_prods(prods),
@@ -690,7 +689,6 @@ class TestReachableSymbols(unittest.TestCase):
             [ns.parse_type(t) for t in targets],
             has_lambdas=has_lambdas,
             max_depth=max_depth,
-            max_lambda_depth=max_depth,
         )
 
     def test_basic(self):
@@ -840,7 +838,6 @@ class TestReachableSymbols(unittest.TestCase):
             [ns.parse_type("[{f, 12}] -> [{f, 4}]")],
             has_lambdas=False,
             max_depth=5,
-            max_lambda_depth=5,
         )
         self.assertEqual(
             _render_prods(prods),
@@ -907,7 +904,6 @@ class TestReachableSymbols(unittest.TestCase):
             [ns.parse_type("[i] -> i")],
             has_lambdas=True,
             max_depth=5,
-            max_lambda_depth=5,
         )
         # All productions should be reachable
         self.assertEqual(set(prods.keys()), {s for s, _ in sigs})
