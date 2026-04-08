@@ -13,6 +13,7 @@ from ..programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
+from ..types.type import ArrowType, UnificationError
 from ..types.type_signature import FunctionTypeSignature
 
 
@@ -43,9 +44,62 @@ def _compute_abstraction_production(
             else None
         ),
     ).typ
-    type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
+
+    # Resolve type variables (e.g. from polymorphic $0 in usage children)
+    # by matching each argument type against the corresponding subtree
+    # in the original program. The original subtree is the child of the
+    # usage position, expanded by the abstraction body.
+    arg_types = [x.typ for x in type_arguments]
+    if any(t.get_type_vars() for t in arg_types) or type_out.get_type_vars():
+        mapping = _resolve_abstraction_vars(
+            dsl, s_expression_using, abstr_name, abstr_body
+        )
+        arg_types = [t.subst_type_vars(mapping) for t in arg_types]
+        type_out = type_out.subst_type_vars(mapping)
+    type_signature = FunctionTypeSignature(arg_types, type_out)
 
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
+
+
+def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
+    """Resolve type variables in abstraction types by reconstructing the original program.
+
+    Expands the abstraction back into the usage site to recover the original
+    program, then computes its type bottom-up. The original program has no
+    unknown abstraction symbols, so compute_type can fully resolve types.
+    The mapping between the abstraction's inferred type and the original
+    program's type resolves any remaining type variables.
+    """
+    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
+    # Reconstruct the original subtree by substituting #i with usage children
+    original = _expand_abstraction(abstr_body, usage.children)
+    try:
+        original_twe = dsl.compute_type(original)
+    except (ValueError, AssertionError, AttributeError):
+        return {}
+    # The abstraction's output type should unify with the original type
+    try:
+        abstr_out_twe = dsl.compute_type(
+            abstr_body,
+            lambda x: (
+                dsl.compute_type(usage.children[x.index])
+                if isinstance(x, AbstractionIndexParameter)
+                else None
+            ),
+        )
+        return abstr_out_twe.typ.unify(original_twe.typ)
+    except (UnificationError, ValueError, AssertionError, AttributeError):
+        return {}
+
+
+def _expand_abstraction(abstr_body, children):
+    """Expand an abstraction body by replacing AbstractionIndexParameters with children."""
+    if isinstance(abstr_body, AbstractionIndexParameter):
+        return children[abstr_body.index]
+    return SExpression(
+        abstr_body.symbol,
+        tuple(_expand_abstraction(c, children) for c in abstr_body.children),
+    )
 
 
 def _inject_parameters(s_expression: Union[SExpression, str]):
