@@ -200,9 +200,11 @@ class DSLFactory:
         )
 
         # Top-down: find reachable productions
-        max_lambda_depth = self.lambda_parameters.get(
-            "max_type_depth", self.max_overall_depth
-        ) if has_lambdas else self.max_overall_depth
+        max_lambda_depth = (
+            self.lambda_parameters.get("max_type_depth", self.max_overall_depth)
+            if has_lambdas
+            else self.max_overall_depth
+        )
         reachable_prods = reachable_symbols(
             named_sigs,
             constructible,
