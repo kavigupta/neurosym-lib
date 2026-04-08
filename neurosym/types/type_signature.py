@@ -125,6 +125,7 @@ class FunctionTypeSignature(TypeSignature):
         except UnificationError:
             return None
         if mapping and isinstance(env, StrictEnvironment):
+            # pylint: disable=protected-access
             env = StrictEnvironment(
                 frozendict(
                     {i: t.subst_type_vars(mapping) for i, t in env._elements.items()}
@@ -212,6 +213,7 @@ class LambdaTypeSignature(TypeSignature):
         # and strip the lambda entries from the environment manually.
         if not isinstance(env, StrictEnvironment):
             return None
+        # pylint: disable=protected-access
         input_types = tuple(
             env._elements.get(i, TypeVariable(f"__lam_unused_{i}"))
             for i in range(self.function_arity)
@@ -255,7 +257,8 @@ class VariableTypeSignature(TypeSignature):
             # A type variable can be any type; match if the index exists
             if (
                 isinstance(twe.env, StrictEnvironment)
-                and self.index_in_env in twe.env._elements
+                and self.index_in_env
+                in twe.env._elements  # pylint: disable=protected-access
             ):
                 return []
             # In a permissive environment, type variables always match
