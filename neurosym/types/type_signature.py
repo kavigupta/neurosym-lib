@@ -111,7 +111,6 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        env = StrictEnvironment.merge_all(*envs)
         mapping = {}
         try:
             for t1, t2 in zip(self.arguments, types):
@@ -124,13 +123,24 @@ class FunctionTypeSignature(TypeSignature):
                         mapping[k] = v
         except UnificationError:
             return None
-        if mapping and isinstance(env, StrictEnvironment):
-            # pylint: disable=protected-access
-            env = StrictEnvironment(
-                frozendict(
-                    {i: t.subst_type_vars(mapping) for i, t in env._elements.items()}
-                )
-            )
+        # Apply substitution to each child env before merging, so that
+        # polymorphic variable types get resolved consistently.
+        if mapping:
+            resolved_envs = []
+            for env in envs:
+                if isinstance(env, StrictEnvironment):
+                    # pylint: disable=protected-access
+                    env = StrictEnvironment(
+                        frozendict(
+                            {
+                                i: t.subst_type_vars(mapping)
+                                for i, t in env._elements.items()
+                            }
+                        )
+                    )
+                resolved_envs.append(env)
+            envs = resolved_envs
+        env = StrictEnvironment.merge_all(*envs)
         return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
