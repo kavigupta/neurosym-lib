@@ -13,7 +13,7 @@ from ..programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
-from ..types.type import ArrowType, UnificationError
+from ..types.type import UnificationError
 from ..types.type_signature import FunctionTypeSignature
 
 
@@ -64,32 +64,42 @@ def _compute_abstraction_production(
 def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
     """Resolve type variables in abstraction types by reconstructing the original program.
 
-    Expands the abstraction back into the usage site to recover the original
-    program, then computes its type bottom-up. The original program has no
-    unknown abstraction symbols, so compute_type can fully resolve types.
-    The mapping between the abstraction's inferred type and the original
-    program's type resolves any remaining type variables.
+    Expands the abstraction body with usage children to reconstruct the original
+    subtree. Computes its type (which resolves all type variables through context).
+    Then for each usage child whose polymorphic type has variables, unifies the
+    polymorphic type with the resolved type of that child in the expanded tree.
     """
     usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
-    # Reconstruct the original subtree by substituting #i with usage children
     original = _expand_abstraction(abstr_body, usage.children)
     try:
-        original_twe = dsl.compute_type(original)
+        # compute_type on the expanded tree resolves all type vars through context
+        dsl.compute_type(original)
     except (ValueError, AssertionError, AttributeError):
         return {}
-    # The abstraction's output type should unify with the original type
-    try:
-        abstr_out_twe = dsl.compute_type(
-            abstr_body,
-            lambda x: (
-                dsl.compute_type(usage.children[x.index])
-                if isinstance(x, AbstractionIndexParameter)
-                else None
-            ),
-        )
-        return abstr_out_twe.typ.unify(original_twe.typ)
-    except (UnificationError, ValueError, AssertionError, AttributeError):
-        return {}
+    # Now compute type of each child individually in its expanded context.
+    # The expanded tree has the child embedded; re-computing gives us its
+    # resolved type.
+    mapping = {}
+    for child in usage.children:
+        poly_twe = dsl.compute_type(child)
+        if not poly_twe.typ.get_type_vars():
+            continue
+        # Compute the child's type within the expanded program context.
+        # We do this by computing the expanded tree and checking the env.
+        # The child ($N) has type __var_N in the env. After expansion,
+        # the env resolves __var_N to a concrete type.
+        try:
+            expanded_twe = dsl.compute_type(original)
+            # The env of the expanded tree has resolved types for each var index.
+            # Map each type variable in the child's type to the resolved type.
+            if hasattr(expanded_twe.env, "_elements"):
+                for idx, resolved_type in expanded_twe.env._elements.items():
+                    var_name = f"__var_{idx}"
+                    if var_name in [v.name for v in poly_twe.typ.get_type_vars()]:
+                        mapping[var_name] = resolved_type
+        except (ValueError, AssertionError, AttributeError):
+            continue
+    return mapping
 
 
 def _expand_abstraction(abstr_body, children):
