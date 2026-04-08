@@ -86,8 +86,8 @@ def _find_type_at_call_site(dsl, program, target_symbol, abstr_body):
         try:
             body_twe = dsl.compute_type(
                 abstr_body,
-                lambda x, _at=arg_types, _env=result.env: (
-                    TypeWithEnvironment(_at[x.index], _env)
+                lambda x: (
+                    TypeWithEnvironment(arg_types[x.index], result.env)
                     if isinstance(x, AbstractionIndexParameter)
                     else None
                 ),
