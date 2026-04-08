@@ -142,7 +142,7 @@ class BasicProcessDSL(unittest.TestCase):
         )
         self.assertEqual(
             dsl2.productions[-1].render().strip(),
-            "__10 :: i -> (i, i) -> i = (lam-abstr (#0) (lam_1 (+ #0 ($0))))",
+            "__10 :: i -> (i, #__lam_unused_1) -> i = (lam-abstr (#0) (lam_1 (+ #0 ($0))))",
         )
 
     def test_multi_argument(self):
@@ -164,7 +164,7 @@ class BasicProcessDSL(unittest.TestCase):
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
         self.assertEqual(
             dsl2.productions[-1].render().strip(),
-            "__10 :: i -> i -> i = (lam-abstr (#0) (lam_0 (+ (1) #0)))",
+            "__10 :: #__var_0 -> i -> i = (lam-abstr (#0) (lam_0 (+ (1) #0)))",
         )
         self.assertEqual(len(rewritten), len(code))
         self.assertEqual(

@@ -13,7 +13,6 @@ from ..programs.s_expression_render import (
     render_s_expression,
     symbols_for_program,
 )
-from ..types.type import UnificationError
 from ..types.type_signature import FunctionTypeSignature
 
 
@@ -26,127 +25,82 @@ def _compute_abstraction_production(
     """
     Compute the type of an abstraction production.
 
-    Uses top-down type inference (unify_return) from the program root to
-    the abstraction call site to determine the return type and environment.
-    Argument types are computed from the usage children using the resolved
-    environment, avoiding any polymorphic type variables.
-
     Args:
         dsl: The DSL.
         s_expression_using: An SExpression using the abstraction.
-        abstr_name: The name of the abstraction being created.
-        abstr_body: The body of the abstraction (with #N placeholders).
+        abstr: The original abstraction.
 
     Returns an AbstractionProduction corresponding to the abstraction.
     """
     abstr_body = _inject_parameters(abstr_body)
-
-    # Top-down: walk from the root to the call site to get the concrete
-    # expected type and environment at that position.
-    call_site_twe = _find_type_at_call_site(
-        dsl, s_expression_using, abstr_name, abstr_body
-    )
     usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
+    type_arguments = [dsl.compute_type(x) for x in usage.children]
+    type_out = dsl.compute_type(
+        abstr_body,
+        lambda x: (
+            type_arguments[x.index]
+            if isinstance(x, AbstractionIndexParameter)
+            else None
+        ),
+    ).typ
 
-    # Compute each argument's type using the environment from the call site
-    # so that polymorphic variables ($N) resolve to concrete types.
-    arg_types = [
-        _compute_type_in_env(dsl, child, call_site_twe.env).typ
-        for child in usage.children
-    ]
-    type_signature = FunctionTypeSignature(arg_types, call_site_twe.typ)
+    # Resolve type variables (e.g. from polymorphic $0 in usage children)
+    # by matching each argument type against the corresponding subtree
+    # in the original program. The original subtree is the child of the
+    # usage position, expanded by the abstraction body.
+    arg_types = [x.typ for x in type_arguments]
+    if any(t.get_type_vars() for t in arg_types) or type_out.get_type_vars():
+        mapping = _resolve_abstraction_vars(
+            dsl, s_expression_using, abstr_name, abstr_body
+        )
+        arg_types = [t.subst_type_vars(mapping) for t in arg_types]
+        type_out = type_out.subst_type_vars(mapping)
+    type_signature = FunctionTypeSignature(arg_types, type_out)
 
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
 
 
-def _find_type_at_call_site(dsl, program, target_symbol, abstr_body):
-    """Walk the program tree top-down to find the expected type at target_symbol.
+def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
+    """Resolve type variables in abstraction types by reconstructing the original program.
 
-    Uses unify_return at each production to propagate the expected type
-    from the root down to the target node. Validates the result by checking
-    the abstraction body type-checks with the inferred type.
+    Expands the abstraction body with usage children to reconstruct the original
+    subtree, computes its type (fully resolved), then unifies the polymorphic
+    argument types with the resolved types to get a var mapping.
     """
-    from ..types.type_with_environment import (  # pylint: disable=import-outside-toplevel
-        StrictEnvironment,
-        TypeWithEnvironment,
-    )
+    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
+    original = _expand_abstraction(abstr_body, usage.children)
 
-    usage = next(x for x in postorder(program) if x.symbol == target_symbol)
-    root_twes = [
-        TypeWithEnvironment(t, StrictEnvironment.empty()) for t in dsl.valid_root_types
-    ]
-    for root_twe in root_twes:
-        result = _find_type_topdown(dsl, program, target_symbol, root_twe)
-        if result is None:
+    # Compute types for each child both with and without context.
+    # The "without context" type has type variables; the "with context"
+    # type (from the expanded tree) has resolved types.
+    resolved_twe = dsl.compute_type(original)
+    mapping = {}
+    for child in usage.children:
+        poly_twe = dsl.compute_type(child)
+        if not poly_twe.typ.get_type_vars():
             continue
-        # Validate: check the body type-checks with this return type and arg types
-        arg_types = [
-            _compute_type_in_env(dsl, child, result.env).typ for child in usage.children
-        ]
-        try:
-            body_twe = dsl.compute_type(
-                abstr_body,
-                lambda x: (
-                    TypeWithEnvironment(arg_types[x.index], result.env)
-                    if isinstance(x, AbstractionIndexParameter)
-                    else None
-                ),
-            )
-            # Body type may have type variables for unused lambda args;
-            # check compatibility via unification rather than exact equality.
-            body_twe.typ.unify(result.typ)
-            return result
-        except (ValueError, AssertionError, AttributeError, KeyError, UnificationError):
-            continue
-    raise ValueError(
-        f"Could not find {target_symbol} reachable from any root type in {dsl.valid_root_types}"
+        for var_name in poly_twe.typ.get_type_vars():
+            if not var_name.startswith("__var_"):
+                continue
+            idx = int(var_name[len("__var_") :])
+            if (
+                hasattr(resolved_twe.env, "_elements")
+                and idx
+                in resolved_twe.env._elements  # pylint: disable=protected-access
+            ):
+                # pylint: disable=protected-access
+                mapping[var_name] = resolved_twe.env._elements[idx]
+    return mapping
+
+
+def _expand_abstraction(abstr_body, children):
+    """Expand an abstraction body by replacing AbstractionIndexParameters with children."""
+    if isinstance(abstr_body, AbstractionIndexParameter):
+        return children[abstr_body.index]
+    return SExpression(
+        abstr_body.symbol,
+        tuple(_expand_abstraction(c, children) for c in abstr_body.children),
     )
-
-
-def _find_type_topdown(dsl, node, target_symbol, expected_twe):
-    """Recursive top-down walk. Returns the TWE at target_symbol, or None."""
-    if node.symbol == target_symbol:
-        return expected_twe
-
-    try:
-        prod = dsl.get_production(node.symbol)
-    except KeyError:
-        return None
-
-    child_twes = prod.type_signature().unify_return(expected_twe)
-    if child_twes is None or len(child_twes) != len(node.children):
-        return None
-
-    for child, child_twe in zip(node.children, child_twes):
-        result = _find_type_topdown(dsl, child, target_symbol, child_twe)
-        if result is not None:
-            return result
-    return None
-
-
-def _compute_type_in_env(dsl, program, env):
-    """Compute the type of a program, resolving variables using the given environment."""
-    from ..types.type_signature import (
-        VariableTypeSignature,
-    )  # pylint: disable=import-outside-toplevel
-    from ..types.type_with_environment import (
-        TypeWithEnvironment,
-    )  # pylint: disable=import-outside-toplevel
-
-    def lookup(node):
-        try:
-            prod = dsl.get_production(node.symbol)
-        except KeyError:
-            return None
-        sig = prod.type_signature()
-        if isinstance(sig, VariableTypeSignature):
-            idx = sig.index_in_env
-            typ = env[idx] if idx < len(env) else None
-            if typ is not None:
-                return TypeWithEnvironment(typ, env)
-        return None
-
-    return dsl.compute_type(program, lookup)
 
 
 def _inject_parameters(s_expression: Union[SExpression, str]):
