@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# DSL rendering strings naturally overlap across test files
+
 import unittest
 
 import neurosym as ns
