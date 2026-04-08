@@ -195,8 +195,8 @@ class DSLFactory:
             self.target_types,
         )
 
-        # Top-down: find reachable productions and lambdas
-        reachable_prods, reachable_lambda_arities = reachable_symbols(
+        # Top-down: find reachable productions
+        reachable_prods = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
@@ -206,12 +206,15 @@ class DSLFactory:
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
-        if has_lambdas and reachable_lambda_arities:
+        reachable_lambda_arities = set()
+        if has_lambdas:
             reachable_lambda_arities = _filter_useless_arities(
-                reachable_lambda_arities, sym_to_productions, self.target_types
+                set(range(1, self.max_env_depth + 1)),
+                sym_to_productions,
+                self.target_types,
             )
 
-        if has_lambdas and reachable_lambda_arities:
+        if reachable_lambda_arities:
             _add_lambda_variable_productions(
                 sym_to_productions, reachable_lambda_arities, self.max_env_depth
             )

@@ -174,13 +174,10 @@ def reachable_symbols(
     :param has_lambdas: Whether lambdas are enabled.
     :param max_depth: Maximum type depth.
 
-    :return: A tuple of ``(prod_sigs, lambda_arities)`` where:
-        - ``prod_sigs`` is a dict mapping each symbol name to a list of
-          ``FunctionTypeSignature`` objects. Type variables that appear in
-          the return type are preserved as polymorphic; only input-only
-          type variables are substituted with concrete types.
-        - ``lambda_arities`` is a set of ints, each representing the arity
-          of a lambda that is needed.
+    :return: A dict mapping each symbol name to a list of
+        ``FunctionTypeSignature`` objects. Type variables that appear in
+        the return type are preserved as polymorphic; only input-only
+        type variables are substituted with concrete types.
     """
     # pylint: disable=too-many-branches,too-many-nested-blocks
     checker = _ConstructibilityChecker(has_lambdas)
@@ -195,7 +192,6 @@ def reachable_symbols(
 
     seen_substs = set()
     prod_sigs = {}  # sym -> {type_str: FunctionTypeSignature}
-    lambda_arities = set()
     visited = set()
 
     def _enqueue(t, env):
@@ -209,7 +205,6 @@ def reachable_symbols(
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
-            lambda_arities.add(len(t.input_type))
             _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):
@@ -252,4 +247,4 @@ def reachable_symbols(
                         if not resolved_arg.get_type_vars():
                             _enqueue_with_lambda(resolved_arg, env)
 
-    return {sym: list(sigs.values()) for sym, sigs in prod_sigs.items()}, lambda_arities
+    return {sym: list(sigs.values()) for sym, sigs in prod_sigs.items()}

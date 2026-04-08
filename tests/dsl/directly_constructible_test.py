@@ -488,7 +488,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
             max_depth=6,
             target_types=[target],
         )
-        prods, lams = ns.reachable_symbols(
+        prods = ns.reachable_symbols(
             named_sigs,
             ct,
             [target],
@@ -503,7 +503,6 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
                 ("step3", "{f, 3} -> {f, 4}"),
             },
         )
-        self.assertEqual(lams, {1})
 
     # --- Bootstrap tests (types constructed from nothing via lambda) ---
 
@@ -693,52 +692,46 @@ class TestReachableSymbols(unittest.TestCase):
 
     def test_basic(self):
         sigs = self._named_sigs("one :: () -> i", "add :: (i, i) -> i")
-        prods, lams = self._run(sigs, ["i"])
+        prods = self._run(sigs, ["i"])
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("add", "(i, i) -> i")},
         )
-        self.assertEqual(lams, set())
 
     def test_unreachable_production(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f")
-        prods, lams = self._run(sigs, ["i"])
+        prods = self._run(sigs, ["i"])
         self.assertEqual(_render_prods(prods), {("one", "() -> i")})
-        self.assertEqual(lams, set())
 
     def test_chain(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f")
-        prods, lams = self._run(sigs, ["f"])
+        prods = self._run(sigs, ["f"])
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("to_f", "i -> f")},
         )
-        self.assertEqual(lams, set())
 
     def test_lambda_reaches_base(self):
         sigs = self._named_sigs("one :: () -> i", "use_fn :: (i -> i) -> f")
-        prods, lams = self._run(sigs, ["f"], has_lambdas=True)
+        prods = self._run(sigs, ["f"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("use_fn", "(i -> i) -> f")},
         )
-        self.assertEqual(lams, {1})
 
     def test_lambda_not_available_without_flag(self):
         sigs = self._named_sigs("one :: () -> i", "use_fn :: (i -> i) -> f")
-        prods, lams = self._run(sigs, ["f"], has_lambdas=False)
+        prods = self._run(sigs, ["f"], has_lambdas=False)
         self.assertEqual(_render_prods(prods), set())
-        self.assertEqual(lams, set())
 
     def test_type_variable_substs(self):
         t = ns.TypeDefiner()
         sigs = [("one", t.sig("() -> i")), ("convert", t.sig("#x -> f"))]
-        prods, lams = self._run(sigs, ["f"])
+        prods = self._run(sigs, ["f"])
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("convert", "i -> f"), ("convert", "f -> f")},
         )
-        self.assertEqual(lams, set())
 
     def test_multiple_bases_reachable(self):
         t = ns.TypeDefiner()
@@ -747,7 +740,7 @@ class TestReachableSymbols(unittest.TestCase):
             ("one_f", t.sig("() -> f")),
             ("convert", t.sig("#x -> g")),
         ]
-        prods, lams = self._run(sigs, ["g"])
+        prods = self._run(sigs, ["g"])
         self.assertEqual(
             _render_prods(prods),
             {
@@ -758,13 +751,11 @@ class TestReachableSymbols(unittest.TestCase):
                 ("convert", "g -> g"),
             },
         )
-        self.assertEqual(lams, set())
 
     def test_unconstructible_input(self):
         sigs = self._named_sigs("one :: () -> i", "needs_f :: (f, i) -> g")
-        prods, lams = self._run(sigs, ["g"])
+        prods = self._run(sigs, ["g"])
         self.assertEqual(_render_prods(prods), set())
-        self.assertEqual(lams, set())
 
     def test_env_aware_reachability(self):
         sigs = self._named_sigs(
@@ -772,7 +763,7 @@ class TestReachableSymbols(unittest.TestCase):
             "make_f :: (a, i) -> f",
             "use_fn :: (a -> f) -> g",
         )
-        prods, lams = self._run(sigs, ["g"], has_lambdas=True)
+        prods = self._run(sigs, ["g"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {
@@ -781,25 +772,22 @@ class TestReachableSymbols(unittest.TestCase):
                 ("use_fn", "(a -> f) -> g"),
             },
         )
-        self.assertEqual(lams, {1})
 
     def test_bootstrap_reachable(self):
         sigs = self._named_sigs("boot :: (x -> x) -> x", "to_f :: x -> f")
-        prods, lams = self._run(sigs, ["f"], has_lambdas=True)
+        prods = self._run(sigs, ["f"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {("boot", "(x -> x) -> x"), ("to_f", "x -> f")},
         )
-        self.assertEqual(lams, {1})
 
     def test_multiple_targets(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f", "to_g :: f -> g")
-        prods, lams = self._run(sigs, ["i", "g"])
+        prods = self._run(sigs, ["i", "g"])
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("to_f", "i -> f"), ("to_g", "f -> g")},
         )
-        self.assertEqual(lams, set())
 
     def test_nested_lambda_types(self):
         sigs = self._named_sigs(
@@ -808,12 +796,11 @@ class TestReachableSymbols(unittest.TestCase):
             "one_g :: () -> g",
             "use :: (i -> (f -> g)) -> h",
         )
-        prods, lams = self._run(sigs, ["h"], has_lambdas=True)
+        prods = self._run(sigs, ["h"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {("one_g", "() -> g"), ("use", "(i -> f -> g) -> h")},
         )
-        self.assertEqual(lams, {1})
 
     def test_rnn_dsl_target(self):
         # RNN DSL with scan (not fold) so all productions are reachable.
@@ -832,7 +819,7 @@ class TestReachableSymbols(unittest.TestCase):
         ]
         sigs_only = [s for _, s in sigs]
         ct = ns.directly_constructible_types(sigs_only, has_lambdas=False, max_depth=5)
-        prods, lams = ns.reachable_symbols(
+        prods = ns.reachable_symbols(
             sigs,
             ct,
             [ns.parse_type("[{f, 12}] -> [{f, 4}]")],
@@ -856,7 +843,6 @@ class TestReachableSymbols(unittest.TestCase):
                 ("sum", "() -> {f, 12} -> f"),
             },
         )
-        self.assertEqual(lams, set())
 
     def test_type_variable_combinatorial(self):
         # List DSL with type variables, lambdas, and multi-arg higher-order
@@ -912,12 +898,11 @@ class TestReachableSymbols(unittest.TestCase):
         # Targets include arrow types: i -> i needs lambda (i,),
         # (i, i) -> i needs lambda (i, i).
         sigs = self._named_sigs("plus :: (i, i) -> i", "one :: () -> i")
-        prods, lams = self._run(sigs, ["i", "i -> i", "(i, i) -> i"], has_lambdas=True)
+        prods = self._run(sigs, ["i", "i -> i", "(i, i) -> i"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("plus", "(i, i) -> i")},
         )
-        self.assertEqual(lams, {1, 2})
 
     def test_dreamcoder_with_lambdas(self):
         # Symbolic regression DSL. Target: f -> f (lambdas produce the function).
@@ -937,7 +922,7 @@ class TestReachableSymbols(unittest.TestCase):
             "lt :: (f, f) -> b",
             "ite :: (b, f, f) -> f",
         )
-        prods, lams = self._run(sigs, ["f -> f"], has_lambdas=True)
+        prods = self._run(sigs, ["f -> f"], has_lambdas=True)
         self.assertEqual(
             _render_prods(prods),
             {
@@ -955,4 +940,3 @@ class TestReachableSymbols(unittest.TestCase):
                 ("ite", "(b, f, f) -> f"),
             },
         )
-        self.assertEqual(lams, {1})
