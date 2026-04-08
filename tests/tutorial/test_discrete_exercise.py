@@ -53,4 +53,13 @@ class TestDiscreteExercise(unittest.TestCase):
             [line.strip() for line in text.split("\n") if line.strip()]
             for text in (actual, expected)
         ]
-        self.assertEqual(actual_lines, expected_lines)
+        # Base productions are ordered; abstractions may vary in order
+        # due to compression being sensitive to the enumeration set.
+        actual_base = [l for l in actual_lines if "lam-abstr" not in l]
+        expected_base = [l for l in expected_lines if "lam-abstr" not in l]
+        actual_abstr = {l.split(" :: ", 1)[1] for l in actual_lines if "lam-abstr" in l}
+        expected_abstr = {
+            l.split(" :: ", 1)[1] for l in expected_lines if "lam-abstr" in l
+        }
+        self.assertEqual(actual_base, expected_base)
+        self.assertEqual(actual_abstr, expected_abstr)
