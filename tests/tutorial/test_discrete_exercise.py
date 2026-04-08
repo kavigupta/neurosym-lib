@@ -44,10 +44,10 @@ class TestDiscreteExercise(unittest.TestCase):
            $2 :: V<$2>
            $3 :: V<$3>
            __10 :: (f, f) -> f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
-           __20 :: () -> f = (lam-abstr () (sqrt (2)))
-           __30 :: (f, f) -> f -> f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0))))))
-           __40 :: (f, f) -> f = (lam-abstr (#0 #1) (ite (< #1 #0) (1) (0)))
-           __50 :: () -> f = (lam-abstr () (sin (1)))
+           __20 :: (f, f) -> f = (lam-abstr (#0 #1) (ite (< #1 #0) (1) (0)))
+           __30 :: () -> f = (lam-abstr () (+ (1) (2)))
+           __40 :: f -> f = (lam-abstr (#0) (__10 (2) #0))
+           __50 :: () -> f = (lam-abstr () (sqrt (2)))
         """
         actual_lines, expected_lines = [
             [line.strip() for line in text.split("\n") if line.strip()]
