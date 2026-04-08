@@ -125,10 +125,11 @@ class FunctionTypeSignature(TypeSignature):
         except UnificationError:
             return None
         if mapping and isinstance(env, StrictEnvironment):
-            env = StrictEnvironment(frozendict({
-                i: t.subst_type_vars(mapping)
-                for i, t in env._elements.items()
-            }))
+            env = StrictEnvironment(
+                frozendict(
+                    {i: t.subst_type_vars(mapping) for i, t in env._elements.items()}
+                )
+            )
         return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
@@ -252,7 +253,10 @@ class VariableTypeSignature(TypeSignature):
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if isinstance(twe.typ, TypeVariable):
             # A type variable can be any type; match if the index exists
-            if isinstance(twe.env, StrictEnvironment) and self.index_in_env in twe.env._elements:
+            if (
+                isinstance(twe.env, StrictEnvironment)
+                and self.index_in_env in twe.env._elements
+            ):
                 return []
             # In a permissive environment, type variables always match
             if not isinstance(twe.env, StrictEnvironment):
