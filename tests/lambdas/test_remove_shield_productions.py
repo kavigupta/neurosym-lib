@@ -11,55 +11,55 @@ class TestRemoveShieldProductions(unittest.TestCase):
         )
 
     def test_no_shields(self):
-        self.assertEqual(self.sanitize("(lam ($1_0))"), "(lam ($1_0))")
+        self.assertEqual(self.sanitize("(lam ($1))"), "(lam ($1))")
 
     def test_shield0_shifts_all(self):
         # If you shield 0, then all variables shift up by 1.
-        self.assertEqual(self.sanitize("(lam (shield0 ($0_0)))"), "(lam ($1_0))")
+        self.assertEqual(self.sanitize("(lam (shield0 ($0)))"), "(lam ($1))")
 
     def test_shield0_shifts_higher(self):
         self.assertEqual(
-            self.sanitize("(lam (shield0 (+ ($0_0) ($1_0) ($2_0) ($3_0))))"),
-            "(lam (+ ($1_0) ($2_0) ($3_0) ($4_0)))",
+            self.sanitize("(lam (shield0 (+ ($0) ($1) ($2) ($3))))"),
+            "(lam (+ ($1) ($2) ($3) ($4)))",
         )
 
     def test_shield_above_variable(self):
-        # If you shield 2, then all variables above 2 shift up by 1, but $0_0 and $1_0 stay the same.
+        # If you shield 2, then all variables above 2 shift up by 1, but $0 and $1 stay the same.
         self.assertEqual(
-            self.sanitize("(lam (shield1 (+ ($0_0) ($1_0) ($2_0) ($3_0))))"),
-            "(lam (+ ($0_0) ($2_0) ($3_0) ($4_0)))",
+            self.sanitize("(lam (shield1 (+ ($0) ($1) ($2) ($3))))"),
+            "(lam (+ ($0) ($2) ($3) ($4)))",
         )
 
     def test_nested_shields(self):
         self.assertEqual(
             # shielding 1 within shielding 0 means shielding 2
-            self.sanitize("(lam (shield0 (shield1 (+ ($0_0) ($1_0) ($2_0) ($3_0)))))"),
-            "(lam (+ ($1_0) ($3_0) ($4_0) ($5_0)))",
+            self.sanitize("(lam (shield0 (shield1 (+ ($0) ($1) ($2) ($3)))))"),
+            "(lam (+ ($1) ($3) ($4) ($5)))",
         )
 
     def test_nested_shields_higher(self):
         self.assertEqual(
-            self.sanitize("(lam (shield0 (shield1 (+ ($0_0) ($1_0)))))"),
-            "(lam (+ ($1_0) ($3_0)))",
+            self.sanitize("(lam (shield0 (shield1 (+ ($0) ($1)))))"),
+            "(lam (+ ($1) ($3)))",
         )
 
     def test_shield_inside_function(self):
         self.assertEqual(
-            self.sanitize("(lam (+ (shield0 ($0_0)) ($2_0)))"),
-            "(lam (+ ($1_0) ($2_0)))",
+            self.sanitize("(lam (+ (shield0 ($0)) ($2)))"),
+            "(lam (+ ($1) ($2)))",
         )
 
     def test_preserves_type_id(self):
-        self.assertEqual(self.sanitize("(lam (shield0 ($0_3)))"), "(lam ($1_3))")
+        self.assertEqual(self.sanitize("(lam (shield0 ($0)))"), "(lam ($1))")
 
     def test_triple_nested(self):
         self.assertEqual(
-            self.sanitize("(lam (shield0 (shield0 (shield0 ($0_0)))))"),
-            "(lam ($3_0))",
+            self.sanitize("(lam (shield0 (shield0 (shield0 ($0)))))"),
+            "(lam ($3))",
         )
 
     def test_with_dispatch(self):
         self.assertEqual(
-            self.sanitize("(dispatch (lam (shield0 (+ ($0_0) ($1_0)))))"),
-            "(dispatch (lam (+ ($1_0) ($2_0))))",
+            self.sanitize("(dispatch (lam (shield0 (+ ($0) ($1)))))"),
+            "(dispatch (lam (+ ($1) ($2))))",
         )

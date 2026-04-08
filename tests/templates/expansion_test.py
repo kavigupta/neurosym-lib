@@ -73,13 +73,13 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<i@0>
-                $1_0 :: V<i@1>
-                $2_0 :: V<i@2>
-                $3_0 :: V<i@3>
+                $0 :: V<$0>
+                $1 :: V<$1>
+                $2 :: V<$2>
+                $3 :: V<$3>
                 1 :: () -> i
                 id :: #a -> #a
-                lam :: L<#body|i> -> i -> #body
+                lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
             """,
         )
 
@@ -97,16 +97,11 @@ class TestDSLExpand(unittest.TestCase):
                 1 :: () -> i
                 id :: #a -> #a
                 lam_0 :: L<#body|> -> () -> #body
-                lam_1 :: L<#body|i -> i> -> (i -> i) -> #body
-                lam_2 :: L<#body|i> -> i -> #body
-                $0_0 :: V<i -> i@0>
-                $1_0 :: V<i -> i@1>
-                $2_0 :: V<i -> i@2>
-                $3_0 :: V<i -> i@3>
-                $0_1 :: V<i@0>
-                $1_1 :: V<i@1>
-                $2_1 :: V<i@2>
-                $3_1 :: V<i@3>
+                lam_1 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+                $0 :: V<$0>
+                $1 :: V<$1>
+                $2 :: V<$2>
+                $3 :: V<$3>
             """,
         )
 
@@ -121,14 +116,14 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<i@0>
-                $1_0 :: V<i@1>
-                $2_0 :: V<i@2>
-                $3_0 :: V<i@3>
+                $0 :: V<$0>
+                $1 :: V<$1>
+                $2 :: V<$2>
+                $3 :: V<$3>
                 1 :: () -> i
                 id :: ((i, i) -> i) -> i
-                lam_0 :: L<#body|i;i> -> (i, i) -> #body
-                lam_1 :: L<#body|i> -> i -> #body
+                lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+                lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
             """,
         )
 
@@ -148,11 +143,11 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<i@0>
-                $1_0 :: V<i@1>
+                $0 :: V<$0>
+                $1 :: V<$1>
                 + :: (i, i) -> i
                 1 :: () -> i
-                lam :: L<#body|i;i> -> (i, i) -> #body
+                lam :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
             """,
         )
 
@@ -172,18 +167,18 @@ class TestDSLExpand(unittest.TestCase):
             self,
             dsl.render(),
             """
-                $0_0 :: V<i@0>
-                $1_0 :: V<i@1>
-                $2_0 :: V<i@2>
-                $3_0 :: V<i@3>
-                $4_0 :: V<i@4>
-                $5_0 :: V<i@5>
-                $6_0 :: V<i@6>
-                $7_0 :: V<i@7>
-                $8_0 :: V<i@8>
-                $9_0 :: V<i@9>
+                $0 :: V<$0>
+                $1 :: V<$1>
+                $2 :: V<$2>
+                $3 :: V<$3>
+                $4 :: V<$4>
+                $5 :: V<$5>
+                $6 :: V<$6>
+                $7 :: V<$7>
+                $8 :: V<$8>
+                $9 :: V<$9>
                 + :: (i, i) -> i
                 1 :: () -> i
-                lam :: L<#body|i;i;i;i;i;i;i;i;i;i> -> (i, i, i, i, i, i, i, i, i, i) -> #body
+                lam :: L<#body|#__lam_0;#__lam_1;#__lam_2;#__lam_3;#__lam_4;#__lam_5;#__lam_6;#__lam_7;#__lam_8;#__lam_9> -> (#__lam_0, #__lam_1, #__lam_2, #__lam_3, #__lam_4, #__lam_5, #__lam_6, #__lam_7, #__lam_8, #__lam_9) -> #body
             """,
         )

@@ -99,10 +99,10 @@ def get_dataset():
 
 neural_hole_filler = near.GenericMLPRNNNeuralHoleFiller(hidden_size=10)
 negative = (
-    "(ite (lam (aff_x ($0_0))) (lam (aff_yminusx ($0_0))) (lam (aff_xplusy ($0_0))))"
+    "(ite (lam (aff_x ($0))) (lam (aff_yminusx ($0))) (lam (aff_xplusy ($0))))"
 )
 positive = (
-    "(ite (lam (aff_x ($0_0))) (lam (aff_xplusy ($0_0))) (lam (aff_yminusx ($0_0))))"
+    "(ite (lam (aff_x ($0))) (lam (aff_xplusy ($0))) (lam (aff_yminusx ($0))))"
 )
 
 

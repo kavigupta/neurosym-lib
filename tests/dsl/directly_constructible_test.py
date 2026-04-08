@@ -504,7 +504,7 @@ class TestDirectlyConstructibleTypes(unittest.TestCase):
                 ("step3", "{f, 3} -> {f, 4}"),
             },
         )
-        self.assertEqual(lams, {(ns.parse_type("{f, 1}"),)})
+        self.assertEqual(lams, {1})
 
     # --- Bootstrap tests (types constructed from nothing via lambda) ---
 
@@ -724,7 +724,7 @@ class TestReachableSymbols(unittest.TestCase):
             _render_prods(prods),
             {("one", "() -> i"), ("use_fn", "(i -> i) -> f")},
         )
-        self.assertEqual(lams, {(ns.parse_type("i"),)})
+        self.assertEqual(lams, {1})
 
     def test_lambda_not_available_without_flag(self):
         sigs = self._named_sigs("one :: () -> i", "use_fn :: (i -> i) -> f")
@@ -783,7 +783,7 @@ class TestReachableSymbols(unittest.TestCase):
                 ("use_fn", "(a -> f) -> g"),
             },
         )
-        self.assertEqual(lams, {(ns.parse_type("a"),)})
+        self.assertEqual(lams, {1})
 
     def test_bootstrap_reachable(self):
         sigs = self._named_sigs("boot :: (x -> x) -> x", "to_f :: x -> f")
@@ -792,7 +792,7 @@ class TestReachableSymbols(unittest.TestCase):
             _render_prods(prods),
             {("boot", "(x -> x) -> x"), ("to_f", "x -> f")},
         )
-        self.assertEqual(lams, {(ns.parse_type("x"),)})
+        self.assertEqual(lams, {1})
 
     def test_multiple_targets(self):
         sigs = self._named_sigs("one :: () -> i", "to_f :: i -> f", "to_g :: f -> g")
@@ -815,7 +815,7 @@ class TestReachableSymbols(unittest.TestCase):
             _render_prods(prods),
             {("one_g", "() -> g"), ("use", "(i -> f -> g) -> h")},
         )
-        self.assertEqual(lams, {(ns.parse_type("i"),), (ns.parse_type("f"),)})
+        self.assertEqual(lams, {1})
 
     def test_rnn_dsl_target(self):
         # RNN DSL with scan (not fold) so all productions are reachable.
@@ -921,10 +921,7 @@ class TestReachableSymbols(unittest.TestCase):
             _render_prods(prods),
             {("one", "() -> i"), ("plus", "(i, i) -> i")},
         )
-        self.assertEqual(
-            lams,
-            {(ns.parse_type("i"),), (ns.parse_type("i"), ns.parse_type("i"))},
-        )
+        self.assertEqual(lams, {1, 2})
 
     def test_dreamcoder_with_lambdas(self):
         # Symbolic regression DSL. Target: f -> f (lambdas produce the function).
@@ -962,4 +959,4 @@ class TestReachableSymbols(unittest.TestCase):
                 ("ite", "(b, f, f) -> f"),
             },
         )
-        self.assertEqual(lams, {(ns.parse_type("f"),)})
+        self.assertEqual(lams, {1})

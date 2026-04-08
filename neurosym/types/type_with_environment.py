@@ -86,6 +86,21 @@ class Environment(ABC):
             assert env is not None
         return env
 
+    def parent_types(self, count) -> "tuple | None":
+        """
+        Return the types at the top of the environment (indices 0..count-1),
+        or None if the environment doesn't have types at all those indices.
+        """
+        # Reversed because parent() removes in reverse order
+        types = []
+        for i in range(count - 1, -1, -1):
+            if not isinstance(self, StrictEnvironment):
+                return None
+            if i not in self._elements:
+                return None
+            types.append(self._elements[i])
+        return tuple(reversed(types))
+
     def parent(self, new_types) -> "StrictEnvironment":
         """
         Assert that the given types are at the top of the environment,

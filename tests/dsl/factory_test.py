@@ -115,7 +115,7 @@ class TestPruning(unittest.TestCase):
             $3 :: V<$3>
             1 :: () -> i
             call :: (i -> i, i) -> i
-            lam :: L<#body|i> -> i -> #body
+            lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
             """,
         )
 

@@ -38,14 +38,14 @@ class TestDiscreteExercise(unittest.TestCase):
            sqrt :: f -> f
               < :: (f, f) -> b
             ite :: (b, f, f) -> f
-            lam :: L<#body|f> -> f -> #body
-           $0_0 :: V<f@0>
-           $1_0 :: V<f@1>
-           $2_0 :: V<f@2>
-           $3_0 :: V<f@3>
+            lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
+           $0 :: V<$0>
+           $1 :: V<$1>
+           $2 :: V<$2>
+           $3 :: V<$3>
            __10 :: (f, f) -> f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
            __20 :: () -> f = (lam-abstr () (sqrt (2)))
-           __30 :: (f, f) -> f -> f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0_0))))))
+           __30 :: (f, f) -> f -> f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0))))))
            __40 :: (f, f) -> f = (lam-abstr (#0 #1) (ite (< #1 #0) (1) (0)))
            __50 :: () -> f = (lam-abstr () (sin (1)))
         """

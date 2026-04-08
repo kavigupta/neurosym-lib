@@ -176,29 +176,28 @@ def reachable_symbols(
     :param max_depth: Maximum type depth.
     :param max_lambda_depth: Maximum depth for arrow types treated as lambdas.
 
-    :return: A tuple of ``(prod_sigs, lambdas)`` where:
+    :return: A tuple of ``(prod_sigs, lambda_arities)`` where:
         - ``prod_sigs`` is a dict mapping each symbol name to a list of
-          concrete ``FunctionTypeSignature`` objects. Type variables that
-          appear in both arguments and return type (e.g. ``#a`` in
-          ``#a -> #a``) are preserved as polymorphic.
-        - ``lambdas`` is a set of tuples of Types, each representing the input
-          types of a lambda that is needed (i.e., the argument types of an arrow
-          type that is constructed via lambda).
+          ``FunctionTypeSignature`` objects. Type variables that appear in
+          the return type are preserved as polymorphic; only input-only
+          type variables are substituted with concrete types.
+        - ``lambda_arities`` is a set of ints, each representing the arity
+          of a lambda that is needed.
     """
     # pylint: disable=too-many-branches,too-many-nested-blocks
     checker = _ConstructibilityChecker(has_lambdas)
     checker.constructible = constructible
 
-    # Precompute shared type vars per signature (vars in both args and return
-    # are preserved as polymorphic, not substituted).
-    shared_vars_by_sym = {}
+    # Precompute which type vars to preserve as polymorphic per signature.
+    # Any var that appears in the return type stays polymorphic; only
+    # input-only vars get substituted with concrete types.
+    return_vars_by_sym = {}
     for sym, sig in signatures:
-        arg_vars = {v for a in sig.arguments for v in a.get_type_vars()}
-        shared_vars_by_sym[sym] = arg_vars & set(sig.return_type.get_type_vars())
+        return_vars_by_sym[sym] = set(sig.return_type.get_type_vars())
 
     seen_substs = set()
     prod_sigs = {}  # sym -> {type_str: FunctionTypeSignature}
-    lambdas = set()
+    lambda_arities = set()
     visited = set()
 
     def _enqueue(t, env):
@@ -213,7 +212,7 @@ def reachable_symbols(
         _enqueue(t, env)
         if has_lambdas and isinstance(t, ArrowType):
             if ArrowType(t.input_type, AtomicType("_")).depth < max_lambda_depth:
-                lambdas.add(t.input_type)
+                lambda_arities.add(len(t.input_type))
                 _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):
@@ -223,12 +222,12 @@ def reachable_symbols(
             return False
         seen_substs.add(subst_key)
 
-        shared_vars = shared_vars_by_sym[sym]
-        filtered = {k: v for k, v in subst.items() if k not in shared_vars}
+        return_vars = return_vars_by_sym[sym]
+        filtered = {k: v for k, v in subst.items() if k not in return_vars}
         concrete_type = sig.astype().subst_type_vars(filtered)
         if concrete_type.depth > max_depth:
             return True
-        if set(concrete_type.get_type_vars()) - shared_vars:
+        if set(concrete_type.get_type_vars()) - return_vars:
             return True
         key = str(concrete_type)
         prod_sigs.setdefault(sym, {})[key] = FunctionTypeSignature.from_type(
@@ -256,4 +255,4 @@ def reachable_symbols(
                         if not resolved_arg.get_type_vars():
                             _enqueue_with_lambda(resolved_arg, env)
 
-    return {sym: list(sigs.values()) for sym, sigs in prod_sigs.items()}, lambdas
+    return {sym: list(sigs.values()) for sym, sigs in prod_sigs.items()}, lambda_arities

@@ -180,7 +180,7 @@ class LambdaProduction(Production):
 
     @property
     def arity(self):
-        return self._type_signature.function_arity()
+        return self._type_signature.function_arity
 
     def base_symbol(self):
         return "lam"

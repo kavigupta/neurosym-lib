@@ -124,6 +124,11 @@ class FunctionTypeSignature(TypeSignature):
                         mapping[k] = v
         except UnificationError:
             return None
+        if mapping and isinstance(env, StrictEnvironment):
+            env = StrictEnvironment(frozendict({
+                i: t.subst_type_vars(mapping)
+                for i, t in env._elements.items()
+            }))
         return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
@@ -146,60 +151,77 @@ class FunctionTypeSignature(TypeSignature):
 @dataclass
 class LambdaTypeSignature(TypeSignature):
     """
-    Represents the type signature of the lambda production. This is a production that
-    matches any function type with the given input types, and returns the output type
-    of the matching function type, but with with the input types placed in the environment.
+    Represents the type signature of the lambda production. This is a polymorphic
+    production that matches any function type with the given arity, and returns
+    the output type of the matching function type, with the input types placed
+    in the environment.
 
-    :param input_types: The types of the arguments to the lambda.
+    :param function_arity: The number of arguments to the lambda.
     """
 
-    input_types: List[ArrowType]
+    function_arity: int
 
     def arity(self) -> int:
         # just the body
         return 1
 
-    def function_arity(self) -> int:
-        """
-        Get the arity of the function represented by the lambda,
-        i.e., the number of arguments.
-        """
-        return len(self.input_types)
+    def _type_vars(self):
+        return tuple(TypeVariable(f"__lam_{i}") for i in range(self.function_arity))
 
     def render(self) -> str:
         # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
 
         body = TypeVariable("body")
-        input_types = ";".join(render_type(x) for x in self.input_types)
+        tvs = self._type_vars()
+        input_types = ";".join(render_type(x) for x in tvs)
         lambda_type = f"L<{render_type(body)}|{input_types}>"
 
-        return f"{lambda_type} -> {render_type(ArrowType(self.input_types, body))}"
+        return f"{lambda_type} -> {render_type(ArrowType(tvs, body))}"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if not isinstance(twe.typ, ArrowType):
             return None
-        if twe.typ.input_type != self.input_types:
+        if len(twe.typ.input_type) != self.function_arity:
             return None
         return [
             TypeWithEnvironment(
                 twe.typ.output_type,
-                twe.env.child(*self.input_types),
+                twe.env.child(*twe.typ.input_type),
             )
         ]
 
     def return_type_template(self) -> Type:
-        return ArrowType(self.input_types, TypeVariable("body"))
+        return ArrowType(self._type_vars(), TypeVariable("body"))
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 1:
             return None
-        parent = twes[0].env.parent(self.input_types)
-        return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
+        env = twes[0].env
+        # First try the fast path: all lambda arg slots are present.
+        parent_types = env.parent_types(self.function_arity)
+        if parent_types is not None:
+            parent = env.parent(parent_types)
+            return TypeWithEnvironment(ArrowType(parent_types, twes[0].typ), parent)
+        # Slow path: some lambda arg slots are unused. Fill with type variables
+        # and strip the lambda entries from the environment manually.
+        if not isinstance(env, StrictEnvironment):
+            return None
+        input_types = tuple(
+            env._elements.get(i, TypeVariable(f"__lam_unused_{i}"))
+            for i in range(self.function_arity)
+        )
+        # Build parent env: shift indices down by function_arity, dropping 0..arity-1
+        parent_elements = {}
+        for idx, typ in env._elements.items():
+            if idx >= self.function_arity:
+                parent_elements[idx - self.function_arity] = typ
+        parent = StrictEnvironment(frozendict(parent_elements))
+        return TypeWithEnvironment(ArrowType(input_types, twes[0].typ), parent)
 
 
 @dataclass
@@ -228,6 +250,14 @@ class VariableTypeSignature(TypeSignature):
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
+        if isinstance(twe.typ, TypeVariable):
+            # A type variable can be any type; match if the index exists
+            if isinstance(twe.env, StrictEnvironment) and self.index_in_env in twe.env._elements:
+                return []
+            # In a permissive environment, type variables always match
+            if not isinstance(twe.env, StrictEnvironment):
+                return []
+            return None
         if not twe.env.contains_type_at(twe.typ, self.index_in_env):
             return None
         return []
