@@ -270,7 +270,9 @@ class DSLFactory:
         return sym_to_productions
 
 
-def _filter_useless_arities(reachable_lambda_arities, sym_to_productions, target_types):
+def _filter_useless_arities(  # pylint: disable=too-many-branches
+    reachable_lambda_arities, sym_to_productions, target_types
+):
     """Filter lambda arities whose input types are never consumed by any production.
 
     A lambda arity is useful only if there exists some concrete arrow type of
