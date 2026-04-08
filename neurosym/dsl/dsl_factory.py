@@ -2,7 +2,7 @@ import copy
 import warnings
 from typing import Callable, Dict, List, Tuple
 
-from ..types.type import Type
+from ..types.type import ArrowType, Type
 from ..types.type_signature import LambdaTypeSignature, VariableTypeSignature
 from ..types.type_string_repr import TypeDefiner
 from .constructibility import directly_constructible_types, reachable_symbols
@@ -217,6 +217,11 @@ class DSLFactory:
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
         if has_lambdas and reachable_lambda_arities:
+            reachable_lambda_arities = _filter_useless_arities(
+                reachable_lambda_arities, sym_to_productions, self.target_types
+            )
+
+        if has_lambdas and reachable_lambda_arities:
             _add_lambda_variable_productions(
                 sym_to_productions, reachable_lambda_arities, self.max_env_depth
             )
@@ -263,6 +268,54 @@ class DSLFactory:
                 )
             )
         return sym_to_productions
+
+
+def _filter_useless_arities(reachable_lambda_arities, sym_to_productions, target_types):
+    """Filter lambda arities whose input types are never consumed by any production.
+
+    A lambda arity is useful only if there exists some concrete arrow type of
+    that arity where all the input types are consumed (appear as arguments to
+    some production, or as lambda inputs from target/argument arrow types).
+    This prevents creating lambdas for arrow types like
+    ``{f, 14} -> {f, 1}`` when no production takes ``{f, 14}`` as an argument.
+    """
+    # Collect all types consumed as production arguments
+    consumed_types = set()
+    for prods in sym_to_productions.values():
+        for prod in prods:
+            for arg in prod.type_signature().arguments:
+                consumed_types.add(arg)
+    if not consumed_types:
+        return reachable_lambda_arities
+    if any(t.has_type_vars() for t in consumed_types):
+        return reachable_lambda_arities
+    # Expand: arrow types transitively consume their input element types
+    changed = True
+    while changed:
+        changed = False
+        for t in list(consumed_types):
+            if isinstance(t, ArrowType):
+                for inp_t in t.input_type:
+                    if inp_t not in consumed_types:
+                        consumed_types.add(inp_t)
+                        changed = True
+    # Collect all arrow types from production arguments AND target types
+    all_arrow_types = set()
+    for t in target_types:
+        if isinstance(t, ArrowType):
+            all_arrow_types.add(t)
+    for prods in sym_to_productions.values():
+        for prod in prods:
+            for arg in prod.type_signature().arguments:
+                if isinstance(arg, ArrowType):
+                    all_arrow_types.add(arg)
+    # An arity is useful if some arrow type of that arity has all inputs consumed
+    useful_arities = set()
+    for arrow in all_arrow_types:
+        if len(arrow.input_type) in reachable_lambda_arities:
+            if all(t in consumed_types for t in arrow.input_type):
+                useful_arities.add(len(arrow.input_type))
+    return reachable_lambda_arities & useful_arities
 
 
 def _add_lambda_variable_productions(

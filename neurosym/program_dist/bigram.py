@@ -497,8 +497,8 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         masks = []
         if self._include_type_preorder_mask:
             masks.append(TypePreorderMask(tree_dist, self._dsl))
-        for mask in self._additional_preorder_masks:
-            masks.append(mask(tree_dist, self._dsl))
+        for mask_fn in self._additional_preorder_masks:
+            masks.append(mask_fn(tree_dist, self._dsl))
         return ConjunctionPreorderMask.of(tree_dist, masks)
 
     @internal_only
