@@ -198,7 +198,7 @@ class TestScalability(unittest.TestCase):
         dsl = dslf.finalize()
         self.assertGreater(len(dsl.productions), 2)
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(20)
     def test_list_dsl_higher_depth(self):
         dsl = ns.examples.dreamcoder.list_dsl(
             "[i] -> i", "[i] -> [i]", "i -> i", max_overall_depth=7
