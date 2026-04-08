@@ -73,13 +73,17 @@ class DSLFactory:
         """
         self.t.filtered_type_variable(key, type_filter)
 
-    def lambdas(self):
+    def lambdas(self, max_type_depth=4):
         """
         Add lambda productions to the DSL. This will add polymorphic lambda
         productions for each reachable arity, as well as polymorphic variable
         productions ($0, $1, ...) for each de bruijn index.
+
+        :param max_type_depth: Maximum depth of types to explore when determining
+            which types are constructible inside lambda bodies. Controls how deeply
+            nested list/arrow types get expanded for productions with type variables.
         """
-        self.lambda_parameters = {}
+        self.lambda_parameters = dict(max_type_depth=max_type_depth)
 
     def extra_productions(
         self, symbol: str, productions: List[Production], stable: bool = True
@@ -196,12 +200,16 @@ class DSLFactory:
         )
 
         # Top-down: find reachable productions
+        max_lambda_depth = self.lambda_parameters.get(
+            "max_type_depth", self.max_overall_depth
+        ) if has_lambdas else self.max_overall_depth
         reachable_prods = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
             has_lambdas,
             self.max_overall_depth,
+            max_lambda_depth,
         )
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)

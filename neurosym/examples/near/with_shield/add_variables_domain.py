@@ -48,7 +48,9 @@ def add_variables_domain_dsl(amount, is_vectorized=False, include_shield=True):
     vec_output = f"{{f, {amount}}} -> {{f, 1}}"
 
     dslf.production("+", "(f, f) -> f", lambda x, y: x + y)
-    dslf.lambdas()
+    dslf.lambdas(
+        max_type_depth=np.log2(amount) + 1,
+    )
     if include_shield:
         add_shield_productions(dslf)
     if is_vectorized:

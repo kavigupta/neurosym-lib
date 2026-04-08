@@ -50,6 +50,7 @@ class EnumerationRegressionTest(unittest.TestCase):
     def test_limited_type_depth(self):
         self.assertRenderingEqual(
             self.rendered_dsl(
+                lambdas_kwargs=dict(max_type_depth=3.5),
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),
             """
@@ -65,6 +66,7 @@ class EnumerationRegressionTest(unittest.TestCase):
     def test_limited_type_depth_env_depth(self):
         self.assertRenderingEqual(
             self.rendered_dsl(
+                lambdas_kwargs=dict(max_type_depth=3.5),
                 max_env_depth=2,
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),

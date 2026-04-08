@@ -157,6 +157,7 @@ def reachable_symbols(
     target_types,
     has_lambdas,
     max_depth,
+    max_lambda_depth=None,
 ):
     """
     Top-down search from target types through signatures, collecting concrete
@@ -202,9 +203,11 @@ def reachable_symbols(
         visited.add((t, env))
         frontier.append((t, env))
 
+    _max_lam_depth = max_lambda_depth if max_lambda_depth is not None else max_depth
+
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
-        if has_lambdas and isinstance(t, ArrowType) and t.depth < max_depth:
+        if has_lambdas and isinstance(t, ArrowType) and t.depth < _max_lam_depth:
             _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):

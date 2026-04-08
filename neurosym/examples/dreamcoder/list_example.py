@@ -90,7 +90,7 @@ def list_dsl(*output_types, max_overall_depth=5):
     #     empty
     #     $0))))
 
-    dslf.lambdas()
+    dslf.lambdas(max_type_depth=3)
     dslf.prune_to(*output_types, prune_variables=False)
 
     return dslf.finalize()
