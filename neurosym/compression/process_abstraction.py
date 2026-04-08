@@ -79,17 +79,17 @@ def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
         poly_twe = dsl.compute_type(child)
         if not poly_twe.typ.get_type_vars():
             continue
-        for var in poly_twe.typ.get_type_vars():
-            if not var.name.startswith("__var_"):
+        for var_name in poly_twe.typ.get_type_vars():
+            if not var_name.startswith("__var_"):
                 continue
-            idx = int(var.name[len("__var_") :])
+            idx = int(var_name[len("__var_") :])
             if (
                 hasattr(resolved_twe.env, "_elements")
                 and idx
                 in resolved_twe.env._elements  # pylint: disable=protected-access
             ):
                 # pylint: disable=protected-access
-                mapping[var.name] = resolved_twe.env._elements[idx]
+                mapping[var_name] = resolved_twe.env._elements[idx]
     return mapping
 
 
