@@ -884,7 +884,7 @@ class TestReachableSymbols(unittest.TestCase):
             max_depth=5,
             target_types=[ns.parse_type("[i] -> i")],
         )
-        prods, _ = ns.reachable_symbols(
+        prods = ns.reachable_symbols(
             sigs,
             ct,
             [ns.parse_type("[i] -> i")],
