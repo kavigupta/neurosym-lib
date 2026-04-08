@@ -209,7 +209,7 @@ class DSLFactory:
         reachable_lambda_arities = set()
         if has_lambdas:
             reachable_lambda_arities = _filter_useless_arities(
-                set(range(1, self.max_env_depth + 1)),
+                set(range(self.max_env_depth + 1)),
                 sym_to_productions,
                 self.target_types,
             )
@@ -274,16 +274,34 @@ def _filter_useless_arities(  # pylint: disable=too-many-branches
     This prevents creating lambdas for arrow types like
     ``{f, 14} -> {f, 1}`` when no production takes ``{f, 14}`` as an argument.
     """
-    # Collect all types consumed as production arguments
+    # Collect all arrow types from production arguments AND target types,
+    # transitively expanding through nested arrows (e.g. i -> i -> i
+    # contains i -> i as a sub-arrow).
+    all_arrow_types = set()
+    worklist = list(target_types)
+    for prods in sym_to_productions.values():
+        for prod in prods:
+            worklist.extend(prod.type_signature().arguments)
+    while worklist:
+        t = worklist.pop()
+        if isinstance(t, ArrowType) and t not in all_arrow_types:
+            all_arrow_types.add(t)
+            worklist.append(t.output_type)
+
+    # Keep only arities that appear in some reachable arrow type.
+    reachable_arities = {len(a.input_type) for a in all_arrow_types}
+    candidate_arities = reachable_lambda_arities & reachable_arities
+
+    # Further filter: a lambda arity is useful only if its input types
+    # are consumed by some production. Skip this check if any production
+    # has polymorphic arguments (which could consume any type).
     consumed_types = set()
     for prods in sym_to_productions.values():
         for prod in prods:
             for arg in prod.type_signature().arguments:
                 consumed_types.add(arg)
-    if not consumed_types:
-        return reachable_lambda_arities
-    if any(t.has_type_vars() for t in consumed_types):
-        return reachable_lambda_arities
+    if not consumed_types or any(t.has_type_vars() for t in consumed_types):
+        return candidate_arities
     # Expand: arrow types transitively consume their input element types
     changed = True
     while changed:
@@ -294,23 +312,12 @@ def _filter_useless_arities(  # pylint: disable=too-many-branches
                     if inp_t not in consumed_types:
                         consumed_types.add(inp_t)
                         changed = True
-    # Collect all arrow types from production arguments AND target types
-    all_arrow_types = set()
-    for t in target_types:
-        if isinstance(t, ArrowType):
-            all_arrow_types.add(t)
-    for prods in sym_to_productions.values():
-        for prod in prods:
-            for arg in prod.type_signature().arguments:
-                if isinstance(arg, ArrowType):
-                    all_arrow_types.add(arg)
-    # An arity is useful if some arrow type of that arity has all inputs consumed
     useful_arities = set()
     for arrow in all_arrow_types:
-        if len(arrow.input_type) in reachable_lambda_arities:
+        if len(arrow.input_type) in candidate_arities:
             if all(t in consumed_types for t in arrow.input_type):
                 useful_arities.add(len(arrow.input_type))
-    return reachable_lambda_arities & useful_arities
+    return candidate_arities & useful_arities
 
 
 def _add_lambda_variable_productions(

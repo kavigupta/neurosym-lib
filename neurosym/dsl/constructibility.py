@@ -204,7 +204,7 @@ def reachable_symbols(
 
     def _enqueue_with_lambda(t, env):
         _enqueue(t, env)
-        if has_lambdas and isinstance(t, ArrowType):
+        if has_lambdas and isinstance(t, ArrowType) and t.depth < max_depth:
             _enqueue_with_lambda(t.output_type, env | frozenset(t.input_type))
 
     def _record(sym, sig, subst):
