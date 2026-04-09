@@ -72,13 +72,12 @@ class Environment(ABC):
         A unique hash for this environment.
         """
 
-    def subst_type_vars(
-        self, mapping: dict
-    ) -> "Environment":  # pylint: disable=unused-argument
+    def subst_type_vars(self, mapping: dict) -> "Environment":
         """
         Apply type variable substitutions to all types in this environment.
         Returns self unchanged by default (non-strict environments have no types to substitute).
         """
+        del mapping
         return self
 
     def child(self, *new_typs: Tuple[Type]) -> "Environment":
