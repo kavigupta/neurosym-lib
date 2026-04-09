@@ -72,6 +72,13 @@ class Environment(ABC):
         A unique hash for this environment.
         """
 
+    def subst_type_vars(self, mapping: dict) -> "Environment":  # pylint: disable=unused-argument
+        """
+        Apply type variable substitutions to all types in this environment.
+        Returns self unchanged by default (non-strict environments have no types to substitute).
+        """
+        return self
+
     def child(self, *new_typs: Tuple[Type]) -> "Environment":
         """
         Add the given types to the top of the environment,
@@ -143,6 +150,11 @@ class StrictEnvironment(Environment):
     @classmethod
     def empty(cls):
         return cls(frozendict())
+
+    def subst_type_vars(self, mapping: dict) -> "StrictEnvironment":
+        return StrictEnvironment(
+            frozendict({i: t.subst_type_vars(mapping) for i, t in self._elements.items()})
+        )
 
     def merge(self, other: "StrictEnvironment"):
         result = dict(self._elements)

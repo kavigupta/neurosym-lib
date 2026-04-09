@@ -126,20 +126,7 @@ class FunctionTypeSignature(TypeSignature):
         # Apply substitution to each child env before merging, so that
         # polymorphic variable types get resolved consistently.
         if mapping:
-            resolved_envs = []
-            for env in envs:
-                if isinstance(env, StrictEnvironment):
-                    # pylint: disable=protected-access
-                    env = StrictEnvironment(
-                        frozendict(
-                            {
-                                i: t.subst_type_vars(mapping)
-                                for i, t in env._elements.items()
-                            }
-                        )
-                    )
-                resolved_envs.append(env)
-            envs = resolved_envs
+            envs = [env.subst_type_vars(mapping) for env in envs]
         env = StrictEnvironment.merge_all(*envs)
         return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
