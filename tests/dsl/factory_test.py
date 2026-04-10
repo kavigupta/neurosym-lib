@@ -204,3 +204,31 @@ class TestScalability(unittest.TestCase):
             "[i] -> i", "[i] -> [i]", "i -> i", max_overall_depth=7
         )
         self.assertGreater(len(dsl.productions), 30)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_21_channels(self):
+        from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl
+
+        dsl = attention_ecg_dsl(num_channels=21, features_per_channel=14, num_classes=5)
+        self.assertGreater(len(dsl.productions), 20)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_21_channels_with_shields(self):
+        from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl
+
+        dsl = attention_ecg_dsl(
+            num_channels=21,
+            features_per_channel=14,
+            num_classes=5,
+            use_shields=True,
+        )
+        self.assertGreater(len(dsl.productions), 40)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_100_channels(self):
+        from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl
+
+        dsl = attention_ecg_dsl(
+            num_channels=100, features_per_channel=14, num_classes=5
+        )
+        self.assertGreater(len(dsl.productions), 100)
