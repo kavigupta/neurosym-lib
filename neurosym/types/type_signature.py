@@ -201,25 +201,20 @@ class LambdaTypeSignature(TypeSignature):
         if len(twes) != 1:
             return None
         env = twes[0].env
-        # First try the fast path: all lambda arg slots are present.
-        parent_types = env.parent_types(self.function_arity)
-        if parent_types is not None:
-            parent = env.parent(parent_types)
-            return TypeWithEnvironment(ArrowType(parent_types, twes[0].typ), parent)
-        # Slow path: some lambda arg slots are unused. Fill with type variables
-        # and strip the lambda entries from the environment manually.
         if not isinstance(env, StrictEnvironment):
             return None
+        # Fill missing slots (unused lambda args) with type variable placeholders,
+        # then strip the top arity entries from the env.
         # pylint: disable=protected-access
         input_types = tuple(
             env._elements.get(i, TypeVariable(f"__lam_unused_{i}"))
             for i in range(self.function_arity)
         )
-        # Build parent env: shift indices down by function_arity, dropping 0..arity-1
-        parent_elements = {}
-        for idx, typ in env._elements.items():
-            if idx >= self.function_arity:
-                parent_elements[idx - self.function_arity] = typ
+        parent_elements = {
+            idx - self.function_arity: typ
+            for idx, typ in env._elements.items()
+            if idx >= self.function_arity
+        }
         parent = StrictEnvironment(frozendict(parent_elements))
         return TypeWithEnvironment(ArrowType(input_types, twes[0].typ), parent)
 

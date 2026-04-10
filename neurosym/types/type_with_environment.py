@@ -101,19 +101,6 @@ class Environment(ABC):
             assert env is not None
         return env
 
-    def parent_types(self, count) -> "tuple | None":
-        """
-        Return the types at the top of the environment (indices 0..count-1),
-        or None if the environment doesn't have types at all those indices.
-        """
-        if not isinstance(self, StrictEnvironment):
-            return None
-        elements = self._elements  # pylint: disable=no-member
-        for i in range(count):
-            if i not in elements:
-                return None
-        return tuple(elements[i] for i in range(count))
-
     def parent(self, new_types) -> "StrictEnvironment":
         """
         Assert that the given types are at the top of the environment,
