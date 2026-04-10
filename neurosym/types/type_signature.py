@@ -200,22 +200,15 @@ class LambdaTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 1:
             return None
-        env = twes[0].env
-        if not isinstance(env, StrictEnvironment):
+        # Extract top arity slots, filling missing (unused) slots with
+        # type variable placeholders.
+        top_types, parent = twes[0].env.unwind_top(self.function_arity)
+        if top_types is None:
             return None
-        # Fill missing slots (unused lambda args) with type variable placeholders,
-        # then strip the top arity entries from the env.
-        # pylint: disable=protected-access
         input_types = tuple(
-            env._elements.get(i, TypeVariable(f"__lam_unused_{i}"))
-            for i in range(self.function_arity)
+            t if t is not None else TypeVariable(f"__lam_unused_{i}")
+            for i, t in enumerate(top_types)
         )
-        parent_elements = {
-            idx - self.function_arity: typ
-            for idx, typ in env._elements.items()
-            if idx >= self.function_arity
-        }
-        parent = StrictEnvironment(frozendict(parent_elements))
         return TypeWithEnvironment(ArrowType(input_types, twes[0].typ), parent)
 
 

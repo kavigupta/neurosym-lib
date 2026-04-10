@@ -61,6 +61,23 @@ class Environment(ABC):
         """
 
     @abstractmethod
+    def type_at(self, index: int) -> Optional[Type]:
+        """
+        Return the type at the given index, or None if no type is known there.
+        """
+
+    @abstractmethod
+    def unwind_top(
+        self, count: int
+    ) -> "Tuple[Tuple[Optional[Type], ...], Environment]":
+        """
+        Extract the types at indices 0..count-1 and return
+        ``(types_tuple, parent_env)`` where ``parent_env`` has those slots
+        removed (shifted down by ``count``). Missing slots are returned as
+        ``None`` in ``types_tuple``.
+        """
+
+    @abstractmethod
     def environment_size(self) -> int:
         """
         The number of elements in the environment.
@@ -201,6 +218,22 @@ class StrictEnvironment(Environment):
     def has_index(self, index: int) -> bool:
         return index in self._elements
 
+    def type_at(self, index: int) -> Optional[Type]:
+        return self._elements.get(index)
+
+    def unwind_top(self, count: int):
+        types = tuple(self._elements.get(i) for i in range(count))
+        parent = StrictEnvironment(
+            frozendict(
+                {
+                    idx - count: typ
+                    for idx, typ in self._elements.items()
+                    if idx >= count
+                }
+            )
+        )
+        return types, parent
+
     def environment_size(self):
         return 0 if not self._elements else max(self._elements) + 1
 
@@ -261,6 +294,14 @@ class PermissiveEnvironmment(Environment):
     def has_index(self, index: int) -> bool:
         del index
         return True
+
+    # pylint: disable-next=useless-return
+    def type_at(self, index: int) -> Optional[Type]:
+        del index  # permissive env has no concrete types
+        return None
+
+    def unwind_top(self, count: int):
+        return (None,) * count, self
 
     def environment_size(self):
         return 0

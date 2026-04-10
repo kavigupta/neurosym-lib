@@ -83,13 +83,9 @@ def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
             if not var_name.startswith("__var_"):
                 continue
             idx = int(var_name[len("__var_") :])
-            if (
-                hasattr(resolved_twe.env, "_elements")
-                and idx
-                in resolved_twe.env._elements  # pylint: disable=protected-access
-            ):
-                # pylint: disable=protected-access
-                mapping[var_name] = resolved_twe.env._elements[idx]
+            resolved_type = resolved_twe.env.type_at(idx)
+            if resolved_type is not None:
+                mapping[var_name] = resolved_type
     return mapping
 
 
