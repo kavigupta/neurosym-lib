@@ -54,6 +54,13 @@ class Environment(ABC):
         """
 
     @abstractmethod
+    def has_index(self, index: int) -> bool:
+        """
+        Returns whether the environment has some type at the given index
+        (regardless of what that type is).
+        """
+
+    @abstractmethod
     def environment_size(self) -> int:
         """
         The number of elements in the environment.
@@ -204,6 +211,9 @@ class StrictEnvironment(Environment):
     def contains_type_at(self, typ: Type, index: int) -> bool:
         return index in self._elements and self._elements[index] == typ
 
+    def has_index(self, index: int) -> bool:
+        return index in self._elements
+
     def environment_size(self):
         return 0 if not self._elements else max(self._elements) + 1
 
@@ -259,6 +269,10 @@ class PermissiveEnvironmment(Environment):
 
     def contains_type_at(self, typ: Type, index: int):
         del typ, index
+        return True
+
+    def has_index(self, index: int) -> bool:
+        del index
         return True
 
     def environment_size(self):

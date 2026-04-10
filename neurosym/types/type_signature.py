@@ -252,14 +252,7 @@ class VariableTypeSignature(TypeSignature):
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if isinstance(twe.typ, TypeVariable):
             # A type variable can be any type; match if the index exists
-            if (
-                isinstance(twe.env, StrictEnvironment)
-                and self.index_in_env
-                in twe.env._elements  # pylint: disable=protected-access
-            ):
-                return []
-            # In a permissive environment, type variables always match
-            if not isinstance(twe.env, StrictEnvironment):
+            if twe.env.has_index(self.index_in_env):
                 return []
             return None
         if not twe.env.contains_type_at(twe.typ, self.index_in_env):
