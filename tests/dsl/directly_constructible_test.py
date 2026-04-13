@@ -918,7 +918,9 @@ class TestReachableSymbols(unittest.TestCase):
         # Targets include arrow types: i -> i needs lambda (i,),
         # (i, i) -> i needs lambda (i, i).
         sigs = self._named_sigs("plus :: (i, i) -> i", "one :: () -> i")
-        prods, lam_arrows = self._run(sigs, ["i", "i -> i", "(i, i) -> i"], has_lambdas=True)
+        prods, lam_arrows = self._run(
+            sigs, ["i", "i -> i", "(i, i) -> i"], has_lambdas=True
+        )
         self.assertEqual(
             _render_prods(prods),
             {("one", "() -> i"), ("plus", "(i, i) -> i")},

@@ -208,7 +208,9 @@ class TestScalability(unittest.TestCase):
 
     @pytest.mark.timeout(5)
     def test_attention_ecg_dsl_21_channels(self):
-        dsl = near.attention_ecg_dsl(num_channels=21, features_per_channel=14, num_classes=5)
+        dsl = near.attention_ecg_dsl(
+            num_channels=21, features_per_channel=14, num_classes=5
+        )
         self.assertGreater(len(dsl.productions), 20)
 
     @pytest.mark.timeout(5)
