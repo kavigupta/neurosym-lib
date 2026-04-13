@@ -65,7 +65,6 @@ class OnlyDirectImportsTest(unittest.TestCase):
         expected = {
             "from neurosym.examples import near",
             "from neurosym.examples import simple_dreamcoder",
-            "from neurosym.examples.near.dsls.attention_ecg_dsl import attention_ecg_dsl",
             "import neurosym as ns",
         }
 
