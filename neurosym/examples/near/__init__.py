@@ -18,6 +18,7 @@ from neurosym.examples.near.validation import ValidationCost, default_near_cost
 
 from . import with_shield
 from .dsls import debug_nested_dsl
+from .dsls.attention_ecg_dsl import attention_ecg_dsl
 from .dsls.adaptive_mice_dsl import (
     adaptive_calms21_dsl,
     adaptive_crim13_dsl,
