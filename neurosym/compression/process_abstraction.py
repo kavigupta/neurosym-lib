@@ -43,9 +43,60 @@ def _compute_abstraction_production(
             else None
         ),
     ).typ
-    type_signature = FunctionTypeSignature([x.typ for x in type_arguments], type_out)
+
+    # Resolve type variables (e.g. from polymorphic $0 in usage children)
+    # by matching each argument type against the corresponding subtree
+    # in the original program. The original subtree is the child of the
+    # usage position, expanded by the abstraction body.
+    arg_types = [x.typ for x in type_arguments]
+    if any(t.get_type_vars() for t in arg_types) or type_out.get_type_vars():
+        mapping = _resolve_abstraction_vars(
+            dsl, s_expression_using, abstr_name, abstr_body
+        )
+        arg_types = [t.subst_type_vars(mapping) for t in arg_types]
+        type_out = type_out.subst_type_vars(mapping)
+    type_signature = FunctionTypeSignature(arg_types, type_out)
 
     return AbstractionProduction(abstr_name, type_signature, abstr_body)
+
+
+def _resolve_abstraction_vars(dsl, s_expression_using, abstr_name, abstr_body):
+    """Resolve type variables in abstraction types by reconstructing the original program.
+
+    Expands the abstraction body with usage children to reconstruct the original
+    subtree, computes its type (fully resolved), then unifies the polymorphic
+    argument types with the resolved types to get a var mapping.
+    """
+    usage = next(x for x in postorder(s_expression_using) if x.symbol == abstr_name)
+    original = _expand_abstraction(abstr_body, usage.children)
+
+    # Compute types for each child both with and without context.
+    # The "without context" type has type variables; the "with context"
+    # type (from the expanded tree) has resolved types.
+    resolved_twe = dsl.compute_type(original)
+    mapping = {}
+    for child in usage.children:
+        poly_twe = dsl.compute_type(child)
+        if not poly_twe.typ.get_type_vars():
+            continue
+        for var_name in poly_twe.typ.get_type_vars():
+            if not var_name.startswith("__var_"):
+                continue
+            idx = int(var_name[len("__var_") :])
+            resolved_type = resolved_twe.env.type_at(idx)
+            if resolved_type is not None:
+                mapping[var_name] = resolved_type
+    return mapping
+
+
+def _expand_abstraction(abstr_body, children):
+    """Expand an abstraction body by replacing AbstractionIndexParameters with children."""
+    if isinstance(abstr_body, AbstractionIndexParameter):
+        return children[abstr_body.index]
+    return SExpression(
+        abstr_body.symbol,
+        tuple(_expand_abstraction(c, children) for c in abstr_body.children),
+    )
 
 
 def _inject_parameters(s_expression: Union[SExpression, str]):

@@ -3,6 +3,7 @@ import unittest
 import pytest
 
 import neurosym as ns
+from neurosym.examples import near
 
 from ..utils import assertDSL
 
@@ -109,13 +110,13 @@ class TestPruning(unittest.TestCase):
             self,
             dsl.render(),
             """
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             1 :: () -> i
             call :: (i -> i, i) -> i
-            lam :: L<#body|i> -> i -> #body
+            lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
             """,
         )
 
@@ -204,3 +205,27 @@ class TestScalability(unittest.TestCase):
             "[i] -> i", "[i] -> [i]", "i -> i", max_overall_depth=7
         )
         self.assertGreater(len(dsl.productions), 30)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_21_channels(self):
+        dsl = near.attention_ecg_dsl(
+            num_channels=21, features_per_channel=14, num_classes=5
+        )
+        self.assertGreater(len(dsl.productions), 20)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_21_channels_with_shields(self):
+        dsl = near.attention_ecg_dsl(
+            num_channels=21,
+            features_per_channel=14,
+            num_classes=5,
+            use_shields=True,
+        )
+        self.assertGreater(len(dsl.productions), 40)
+
+    @pytest.mark.timeout(5)
+    def test_attention_ecg_dsl_100_channels(self):
+        dsl = near.attention_ecg_dsl(
+            num_channels=100, features_per_channel=14, num_classes=5
+        )
+        self.assertGreater(len(dsl.productions), 100)

@@ -82,7 +82,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
         dsl = dsl_with_scalars("{f, 1}")
         self.assertEqual(
             self.run_model(dsl, 0, near.GenericMLPRNNNeuralHoleFiller(100)),
-            ["(lam (zero ($0_0)))"],
+            ["(lam (zero ($0)))"],
         )
 
     def test_multiple(self):
@@ -90,7 +90,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
         self.assertEqual(
             self.run_model(dsl, 2**20, near.GenericMLPRNNNeuralHoleFiller(100)),
             [
-                "(lam (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double ($0_0))))))))))))))))))))))"
+                "(lam (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double ($0))))))))))))))))))))))"
             ],
         )
 
@@ -108,7 +108,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
                     num_head=2,
                 ),
             ),
-            ["(lam (double (double (double (double (double ($0_0)))))))"],
+            ["(lam (double (double (double (double (double ($0)))))))"],
         )
 
     def test_multiple_no_hole_filler(self):
@@ -122,7 +122,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
         dsl = dsl_with_scalars("f")
         self.assertEqual(
             self.run_model(dsl, 0, near.GenericMLPRNNNeuralHoleFiller(100)),
-            ["(wrap (lam (zero ($0_0))))"],
+            ["(wrap (lam (zero ($0))))"],
         )
 
     def test_multiple_scalars(self):
@@ -130,7 +130,7 @@ class TestHeuristicUsedScalars(unittest.TestCase):
         self.assertEqual(
             self.run_model(dsl, 2**32, near.GenericMLPRNNNeuralHoleFiller(100)),
             [
-                "(wrap (lam (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double ($0_0)))))))))))))))))))))))))))))))))))"
+                "(wrap (lam (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double (double ($0)))))))))))))))))))))))))))))))))))"
             ],
         )
 
@@ -148,5 +148,5 @@ class TestHeuristicUsedScalars(unittest.TestCase):
                     num_head=2,
                 ),
             ),
-            ["(wrap (lam (double (double (double (double (double ($0_0))))))))"],
+            ["(wrap (lam (double (double (double (double (double ($0))))))))"],
         )

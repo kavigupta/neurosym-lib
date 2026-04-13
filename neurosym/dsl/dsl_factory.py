@@ -75,11 +75,13 @@ class DSLFactory:
 
     def lambdas(self, max_type_depth=4):
         """
-        Add lambda productions to the DSL. This will add (lam_0, lam_1, ..., lam_n)
-        productions for each argument type/arity combination, as well as
-        ($i_j) productions for each variable de bruijn index i and type j.
+        Add lambda productions to the DSL. This will add polymorphic lambda
+        productions for each reachable arity, as well as polymorphic variable
+        productions ($0, $1, ...) for each de bruijn index.
 
-        :param max_type_depth: The maximum depth of types to generate.
+        :param max_type_depth: Maximum depth of types to explore when determining
+            which types are constructible inside lambda bodies. Controls how deeply
+            nested list/arrow types get expanded for productions with type variables.
         """
         self.lambda_parameters = dict(max_type_depth=max_type_depth)
 
@@ -188,13 +190,6 @@ class DSLFactory:
             else:
                 seen[sym] = sig
 
-        if has_lambdas:
-            max_lambda_depth = self.lambda_parameters.get(
-                "max_type_depth", self.max_overall_depth
-            )
-        else:
-            max_lambda_depth = self.max_overall_depth
-
         # Bottom-up: compute constructible types
         sigs_only = [sig for _, sig in named_sigs]
         constructible = directly_constructible_types(
@@ -204,8 +199,13 @@ class DSLFactory:
             self.target_types,
         )
 
-        # Top-down: find reachable productions and lambdas
-        reachable_prods, reachable_lambdas = reachable_symbols(
+        # Top-down: find reachable productions and lambda arrow types
+        max_lambda_depth = (
+            self.lambda_parameters.get("max_type_depth", self.max_overall_depth)
+            if has_lambdas
+            else self.max_overall_depth
+        )
+        reachable_prods, lambda_arrows = reachable_symbols(
             named_sigs,
             constructible,
             self.target_types,
@@ -216,18 +216,20 @@ class DSLFactory:
 
         sym_to_productions = self._build_concrete_productions(reachable_prods)
 
-        var_slots = set()
-        if has_lambdas and reachable_lambdas:
-            reachable_lambdas = _filter_useless_lambdas(
-                reachable_lambdas, sym_to_productions
-            )
-            all_types = {t for inp in reachable_lambdas for t in inp}
-            var_slots = {(t, i) for t in all_types for i in range(self.max_env_depth)}
-            _add_lambda_variable_productions(
-                sym_to_productions, reachable_lambdas, var_slots
+        reachable_lambda_arities = set()
+        if has_lambdas and lambda_arrows:
+            reachable_lambda_arities = _useful_arities(
+                lambda_arrows, sym_to_productions
             )
 
-        reachable_indices = {idx for _, idx in var_slots}
+        if reachable_lambda_arities:
+            _add_lambda_variable_productions(
+                sym_to_productions, reachable_lambda_arities, self.max_env_depth
+            )
+
+        reachable_indices = (
+            set(range(self.max_env_depth)) if reachable_lambda_arities else set()
+        )
         for symbol, prods, stable in self._extra_productions:
             if self.prune_variables:
                 prods = [
@@ -269,30 +271,16 @@ class DSLFactory:
         return sym_to_productions
 
 
-def _add_lambda_variable_productions(sym_to_productions, reachable_lambdas, var_slots):
-    """Add lambda and variable productions for the given reachable lambda types."""
-    lambda_input_types = sorted(reachable_lambdas, key=str)
-    sym_to_productions["<lambda>"] = Production.reindex(
-        [
-            LambdaProduction(i, LambdaTypeSignature(input_types))
-            for i, input_types in enumerate(lambda_input_types)
-        ]
-    )
-    variable_types = sorted({t for t, _ in var_slots}, key=str)
-    type_to_idx = {t: i for i, t in enumerate(variable_types)}
-    sym_to_productions["<variable>"] = [
-        VariableProduction(type_to_idx[typ], VariableTypeSignature(typ, idx))
-        for typ, idx in sorted(var_slots, key=lambda s: (s[1], str(s[0])))
-    ]
+def _useful_arities(lambda_arrows, sym_to_productions):
+    """Return the set of lambda arities that are actually usable.
 
+    An arity is useful if some reachable arrow type of that arity has all
+    its input types consumed by some production. This prevents creating
+    lambdas for arrow types like ``{f, 14} -> {f, 1}`` when no production
+    takes ``{f, 14}`` as an argument.
 
-def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
-    """Filter lambdas whose input types are never consumed by any production.
-
-    A type is "consumed" if it appears as an argument to some concrete
-    production, or as an input element of an arrow type that is consumed
-    (transitively). Lambdas that only introduce unconsumed types into the
-    environment are useless — nothing in the DSL can use those variables.
+    Skips the consumed-types check if any production has polymorphic
+    arguments (which could consume any type).
     """
     consumed_types = {
         arg
@@ -300,11 +288,9 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
         for prod in prods
         for arg in prod.type_signature().arguments
     }
-    if not consumed_types:
-        return reachable_lambdas
-    if any(t.has_type_vars() for t in consumed_types):
-        return reachable_lambdas
-    # Expand: arrow types transitively consume their input element types
+    if not consumed_types or any(t.has_type_vars() for t in consumed_types):
+        return {len(a.input_type) for a in lambda_arrows}
+    # Transitively: arrow types consume their input element types.
     changed = True
     while changed:
         changed = False
@@ -314,4 +300,24 @@ def _filter_useless_lambdas(reachable_lambdas, sym_to_productions):
                     if inp_t not in consumed_types:
                         consumed_types.add(inp_t)
                         changed = True
-    return {inp for inp in reachable_lambdas if any(t in consumed_types for t in inp)}
+    return {
+        len(a.input_type)
+        for a in lambda_arrows
+        if all(t in consumed_types for t in a.input_type)
+    }
+
+
+def _add_lambda_variable_productions(
+    sym_to_productions, reachable_lambda_arities, max_env_depth
+):
+    """Add lambda and variable productions for the given reachable lambda arities."""
+    sorted_arities = sorted(reachable_lambda_arities)
+    sym_to_productions["<lambda>"] = Production.reindex(
+        [
+            LambdaProduction(i, LambdaTypeSignature(arity))
+            for i, arity in enumerate(sorted_arities)
+        ]
+    )
+    sym_to_productions["<variable>"] = [
+        VariableProduction(VariableTypeSignature(idx)) for idx in range(max_env_depth)
+    ]

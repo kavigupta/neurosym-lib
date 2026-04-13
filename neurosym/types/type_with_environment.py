@@ -54,6 +54,30 @@ class Environment(ABC):
         """
 
     @abstractmethod
+    def has_index(self, index: int) -> bool:
+        """
+        Returns whether the environment has some type at the given index
+        (regardless of what that type is).
+        """
+
+    @abstractmethod
+    def type_at(self, index: int) -> Optional[Type]:
+        """
+        Return the type at the given index, or None if no type is known there.
+        """
+
+    @abstractmethod
+    def unwind_top(
+        self, count: int
+    ) -> "Tuple[Tuple[Optional[Type], ...], Environment]":
+        """
+        Extract the types at indices 0..count-1 and return
+        ``(types_tuple, parent_env)`` where ``parent_env`` has those slots
+        removed (shifted down by ``count``). Missing slots are returned as
+        ``None`` in ``types_tuple``.
+        """
+
+    @abstractmethod
     def environment_size(self) -> int:
         """
         The number of elements in the environment.
@@ -71,6 +95,14 @@ class Environment(ABC):
         """
         A unique hash for this environment.
         """
+
+    def subst_type_vars(self, mapping: dict) -> "Environment":
+        """
+        Apply type variable substitutions to all types in this environment.
+        Returns self unchanged by default (non-strict environments have no types to substitute).
+        """
+        del mapping
+        return self
 
     def child(self, *new_typs: Tuple[Type]) -> "Environment":
         """
@@ -131,6 +163,13 @@ class StrictEnvironment(Environment):
     def empty(cls):
         return cls(frozendict())
 
+    def subst_type_vars(self, mapping: dict) -> "StrictEnvironment":
+        return StrictEnvironment(
+            frozendict(
+                {i: t.subst_type_vars(mapping) for i, t in self._elements.items()}
+            )
+        )
+
     def merge(self, other: "StrictEnvironment"):
         result = dict(self._elements)
         # pylint: disable=protected-access
@@ -175,6 +214,25 @@ class StrictEnvironment(Environment):
 
     def contains_type_at(self, typ: Type, index: int) -> bool:
         return index in self._elements and self._elements[index] == typ
+
+    def has_index(self, index: int) -> bool:
+        return index in self._elements
+
+    def type_at(self, index: int) -> Optional[Type]:
+        return self._elements.get(index)
+
+    def unwind_top(self, count: int):
+        types = tuple(self._elements.get(i) for i in range(count))
+        parent = StrictEnvironment(
+            frozendict(
+                {
+                    idx - count: typ
+                    for idx, typ in self._elements.items()
+                    if idx >= count
+                }
+            )
+        )
+        return types, parent
 
     def environment_size(self):
         return 0 if not self._elements else max(self._elements) + 1
@@ -232,6 +290,18 @@ class PermissiveEnvironmment(Environment):
     def contains_type_at(self, typ: Type, index: int):
         del typ, index
         return True
+
+    def has_index(self, index: int) -> bool:
+        del index
+        return True
+
+    # pylint: disable-next=useless-return
+    def type_at(self, index: int) -> Optional[Type]:
+        del index  # permissive env has no concrete types
+        return None
+
+    def unwind_top(self, count: int):
+        return (None,) * count, self
 
     def environment_size(self):
         return 0

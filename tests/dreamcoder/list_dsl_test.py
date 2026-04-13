@@ -21,14 +21,7 @@ class TestListDSL(unittest.TestCase):
               3 :: () -> i
               4 :: () -> i
               5 :: () -> i
-        empty_0 :: () -> [b]
-        empty_1 :: () -> [i]
-        empty_2 :: () -> [[b]]
-        empty_3 :: () -> [[i]]
-        empty_4 :: () -> [[[b]]]
-        empty_5 :: () -> [[[i]]]
-        empty_6 :: () -> [[[[b]]]]
-        empty_7 :: () -> [[[[i]]]]
+          empty :: () -> [#T]
       singleton :: #T -> [#T]
           range :: i -> [i]
              ++ :: ([#T], [#T]) -> [#T]
@@ -65,32 +58,13 @@ class TestListDSL(unittest.TestCase):
           index :: (i, [#T]) -> #T
          filter :: (#T -> b, [#T]) -> [#T]
           slice :: (i, i, [#T]) -> [#T]
-          lam_0 :: L<#body|b> -> b -> #body
-          lam_1 :: L<#body|i;b> -> (i, b) -> #body
-          lam_2 :: L<#body|i;b;b> -> (i, b, b) -> #body
-          lam_3 :: L<#body|i;b;i> -> (i, b, i) -> #body
-          lam_4 :: L<#body|i;i> -> (i, i) -> #body
-          lam_5 :: L<#body|i;i;b> -> (i, i, b) -> #body
-          lam_6 :: L<#body|i;i;i> -> (i, i, i) -> #body
-          lam_7 :: L<#body|i> -> i -> #body
-          lam_8 :: L<#body|[b]> -> [b] -> #body
-          lam_9 :: L<#body|[i]> -> [i] -> #body
-           $0_0 :: V<b@0>
-           $1_0 :: V<b@1>
-           $2_0 :: V<b@2>
-           $3_0 :: V<b@3>
-           $0_1 :: V<i@0>
-           $1_1 :: V<i@1>
-           $2_1 :: V<i@2>
-           $3_1 :: V<i@3>
-           $0_2 :: V<[b]@0>
-           $1_2 :: V<[b]@1>
-           $2_2 :: V<[b]@2>
-           $3_2 :: V<[b]@3>
-           $0_3 :: V<[i]@0>
-           $1_3 :: V<[i]@1>
-           $2_3 :: V<[i]@2>
-           $3_3 :: V<[i]@3>
+          lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+          lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+          lam_2 :: L<#body|#__lam_0;#__lam_1;#__lam_2> -> (#__lam_0, #__lam_1, #__lam_2) -> #body
+             $0 :: V<$0>
+             $1 :: V<$1>
+             $2 :: V<$2>
+             $3 :: V<$3>
         """
         self.assertEqual(
             {line.strip() for line in expected.strip().split("\n")},
@@ -122,5 +96,5 @@ class TestListDSL(unittest.TestCase):
         node = next(it)
         self.assertEqual(
             ns.render_s_expression(node),
-            "(lam_9 (index (1) ($0_3)))",
+            "(lam_0 (index (1) ($0)))",
         )

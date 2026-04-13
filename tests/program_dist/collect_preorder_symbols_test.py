@@ -21,14 +21,14 @@ class CollectPreorderSymbolsTest(unittest.TestCase):
     def test_collect_preorder_symbols(self):
         self.assertCollectPreorder(
             [
-                ("(+ (1) (call (lam ($0_0)) (1)))", ["+", "1", "2", "call"]),
+                ("(+ (1) (call (lam ($0)) (1)))", ["+", "1", "2", "call"]),
                 ("(1)", ["+", "1", "2", "call"]),
-                ("(call (lam ($0_0)) (1))", ["+", "1", "2", "call"]),
-                ("(lam ($0_0))", ["lam"]),
-                ("($0_0)", ["$0_0", "+", "1", "2", "call"]),
+                ("(call (lam ($0)) (1))", ["+", "1", "2", "call"]),
+                ("(lam ($0))", ["lam"]),
+                ("($0)", ["$0", "+", "1", "2", "call"]),
                 ("(1)", ["+", "1", "2", "call"]),
             ],
-            "(+ (1) (call (lam ($0_0)) (1)))",
+            "(+ (1) (call (lam ($0)) (1)))",
             fam_with_vars.tree_distribution_skeleton,
         )
 
@@ -37,17 +37,15 @@ class CollectPreorderSymbolsTest(unittest.TestCase):
             [
                 ("(call (lam (+ (1) (1))) (1))", ["+", "1", "2", "call"]),
                 ("(lam (+ (1) (1)))", ["lam"]),
-                # note that it's now (+ ($0_0) ($0_0)) instead of (+ (1) (1))
-                ("(+ ($0_0) ($0_0))", ["$0_0", "+", "1", "2", "call"]),
-                ("($0_0)", ["$0_0", "+", "1", "2", "call"]),
-                ("($0_0)", ["$0_0", "+", "1", "2", "call"]),
+                # note that it's now (+ ($0) ($0)) instead of (+ (1) (1))
+                ("(+ ($0) ($0))", ["$0", "+", "1", "2", "call"]),
+                ("($0)", ["$0", "+", "1", "2", "call"]),
+                ("($0)", ["$0", "+", "1", "2", "call"]),
                 ("(1)", ["+", "1", "2", "call"]),
             ],
             "(call (lam (+ (1) (1))) (1))",
             fam_with_vars.tree_distribution_skeleton,
             replace_node_midstream=lambda sexp, _1, _2, _3: (
-                ns.parse_s_expression("(+ ($0_0) ($0_0))")
-                if sexp.symbol == "+"
-                else sexp
+                ns.parse_s_expression("(+ ($0) ($0))") if sexp.symbol == "+" else sexp
             ),
         )

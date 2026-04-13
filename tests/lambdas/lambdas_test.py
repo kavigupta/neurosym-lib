@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import itertools
 import unittest
 
@@ -25,12 +26,12 @@ class TestEvaluate(unittest.TestCase):
             1 :: () -> i
         double :: i -> i
         triple :: i -> i
-        lam_0 :: L<#body|i;i> -> (i, i) -> #body
-        lam_1 :: L<#body|i> -> i -> #body
-        $0_0 :: V<i@0>
-        $1_0 :: V<i@1>
-        $2_0 :: V<i@2>
-        $3_0 :: V<i@3>
+        lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+        lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+        $0 :: V<$0>
+        $1 :: V<$1>
+        $2 :: V<$2>
+        $3 :: V<$3>
         """
         actual = compute_dsl.render()
         self.assertEqual(
@@ -42,52 +43,52 @@ class TestEvaluate(unittest.TestCase):
         return compute_dsl.compute(compute_dsl.initialize(ns.parse_s_expression(code)))
 
     def test_constant(self):
-        fn = self.evaluate("(lam_1 (1))")
+        fn = self.evaluate("(lam_0 (1))")
         for i in range(10):
             self.assertEqual(fn(i), 1)
 
     def test_identity(self):
-        fn = self.evaluate("(lam_1 ($0_0))")
+        fn = self.evaluate("(lam_0 ($0))")
         for i in range(10):
             self.assertEqual(fn(i), i)
 
     def test_add_1(self):
-        fn = self.evaluate("(lam_1 (+ (1) ($0_0)))")
+        fn = self.evaluate("(lam_0 (+ (1) ($0)))")
         for i in range(10):
             self.assertEqual(fn(i), i + 1)
 
     def test_double_constant(self):
-        fn = self.evaluate("(lam_1 (lam_1 (1)))")
+        fn = self.evaluate("(lam_0 (lam_0 (1)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), 1)
 
     def test_get_inner_var(self):
-        fn = self.evaluate("(lam_1 (lam_1 ($0_0)))")
+        fn = self.evaluate("(lam_0 (lam_0 ($0)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), j)
 
     def test_get_outer_var(self):
-        fn = self.evaluate("(lam_1 (lam_1 ($1_0)))")
+        fn = self.evaluate("(lam_0 (lam_0 ($1)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), i)
 
     def test_sub_curried(self):
-        fn = self.evaluate("(lam_1 (lam_1 (+ (double ($0_0)) ($1_0))))")
+        fn = self.evaluate("(lam_0 (lam_0 (+ (double ($0)) ($1))))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i)(j), i + 2 * j)
 
     def test_two_arg_const(self):
-        fn = self.evaluate("(lam_0 (1))")
+        fn = self.evaluate("(lam_1 (1))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i, j), 1)
 
     def test_two_arg_sub(self):
-        fn = self.evaluate("(lam_0 (+ (double ($0_0)) ($1_0)))")
+        fn = self.evaluate("(lam_1 (+ (double ($0)) ($1)))")
         for i in range(10):
             for j in range(10):
                 self.assertEqual(fn(i, j), j * 2 + i)
@@ -95,12 +96,12 @@ class TestEvaluate(unittest.TestCase):
     def test_three_arg_sub(self):
         fn = self.evaluate(
             """
-            (lam_0 (lam_1
+            (lam_1 (lam_0
                 (+
                     (+
-                        (triple ($0_0))
-                        (double ($1_0)))
-                    ($2_0))))
+                        (triple ($0))
+                        (double ($1)))
+                    ($2))))
             """
         )
         for i in range(10):
@@ -115,12 +116,12 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         expected = """
             + :: (i, i) -> i
             1 :: () -> i
-        lam_0 :: L<#body|i;i> -> (i, i) -> #body
-        lam_1 :: L<#body|i> -> i -> #body
-        $0_0 :: V<i@0>
-        $1_0 :: V<i@1>
-        $2_0 :: V<i@2>
-        $3_0 :: V<i@3>
+        lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+        lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+        $0 :: V<$0>
+        $1 :: V<$1>
+        $2 :: V<$2>
+        $3 :: V<$3>
         """
         actual = ns.examples.basic_arith_dsl(True).render()
         self.assertEqual(
@@ -150,16 +151,16 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         self.assertEnumerateType(
             "i -> i",
             [
-                "(lam_1 (1))",
-                "(lam_1 ($0_0))",
-                "(lam_1 (+ (1) (1)))",
-                "(lam_1 (+ (1) ($0_0)))",
-                "(lam_1 (+ ($0_0) (1)))",
-                "(lam_1 (+ ($0_0) ($0_0)))",
-                "(lam_1 (+ (+ (1) (1)) (1)))",
-                "(lam_1 (+ (+ (1) (1)) ($0_0)))",
-                "(lam_1 (+ (+ (1) ($0_0)) (1)))",
-                "(lam_1 (+ (+ (1) ($0_0)) ($0_0)))",
+                "(lam_0 (1))",
+                "(lam_0 ($0))",
+                "(lam_0 (+ (1) (1)))",
+                "(lam_0 (+ (1) ($0)))",
+                "(lam_0 (+ ($0) (1)))",
+                "(lam_0 (+ ($0) ($0)))",
+                "(lam_0 (+ (+ (1) (1)) (1)))",
+                "(lam_0 (+ (+ (1) (1)) ($0)))",
+                "(lam_0 (+ (+ (1) ($0)) (1)))",
+                "(lam_0 (+ (+ (1) ($0)) ($0)))",
             ],
         )
 
@@ -167,16 +168,16 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         self.assertEnumerateType(
             "i -> i -> i",
             [
-                "(lam_1 (lam_1 (1)))",
-                "(lam_1 (lam_1 ($0_0)))",
-                "(lam_1 (lam_1 ($1_0)))",
-                "(lam_1 (lam_1 (+ (1) (1))))",
-                "(lam_1 (lam_1 (+ (1) ($0_0))))",
-                "(lam_1 (lam_1 (+ (1) ($1_0))))",
-                "(lam_1 (lam_1 (+ ($0_0) (1))))",
-                "(lam_1 (lam_1 (+ ($0_0) ($0_0))))",
-                "(lam_1 (lam_1 (+ ($0_0) ($1_0))))",
-                "(lam_1 (lam_1 (+ ($1_0) (1))))",
+                "(lam_0 (lam_0 (1)))",
+                "(lam_0 (lam_0 ($0)))",
+                "(lam_0 (lam_0 ($1)))",
+                "(lam_0 (lam_0 (+ (1) (1))))",
+                "(lam_0 (lam_0 (+ (1) ($0))))",
+                "(lam_0 (lam_0 (+ (1) ($1))))",
+                "(lam_0 (lam_0 (+ ($0) (1))))",
+                "(lam_0 (lam_0 (+ ($0) ($0))))",
+                "(lam_0 (lam_0 (+ ($0) ($1))))",
+                "(lam_0 (lam_0 (+ ($1) (1))))",
             ],
         )
 
@@ -184,16 +185,16 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         self.assertEnumerateType(
             "(i, i) -> i",
             [
-                "(lam_0 (1))",
-                "(lam_0 ($0_0))",
-                "(lam_0 ($1_0))",
-                "(lam_0 (+ (1) (1)))",
-                "(lam_0 (+ (1) ($0_0)))",
-                "(lam_0 (+ (1) ($1_0)))",
-                "(lam_0 (+ ($0_0) (1)))",
-                "(lam_0 (+ ($0_0) ($0_0)))",
-                "(lam_0 (+ ($0_0) ($1_0)))",
-                "(lam_0 (+ ($1_0) (1)))",
+                "(lam_1 (1))",
+                "(lam_1 ($0))",
+                "(lam_1 ($1))",
+                "(lam_1 (+ (1) (1)))",
+                "(lam_1 (+ (1) ($0)))",
+                "(lam_1 (+ (1) ($1)))",
+                "(lam_1 (+ ($0) (1)))",
+                "(lam_1 (+ ($0) ($0)))",
+                "(lam_1 (+ ($0) ($1)))",
+                "(lam_1 (+ ($1) (1)))",
             ],
         )
 
@@ -201,16 +202,16 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         self.assertEnumerateType(
             "(i, i) -> i -> i",
             [
-                "(lam_0 (lam_1 ($0_0)))",
-                "(lam_0 (lam_1 ($1_0)))",
-                "(lam_0 (lam_1 ($2_0)))",
-                "(lam_0 (lam_1 (+ (1) ($0_0))))",
-                "(lam_0 (lam_1 (+ (1) ($1_0))))",
-                "(lam_0 (lam_1 (+ (1) ($2_0))))",
-                "(lam_0 (lam_1 (+ ($0_0) (1))))",
-                "(lam_0 (lam_1 (+ ($0_0) ($0_0))))",
-                "(lam_0 (lam_1 (+ ($0_0) ($1_0))))",
-                "(lam_0 (lam_1 (+ ($0_0) ($2_0))))",
+                "(lam_1 (lam_0 ($0)))",
+                "(lam_1 (lam_0 ($1)))",
+                "(lam_1 (lam_0 ($2)))",
+                "(lam_1 (lam_0 (+ (1) ($0))))",
+                "(lam_1 (lam_0 (+ (1) ($1))))",
+                "(lam_1 (lam_0 (+ (1) ($2))))",
+                "(lam_1 (lam_0 (+ ($0) (1))))",
+                "(lam_1 (lam_0 (+ ($0) ($0))))",
+                "(lam_1 (lam_0 (+ ($0) ($1))))",
+                "(lam_1 (lam_0 (+ ($0) ($2))))",
             ],
             filt=lambda x: "$" in str(x.program),
         )
@@ -235,16 +236,12 @@ class TestVariedTypes(unittest.TestCase):
               1 :: () -> i
              1f :: () -> f
          double :: i -> i
-          lam_0 :: L<#body|f;i> -> (f, i) -> #body
-          lam_1 :: L<#body|f> -> f -> #body
-           $0_0 :: V<f@0>
-           $1_0 :: V<f@1>
-           $2_0 :: V<f@2>
-           $3_0 :: V<f@3>
-           $0_1 :: V<i@0>
-           $1_1 :: V<i@1>
-           $2_1 :: V<i@2>
-           $3_1 :: V<i@3>
+          lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+          lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+             $0 :: V<$0>
+             $1 :: V<$1>
+             $2 :: V<$2>
+             $3 :: V<$3>
         """
         actual = make_varied_type_dsl().render()
         print(actual)
@@ -275,15 +272,15 @@ class TestVariedTypes(unittest.TestCase):
         self.assertEnumerateType(
             "(f, i) -> f",
             [
-                "(lam_0 (1f))",
-                "(lam_0 ($1_0))",
-                "(lam_0 (^ (1f) (1)))",
-                "(lam_0 (^ (1f) ($0_1)))",
-                "(lam_0 (^ ($1_0) (1)))",
-                "(lam_0 (^ ($1_0) ($0_1)))",
-                "(lam_0 (^ (1f) (double (1))))",
-                "(lam_0 (^ (1f) (double ($0_1))))",
-                "(lam_0 (^ ($1_0) (double (1))))",
-                "(lam_0 (^ ($1_0) (double ($0_1))))",
+                "(lam_1 (1f))",
+                "(lam_1 ($1))",
+                "(lam_1 (^ (1f) (1)))",
+                "(lam_1 (^ (1f) ($0)))",
+                "(lam_1 (^ ($1) (1)))",
+                "(lam_1 (^ ($1) ($0)))",
+                "(lam_1 (^ (1f) (double (1))))",
+                "(lam_1 (^ (1f) (double ($0))))",
+                "(lam_1 (^ ($1) (double (1))))",
+                "(lam_1 (^ ($1) (double ($0))))",
             ],
         )
