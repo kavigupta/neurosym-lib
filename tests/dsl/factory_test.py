@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 import neurosym as ns
 
 from ..utils import assertDSL
@@ -116,3 +118,89 @@ class TestPruning(unittest.TestCase):
             lam :: L<#body|i> -> i -> #body
             """,
         )
+
+
+class TestScalability(unittest.TestCase):
+    """Ensure constructibility-based finalize handles realistic DSL sizes."""
+
+    @pytest.mark.timeout(5)
+    def test_many_atomic_types_with_polymorphism(self):
+        dslf = ns.DSLFactory()
+        n = 50
+        types = [f"t{i}" for i in range(n)]
+        for t in types:
+            dslf.production(f"mk_{t}", f"() -> {t}", lambda: 1)
+        dslf.production("id", "#a -> #a", lambda x: x)
+        dslf.production("pair", "(#a, #b) -> #a", lambda x, y: x)
+        dslf.prune_to(*types)
+        dsl = dslf.finalize()
+        self.assertGreater(len(dsl.productions), n)
+
+    @pytest.mark.timeout(2)
+    def test_linear_chain(self):
+        dslf = ns.DSLFactory()
+        n = 30
+        dslf.production("start", "() -> t0", lambda: 1)
+        for i in range(n - 1):
+            dslf.production(f"step{i}", f"t{i} -> t{i+1}", lambda x: x)
+        dslf.prune_to(f"t{n-1}")
+        dsl = dslf.finalize()
+        self.assertEqual(len(dsl.productions), n)
+
+    @pytest.mark.timeout(2)
+    def test_near_like_dsl(self):
+        dslf = ns.DSLFactory()
+        dslf.production("input", "() -> [f]", lambda: [1.0])
+        dslf.production("mlp", "[f] -> [f]", lambda x: x)
+        dslf.production("rnn", "([f]) -> [f] -> [f]", lambda x: x)
+        dslf.production(
+            "ite",
+            "([f] -> [f], [f] -> [f], [f] -> [f]) -> [f] -> [f]",
+            lambda x: x,
+        )
+        dslf.production(
+            "compose",
+            "(#a -> #b, #b -> #c) -> #a -> #c",
+            lambda f, g: lambda x: f(g(x)),
+        )
+        dslf.lambdas()
+        dslf.prune_to("[f] -> [f]")
+        dsl = dslf.finalize()
+        self.assertGreater(len(dsl.productions), 5)
+
+    @pytest.mark.timeout(2)
+    def test_ite_with_lambdas(self):
+        dslf = ns.DSLFactory()
+        dslf.production("0", "() -> i", lambda: 0)
+        dslf.production("1", "() -> i", lambda: 1)
+        dslf.production("true", "() -> b", lambda: True)
+        dslf.production("+", "(i, i) -> i", lambda x, y: x + y)
+        dslf.production("*", "(i, i) -> i", lambda x, y: x * y)
+        dslf.production("eq", "(i, i) -> b", lambda x, y: x == y)
+        dslf.production("ite", "(b, #a, #a) -> #a", lambda c, t, f: t if c else f)
+        dslf.production(
+            "compose",
+            "(#a -> #b, #b -> #c) -> #a -> #c",
+            lambda f, g: lambda x: f(g(x)),
+        )
+        dslf.lambdas()
+        dslf.prune_to("i -> i", "i")
+        dsl = dslf.finalize()
+        self.assertGreater(len(dsl.productions), 10)
+
+    @pytest.mark.timeout(2)
+    def test_deep_list_nesting(self):
+        dslf = ns.DSLFactory(max_overall_depth=10)
+        dslf.production("mk", "() -> i", lambda: 1)
+        dslf.production("wrap", "#a -> [#a]", lambda x: [x])
+        dslf.production("head", "[#a] -> #a", lambda x: x[0])
+        dslf.prune_to("i", "[i]", "[[i]]", "[[[i]]]")
+        dsl = dslf.finalize()
+        self.assertGreater(len(dsl.productions), 2)
+
+    @pytest.mark.timeout(10)
+    def test_list_dsl_higher_depth(self):
+        dsl = ns.examples.dreamcoder.list_dsl(
+            "[i] -> i", "[i] -> [i]", "i -> i", max_overall_depth=7
+        )
+        self.assertGreater(len(dsl.productions), 30)

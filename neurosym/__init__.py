@@ -87,6 +87,7 @@ from neurosym.utils.imports import import_pytorch_lightning
 from neurosym.utils.tree_trie import TreeTrie
 
 from . import compression, datasets, examples, search
+from .dsl.constructibility import directly_constructible_types, reachable_symbols
 from .dsl.dsl_factory import DSLFactory
 from .program_dist.bigram import (
     BigramProgramCounts,
@@ -127,8 +128,6 @@ from .types.type_signature import (
     LambdaTypeSignature,
     TypeSignature,
     VariableTypeSignature,
-    bottom_up_enumerate_types,
-    type_expansions,
 )
 from .types.type_string_repr import TypeDefiner, lex_type, parse_type, render_type
 from .types.type_with_environment import (

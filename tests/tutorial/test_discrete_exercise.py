@@ -40,6 +40,9 @@ class TestDiscreteExercise(unittest.TestCase):
             ite :: (b, f, f) -> f
             lam :: L<#body|f> -> f -> #body
            $0_0 :: V<f@0>
+           $1_0 :: V<f@1>
+           $2_0 :: V<f@2>
+           $3_0 :: V<f@3>
            __10 :: (f, f) -> f = (lam-abstr (#0 #1) (sin (/ #1 #0)))
            __20 :: () -> f = (lam-abstr () (sqrt (2)))
            __30 :: (f, f) -> f -> f = (lam-abstr (#0 #1) (lam (- #1 (sin (** #0 ($0_0))))))

@@ -52,6 +52,4 @@ Utilities for handling tensor shapes
 Other helpful functions/classes
 ------------------------------------------
 .. autofunction:: neurosym.lex_type
-.. autofunction:: neurosym.type_expansions
-.. autofunction:: neurosym.bottom_up_enumerate_types
 .. autoclass:: neurosym.TypeAnnotatedObject

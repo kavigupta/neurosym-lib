@@ -30,6 +30,7 @@ class TestEvaluate(unittest.TestCase):
         $0_0 :: V<i@0>
         $1_0 :: V<i@1>
         $2_0 :: V<i@2>
+        $3_0 :: V<i@3>
         """
         actual = compute_dsl.render()
         self.assertEqual(
@@ -119,6 +120,7 @@ class TestEnumerateBasicArithmetic(unittest.TestCase):
         $0_0 :: V<i@0>
         $1_0 :: V<i@1>
         $2_0 :: V<i@2>
+        $3_0 :: V<i@3>
         """
         actual = ns.examples.basic_arith_dsl(True).render()
         self.assertEqual(
@@ -237,7 +239,12 @@ class TestVariedTypes(unittest.TestCase):
           lam_1 :: L<#body|f> -> f -> #body
            $0_0 :: V<f@0>
            $1_0 :: V<f@1>
+           $2_0 :: V<f@2>
+           $3_0 :: V<f@3>
            $0_1 :: V<i@0>
+           $1_1 :: V<i@1>
+           $2_1 :: V<i@2>
+           $3_1 :: V<i@3>
         """
         actual = make_varied_type_dsl().render()
         print(actual)
