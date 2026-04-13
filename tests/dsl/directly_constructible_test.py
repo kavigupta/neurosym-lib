@@ -912,6 +912,7 @@ class TestReachableSymbols(unittest.TestCase):
         )
         # All productions should be reachable
         self.assertEqual(set(prods.keys()), {s for s, _ in sigs})
+        self.assertGreater(len(_arities(lam_arrows)), 0)
 
     def test_basic_arith_with_lambdas(self):
         # Targets include arrow types: i -> i needs lambda (i,),
