@@ -322,7 +322,7 @@ def semantic(arity, prod, dsl):
 
 def primitives():
     
-    all_output_types = set(["[i] -> i", "i -> i", "i -> [i]", "i -> b", "b -> b", "b -> i", "b -> [i]", "[i] -> b"])
+    all_output_types = set(['[i] -> [i]', '[i] -> i', 'i -> i'])
     dsl = list_dsl(*all_output_types)
 
 
