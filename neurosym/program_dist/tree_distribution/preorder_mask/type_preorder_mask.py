@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List
 
 import numpy as np
 
@@ -8,25 +7,6 @@ from neurosym.dsl.production import Production, VariableProduction
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
 
 from .preorder_mask import PreorderMask
-
-
-@dataclass(frozen=True)
-class _UnionTypeWithEnvironment:
-    """
-    Represents a union of possible types at a position. Used when there are
-    multiple valid root types: the direct child of ROOT_SYMBOL may satisfy
-    any one of them.
-    """
-
-    types: Tuple[TypeWithEnvironment, ...]
-
-    @property
-    def unique_hash(self):
-        return tuple(t.unique_hash for t in self.types)
-
-
-# Type alias for what can live at a position in the type stack
-_StackEntry = Union[TypeWithEnvironment, _UnionTypeWithEnvironment]
 
 
 class TypePreorderMask(PreorderMask):
@@ -43,34 +23,43 @@ class TypePreorderMask(PreorderMask):
         super().__init__(tree_dist)
         self.dsl = dsl
         self.dreamcoder_compat = dreamcoder_compat
-        assert (
-            self.dsl.valid_root_types is not None
-        ), "DSL must have valid_root_types set"
+        self._validate_root_types()
 
         # stack of list of type_with_environment objects
         # each list represents the types of the children of the current node
-        self.type_stack: List[List[_StackEntry]] = []
+        self.type_stack: List[List[TypeWithEnvironment]] = []
 
-    def valid_productions(self, twe: _StackEntry) -> List[Production]:
+    def _validate_root_types(self):
+        """
+        Validate that the DSL's ``valid_root_types`` is compatible with this mask.
+
+        By default the mask supports exactly one root type; subclasses that
+        override :meth:`_root_type_for_entry` to supply the root type from
+        some other source (e.g., per-task context) can relax this by
+        overriding this method.
+        """
+        assert (
+            self.dsl.valid_root_types is not None
+            and len(self.dsl.valid_root_types) == 1
+        ), "Only one root type is supported"
+
+    def _root_type_for_entry(self):
+        """
+        Return the root type to use when entering the ROOT_SYMBOL position.
+
+        Default is the DSL's single ``valid_root_types`` entry. Subclasses may
+        override to supply a dynamically chosen (e.g., task-specific) type.
+        """
+        return self.dsl.valid_root_types[0]
+
+    def valid_productions(self, twe: TypeWithEnvironment) -> List[Production]:
         """
         Compute the set of valid productions for a given type with environment.
         Can be overridden by subclasses to implement different type masking strategies.
 
-        When ``twe`` is a :class:`_UnionTypeWithEnvironment`, returns the union of
-        valid productions across all constituent types.
-
-        :param twe: The type (or union of types) to compute valid symbols for.
+        :param twe: The type to compute valid symbols for.
         :return: A list of valid productions.
         """
-        if isinstance(twe, _UnionTypeWithEnvironment):
-            seen: set = set()
-            result = []
-            for t in twe.types:
-                for prod, _ in self.dsl.productions_for_type(t):
-                    if prod.symbol() not in seen:
-                        seen.add(prod.symbol())
-                        result.append(prod)
-            return result
         return [prod for prod, _ in self.dsl.productions_for_type(twe)]
 
     def compute_mask(self, position, symbols):
@@ -104,27 +93,17 @@ class TypePreorderMask(PreorderMask):
     def on_entry(self, position, symbol) -> Callable[[], None]:
         symbol, arity = self.tree_dist.symbols[symbol]
         if symbol == ROOT_SYMBOL:
-            root_twes = [
-                TypeWithEnvironment(t, StrictEnvironment.empty())
-                for t in self.dsl.valid_root_types
-            ]
-            if len(root_twes) == 1:
-                entry: _StackEntry = root_twes[0]
-            else:
-                entry = _UnionTypeWithEnvironment(tuple(root_twes))
-            self.type_stack.append([entry])
+            self.type_stack.append(
+                [
+                    TypeWithEnvironment(
+                        self._root_type_for_entry(), StrictEnvironment.empty()
+                    )
+                ]
+            )
             return self.type_stack.pop
         parent_type = self.type_stack[-1][position]
         production = self.dsl.get_production(symbol)
-        if isinstance(parent_type, _UnionTypeWithEnvironment):
-            children_types = None
-            for twe in parent_type.types:
-                result = production.type_signature().unify_return(twe)
-                if result is not None:
-                    children_types = result
-                    break
-        else:
-            children_types = production.type_signature().unify_return(parent_type)
+        children_types = production.type_signature().unify_return(parent_type)
         if children_types is None:
             raise ValueError(
                 f"Type mismatch in production {production} with parent type {parent_type}"

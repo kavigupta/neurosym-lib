@@ -1,33 +1,79 @@
-from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
+import os
+import re
+import subprocess
+import time as time
+import traceback
+
+import numpy as np
+import torch
 from dreamcoder.grammar import *
+from dreamcoder.likelihoodModel import AllOrNothingLikelihoodModel
+from dreamcoder.program import Program
+from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.utilities import get_root_dir, limit_virtual_memory_fn
+
 import neurosym as ns
-from neurosym.dsl.abstraction import _with_index_parameters
-from neurosym.dsl.abstraction import AbstractionProduction
 from neurosym.compression.process_abstraction import _StitchLambdaRewriter
-from neurosym.types.type_signature import FunctionTypeSignature
-from neurosym.types.type import ArrowType
-from neurosym.types.type_with_environment import (
-    StrictEnvironment,
-    TypeWithEnvironment,
-)
+from neurosym.dsl.abstraction import AbstractionProduction, _with_index_parameters
 from neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
 from neurosym.programs.s_expression_render import render_s_expression
-from dreamcoder.tests.program_dist.utils import enumerate_dsl
-from dreamcoder.program import Program
-import os
-import traceback
-import subprocess
-import numpy as np
-import time as time
-import torch
-import re
+from neurosym.types.type import ArrowType
+from neurosym.types.type_signature import FunctionTypeSignature
+from neurosym.types.type_string_repr import parse_type
+from neurosym.types.type_with_environment import StrictEnvironment
 
 DEFAULT_SOLVER_DIRECTORY = "."
 
 INDUCTIVE_EXAMPLES_LIKELIHOOD_MODEL = "inductive_examples_likelihood_model"  # Only use the inductive examples to determine the likelihood.
 
 INDUCTIVE_EXAMPLES_DISCOUNTED_PRIOR_LIKELIHOOD_MODEL = "inductive_examples_discounted_prior_likelihood_model"  # Use the inductive examples or otherwise use a discounted prior
+
+
+class _TaskRootTypePreorderMaskELF(ns.TypePreorderMaskELF):
+    """
+    TypePreorderMaskELF variant that pins the root position to a single
+    task-specific type rather than the DSL's ``valid_root_types``.
+
+    The shared DSL is built with every root type the experiment may request
+    so that its primitive set (and thus the bigram parameter tensor) is
+    identical across tasks. At enumeration time, however, each task has
+    exactly one request type; using the DSL's multi-valued
+    ``valid_root_types`` would over-count valid productions at the root
+    (and pick the wrong body type when multiple root types share a
+    lambda's input signature), making NeuroSym log-probabilities diverge
+    from DreamCoder's.
+    """
+
+    def __init__(self, tree_dist, dsl, task_root_type, dreamcoder_compat=False):
+        # Must be set before super().__init__ so _root_type_for_entry can see it
+        # if the base class ever consults it during construction.
+        self._task_root_type = task_root_type
+        super().__init__(tree_dist, dsl, dreamcoder_compat=dreamcoder_compat)
+
+    def _validate_root_types(self):
+        # The root type is supplied externally, so the DSL may legitimately
+        # have any number of ``valid_root_types`` (we use those only for
+        # primitive-set construction, not for choosing the root).
+        assert (
+            self.dsl.valid_root_types is not None
+        ), "DSL must have valid_root_types set"
+
+    def _root_type_for_entry(self):
+        return self._task_root_type
+
+
+def _infer_task_root_type(task):
+    """Infer a NeuroSym root type for ``task`` from its first example shape.
+
+    Mirrors the input/output inference the enumeration code used before a
+    shared full DSL was introduced: we look at whether the example's input
+    and output are lists of ints or ints, and construct the corresponding
+    NeuroSym arrow type.
+    """
+    example = task.examples[0]
+    input_type = "[i]" if isinstance(example[0][0], list) else "i"
+    output_type = "[i]" if isinstance(example[1], list) else "i"
+    return parse_type(f"{input_type} -> {output_type}")
 
 
 def budgetIncrement(lb):
@@ -211,7 +257,11 @@ def parse_abstraction_dc_to_ns(
 
 
 def neurosym_to_dreamcoder(s: str):
-    return re.sub(r"\$([0-9]{1})_([0-9]{1})", r"$\1", s.replace("lam", "lambda"))
+    # Convert NeuroSym binder tags like `lam_7` into DreamCoder's `lambda`.
+    # We only rewrite full lambda-tag tokens, not arbitrary "lam" substrings.
+    s = re.sub(r"\blam(?:_\d+)?\b", "lambda", s)
+    # Collapse typed variable tags (e.g. $0_1) to DreamCoder de Bruijn indices.
+    return re.sub(r"\$([0-9]+)_([0-9]+)", r"$\1", s)
 
 
 def multicoreEnumeration(
@@ -264,43 +314,23 @@ def multicoreEnumeration(
     frontiers = {}
     dist_dict = {}
 
-    # Collect all unique types from all tasks so the DSL covers the full type space.
-    all_output_types = set()
-    for task in g.keys():
-        dslf = ns.DSLFactory()
-        # Define neurosym-equivalent DSL here. Assert that it has the same primitive names as the DreamCoder DSL
-        """
-        dslf.concrete("1", "() -> i", lambda: 1)
-        dslf.concrete("incr", "(i) -> i", lambda x: x + 1)
-        dslf.concrete("incr2", "(i) -> i", lambda x: x + 2)
-        dslf.lambdas()
-        dslf.prune_to("i -> i")
-        dsl = dslf.finalize()
-        dslf = list_dslf("[i] -> i")
-        """
-        example_for_type = task.examples[0]
-        print(f"Task: {task}, Example: {example_for_type}")
-        if type(example_for_type[0][0]) == list:
-            assert isinstance(example_for_type[0][0][0], int), f"Expected input type to be list of integers, but got {type(example_for_type[0][0][0])}"
-            input_type = "[i]"
-        else:
-            input_type = "i"
-        if type(example_for_type[1]) == list:
-            assert isinstance(example_for_type[1][0], int), f"Expected output type to be list of integers, but got {type(example_for_type[1][0])}"
-            output_type = "[i]"
-        else:
-            output_type = "i"
-        all_output_types.add(f"{input_type} -> {output_type}")
-    all_output_types = sorted(all_output_types)
+    # Must match the types used in listPrimitives.primitives() so the DSL
+    # symbol names are identical to those in the DreamCoder grammar.
+    from dreamcoder.domains.list.listPrimitives import LIST_OUTPUT_TYPES
+
+    all_output_types = sorted(LIST_OUTPUT_TYPES)
     print(f"All DSL output types: {all_output_types}")
 
     for task in g.keys():
         dslf = list_dslf(*all_output_types)
         dsl = dslf.finalize()
         dsl_dict[task] = dsl
+        # Each task has one specific request type; pin the root mask to it so
+        # NeuroSym log-probs match DreamCoder's type-aware normalization.
+        task_root_type = _infer_task_root_type(task)
 
         primitive_list = [prod.symbol() for prod in dsl.productions]
-        
+
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != "$":
                 # This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
@@ -323,7 +353,9 @@ def multicoreEnumeration(
                         # Build a function type from the inferred environment. Environment
                         # index 0 is the most recent binder, so we order arguments by
                         # descending environment index (outermost to innermost).
-                        assert isinstance(type_argument.env, StrictEnvironment), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
+                        assert isinstance(
+                            type_argument.env, StrictEnvironment
+                        ), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
                         env_elements = type_argument.env._elements
                         argument_types = []
                         for env_index in sorted(env_elements.keys(), reverse=True):
@@ -349,17 +381,19 @@ def multicoreEnumeration(
 
         max_arity = 3  # for toy 1
         num_productions = 1 + len(dsl.productions)
-        
+
         # print(f"Primitive List: {[f'{(x.symbol(), x.type_signature())} ---' for x in dsl.productions]} \n")
         # print(f"Primitive List: {[str(x.symbol()) + '----' for x in dsl.productions]} \n")
-        
+
         # Now that we have the neurosym-equivalent DSL, we can create the BigramProgramDistributionFamily
         # family = ns.BigramProgramDistributionFamily(dsl)
         family = ns.BigramProgramDistributionFamily(
             dsl,
             include_type_preorder_mask=False,
             additional_preorder_masks=[
-                lambda td, dsl: ns.TypePreorderMaskELF(td, dsl, dreamcoder_compat=True),
+                lambda td, dsl, trt=task_root_type: _TaskRootTypePreorderMaskELF(
+                    td, dsl, trt, dreamcoder_compat=True
+                ),
             ],
             dreamcoder_compat=True,
         )
@@ -373,7 +407,13 @@ def multicoreEnumeration(
 
         # Use float64 end-to-end here to minimize numerical drift between
         # DreamCoder scoring and NeuroSym likelihood computations.
-        dist = np.zeros((num_productions, max_arity, num_productions), dtype=np.float64)
+        # IMPORTANT: this tensor is in log-space. Unset entries must be -inf
+        # (impossible), not 0.0 (log(1.0)), or invalid transitions leak in.
+        dist = np.full(
+            (num_productions, max_arity, num_productions),
+            -np.inf,
+            dtype=np.float64,
+        )
         print("likelihood dict!")
 
         # Automatically maps DreamCoder primitive name to one or more NeuroSym indices.
@@ -391,7 +431,7 @@ def multicoreEnumeration(
             """
             s = str(child)
             if s == "$0":
-                # Attach the same log-score to variales. 
+                # Attach the same log-score to variales.
                 # The type preorder mask with dreamcoder_compat will
                 # filter to only the type-valid variables at each position and
                 # divide by n_vars.
@@ -427,8 +467,11 @@ def multicoreEnumeration(
             for lam_ind in lam_parent_inds:
                 for child, likelihood in root_row.items():
                     child_inds = _child_to_inds(child)
-                    for child_ind in child_inds:
-                        dist[lam_ind][0][child_ind] = likelihood
+                    # Mirror root behavior across arity slots to avoid leaving
+                    # unset lambda rows that become uniform after masking.
+                    for arity in range(max_arity):
+                        for child_ind in child_inds:
+                            dist[lam_ind][arity][child_ind] = likelihood
 
             # 3) Fill each parent’s per-argument distributions from the library.
             likelihood_dict = library_list[
@@ -458,10 +501,24 @@ def multicoreEnumeration(
                     for prod_ind in range(num_productions):
                         for arity in range(max_arity):
                             dist[prod_ind][arity][production_ind] = v
+            # Lambda is structural in DreamCoder (absent from expression2likelihood).
+            # Set lam_* child slots to log-prob 0 (prob 1) so they remain reachable;
+            # TypePreorderMaskELF will allow them only where the expected type is ArrowType.
+            lam_child_inds = [
+                ind
+                for sym, ind in dreamcoder_ns_mapping.items()
+                if str(sym).startswith("lam_")
+            ]
+            for lam_child_ind in lam_child_inds:
+                for prod_ind in range(num_productions):
+                    for arity in range(max_arity):
+                        dist[prod_ind][arity][lam_child_ind] = 0.0
 
         # Filter the productions out that are impossible to reach
         tensor_dist = torch.tensor(dist)
-        reshaped_tensor_dist = np.exp(tensor_dist.reshape(tuple([1] + list(tensor_dist.shape))))
+        reshaped_tensor_dist = np.exp(
+            tensor_dist.reshape(tuple([1] + list(tensor_dist.shape)))
+        )
         # Apply only the validity mask; keep DreamCoder's scores as logits.
         # masked_logits = family._normalize_parameters(reshaped_tensor_dist)
         dist_dict[task] = ns.BigramProgramDistribution(
