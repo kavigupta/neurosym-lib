@@ -1,11 +1,10 @@
+from neurosym.examples.dreamcoder.list_example import list_dsl
+from dreamcoder.program import Primitive, Program
+from dreamcoder.grammar import Grammar
+from dreamcoder.type import TypeVariable, tlist, tint, tbool, arrow, t0, t1, t2
+
 import math
 from functools import reduce
-
-from neurosym.examples.dreamcoder.list_example import list_dsl
-
-from dreamcoder.grammar import Grammar
-from dreamcoder.program import Primitive, Program
-from dreamcoder.type import TypeVariable, arrow, t0, t1, t2, tbool, tint, tlist
 
 
 def _flatten(l):
@@ -290,8 +289,7 @@ def convert_type(t, variables_so_far):
     """Convert a ns.Type to a type"""
     if isinstance(t, ns.ArrowType):
         return arrow(
-            *[convert_type(x, variables_so_far) for x in t.input_type],
-            convert_type(t.output_type, variables_so_far),
+            *[convert_type(x, variables_so_far) for x in t.input_type], convert_type(t.output_type, variables_so_far)
         )
     if isinstance(t, ns.AtomicType):
         return {
@@ -319,16 +317,14 @@ def do_curry(arity, f):
 def semantic(arity, prod, dsl):
     def func(inputs):
         return prod.evaluate(dsl, {}, inputs, None)
-
     return do_curry(arity, func)
 
 
-LIST_OUTPUT_TYPES = frozenset(["[i] -> [i]", "[i] -> i", "i -> i"])
-
-
 def primitives():
-    all_output_types = LIST_OUTPUT_TYPES
+    
+    all_output_types = set(['[i] -> [i]', '[i] -> i', 'i -> i'])
     dsl = list_dsl(*all_output_types)
+
 
     variables_so_far = []
 
