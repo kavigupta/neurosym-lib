@@ -92,168 +92,76 @@ import neurosym as ns
 from neurosym.dsl.abstraction import _with_index_parameters
 
 
-def matchBr(s: str, ind: int) -> int | None:
-    """
-    Given an opening bracket at position ind in string s, find the  position of the corresponding closing bracket.
-
-    Arguments:
-    s (str): denoting the solution program expression (already processed by replacements())
-    ind (int): is an integer denoting the starting position of the start bracket '('
-
-    Returns:
-    int | None: an integer denoting position of closing bracket. If start index does not have an open bracket or no closing brackets close the starting bracket, returns None.
-    """
-    brPair = 0
-    for j in range(ind, len(s)):
-        if s[j] == "(":
-            brPair += 1
-        if s[j] == ")":
-            brPair -= 1
-        if brPair == 0:
-            if j == ind:
-                return None
-            return j
-    return None
-
-
-def get_argument_list(s: str) -> list[str] | None:
-    """
-    Returns function body and arguments present in a lambda function serving as an abstraction in DreamCoder's grammar.
-
-    Args:
-        s (str): function body
-
-    Returns:
-        list[str] | None: lambda function body and arguments present in the function. If there is neither body nor a set of arguments, this returns None.
-    """
-    start_bracket = s.find("(")
-    if start_bracket != -1:
-        end_bracket = matchBr(s, start_bracket)
-        if end_bracket == None:
-            print(f"No closing bracket found for {s}")
-            return None
-        remaining_arguments = get_argument_list(s[end_bracket + 2 :])
-        if remaining_arguments == None:
-            return [s[start_bracket + 1 : end_bracket]]
-        else:
-            return [s[start_bracket + 1 : end_bracket]] + remaining_arguments
-    else:
-        return s.split(" ")
-
-
 def parse_abstraction_dc_to_ns(
-    abstraction: str, primitive_list: list[str]
-) -> ns.InitializedSExpression | ns.AbstractionIndexParameter | None:
+    abstraction: str, primitive_list: list[str] = None
+) -> ns.InitializedSExpression | ns.AbstractionIndexParameter:
     """
-    Converts a DreamCoder (Stitch) abstraction or a subabstraction within it to a NeuroSym InitializedSExpression or a AbstractionIndexParameter.
+    Convert a DreamCoder (Stitch) abstraction string into a NeuroSym
+    ``InitializedSExpression`` / ``AbstractionIndexParameter`` tree.
 
-    Example of such a Stitch abstraction string:
-    "#(lambda (lambda (#(lambda (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_div (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate $0 mathDomain_4) mathDomain_0) mathDomain_0) mathDomain_3) mathDomain_5) mathDomain_4) mathDomain_0) mathDomain_0)) (mathDomain_swap (#(lambda (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub $0 mathDomain_5) mathDomain_1) mathDomain_1) mathDomain_0)) (mathDomain_multone (mathDomain_rrotate (#(lambda (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub $0 mathDomain_5) mathDomain_1) mathDomain_1) mathDomain_0)) (mathDomain_swap (#(lambda (mathDomain_swap (mathDomain_simplify $0 mathDomain_0) mathDomain_0)) $0) $1)) mathDomain_4) mathDomain_5)) mathDomain_5))))"
+    Example input:
+        ``#(lambda (lambda (index $1 (sort $0))))``
 
-    Example output of such a conversion:
-    (lambda (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_div (mathDomain_swap (mathDomain_simplify (mathDomain_rrotate (mathDomain_swap (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub (mathDomain_multone (mathDomain_rrotate (mathDomain_simplify (mathDomain_dist (mathDomain_rrotate (mathDomain_sub (mathDomain_swap (mathDomain_swap (mathDomain_simplify #0 (mathDomain_0)) (mathDomain_0)) #1) (mathDomain_5)) (mathDomain_1)) (mathDomain_1)) (mathDomain_0)) (mathDomain_4)) (mathDomain_5)) (mathDomain_5)) (mathDomain_1)) (mathDomain_1)) (mathDomain_0)) (mathDomain_5)) (mathDomain_4)) (mathDomain_0)) (mathDomain_0)) (mathDomain_3)) (mathDomain_5)) (mathDomain_4)) (mathDomain_0)) (mathDomain_0)))
+    Tokenization and bracket-matching are delegated to
+    ``ns.parse_s_expression``. The only wrinkle is Stitch's leading ``#``,
+    which is not valid top-level s-expression syntax — we wrap the whole
+    thing in outer parens so ``#`` becomes a regular head symbol, which
+    the walker below recognizes as a stitch abstraction (body + applied
+    args). Nested ``#(...)`` inside the body falls out of the recursion
+    automatically because the parser already sees the surrounding parens.
 
-    Args:
-        abstraction (str): Abstraction discovered by Stitch in DreamCoder
+    ``primitive_list`` is kept for backwards-compatibility with the
+    previous signature but is no longer consulted — the parser derives
+    structure from syntax alone.
 
-    Returns:
-        ns.InitializedSExpression |  ns.AbstractionIndexParameter | None: Abstraction in NeuroSym format. If the abstraction is not parseable, returns None.
+    Raises ``ValueError`` on malformed input. DreamCoder abstractions
+    should always be well-formed, so a failure here is a parser bug
+    to be fixed rather than silently skipped.
     """
-    if abstraction == "":
-        print("Empty abstraction")
-        return None
-    if abstraction[0] == "(":
-        if matchBr(abstraction, 0) == len(abstraction) - 1:
-            return parse_abstraction_dc_to_ns(abstraction[1:-1], primitive_list)
-        else:
-            print(f"Unmatched brackets in {abstraction}")
-            return None
-    elif abstraction[0] == "#":
-        end_bracket = matchBr(abstraction, 1)
-        if end_bracket == len(abstraction) - 1:
-            return parse_abstraction_dc_to_ns(abstraction[2:-1], primitive_list)
-        else:
-            if end_bracket == None:
-                print(f"No closing bracket found for {abstraction}")
-                return None
-            argument_list = get_argument_list(abstraction[1:])
-            if argument_list == None:
-                print(f"No arguments found for {abstraction}")
-                return None
-            arg_tuple = tuple(
-                [
-                    parse_abstraction_dc_to_ns(arg_abstraction, primitive_list)
-                    for arg_abstraction in argument_list
-                ]
-            )
-            if None in arg_tuple:
-                print(f"None in arg_tuple for {abstraction}")
-            arg_tuple = tuple([x for x in arg_tuple if x != None])
-            if len(arg_tuple) == 0:
-                return None
-            if len(arg_tuple) == 1:
-                return arg_tuple[0]
-            sub_abstraction_body = arg_tuple[0]
-            sub_abstraction_args = arg_tuple[1:]
-            # This assert ensures that the function at the root of the InitializedSExpression has the correct types
-            assert isinstance(sub_abstraction_body, ns.InitializedSExpression)
-            result = _with_index_parameters(
-                sub_abstraction_body, sub_abstraction_args, True
-            )
-            # This assert ensures that the final result of calling _with_index_parameters has the correct types and not just an "object" type (derived from the apply function call in the _with_index_parameters function)
-            assert isinstance(result, ns.InitializedSExpression) or isinstance(
-                result, ns.AbstractionIndexParameter
-            )
-            return result
-            # return ns.InitializedSExpression("lambda", arg_tuple, {})
-    elif abstraction.split(" ")[0] == "lambda":
-        end_bracket = matchBr(abstraction, 7)
-        if end_bracket == len(abstraction) - 1:
-            return parse_abstraction_dc_to_ns(abstraction[8:-1], primitive_list)
-        else:
-            if end_bracket == None:
-                print(f"No closing bracket found for {abstraction}")
-                return None
-            argument_list = get_argument_list(abstraction[7:end_bracket])
-            if argument_list == None:
-                print(f"No arguments found for {abstraction}")
-                return None
-            arg_tuple = tuple(
-                [
-                    parse_abstraction_dc_to_ns(arg_abstraction, primitive_list)
-                    for arg_abstraction in argument_list
-                ]
-            )
-            if None in arg_tuple:
-                print(f"None in arg_tuple for {abstraction}")
-            arg_tuple = tuple([x for x in arg_tuple if x != None])
-            return ns.InitializedSExpression("lambda", arg_tuple, {})
-    else:
-        splits = abstraction.split(" ")
-        func = splits[0]
-        if func in primitive_list:
-            argument_list = get_argument_list(abstraction[len(func) + 1 :])
-            if argument_list == None:
-                print(f"No arguments found for {abstraction}")
-                return None
-            arg_tuple = tuple(
-                [
-                    parse_abstraction_dc_to_ns(arg_abstraction, primitive_list)
-                    for arg_abstraction in argument_list
-                ]
-            )
-            if None in arg_tuple:
-                print(f"None in arg_tuple for {abstraction}")
-            arg_tuple = tuple([x for x in arg_tuple if x != None])
-            return ns.InitializedSExpression(func, arg_tuple, {})
-        else:
-            if abstraction[0] == "$":
-                abstraction_child = ns.AbstractionIndexParameter(
-                    int(abstraction.split(" ")[0][1:])
-                )
-                return abstraction_child
-            else:
-                return ns.InitializedSExpression(abstraction, (), {})
+    del primitive_list
+    src = f"({abstraction})" if abstraction.startswith("#") else abstraction
+    return _convert_dc_sexp(ns.parse_s_expression(src, for_stitch=True))
+
+
+def _convert_dc_sexp(
+    s_exp,
+) -> ns.InitializedSExpression | ns.AbstractionIndexParameter:
+    if isinstance(s_exp, ns.SExpression):
+        # Stitch abstraction: first child is the body, remaining are args
+        # applied at this position. With no applied args the abstraction
+        # just is its body.
+        if s_exp.symbol == "#":
+            body_exp, *arg_exps = s_exp.children
+            # Peel outer ``lambda`` wrappers: in stitch, each ``lambda``
+            # declares one abstraction parameter (bound by $0, $1, ...); the
+            # NeuroSym representation encodes these via AbstractionIndexParameter
+            # inside the body rather than as explicit lambda nodes.
+            while (
+                isinstance(body_exp, ns.SExpression)
+                and body_exp.symbol == "lambda"
+                and len(body_exp.children) == 1
+            ):
+                body_exp = body_exp.children[0]
+            body = _convert_dc_sexp(body_exp)
+            if not arg_exps:
+                return body
+            assert isinstance(body, ns.InitializedSExpression)
+            arg_tuple = tuple(_convert_dc_sexp(a) for a in arg_exps)
+            return _with_index_parameters(body, arg_tuple)
+        # With ``for_stitch=True`` de Bruijn variables are wrapped as
+        # empty-children ``SExpression('$N', ())`` rather than bare strings.
+        # If applied to arguments (e.g. ``($1 0)``), the NeuroSym abstraction
+        # representation cannot express higher-order variable application, so
+        # we drop the applied args (matching the behavior in
+        # tests/s_exp/dreamcoder_abstractions_test.py::parse_abstraction_dc_to_ns).
+        if isinstance(s_exp.symbol, str) and s_exp.symbol.startswith("$"):
+            return ns.AbstractionIndexParameter(int(s_exp.symbol[1:]))
+        children = tuple(_convert_dc_sexp(c) for c in s_exp.children)
+        return ns.InitializedSExpression(s_exp.symbol, children, {})
+    assert isinstance(s_exp, str), f"Unexpected parser output: {s_exp!r}"
+    if s_exp.startswith("$"):
+        return ns.AbstractionIndexParameter(int(s_exp[1:]))
+    return ns.InitializedSExpression(s_exp, (), {})
 
 
 def neurosym_to_dreamcoder(s: str):
@@ -336,48 +244,47 @@ def multicoreEnumeration(
                 # This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
                 print(f"Adding abstraction {k} to neurosym DSL.")
                 parsed_abstraction = parse_abstraction_dc_to_ns(str(k), primitive_list)
-                if parsed_abstraction != None:
-                    s_exp = ns.SExpression(k, [parsed_abstraction])
-                    type_argument = [dsl.compute_type_abs(x) for x in s_exp.children][0]
-                    if type_argument is None:
-                        print(
-                            f"Skipping abstraction {k}: could not infer abstraction type."
-                        )
-                        continue
-
-                    if isinstance(type_argument.typ, ArrowType):
-                        type_signature = FunctionTypeSignature.from_type(
-                            type_argument.typ
-                        )
-                    else:
-                        # Build a function type from the inferred environment. Environment
-                        # index 0 is the most recent binder, so we order arguments by
-                        # descending environment index (outermost to innermost).
-                        assert isinstance(
-                            type_argument.env, StrictEnvironment
-                        ), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
-                        env_elements = type_argument.env._elements
-                        argument_types = []
-                        for env_index in sorted(env_elements.keys(), reverse=True):
-                            env_typ = env_elements[env_index]
-                            if isinstance(env_typ, tuple):
-                                if len(env_typ) != 1:
-                                    raise ValueError(
-                                        f"Unexpected env type tuple at index {env_index}: {env_typ}"
-                                    )
-                                env_typ = env_typ[0]
-                            argument_types.append(env_typ)
-                        type_signature = FunctionTypeSignature(
-                            argument_types,
-                            type_argument.typ,
-                        )
-
+                s_exp = ns.SExpression(k, [parsed_abstraction])
+                type_argument = [dsl.compute_type_abs(x) for x in s_exp.children][0]
+                if type_argument is None:
                     print(
-                        f"Parsed abstraction {k} to {s_exp} with type signature {type_signature}"
+                        f"Skipping abstraction {k}: could not infer abstraction type."
                     )
-                    final = AbstractionProduction(str(k), type_signature, s_exp)
-                    dsl = dsl.add_productions(final)
-                    primitive_list.append(str(k))
+                    continue
+
+                if isinstance(type_argument.typ, ArrowType):
+                    type_signature = FunctionTypeSignature.from_type(
+                        type_argument.typ
+                    )
+                else:
+                    # Build a function type from the inferred environment. Environment
+                    # index 0 is the most recent binder, so we order arguments by
+                    # descending environment index (outermost to innermost).
+                    assert isinstance(
+                        type_argument.env, StrictEnvironment
+                    ), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
+                    env_elements = type_argument.env._elements
+                    argument_types = []
+                    for env_index in sorted(env_elements.keys(), reverse=True):
+                        env_typ = env_elements[env_index]
+                        if isinstance(env_typ, tuple):
+                            if len(env_typ) != 1:
+                                raise ValueError(
+                                    f"Unexpected env type tuple at index {env_index}: {env_typ}"
+                                )
+                            env_typ = env_typ[0]
+                        argument_types.append(env_typ)
+                    type_signature = FunctionTypeSignature(
+                        argument_types,
+                        type_argument.typ,
+                    )
+
+                print(
+                    f"Parsed abstraction {k} to {s_exp} with type signature {type_signature}"
+                )
+                final = AbstractionProduction(str(k), type_signature, s_exp)
+                dsl = dsl.add_productions(final)
+                primitive_list.append(str(k))
 
         max_arity = 3  # for toy 1
         num_productions = 1 + len(dsl.productions)
@@ -444,6 +351,14 @@ def multicoreEnumeration(
                     len(var_syms) > 0
                 ), 'Expected at least one "$0_*" variable symbol in NeuroSym DSL.'
                 return [dreamcoder_ns_mapping[sym] for sym in var_syms]
+            if s not in dreamcoder_ns_mapping:
+                # Likely an abstraction whose NeuroSym counterpart could not be
+                # built (see ``parse_abstraction_dc_to_ns`` / ``compute_type_abs``
+                # above, which prints a "Skipping abstraction" message). Since
+                # the NeuroSym DSL does not know this symbol, it cannot appear
+                # in any enumerated program; omit it from the distribution
+                # rather than failing with a KeyError.
+                return []
             return [dreamcoder_ns_mapping[s]]
 
         if isinstance(g[task], ContextualGrammar):
@@ -478,7 +393,13 @@ def multicoreEnumeration(
                 task
             ]  # {parent_expr: [Grammar_for_arg0, ...]}
             for parent, arg_grammars in likelihood_dict.items():
-                parent_ind = dreamcoder_ns_mapping[str(parent)]
+                parent_key = str(parent)
+                if parent_key not in dreamcoder_ns_mapping:
+                    # Same reason as in _child_to_inds: abstraction that
+                    # couldn't be added to the NeuroSym DSL. Its per-argument
+                    # distributions are unreachable during NeuroSym enumeration.
+                    continue
+                parent_ind = dreamcoder_ns_mapping[parent_key]
                 # If for some reason we have no arg grammars, leave it to normalization.
                 for arg_index, arg_grammar in enumerate(arg_grammars[:max_arity]):
                     bigram_row = arg_grammar.expression2likelihood
