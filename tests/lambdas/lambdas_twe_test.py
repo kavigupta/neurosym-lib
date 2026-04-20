@@ -35,7 +35,7 @@ class TestSearchGraphShield(unittest.TestCase):
             ],
             [
                 "(lam ??::<i|0=f,1=i>)",
-                ["(lam (1))", "(lam (floor ??::<f|0=f,1=i>))", "(lam ($1_1))"],
+                ["(lam (1))", "(lam (floor ??::<f|0=f,1=i>))", "(lam ($1))"],
             ],
         ]
         nodes = [sg.initial_node()]
@@ -53,6 +53,6 @@ class TestSearchGraphShield(unittest.TestCase):
     def test_compute_type_forward(self):
         dsl = self.getDSL()
         self.assertEqual(
-            dsl.compute_type(ns.parse_s_expression("(lam ($1_1))")).short_repr(),
-            "<(i, f) -> i|>",
+            dsl.compute_type(ns.parse_s_expression("(lam ($1))")).short_repr(),
+            "<(#__lam_unused_0, #__var_1) -> #__var_1|>",
         )

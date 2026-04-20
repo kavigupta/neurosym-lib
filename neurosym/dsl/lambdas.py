@@ -3,6 +3,7 @@ from typing import List
 
 from neurosym.dsl.dsl import DSL
 from neurosym.programs.s_expression import InitializedSExpression
+from neurosym.types.type import TypeVariable
 from neurosym.types.type_annotated_object import TypeAnnotatedObject
 from neurosym.types.type_signature import LambdaTypeSignature
 
@@ -19,11 +20,15 @@ class LambdaFunction:
         return cls(dsl, body, typ, parent_environment)
 
     def __call__(self, *args):
-        assert len(args) == self.typ.function_arity()
+        assert len(args) == self.typ.function_arity
         # Reverse the arguments because we want to number them from the right.
+        # Lambda type signatures are polymorphic, so use type variables as
+        # placeholders for the argument types in the environment.  Neural
+        # modules that need concrete types (e.g. the transformer) store the
+        # environment types from the hole's TypeWithEnvironment at init time.
         type_annotated_args = [
-            TypeAnnotatedObject(arg_type, arg)
-            for arg_type, arg in zip(self.typ.input_types, args)
+            TypeAnnotatedObject(TypeVariable(f"__lam_arg_{i}"), arg)
+            for i, arg in enumerate(args)
         ]
         return self.dsl.compute(
             self.body, [*type_annotated_args[::-1], *self.parent_environment]

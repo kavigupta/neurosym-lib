@@ -103,20 +103,21 @@ class BasicProcessDSL(unittest.TestCase):
         self.assertDSL(
             ns.examples.basic_arith_dsl(True).render(),
             """
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             + :: (i, i) -> i
             1 :: () -> i
-            lam_0 :: L<#body|i;i> -> (i, i) -> #body
-            lam_1 :: L<#body|i> -> i -> #body
+            lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+            lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
             """,
         )
 
     def setUp(self):
         self.dsl = ns.examples.basic_arith_dsl(True)
         print(ns.examples.basic_arith_dsl(True).render())
-        self.fn_code = "(lam_0 (+ ($1_0) ($0_0)))"
+        self.fn_code = "(lam_1 (+ ($1) ($0)))"
 
     def test_compute(self):
         fn = self.dsl.compute(self.dsl.initialize(ns.parse_s_expression(self.fn_code)))
@@ -126,8 +127,8 @@ class BasicProcessDSL(unittest.TestCase):
 
     def test_basic_compress(self):
         code = [
-            "(lam_0 (+ (+ (1) (1)) ($0_0)))",
-            "(lam_0 (+ (1) ($0_0)))",
+            "(lam_1 (+ (+ (1) (1)) ($0)))",
+            "(lam_1 (+ (1) ($0)))",
         ]
         code = [ns.parse_s_expression(x) for x in code]
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
@@ -141,13 +142,13 @@ class BasicProcessDSL(unittest.TestCase):
         )
         self.assertEqual(
             dsl2.productions[-1].render().strip(),
-            "__10 :: i -> (i, i) -> i = (lam-abstr (#0) (lam_0 (+ #0 ($0_0))))",
+            "__10 :: i -> (i, #__lam_unused_1) -> i = (lam-abstr (#0) (lam_1 (+ #0 ($0))))",
         )
 
     def test_multi_argument(self):
         code = [
-            "(lam_0 (+ (1) ($1_0)))",
-            "(lam_0 (+ (1) (2)))",
+            "(lam_1 (+ (1) ($1)))",
+            "(lam_1 (+ (1) (2)))",
         ]
         code = [ns.parse_s_expression(x) for x in code]
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
@@ -156,20 +157,20 @@ class BasicProcessDSL(unittest.TestCase):
 
     def test_compress_yoinking_variables(self):
         code = [
-            "(lam_1 (lam_1 (+ (1) ($1_0))))",
-            "(lam_1 (+ (1) (2)))",
+            "(lam_0 (lam_0 (+ (1) ($1))))",
+            "(lam_0 (+ (1) (2)))",
         ]
         code = [ns.parse_s_expression(x) for x in code]
         dsl2, rewritten = ns.compression.single_step_compression(self.dsl, code)
         self.assertEqual(
             dsl2.productions[-1].render().strip(),
-            "__10 :: i -> i -> i = (lam-abstr (#0) (lam_1 (+ (1) #0)))",
+            "__10 :: #__var_0 -> i -> i = (lam-abstr (#0) (lam_0 (+ (1) #0)))",
         )
         self.assertEqual(len(rewritten), len(code))
         self.assertEqual(
             [ns.render_s_expression(x) for x in rewritten],
             [
-                "(lam_1 (__10 ($0_0)))",
+                "(lam_0 (__10 ($0)))",
                 "(__10 (2))",
             ],
         )

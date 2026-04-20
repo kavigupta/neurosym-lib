@@ -13,7 +13,7 @@ def variable_indices(s_exp: SExpression) -> Set[int]:
     :return: A set of integer environment indices.
     """
     result = set()
-    match = re.match(r"^\$(\d+)_\d+$", s_exp.symbol)
+    match = re.match(r"^\$(\d+)$", s_exp.symbol)
     if match:
         result.add(int(match.group(1)))
     for child in s_exp.children:
@@ -49,12 +49,11 @@ def _shift_variables(s_exp: SExpression, k: int) -> SExpression:
     """
     Shift all variable references with env index >= k up by 1.
     """
-    match = re.match(r"^\$(\d+)_(\d+)$", s_exp.symbol)
+    match = re.match(r"^\$(\d+)$", s_exp.symbol)
     if match:
         n = int(match.group(1))
-        type_id = match.group(2)
         if n >= k:
-            return SExpression(f"${n + 1}_{type_id}", s_exp.children)
+            return SExpression(f"${n + 1}", s_exp.children)
         return s_exp
 
     children = tuple(_shift_variables(child, k) for child in s_exp.children)

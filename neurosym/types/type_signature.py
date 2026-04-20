@@ -3,13 +3,10 @@ Type signatures are used to represent the types of functions in the
 DSL.
 """
 
-import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from itertools import product
-from typing import Callable, List, Tuple, Union
+from typing import List, Union
 
-import numpy as np
 from frozendict import frozendict
 from torch import NoneType
 
@@ -62,6 +59,14 @@ class TypeSignature(ABC):
         Render this type signature as a string.
         """
 
+    def required_env_index(self) -> Union[int, None]:
+        """
+        Return the environment index this signature requires, or None if it
+        does not depend on a specific environment slot. Used to prune
+        productions that reference unreachable environment indices.
+        """
+        return None
+
 
 @dataclass
 class FunctionTypeSignature(TypeSignature):
@@ -106,7 +111,6 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        env = StrictEnvironment.merge_all(*envs)
         mapping = {}
         try:
             for t1, t2 in zip(self.arguments, types):
@@ -119,6 +123,11 @@ class FunctionTypeSignature(TypeSignature):
                         mapping[k] = v
         except UnificationError:
             return None
+        # Apply substitution to each child env before merging, so that
+        # polymorphic variable types get resolved consistently.
+        if mapping:
+            envs = [env.subst_type_vars(mapping) for env in envs]
+        env = StrictEnvironment.merge_all(*envs)
         return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
@@ -141,60 +150,66 @@ class FunctionTypeSignature(TypeSignature):
 @dataclass
 class LambdaTypeSignature(TypeSignature):
     """
-    Represents the type signature of the lambda production. This is a production that
-    matches any function type with the given input types, and returns the output type
-    of the matching function type, but with with the input types placed in the environment.
+    Represents the type signature of the lambda production. This is a polymorphic
+    production that matches any function type with the given arity, and returns
+    the output type of the matching function type, with the input types placed
+    in the environment.
 
-    :param input_types: The types of the arguments to the lambda.
+    :param function_arity: The number of arguments to the lambda.
     """
 
-    input_types: List[ArrowType]
+    function_arity: int
 
     def arity(self) -> int:
         # just the body
         return 1
 
-    def function_arity(self) -> int:
-        """
-        Get the arity of the function represented by the lambda,
-        i.e., the number of arguments.
-        """
-        return len(self.input_types)
+    def _type_vars(self):
+        return tuple(TypeVariable(f"__lam_{i}") for i in range(self.function_arity))
 
     def render(self) -> str:
         # pylint: disable=cyclic-import
         from neurosym.types.type_string_repr import render_type
 
         body = TypeVariable("body")
-        input_types = ";".join(render_type(x) for x in self.input_types)
+        tvs = self._type_vars()
+        input_types = ";".join(render_type(x) for x in tvs)
         lambda_type = f"L<{render_type(body)}|{input_types}>"
 
-        return f"{lambda_type} -> {render_type(ArrowType(self.input_types, body))}"
+        return f"{lambda_type} -> {render_type(ArrowType(tvs, body))}"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
         if not isinstance(twe.typ, ArrowType):
             return None
-        if twe.typ.input_type != self.input_types:
+        if len(twe.typ.input_type) != self.function_arity:
             return None
         return [
             TypeWithEnvironment(
                 twe.typ.output_type,
-                twe.env.child(*self.input_types),
+                twe.env.child(*twe.typ.input_type),
             )
         ]
 
     def return_type_template(self) -> Type:
-        return ArrowType(self.input_types, TypeVariable("body"))
+        return ArrowType(self._type_vars(), TypeVariable("body"))
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 1:
             return None
-        parent = twes[0].env.parent(self.input_types)
-        return TypeWithEnvironment(ArrowType(self.input_types, twes[0].typ), parent)
+        # Extract top arity slots, filling missing (unused) slots with
+        # type variable placeholders.
+        top_types, parent = twes[0].env.unwind_top(self.function_arity)
+        if top_types is None:
+            return None
+        input_types = tuple(
+            t if t is not None else TypeVariable(f"__lam_unused_{i}")
+            for i, t in enumerate(top_types)
+        )
+        return TypeWithEnvironment(ArrowType(input_types, twes[0].typ), parent)
 
 
 @dataclass
@@ -202,214 +217,46 @@ class VariableTypeSignature(TypeSignature):
     """
     Represents the type signature of a variable production.
 
-    This is a type signature where the return type is known, but the
-    environment must contain the given type at the given index in
-    order to be valid.
+    This is a polymorphic type signature that matches any type present
+    at the given index in the environment.
 
-    :param variable_type: The type of the variable.
     :param index_in_env: The index of the variable in the environment.
     """
 
-    variable_type: Type
     index_in_env: int
+
+    def required_env_index(self) -> Union[int, None]:
+        return self.index_in_env
 
     def arity(self) -> int:
         # leaf
         return 0
 
     def render(self) -> str:
-        # pylint: disable=cyclic-import
-        from neurosym.types.type_string_repr import render_type
-
-        return f"V<{render_type(self.variable_type)}@{self.index_in_env}>"
+        return f"V<${self.index_in_env}>"
 
     def unify_return(
         self, twe: TypeWithEnvironment
     ) -> Union[List[TypeWithEnvironment], NoneType]:
-        if twe.typ != self.variable_type:
+        if isinstance(twe.typ, TypeVariable):
+            # A type variable can be any type; match if the index exists
+            if twe.env.has_index(self.index_in_env):
+                return []
             return None
-        if not twe.env.contains_type_at(self.variable_type, self.index_in_env):
+        if not twe.env.contains_type_at(twe.typ, self.index_in_env):
             return None
         return []
 
     def return_type_template(self) -> Type:
-        return self.variable_type
+        return TypeVariable(f"__var_{self.index_in_env}")
 
     def unify_arguments(
         self, twes: List[TypeWithEnvironment]
     ) -> Union[TypeWithEnvironment, NoneType]:
         if len(twes) != 0:
             return None
+        typ = TypeVariable(f"__var_{self.index_in_env}")
         return TypeWithEnvironment(
-            self.variable_type,
-            StrictEnvironment(frozendict({self.index_in_env: self.variable_type})),
+            typ,
+            StrictEnvironment(frozendict({self.index_in_env: typ})),
         )
-
-
-def bottom_up_enumerate_types(
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-):
-    """
-    Returns a list of all possible expansions of the given terminals
-    using the given constructors.
-
-    :param terminals: The atomic types to use.
-    :param constructors: The constructors to use.
-    :param max_expansion_steps: The maximum number of times to apply a constructor.
-    :param max_overall_depth: The maximum depth of the resulting types.
-    """
-    assert (
-        min(max_expansion_steps, max_overall_depth) < np.inf
-    ), "must specify either max_expansion_steps or max_overall_depth"
-    current_with_depth = [(t, t.depth, 0) for t in terminals]
-    current_with_depth = [
-        (t, d, n)
-        for t, d, n in current_with_depth
-        if d <= max_overall_depth and n <= max_expansion_steps
-    ]
-    overall = set()
-    while True:
-        overall.update(current_with_depth)
-        current_with_depth = []
-        for arity, fn in constructors:
-            additional_depth = np.log2(arity + 1)
-            will_work = [
-                (t, d, n)
-                for t, d, n in overall
-                if d + additional_depth <= max_overall_depth
-                and n + 1 <= max_expansion_steps
-            ]
-            for subentities in itertools.product(will_work, repeat=arity):
-                types = [t for t, _, _ in subentities]
-                depth = max((d for _, d, _ in subentities)) + additional_depth
-                steps = max((n for _, _, n in subentities)) + 1
-                assert depth <= max_overall_depth
-                assert steps <= max_expansion_steps
-                res = (fn(*types), depth, steps)
-                if res in overall:
-                    continue
-                current_with_depth.append(res)
-        if len(current_with_depth) == 0:
-            break
-    return sorted([t for t, _, _ in overall if t.depth < max_overall_depth], key=str)
-
-
-def _signature_expansions(
-    sig: FunctionTypeSignature,
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-):
-    """
-    Returns a list of all possible expansions of the given type signature.
-
-    Any type variables that appear in both the arguments and return type
-        will be kept, while any other type variables will be expanded.
-    """
-    variables_in_arguments = {
-        var for arg in sig.arguments for var in arg.max_depth_per_type_variable()
-    }
-    variables_in_return = set(sig.return_type.max_depth_per_type_variable())
-    exclude_variables = variables_in_arguments & variables_in_return
-    return type_expansions(
-        sig.astype(),
-        terminals,
-        constructors,
-        max_expansion_steps,
-        max_overall_depth,
-        exclude_variables,
-    )
-
-
-def type_expansions(
-    sig: Type,
-    terminals: List[Type],
-    constructors: List[Tuple[int, Callable]],
-    max_expansion_steps=np.inf,
-    max_overall_depth=np.inf,
-    exclude_variables=(),
-):
-    """
-    Returns a list of all possible expansions of the given type, where the
-    variables in exclude_variables are not expanded.
-
-    This is useful for expanding a type signature, where some of the type
-    variables should not be expanded.
-
-    :param sig: The type to expand.
-    :param terminals: The atomic types to use.
-    :param constructors: The constructors to use.
-    :param max_expansion_steps: The maximum number of times to apply a constructor.
-    :param max_overall_depth: The maximum depth of the resulting types.
-    :param exclude_variables: The type variables to exclude from expansion.
-
-    :return: A list of all possible expansions of the given type.
-    """
-    # pylint: disable=cyclic-import
-    from neurosym.types.type_string_repr import render_type
-
-    depth_by_var = sig.max_depth_per_type_variable()
-    for var in exclude_variables:
-        if var not in depth_by_var:
-            raise ValueError(
-                f"Variable {var} not in type signature {render_type(sig)}, "
-                + f"cannot exclude. Valid options: {sorted(depth_by_var)}"
-            )
-        del depth_by_var[var]
-    enumerations_by_var = {
-        ty_var: bottom_up_enumerate_types(
-            terminals,
-            constructors,
-            max_expansion_steps,
-            max_overall_depth - depth_by_var[ty_var],
-        )
-        for ty_var in depth_by_var.keys()
-    }
-    variables = list(depth_by_var.keys())
-    enumerations = [enumerations_by_var[ty_var] for ty_var in variables]
-    for types in product(*enumerations):
-        remap = dict(zip(variables, types))
-        yield sig.subst_type_vars(remap)
-
-
-def _all_available_types(types: List[Type]):
-    available_types = set()
-    for typ in types:
-        for t in typ.walk_type_nodes():
-            available_types.add(t)
-    return sorted(available_types, key=str)
-
-
-def _type_universe(types: List[Type], no_zeroadic=False):
-    """
-    Produce a type universe from the given types.
-
-    :param types: The types to use.
-    :param no_zeroadic: If True, do not include zero-arity constructors.
-
-    :return: A tuple of ``(atomic_types, constructors)``, where ``atomic_types``
-        represents the atomic types in the universe, and ``constructors``
-        is a list of tuples of the form ``(arity, constructor)``, where
-        constructor is a function that takes ``arity`` types and
-        produces a new type.
-    """
-    available_types = _all_available_types(types)
-
-    constructors = []
-    for t in available_types:
-        if isinstance(t, TypeVariable):
-            continue
-        if no_zeroadic and isinstance(t, ArrowType) and len(t.input_type) == 0:
-            continue
-        tv = t.get_type_vars()
-        constructors.append(
-            (len(tv), lambda *args, t=t, tv=tv: t.subst_type_vars(dict(zip(tv, args))))
-        )
-
-    return [c() for count, c in constructors if count == 0], [
-        (count, c) for count, c in constructors if count > 0
-    ]

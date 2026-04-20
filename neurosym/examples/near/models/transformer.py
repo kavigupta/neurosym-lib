@@ -26,9 +26,11 @@ class NearTransformer(nn.Module):
         num_head,
         num_encoder_layers,
         num_decoder_layers,
+        env_types=(),
     ):
         super().__init__()
         self.typ = typ
+        self.env_types = list(env_types)
         self.max_tensor_size = max_tensor_size
         self.hidden_size = hidden_size
         self.transformer = nn.Transformer(
@@ -107,14 +109,21 @@ class NearTransformer(nn.Module):
             not kwargs
         ), f"No keyword arguments are allowed, but received {' '.join(repr(x) for x in kwargs)}"
 
+        # Use stored env_types rather than reading object_type from
+        # the runtime environment, since polymorphic lambdas may not
+        # have concrete types on their TypeAnnotatedObject entries.
+        typed_env = [
+            TypeAnnotatedObject(t, e.object_value)
+            for t, e in zip(self.env_types, environment)
+        ]
         if not isinstance(self.typ, ArrowType):
             assert len(args) == 0
-            return self._output_of_typ(self.typ, *environment)
+            return self._output_of_typ(self.typ, *typed_env)
         assert len(args) == len(self.typ.input_type)
         return self._output_of_typ(
             self.typ.output_type,
             *[TypeAnnotatedObject(t, x) for x, t in zip(args, self.typ.input_type)],
-            *environment,
+            *typed_env,
         )
 
     @property
@@ -237,6 +246,9 @@ class TransformerNeuralHoleFiller(NeuralHoleFiller):
     def initialize_module(
         self, type_with_environment: TypeWithEnvironment
     ) -> nn.Module | None:
+        env_types = [
+            type_with_environment.env[i] for i in range(len(type_with_environment.env))
+        ]
         return NearTransformer(
             max_tensor_size=self.max_tensor_size,
             hidden_size=self.hidden_size,
@@ -244,4 +256,5 @@ class TransformerNeuralHoleFiller(NeuralHoleFiller):
             num_encoder_layers=self.num_encoder_layers,
             num_decoder_layers=self.num_decoder_layers,
             typ=type_with_environment.typ,
+            env_types=env_types,
         )

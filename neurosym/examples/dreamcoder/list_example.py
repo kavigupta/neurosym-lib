@@ -3,11 +3,11 @@ from functools import reduce
 from neurosym.dsl.dsl_factory import DSLFactory
 
 
-def list_dslf(*output_types):
+def list_dslf(*output_types, max_overall_depth=5):
     """
     The List DSL from the DreamCoder repository.
     """
-    dslf = DSLFactory(max_overall_depth=5)
+    dslf = DSLFactory(max_overall_depth=max_overall_depth)
 
     for i in range(6):
         dslf.production(str(i), "() -> i", lambda i=i: i)
@@ -88,14 +88,12 @@ def list_dslf(*output_types):
     #     empty
     #     $0))))
 
-    dslf.no_zeroadic()
-
     dslf.lambdas(max_type_depth=3)
     dslf.prune_to(*output_types, prune_variables=False)
     return dslf
 
 
-def list_dsl(*output_types):
+def list_dsl(*output_types, **kwargs):
     """The List DSL from the DreamCoder repository."""
-    dslf = list_dslf(*output_types)
+    dslf = list_dslf(*output_types, **kwargs)
     return dslf.finalize()

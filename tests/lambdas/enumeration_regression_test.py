@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# DSL rendering strings naturally overlap across test files
+
 import unittest
 
 import neurosym as ns
@@ -15,7 +18,6 @@ class EnumerationRegressionTest(unittest.TestCase):
         if lambdas_kwargs is None:
             lambdas_kwargs = {}
         dslf = ns.DSLFactory(**kwargs)
-        dslf.known_types(*known_types)
         dslf.lambdas(**lambdas_kwargs)
         dslf.prune_to(*known_types, tolerate_pruning_entire_productions=True)
         return dslf.finalize().render()
@@ -24,10 +26,12 @@ class EnumerationRegressionTest(unittest.TestCase):
         self.assertRenderingEqual(
             self.rendered_dsl(known_types=("i", "i -> i", "(i, i) -> i")),
             """
-            lam_0 :: L<#body|i;i> -> (i, i) -> #body
-            lam_1 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
+            lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+            lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             """,
         )
 
@@ -35,9 +39,11 @@ class EnumerationRegressionTest(unittest.TestCase):
         self.assertRenderingEqual(
             self.rendered_dsl(known_types=("i", "i -> i -> i")),
             """
-            lam :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
+            lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             """,
         )
 
@@ -48,10 +54,12 @@ class EnumerationRegressionTest(unittest.TestCase):
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),
             """
-            lam_0 :: L<#body|i;i> -> (i, i) -> #body
-            lam_1 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
+            lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+            lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             """,
         )
 
@@ -63,9 +71,9 @@ class EnumerationRegressionTest(unittest.TestCase):
                 known_types=("i", "i -> i", "(i, i) -> i", "(i -> i) -> i"),
             ),
             """
-            lam_0 :: L<#body|i;i> -> (i, i) -> #body
-            lam_1 :: L<#body|i> -> i -> #body
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
+            lam_0 :: L<#body|#__lam_0> -> #__lam_0 -> #body
+            lam_1 :: L<#body|#__lam_0;#__lam_1> -> (#__lam_0, #__lam_1) -> #body
+            $0 :: V<$0>
+            $1 :: V<$1>
             """,
         )

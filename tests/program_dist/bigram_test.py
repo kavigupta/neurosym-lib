@@ -195,15 +195,15 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
             self,
             dsl_with_vars.render(),
             """
-            $0_0 :: V<i@0>
-            $1_0 :: V<i@1>
-            $2_0 :: V<i@2>
-            $3_0 :: V<i@3>
+            $0 :: V<$0>
+            $1 :: V<$1>
+            $2 :: V<$2>
+            $3 :: V<$3>
             + :: (i, i) -> i
             1 :: () -> i
             2 :: () -> i
             call :: (i -> i, i) -> i
-            lam :: L<#body|i> -> i -> #body
+            lam :: L<#body|#__lam_0> -> #__lam_0 -> #body
             """,
         )
 
@@ -217,7 +217,7 @@ class BigramWithParametersGetParametersTest(ProbabilityTester):
         self.assertBinomial(n, 1 / 4, 0.01, samples.count("(1)"))
         self.assertBinomial(n, 1 / 4, 0.01, samples.count("(2)"))
         # see test_call_with_variables for the math
-        self.assertBinomial(n, 1 / 80, 0.01, samples.count("(call (lam ($0_0)) (1))"))
+        self.assertBinomial(n, 1 / 80, 0.01, samples.count("(call (lam ($0)) (1))"))
 
     def test_sample_with_ordering(self):
         dist = fam_with_ordering.uniform()
@@ -343,7 +343,7 @@ class BigramCountProgramsTest(unittest.TestCase):
         )
 
     def test_counts_variables(self):
-        counts = self.count_programs(fam_with_vars, [["(call (lam ($0_0)) (1))"]])
+        counts = self.count_programs(fam_with_vars, [["(call (lam ($0)) (1))"]])
         self.assertEqual(
             counts,
             [
@@ -351,13 +351,13 @@ class BigramCountProgramsTest(unittest.TestCase):
                     {
                         (("<root>", 0),): {"call": 1},
                         (("call", 0),): {"lam": 1},
-                        (("lam", 0),): {"$0_0": 1},
+                        (("lam", 0),): {"$0": 1},
                         (("call", 1),): {"1": 1},
                     },
                     {
                         (("<root>", 0),): {("+", "1", "2", "call"): 1},
                         (("call", 0),): {("lam",): 1},
-                        (("lam", 0),): {("$0_0", "+", "1", "2", "call"): 1},
+                        (("lam", 0),): {("$0", "+", "1", "2", "call"): 1},
                         (("call", 1),): {("+", "1", "2", "call"): 1},
                     },
                 )
@@ -470,7 +470,7 @@ class BigramParameterDifferenceLossTest(unittest.TestCase):
         self.assertLoss(logits, [["(1)"]], [np.log(4)], family=fam_with_vars)
         self.assertLoss(
             logits,
-            [["(call (lam ($0_0)) (1))"]],
+            [["(call (lam ($0)) (1))"]],
             [np.log(4 * 5 * 4)],
             family=fam_with_vars,
         )
@@ -528,21 +528,21 @@ class BigramLikelihoodTest(unittest.TestCase):
     def test_call_with_variables(self):
         # 1/4 for call
         # 1 for lam
-        # 1/5 for $0_0
+        # 1/5 for $0
         # 1/4 for 1
         self.assertLikelihood(
             fam_with_vars.uniform(),
-            "(call (lam ($0_0)) (1))",
+            "(call (lam ($0)) (1))",
             "log(1/80)",
             family=fam_with_vars,
         )
         self.assertLikelihoods(
             fam_with_vars.uniform(),
-            "(call (lam ($0_0)) (1))",
+            "(call (lam ($0)) (1))",
             [
-                ("(call (lam ($0_0)) (1))", "log(1/4)"),
-                ("(lam ($0_0))", "log(1)"),
-                ("($0_0)", "log(1/5)"),
+                ("(call (lam ($0)) (1))", "log(1/4)"),
+                ("(lam ($0))", "log(1)"),
+                ("($0)", "log(1/5)"),
                 ("(1)", "log(1/4)"),
             ],
             family=fam_with_vars,
@@ -745,8 +745,8 @@ class BigramEnumerationTest(unittest.TestCase):
                 ("(+ (1) (2))", Fraction(1, 64)),
                 ("(+ (2) (1))", Fraction(1, 64)),
                 ("(+ (2) (2))", Fraction(1, 64)),
-                ("(call (lam ($0_0)) (1))", Fraction(1, 80)),
-                ("(call (lam ($0_0)) (2))", Fraction(1, 80)),
+                ("(call (lam ($0)) (1))", Fraction(1, 80)),
+                ("(call (lam ($0)) (2))", Fraction(1, 80)),
                 ("(call (lam (1)) (1))", Fraction(1, 80)),
                 ("(call (lam (1)) (2))", Fraction(1, 80)),
                 ("(call (lam (2)) (1))", Fraction(1, 80)),
@@ -759,43 +759,43 @@ class BigramEnumerationTest(unittest.TestCase):
         self.assertEqual(
             enumerate_dsl(fam_more_complex, dist, -9),
             {
-                ("(lam ($0_0))", Fraction(1, 4)),
+                ("(lam ($0))", Fraction(1, 4)),
                 ("(lam (sqrt (0)))", Fraction(1, 8)),
                 ("(lam (sqrt (+ (0) (0))))", Fraction(1, 32)),
-                ("(lam (* ($0_0) ($0_0)))", Fraction(1, 64)),
-                ("(lam (* ($0_0) (sqrt (0))))", Fraction(1, 128)),
-                ("(lam (* (sqrt (0)) ($0_0)))", Fraction(1, 128)),
+                ("(lam (* ($0) ($0)))", Fraction(1, 64)),
+                ("(lam (* ($0) (sqrt (0))))", Fraction(1, 128)),
+                ("(lam (* (sqrt (0)) ($0)))", Fraction(1, 128)),
                 ("(lam (sqrt (+ (+ (0) (0)) (0))))", Fraction(1, 128)),
                 ("(lam (sqrt (+ (0) (+ (0) (0)))))", Fraction(1, 128)),
                 ("(lam (* (sqrt (0)) (sqrt (0))))", Fraction(1, 256)),
-                ("(lam (* ($0_0) (sqrt (+ (0) (0)))))", Fraction(1, 512)),
-                ("(lam (* (sqrt (+ (0) (0))) ($0_0)))", Fraction(1, 512)),
-                ("(lam (ite (< (0) (0)) ($0_0) ($0_0)))", Fraction(1, 512)),
+                ("(lam (* ($0) (sqrt (+ (0) (0)))))", Fraction(1, 512)),
+                ("(lam (* (sqrt (+ (0) (0))) ($0)))", Fraction(1, 512)),
+                ("(lam (ite (< (0) (0)) ($0) ($0)))", Fraction(1, 512)),
                 ("(lam (sqrt (+ (+ (+ (0) (0)) (0)) (0))))", Fraction(1, 512)),
                 ("(lam (sqrt (+ (+ (0) (+ (0) (0))) (0))))", Fraction(1, 512)),
                 ("(lam (sqrt (+ (+ (0) (0)) (+ (0) (0)))))", Fraction(1, 512)),
                 ("(lam (sqrt (+ (0) (+ (+ (0) (0)) (0)))))", Fraction(1, 512)),
                 ("(lam (sqrt (+ (0) (+ (0) (+ (0) (0))))))", Fraction(1, 512)),
-                ("(lam (* ($0_0) (* ($0_0) ($0_0))))", Fraction(1, 1024)),
-                ("(lam (* (* ($0_0) ($0_0)) ($0_0)))", Fraction(1, 1024)),
+                ("(lam (* ($0) (* ($0) ($0))))", Fraction(1, 1024)),
+                ("(lam (* (* ($0) ($0)) ($0)))", Fraction(1, 1024)),
                 ("(lam (* (sqrt (+ (0) (0))) (sqrt (0))))", Fraction(1, 1024)),
                 ("(lam (* (sqrt (0)) (sqrt (+ (0) (0)))))", Fraction(1, 1024)),
-                ("(lam (ite (< (0) (0)) ($0_0) (sqrt (0))))", Fraction(1, 1024)),
-                ("(lam (ite (< (0) (0)) (sqrt (0)) ($0_0)))", Fraction(1, 1024)),
-                ("(lam (* ($0_0) (* ($0_0) (sqrt (0)))))", Fraction(1, 2048)),
-                ("(lam (* ($0_0) (* (sqrt (0)) ($0_0))))", Fraction(1, 2048)),
-                ("(lam (* ($0_0) (sqrt (+ (+ (0) (0)) (0)))))", Fraction(1, 2048)),
-                ("(lam (* ($0_0) (sqrt (+ (0) (+ (0) (0))))))", Fraction(1, 2048)),
-                ("(lam (* (* ($0_0) ($0_0)) (sqrt (0))))", Fraction(1, 2048)),
-                ("(lam (* (* ($0_0) (sqrt (0))) ($0_0)))", Fraction(1, 2048)),
-                ("(lam (* (* (sqrt (0)) ($0_0)) ($0_0)))", Fraction(1, 2048)),
-                ("(lam (* (sqrt (+ (+ (0) (0)) (0))) ($0_0)))", Fraction(1, 2048)),
-                ("(lam (* (sqrt (+ (0) (+ (0) (0)))) ($0_0)))", Fraction(1, 2048)),
-                ("(lam (* (sqrt (0)) (* ($0_0) ($0_0))))", Fraction(1, 2048)),
-                ("(lam (ite (< (+ (0) (0)) (0)) ($0_0) ($0_0)))", Fraction(1, 2048)),
-                ("(lam (ite (< (0) (+ (0) (0))) ($0_0) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (ite (< (0) (0)) ($0) (sqrt (0))))", Fraction(1, 1024)),
+                ("(lam (ite (< (0) (0)) (sqrt (0)) ($0)))", Fraction(1, 1024)),
+                ("(lam (* ($0) (* ($0) (sqrt (0)))))", Fraction(1, 2048)),
+                ("(lam (* ($0) (* (sqrt (0)) ($0))))", Fraction(1, 2048)),
+                ("(lam (* ($0) (sqrt (+ (+ (0) (0)) (0)))))", Fraction(1, 2048)),
+                ("(lam (* ($0) (sqrt (+ (0) (+ (0) (0))))))", Fraction(1, 2048)),
+                ("(lam (* (* ($0) ($0)) (sqrt (0))))", Fraction(1, 2048)),
+                ("(lam (* (* ($0) (sqrt (0))) ($0)))", Fraction(1, 2048)),
+                ("(lam (* (* (sqrt (0)) ($0)) ($0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (+ (+ (0) (0)) (0))) ($0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (+ (0) (+ (0) (0)))) ($0)))", Fraction(1, 2048)),
+                ("(lam (* (sqrt (0)) (* ($0) ($0))))", Fraction(1, 2048)),
+                ("(lam (ite (< (+ (0) (0)) (0)) ($0) ($0)))", Fraction(1, 2048)),
+                ("(lam (ite (< (0) (+ (0) (0))) ($0) ($0)))", Fraction(1, 2048)),
                 ("(lam (ite (< (0) (0)) (sqrt (0)) (sqrt (0))))", Fraction(1, 2048)),
-                ("(lam (ite (> ($0_0) ($0_0)) ($0_0) ($0_0)))", Fraction(1, 2048)),
+                ("(lam (ite (> ($0) ($0)) ($0) ($0)))", Fraction(1, 2048)),
                 ("(lam (sqrt (+ (+ (+ (+ (0) (0)) (0)) (0)) (0))))", Fraction(1, 2048)),
                 ("(lam (sqrt (+ (+ (+ (0) (+ (0) (0))) (0)) (0))))", Fraction(1, 2048)),
                 ("(lam (sqrt (+ (+ (+ (0) (0)) (+ (0) (0))) (0))))", Fraction(1, 2048)),
@@ -810,45 +810,45 @@ class BigramEnumerationTest(unittest.TestCase):
                 ("(lam (sqrt (+ (0) (+ (+ (0) (0)) (+ (0) (0))))))", Fraction(1, 2048)),
                 ("(lam (sqrt (+ (0) (+ (0) (+ (+ (0) (0)) (0))))))", Fraction(1, 2048)),
                 ("(lam (sqrt (+ (0) (+ (0) (+ (0) (+ (0) (0)))))))", Fraction(1, 2048)),
-                ("(lam (* ($0_0) (* (sqrt (0)) (sqrt (0)))))", Fraction(1, 4096)),
-                ("(lam (* (* ($0_0) (sqrt (0))) (sqrt (0))))", Fraction(1, 4096)),
-                ("(lam (* (* (sqrt (0)) ($0_0)) (sqrt (0))))", Fraction(1, 4096)),
-                ("(lam (* (* (sqrt (0)) (sqrt (0))) ($0_0)))", Fraction(1, 4096)),
+                ("(lam (* ($0) (* (sqrt (0)) (sqrt (0)))))", Fraction(1, 4096)),
+                ("(lam (* (* ($0) (sqrt (0))) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (* (sqrt (0)) ($0)) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (* (* (sqrt (0)) (sqrt (0))) ($0)))", Fraction(1, 4096)),
                 ("(lam (* (sqrt (+ (+ (0) (0)) (0))) (sqrt (0))))", Fraction(1, 4096)),
                 ("(lam (* (sqrt (+ (0) (+ (0) (0)))) (sqrt (0))))", Fraction(1, 4096)),
                 ("(lam (* (sqrt (+ (0) (0))) (sqrt (+ (0) (0)))))", Fraction(1, 4096)),
-                ("(lam (* (sqrt (0)) (* ($0_0) (sqrt (0)))))", Fraction(1, 4096)),
-                ("(lam (* (sqrt (0)) (* (sqrt (0)) ($0_0))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (* ($0) (sqrt (0)))))", Fraction(1, 4096)),
+                ("(lam (* (sqrt (0)) (* (sqrt (0)) ($0))))", Fraction(1, 4096)),
                 ("(lam (* (sqrt (0)) (sqrt (+ (+ (0) (0)) (0)))))", Fraction(1, 4096)),
                 ("(lam (* (sqrt (0)) (sqrt (+ (0) (+ (0) (0))))))", Fraction(1, 4096)),
                 (
-                    "(lam (ite (< (+ (0) (0)) (0)) ($0_0) (sqrt (0))))",
+                    "(lam (ite (< (+ (0) (0)) (0)) ($0) (sqrt (0))))",
                     Fraction(1, 4096),
                 ),
                 (
-                    "(lam (ite (< (+ (0) (0)) (0)) (sqrt (0)) ($0_0)))",
+                    "(lam (ite (< (+ (0) (0)) (0)) (sqrt (0)) ($0)))",
                     Fraction(1, 4096),
                 ),
                 (
-                    "(lam (ite (< (0) (+ (0) (0))) ($0_0) (sqrt (0))))",
+                    "(lam (ite (< (0) (+ (0) (0))) ($0) (sqrt (0))))",
                     Fraction(1, 4096),
                 ),
                 (
-                    "(lam (ite (< (0) (+ (0) (0))) (sqrt (0)) ($0_0)))",
+                    "(lam (ite (< (0) (+ (0) (0))) (sqrt (0)) ($0)))",
                     Fraction(1, 4096),
                 ),
                 (
-                    "(lam (ite (< (0) (0)) ($0_0) (sqrt (+ (0) (0)))))",
+                    "(lam (ite (< (0) (0)) ($0) (sqrt (+ (0) (0)))))",
                     Fraction(1, 4096),
                 ),
                 (
-                    "(lam (ite (< (0) (0)) (sqrt (+ (0) (0))) ($0_0)))",
+                    "(lam (ite (< (0) (0)) (sqrt (+ (0) (0))) ($0)))",
                     Fraction(1, 4096),
                 ),
-                ("(lam (ite (> ($0_0) ($0_0)) ($0_0) (sqrt (0))))", Fraction(1, 4096)),
-                ("(lam (ite (> ($0_0) ($0_0)) (sqrt (0)) ($0_0)))", Fraction(1, 4096)),
-                ("(lam (ite (> ($0_0) (sqrt (0))) ($0_0) ($0_0)))", Fraction(1, 4096)),
-                ("(lam (ite (> (sqrt (0)) ($0_0)) ($0_0) ($0_0)))", Fraction(1, 4096)),
+                ("(lam (ite (> ($0) ($0)) ($0) (sqrt (0))))", Fraction(1, 4096)),
+                ("(lam (ite (> ($0) ($0)) (sqrt (0)) ($0)))", Fraction(1, 4096)),
+                ("(lam (ite (> ($0) (sqrt (0))) ($0) ($0)))", Fraction(1, 4096)),
+                ("(lam (ite (> (sqrt (0)) ($0)) ($0) ($0)))", Fraction(1, 4096)),
             },
         )
 
@@ -862,14 +862,14 @@ class BigramEnumerationTest(unittest.TestCase):
         self.assertEqual(
             large_set[::100],
             [
-                ("(lam ($0_0))", Fraction(1, 4)),
-                ("(lam (ite (< (0) (0)) (* ($0_0) ($0_0)) ($0_0)))", Fraction(1, 8192)),
+                ("(lam ($0))", Fraction(1, 4)),
+                ("(lam (ite (< (0) (0)) (* ($0) ($0)) ($0)))", Fraction(1, 8192)),
                 (
-                    "(lam (ite (< (0) (+ (0) (0))) ($0_0) (sqrt (+ (0) (0)))))",
+                    "(lam (ite (< (0) (+ (0) (0))) ($0) (sqrt (+ (0) (0)))))",
                     Fraction(1, 16384),
                 ),
                 (
-                    "(lam (ite (< (+ (+ (0) (0)) (+ (0) (0))) (0)) ($0_0) ($0_0)))",
+                    "(lam (ite (< (+ (+ (0) (0)) (+ (0) (0))) (0)) ($0) ($0)))",
                     Fraction(1, 32768),
                 ),
                 (
@@ -877,31 +877,31 @@ class BigramEnumerationTest(unittest.TestCase):
                     Fraction(1, 32768),
                 ),
                 (
-                    "(lam (* ($0_0) (ite (< (0) (0)) ($0_0) (sqrt (+ (0) (0))))))",
+                    "(lam (* ($0) (ite (< (0) (0)) ($0) (sqrt (+ (0) (0))))))",
                     Fraction(1, 65536),
                 ),
                 (
-                    "(lam (* (sqrt (0)) (ite (< (0) (+ (0) (0))) ($0_0) ($0_0))))",
+                    "(lam (* (sqrt (0)) (ite (< (0) (+ (0) (0))) ($0) ($0))))",
                     Fraction(1, 65536),
                 ),
                 (
-                    "(lam (ite (> ($0_0) ($0_0)) (* ($0_0) (sqrt (0))) ($0_0)))",
+                    "(lam (ite (> ($0) ($0)) (* ($0) (sqrt (0))) ($0)))",
                     Fraction(1, 65536),
                 ),
                 (
-                    "(lam (* ($0_0) (sqrt (+ (0) (+ (+ (+ (+ (0) (0)) (0)) (0)) (0))))))",
+                    "(lam (* ($0) (sqrt (+ (0) (+ (+ (+ (+ (0) (0)) (0)) (0)) (0))))))",
                     Fraction(1, 131072),
                 ),
                 (
-                    "(lam (* (sqrt (+ (+ (+ (0) (+ (+ (0) (0)) (0))) (0)) (0))) ($0_0)))",
+                    "(lam (* (sqrt (+ (+ (+ (0) (+ (+ (0) (0)) (0))) (0)) (0))) ($0)))",
                     Fraction(1, 131072),
                 ),
                 (
-                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0_0) ($0_0)))",
+                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0) ($0)))",
                     Fraction(1, 131072),
                 ),
                 (
-                    "(lam (ite (< (0) (0)) (sqrt (0)) (ite (< (0) (0)) ($0_0) ($0_0))))",
+                    "(lam (ite (< (0) (0)) (sqrt (0)) (ite (< (0) (0)) ($0) ($0))))",
                     Fraction(1, 131072),
                 ),
                 (
@@ -938,9 +938,9 @@ class BigramEnumerationTest(unittest.TestCase):
         self.assertEqual(
             large_set[::1000],
             [
-                ("(lam ($0_0))", Fraction(1, 4)),
+                ("(lam ($0))", Fraction(1, 4)),
                 (
-                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0_0) ($0_0)))",
+                    "(lam (ite (< (+ (0) (+ (0) (+ (0) (0)))) (+ (0) (0))) ($0) ($0)))",
                     Fraction(707, 92667907),
                 ),
                 (
@@ -948,7 +948,7 @@ class BigramEnumerationTest(unittest.TestCase):
                     Fraction(334, 87556099),
                 ),
                 (
-                    "(lam (* (ite (> ($0_0) (sqrt (0))) (sqrt (+ (0) (0))) ($0_0)) ($0_0)))",
+                    "(lam (* (ite (> ($0) (sqrt (0))) (sqrt (+ (0) (0))) ($0)) ($0)))",
                     Fraction(158, 82837507),
                 ),
                 (
@@ -960,31 +960,31 @@ class BigramEnumerationTest(unittest.TestCase):
                     Fraction(158, 82837507),
                 ),
                 (
-                    "(lam (* (* (sqrt (0)) ($0_0)) (sqrt (+ (0) (+ (+ (+ (0) (0)) (0)) (0))))))",
+                    "(lam (* (* (sqrt (0)) ($0)) (sqrt (+ (0) (+ (+ (+ (0) (0)) (0)) (0))))))",
                     Fraction(25, 26214401),
                 ),
                 (
-                    "(lam (ite (< (+ (+ (+ (0) (0)) (0)) (0)) (+ (0) (0))) (sqrt (+ (0) (0))) ($0_0)))",
+                    "(lam (ite (< (+ (+ (+ (0) (0)) (0)) (0)) (+ (0) (0))) (sqrt (+ (0) (0))) ($0)))",
                     Fraction(25, 26214401),
                 ),
                 (
-                    "(lam (ite (> ($0_0) ($0_0)) (sqrt (+ (0) (+ (0) (+ (0) (+ (0) (0)))))) ($0_0)))",
+                    "(lam (ite (> ($0) ($0)) (sqrt (+ (0) (+ (0) (+ (0) (+ (0) (0)))))) ($0)))",
                     Fraction(25, 26214401),
                 ),
                 (
-                    "(lam (* ($0_0) (sqrt (+ (+ (+ (0) (0)) (0)) (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))))",
+                    "(lam (* ($0) (sqrt (+ (+ (+ (0) (0)) (0)) (+ (+ (0) (+ (0) (+ (0) (0)))) (0))))))",
                     Fraction(12, 25165825),
                 ),
                 (
-                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0_0) (sqrt (+ (0) (0)))) (sqrt (0))))",
+                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0) (sqrt (+ (0) (0)))) (sqrt (0))))",
                     Fraction(12, 25165825),
                 ),
                 (
-                    "(lam (* (sqrt (+ (0) (0))) (ite (< (0) (0)) (* ($0_0) (sqrt (0))) ($0_0))))",
+                    "(lam (* (sqrt (+ (0) (0))) (ite (< (0) (0)) (* ($0) (sqrt (0))) ($0))))",
                     Fraction(12, 25165825),
                 ),
                 (
-                    "(lam (ite (< (+ (0) (0)) (0)) (* ($0_0) (sqrt (0))) (* ($0_0) (sqrt (0)))))",
+                    "(lam (ite (< (+ (0) (0)) (0)) (* ($0) (sqrt (0))) (* ($0) (sqrt (0)))))",
                     Fraction(12, 25165825),
                 ),
                 (
@@ -1025,17 +1025,17 @@ class BigramEnumerationTest(unittest.TestCase):
         self.assertEqual(
             large_set[::10000],
             [
-                ("(lam ($0_0))", Fraction(1, 4)),
+                ("(lam ($0))", Fraction(1, 4)),
                 (
-                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0_0) (sqrt (+ (0) (0)))) (sqrt (0))))",
+                    "(lam (* (ite (< (+ (0) (+ (0) (0))) (0)) ($0) (sqrt (+ (0) (0)))) (sqrt (0))))",
                     Fraction(12, 25165825),
                 ),
                 (
-                    "(lam (* (* ($0_0) (sqrt (0))) (* (sqrt (+ (0) (+ (0) (+ (0) (0))))) ($0_0))))",
+                    "(lam (* (* ($0) (sqrt (0))) (* (sqrt (+ (0) (+ (0) (+ (0) (0))))) ($0))))",
                     Fraction(17, 71303171),
                 ),
                 (
-                    "(lam (* ($0_0) (* (sqrt (0)) (* ($0_0) (ite (< (0) (0)) (sqrt (0)) ($0_0))))))",
+                    "(lam (* ($0) (* (sqrt (0)) (* ($0) (ite (< (0) (0)) (sqrt (0)) ($0))))))",
                     Fraction(11, 92274692),
                 ),
                 (
@@ -1051,7 +1051,7 @@ class BigramEnumerationTest(unittest.TestCase):
                     Fraction(11, 92274692),
                 ),
                 (
-                    "(lam (* (* ($0_0) (sqrt (0))) (ite (< (+ (+ (0) (0)) (0)) (+ (0) (0))) ($0_0) ($0_0))))",
+                    "(lam (* (* ($0) (sqrt (0))) (ite (< (+ (+ (0) (0)) (0)) (+ (0) (0))) ($0) ($0))))",
                     Fraction(4, 67108867),
                 ),
                 (
@@ -1059,11 +1059,11 @@ class BigramEnumerationTest(unittest.TestCase):
                     Fraction(4, 67108867),
                 ),
                 (
-                    "(lam (ite (< (+ (0) (0)) (0)) ($0_0) (ite (> (sqrt (0)) ($0_0)) (sqrt (+ (0) (0))) ($0_0))))",
+                    "(lam (ite (< (+ (0) (0)) (0)) ($0) (ite (> (sqrt (0)) ($0)) (sqrt (+ (0) (0))) ($0))))",
                     Fraction(4, 67108867),
                 ),
                 (
-                    "(lam (ite (> (* (* ($0_0) ($0_0)) (sqrt (0))) ($0_0)) (sqrt (+ (0) (0))) (sqrt (0))))",
+                    "(lam (ite (> (* (* ($0) ($0)) (sqrt (0))) ($0)) (sqrt (+ (0) (0))) (sqrt (0))))",
                     Fraction(4, 67108867),
                 ),
             ],
@@ -1143,7 +1143,7 @@ class BigramMixTest(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             "DSL not compatible, extra symbols in this: '3', "
-            "extra symbols in other: '$0_0', '$1_0', '$2_0', '$3_0', 'call', 'lam'",
+            "extra symbols in other: '$0', '$1', '$2', '$3', 'call', 'lam'",
         )
 
 

@@ -21,8 +21,8 @@ class TreeDistributionTest(unittest.TestCase):
 
     def test_program_with_variables(self):
         self.assertEqual(
-            self.collect_symbols(fam_with_vars, "(call (lam ($0_0)) (1))"),
-            "(call/+,1,2,call (lam/lam ($0_0/$0_0,+,1,2,call)) (1/+,1,2,call))",
+            self.collect_symbols(fam_with_vars, "(call (lam ($0)) (1))"),
+            "(call/+,1,2,call (lam/lam ($0/$0,+,1,2,call)) (1/+,1,2,call))",
         )
 
     def test_program_with_ordering(self):
