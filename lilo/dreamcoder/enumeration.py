@@ -342,14 +342,18 @@ def multicoreEnumeration(
                 # The type preorder mask with dreamcoder_compat will
                 # filter to only the type-valid variables at each position and
                 # divide by n_vars.
+                # NeuroSym historically emitted variables as "$N_M" (N = de
+                # Bruijn index, M = type variant). After the main-branch merge
+                # that allowed parameterized output types, type suffixes were
+                # dropped, so the current form is just "$N". Match both.
                 var_syms = [
                     sym
                     for sym in ordered_symbols
-                    if isinstance(sym, str) and re.match(r"\$\d+_\d+", sym)
+                    if isinstance(sym, str) and re.fullmatch(r"\$\d+(_\d+)?", sym)
                 ]
                 assert (
                     len(var_syms) > 0
-                ), 'Expected at least one "$0_*" variable symbol in NeuroSym DSL.'
+                ), 'Expected at least one "$N" variable symbol in NeuroSym DSL.'
                 return [dreamcoder_ns_mapping[sym] for sym in var_syms]
             assert s in dreamcoder_ns_mapping, (
                 f"DreamCoder grammar references symbol {s!r} that is absent "
