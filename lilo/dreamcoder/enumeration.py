@@ -351,14 +351,13 @@ def multicoreEnumeration(
                     len(var_syms) > 0
                 ), 'Expected at least one "$0_*" variable symbol in NeuroSym DSL.'
                 return [dreamcoder_ns_mapping[sym] for sym in var_syms]
-            if s not in dreamcoder_ns_mapping:
-                # Likely an abstraction whose NeuroSym counterpart could not be
-                # built (see ``parse_abstraction_dc_to_ns`` / ``compute_type_abs``
-                # above, which prints a "Skipping abstraction" message). Since
-                # the NeuroSym DSL does not know this symbol, it cannot appear
-                # in any enumerated program; omit it from the distribution
-                # rather than failing with a KeyError.
-                return []
+            assert s in dreamcoder_ns_mapping, (
+                f"DreamCoder grammar references symbol {s!r} that is absent "
+                "from the NeuroSym DSL. This usually means an abstraction was "
+                "skipped above (compute_type_abs returned None) or a primitive "
+                "in the DC grammar is missing from list_dslf — fix that rather "
+                "than silently dropping the symbol."
+            )
             return [dreamcoder_ns_mapping[s]]
 
         if isinstance(g[task], ContextualGrammar):
@@ -394,11 +393,10 @@ def multicoreEnumeration(
             ]  # {parent_expr: [Grammar_for_arg0, ...]}
             for parent, arg_grammars in likelihood_dict.items():
                 parent_key = str(parent)
-                if parent_key not in dreamcoder_ns_mapping:
-                    # Same reason as in _child_to_inds: abstraction that
-                    # couldn't be added to the NeuroSym DSL. Its per-argument
-                    # distributions are unreachable during NeuroSym enumeration.
-                    continue
+                assert parent_key in dreamcoder_ns_mapping, (
+                    f"Contextual-grammar parent {parent_key!r} is absent from "
+                    "the NeuroSym DSL. See _child_to_inds for the likely cause."
+                )
                 parent_ind = dreamcoder_ns_mapping[parent_key]
                 # If for some reason we have no arg grammars, leave it to normalization.
                 for arg_index, arg_grammar in enumerate(arg_grammars[:max_arity]):
