@@ -302,6 +302,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
             Callable[[DSL, TreeDistribution], PreorderMask]
         ] = (),
         include_type_preorder_mask: bool = True,
+        dc_compatible_variables: bool = False,
         node_ordering=DefaultNodeOrdering,
     ):
         if valid_root_types is not None:
@@ -312,6 +313,7 @@ class BigramProgramDistributionFamily(TreeProgramDistributionFamily):
         self._symbol_to_idx = {sym: i for i, sym in enumerate(self._symbols)}
         self._additional_preorder_masks = additional_preorder_masks
         self._include_type_preorder_mask = include_type_preorder_mask
+        self._dc_compatible_variables = dc_compatible_variables
         self._node_ordering = node_ordering
 
     @property
