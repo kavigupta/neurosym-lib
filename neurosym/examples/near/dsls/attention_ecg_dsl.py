@@ -14,8 +14,9 @@ from torch import nn
 from neurosym.dsl.dsl_factory import DSLFactory
 from neurosym.examples.near.cost import ProgramEmbedding
 from neurosym.examples.near.neural_hole_filler import NeuralHoleFiller
-from neurosym.types.type import ArrowType, AtomicType
 from neurosym.examples.shield import add_shield_productions
+from neurosym.types.type import ArrowType, AtomicType
+
 
 class ChannelSelfAttention(nn.Module):
     """Self-attention across channels.
@@ -30,7 +31,7 @@ class ChannelSelfAttention(nn.Module):
         self.query = nn.Linear(features_per_channel, hidden_dim)
         self.key = nn.Linear(features_per_channel, hidden_dim)
         self.value = nn.Linear(features_per_channel, hidden_dim)
-        self.scale = hidden_dim ** 0.5
+        self.scale = hidden_dim**0.5
 
     def forward(self, x):
         # x: (B, N, D) where N = num_channels, D = features_per_channel
@@ -54,7 +55,9 @@ class FeatureGroupLeadAttention(nn.Module):
     matter most for this feature group?" — a softmax over 12 leads.
     """
 
-    def __init__(self, slice_start, slice_end, num_leads, features_per_lead, hidden_dim):
+    def __init__(
+        self, slice_start, slice_end, num_leads, features_per_lead, hidden_dim
+    ):
         super().__init__()
         self.slice_start = slice_start
         self.slice_end = slice_end
@@ -64,7 +67,7 @@ class FeatureGroupLeadAttention(nn.Module):
 
     def forward(self, x):
         # x: (..., 177). Slice and reshape.
-        sliced = x[..., self.slice_start:self.slice_end]
+        sliced = x[..., self.slice_start : self.slice_end]
         # Feature-major layout: [feat_type_0 × leads, feat_type_1 × leads, ...]
         # Reshape to (..., features_per_lead, num_leads), then transpose
         reshaped = sliced.reshape(
@@ -135,8 +138,8 @@ class ChannelUnpackEmbedding(ProgramEmbedding):
     def embed_program(self, program):
         return program
 
-    def embed_initialized_program(self, program_module):
-        return _ChannelUnpackModule(program_module)
+    def embed_initialized_program(self, program):
+        return _ChannelUnpackModule(program)
 
 
 class _FeatureGroupUnpackModule(nn.Module):
@@ -174,8 +177,8 @@ class FeatureGroupUnpackEmbedding(ProgramEmbedding):
     def embed_program(self, program):
         return program
 
-    def embed_initialized_program(self, program_module):
-        return _FeatureGroupUnpackModule(program_module)
+    def embed_initialized_program(self, program):
+        return _FeatureGroupUnpackModule(program)
 
 
 def _guard_callables(fn, **kwargs):
@@ -435,6 +438,7 @@ def attention_ecg_dsl(
         # channel_attention: takes all N channels at once, applies self-attention
         # across them, and pools to a single hidden vector.
         input_types = ", ".join(["$fInp"] * num_channels)
+
         def _channel_attn_forward(*channels, attn):
             # channels = (c_0, c_1, ..., c_{N-1}); attn is the learned module
             if any(callable(c) for c in channels):
@@ -450,9 +454,7 @@ def attention_ecg_dsl(
             "channel_attention",
             f"({input_types}) -> $fHid",
             _channel_attn_forward,
-            dict(
-                attn=lambda: ChannelSelfAttention(features_per_channel, hidden_dim)
-            ),
+            dict(attn=lambda: ChannelSelfAttention(features_per_channel, hidden_dim)),
         )
 
     # Target type ($fInp * num_channels) -> $fOut has depth log2(num_channels+2).

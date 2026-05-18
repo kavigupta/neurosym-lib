@@ -74,7 +74,13 @@ NUM_GROUPED_CHANNELS = NUM_LEAD_GROUPS + 1  # 6 (5 lead groups + 1 global)
 # Feature-type groupings (Phase 1-style): group features by type across all leads
 _AMP_FEATURES = ("P_Amp", "Q_Amp", "R_Amp", "S_Amp", "T_Amp")
 _INT_FEATURES = (
-    "PQ_Int", "PR_Int", "QRS_Dur", "QT_Int", "QT_IntCorr", "P_DurFull", "T_DurFull"
+    "PQ_Int",
+    "PR_Int",
+    "QRS_Dur",
+    "QT_Int",
+    "QT_IntCorr",
+    "P_DurFull",
+    "T_DurFull",
 )
 _ST_FEATURES = ("ST_Elev",)
 _MORPH_FEATURES = ("P_Morph",)
@@ -84,7 +90,13 @@ NUM_INT_FEATURES = len(_INT_FEATURES) * NUM_LEADS  # 84
 NUM_ST_FEATURES = len(_ST_FEATURES) * NUM_LEADS  # 12
 NUM_MORPH_FEATURES = len(_MORPH_FEATURES) * NUM_LEADS  # 12
 # NUM_GLOBAL_FEATURES already defined = 9
-NUM_FLAT_FEATURES = NUM_AMP_FEATURES + NUM_INT_FEATURES + NUM_ST_FEATURES + NUM_MORPH_FEATURES + NUM_GLOBAL_FEATURES  # 177
+NUM_FLAT_FEATURES = (
+    NUM_AMP_FEATURES
+    + NUM_INT_FEATURES
+    + NUM_ST_FEATURES
+    + NUM_MORPH_FEATURES
+    + NUM_GLOBAL_FEATURES
+)  # 177
 
 
 # --------------------------------------------------------------------------- #
@@ -361,6 +373,64 @@ def _build_datamodule(
     return datamodule
 
 
+def _ordered_feature_columns(feature_major, feature_groups):
+    """Return feature-column order for the requested layout.
+
+    Feature-type-major groups all leads per feature type; otherwise lead-major.
+    """
+    ordered_cols = []
+    if feature_major or feature_groups:
+        for feat_group in (_AMP_FEATURES, _INT_FEATURES, _ST_FEATURES, _MORPH_FEATURES):
+            for feat in feat_group:
+                for lead in LEAD_NAMES:
+                    ordered_cols.append(f"{feat}_{lead}")
+    else:
+        for lead in LEAD_NAMES:
+            for feat in _PER_LEAD_FEATURES:
+                ordered_cols.append(f"{feat}_{lead}")
+    ordered_cols.extend(_GLOBAL_FEATURES)
+    return ordered_cols
+
+
+def _reshape_features(arrays, grouped, feature_major, feature_groups):
+    """Reshape flat (B, 177) arrays into the layout requested by the flags."""
+    if feature_groups:
+        # Keep flat (B, 177); FeatureGroupUnpackModule slices into 5 typed args.
+        return arrays
+    if feature_major:
+        # Single channel containing all 177 features (B, 1, 177).
+        return tuple(arr.reshape(arr.shape[0], 1, -1) for arr in arrays)
+    if grouped:
+        return tuple(_reshape_to_grouped_channels(arr) for arr in arrays)
+    return tuple(_reshape_to_channels(arr) for arr in arrays)
+
+
+def _attach_layout_metadata(datamodule, grouped, feature_major, feature_groups):
+    """Attach layout-specific attributes to the datamodule."""
+    if grouped:
+        datamodule.num_leads = NUM_LEAD_GROUPS
+        datamodule.num_global_features = 1
+        datamodule.lead_names = list(LEAD_GROUP_NAMES)
+    if feature_major:
+        # Single flat channel of all 177 features
+        datamodule.num_leads = 1
+        datamodule.num_global_features = 0
+        datamodule.features_per_lead = NUM_FLAT_FEATURES  # 177
+        datamodule.lead_names = ["flat_177"]
+    if feature_groups:
+        # Heterogeneous-typed lambda mode: 5 distinct feature groups.
+        # Data stays as flat (B, 177); FeatureGroupUnpackModule slices into 5 args.
+        datamodule.feature_group_slices = {
+            "amp": (0, 60),
+            "int": (60, 144),
+            "st": (144, 156),
+            "morph": (156, 168),
+            "global": (168, 177),
+        }
+        datamodule.feature_group_sizes = (60, 84, 12, 12, 9)
+        datamodule.num_feature_groups = 5
+
+
 # --------------------------------------------------------------------------- #
 # Main loader
 # --------------------------------------------------------------------------- #
@@ -415,36 +485,7 @@ def ecg_data_example(
 
     labels, valid_mask = _make_labels(metadata, scp_statements, label_mode)
 
-    if feature_major or feature_groups:
-        # Feature-type-major layout: group all leads per feature-type.
-        # [P_Amp × 12 leads, Q_Amp × 12, ..., T_Amp × 12,  (amplitudes = 60)
-        #  PQ_Int × 12, ..., T_DurFull × 12,               (intervals = 84)
-        #  ST_Elev × 12,                                   (st = 12)
-        #  P_Morph × 12,                                   (morphology = 12)
-        #  g1, g2, ..., g9]                                (globals = 9)
-        ordered_cols = []
-        for feat in _AMP_FEATURES:
-            for lead in LEAD_NAMES:
-                ordered_cols.append(f"{feat}_{lead}")
-        for feat in _INT_FEATURES:
-            for lead in LEAD_NAMES:
-                ordered_cols.append(f"{feat}_{lead}")
-        for feat in _ST_FEATURES:
-            for lead in LEAD_NAMES:
-                ordered_cols.append(f"{feat}_{lead}")
-        for feat in _MORPH_FEATURES:
-            for lead in LEAD_NAMES:
-                ordered_cols.append(f"{feat}_{lead}")
-        ordered_cols.extend(_GLOBAL_FEATURES)
-    else:
-        # Lead-major layout:
-        # [lead1_feat1, ..., lead1_feat14, lead2_feat1, ..., lead12_feat14, g1, ..., g9]
-        ordered_cols = []
-        for lead in LEAD_NAMES:
-            for feat in _PER_LEAD_FEATURES:
-                ordered_cols.append(f"{feat}_{lead}")
-        ordered_cols.extend(_GLOBAL_FEATURES)
-    feat_df = feat_df[ordered_cols]
+    feat_df = feat_df[_ordered_feature_columns(feature_major, feature_groups)]
 
     columns = list(feat_df.columns)
     features = feat_df.values.astype(np.float32)[valid_mask]
@@ -462,23 +503,10 @@ def ecg_data_example(
 
     x_train, x_val, x_test = _impute_and_normalize(x_train, x_val, x_test, normalize)
 
-    # Reshape from flat (B, 177) to channelised layout
-    if feature_groups:
-        # Keep flat (B, 177); the FeatureGroupUnpackModule will slice into 5 typed args.
-        # No reshape needed — same shape as input.
-        pass
-    elif feature_major:
-        # Single channel containing all 177 features in feature-type-major order.
-        # Shape: (B, 1, 177)
-        x_train, x_val, x_test = (arr.reshape(arr.shape[0], 1, -1) for arr in (x_train, x_val, x_test))
-    elif grouped:
-        x_train, x_val, x_test = (
-            _reshape_to_grouped_channels(arr) for arr in (x_train, x_val, x_test)
-        )
-    else:
-        x_train, x_val, x_test = (
-            _reshape_to_channels(arr) for arr in (x_train, x_val, x_test)
-        )
+    # Reshape from flat (B, 177) to the channelised layout requested by the flags
+    x_train, x_val, x_test = _reshape_features(
+        (x_train, x_val, x_test), grouped, feature_major, feature_groups
+    )
 
     if verbose:
         log(
@@ -501,26 +529,5 @@ def ecg_data_example(
         columns,
         **kwargs,
     )
-    if grouped:
-        datamodule.num_leads = NUM_LEAD_GROUPS
-        datamodule.num_global_features = 1
-        datamodule.lead_names = list(LEAD_GROUP_NAMES)
-    if feature_major:
-        # Single flat channel of all 177 features
-        datamodule.num_leads = 1
-        datamodule.num_global_features = 0
-        datamodule.features_per_lead = NUM_FLAT_FEATURES  # 177
-        datamodule.lead_names = ["flat_177"]
-    if feature_groups:
-        # Heterogeneous-typed lambda mode: 5 distinct feature groups.
-        # Data stays as flat (B, 177); FeatureGroupUnpackModule slices into 5 typed args.
-        datamodule.feature_group_slices = {
-            "amp": (0, 60),
-            "int": (60, 144),
-            "st": (144, 156),
-            "morph": (156, 168),
-            "global": (168, 177),
-        }
-        datamodule.feature_group_sizes = (60, 84, 12, 12, 9)
-        datamodule.num_feature_groups = 5
+    _attach_layout_metadata(datamodule, grouped, feature_major, feature_groups)
     return datamodule
