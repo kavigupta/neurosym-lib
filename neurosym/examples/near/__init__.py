@@ -25,8 +25,14 @@ from .dsls.adaptive_mice_dsl import (
 )
 from .dsls.attention_ecg_dsl import (
     ChannelHoleFiller,
+    ChannelSelfAttention,
+    ChannelUnpackEmbedding,
+    FeatureGroupLeadAttention,
+    FeatureGroupUnpackEmbedding,
     SoftChannelMask,
     attention_ecg_dsl,
+    phase1_typed_ecg_dsl,
+    reduced_attention_ecg_dsl,
 )
 from .dsls.sequential_differentiable_dsl import example_rnn_dsl
 from .dsls.simple_bball_dsl import simple_bball_dsl

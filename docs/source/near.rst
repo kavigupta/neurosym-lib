@@ -104,9 +104,19 @@ Example Datasets/DSLs
 .. autofunction:: neurosym.examples.near.simple_crim13_dsl
 .. autofunction:: neurosym.examples.near.simple_constants_dsl
 .. autofunction:: neurosym.examples.near.attention_ecg_dsl
+.. autofunction:: neurosym.examples.near.reduced_attention_ecg_dsl
+.. autofunction:: neurosym.examples.near.phase1_typed_ecg_dsl
 .. autoclass:: neurosym.examples.near.SoftChannelMask
     :members:
 .. autoclass:: neurosym.examples.near.ChannelHoleFiller
+    :members:
+.. autoclass:: neurosym.examples.near.ChannelSelfAttention
+    :members:
+.. autoclass:: neurosym.examples.near.FeatureGroupLeadAttention
+    :members:
+.. autoclass:: neurosym.examples.near.ChannelUnpackEmbedding
+    :members:
+.. autoclass:: neurosym.examples.near.FeatureGroupUnpackEmbedding
     :members:
 .. autofunction:: neurosym.examples.near.simple_flyvfly_dsl
 .. autofunction:: neurosym.examples.near.adaptive_crim13_dsl
