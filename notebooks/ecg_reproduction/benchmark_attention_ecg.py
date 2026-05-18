@@ -22,6 +22,8 @@ from neurosym.examples.near.dsls.attention_ecg_dsl import (
     ChannelUnpackEmbedding,
     attention_ecg_dsl,
 )
+from neurosym.examples.near.cost import NearCost, NumberHolesNearStructuralCost
+from neurosym.examples.near.validation import ValidationCost
 from neurosym.examples.near.metrics_ecg import (
     bootstrap_metrics,
     compute_ecg_metrics,
@@ -54,6 +56,25 @@ def eval_program(module, feature_data, labels, label_mode: str) -> tuple:
     return metrics, predictions
 
 
+def _save_summary(programs_list, summary_path, label_mode):
+    """Write a JSON summary of results so far."""
+    summary = {
+        "num_programs": len(programs_list),
+        "label_mode": label_mode,
+        "programs": [
+            {
+                "program": str(r["program"]),
+                "time": r["time"],
+                "macro_auc": r.get("report", {}).get("macro_auc", 0.0),
+                "macro_f1": r.get("report", {}).get("macro_f1", 0.0),
+            }
+            for r in programs_list
+        ],
+    }
+    with open(summary_path, "w") as f:
+        json.dump(summary, f, indent=2)
+
+
 def run_experiment(
     output_path: str = "outputs/ecg_results/reproduction_attention.pkl",
     data_dir: str = "data/ecg",
@@ -70,6 +91,12 @@ def run_experiment(
     device: str = "cuda:0",
     label_mode: str = "single",
     use_shields: bool = False,
+    validation_metric: str = "",
+    restrict_to_hidden: bool = False,
+    enable_bilinear: bool = False,
+    enable_gate: bool = False,
+    enable_embed_bool: bool = False,
+    use_number_holes: bool = False,
 ) -> List[Dict[str, Any]]:
     """Run the NEAR experiment on ECG with Attention DSL."""
     print("=" * 80)
@@ -108,11 +135,12 @@ def run_experiment(
     if label_mode == "single":
         output_dim = int(datamodule.train.outputs.max()) + 1
         loss_fn = ce_loss
-        validation_metric = "hamming_accuracy"
+        default_metric = "hamming_accuracy"
     else:
         output_dim = datamodule.train.outputs.shape[-1]
         loss_fn = bce_loss
-        validation_metric = "neg_l2_dist"
+        default_metric = "neg_l2_dist"
+    validation_metric = validation_metric or default_metric
 
     # Build DSL
     original_dsl = attention_ecg_dsl(
@@ -122,6 +150,10 @@ def run_experiment(
         hidden_dim=hidden_dim,
         max_overall_depth=max_depth,
         use_shields=use_shields,
+        restrict_to_hidden=restrict_to_hidden,
+        enable_bilinear=enable_bilinear,
+        enable_gate=enable_gate,
+        enable_embed_bool=enable_embed_bool,
     )
     print(f"  Train samples: {len(datamodule.train.inputs)}")
     print(f"  Val samples: {len(datamodule.val.inputs)}")
@@ -141,20 +173,28 @@ def run_experiment(
 
     neural_dsl = near.NeuralDSL.from_dsl(
         dsl=original_dsl,
-        neural_hole_filler=near.UnionNeuralHoleFiller(
-            ChannelHoleFiller(num_channels=num_channels),
-            near.GenericMLPRNNNeuralHoleFiller(
+        neural_hole_filler=near.GenericMLPRNNNeuralHoleFiller(
                 hidden_size=neural_hidden_size
-            ),
         ),
     )
 
-    cost = near.default_near_cost(
-        trainer_cfg=trainer_cfg,
-        datamodule=datamodule,
-        structural_cost_penalty=structural_cost_penalty,
-        embedding=ChannelUnpackEmbedding(),
-    )
+    if use_number_holes:
+        cost = NearCost(
+            structural_cost=NumberHolesNearStructuralCost(),
+            validation_heuristic=ValidationCost(
+                trainer_cfg=trainer_cfg,
+                datamodule=datamodule,
+            ),
+            structural_cost_penalty=structural_cost_penalty,
+            embedding=ChannelUnpackEmbedding(),
+        )
+    else:
+        cost = near.default_near_cost(
+            trainer_cfg=trainer_cfg,
+            datamodule=datamodule,
+            structural_cost_penalty=structural_cost_penalty,
+            embedding=ChannelUnpackEmbedding(),
+        )
 
     # Create NEAR graph
     print("\n[3/5] Creating NEAR search graph...")
@@ -168,7 +208,11 @@ def run_experiment(
 
     # Search for programs
     print(f"\n[4/5] Searching for programs (max {num_programs})...")
-    iterator = ns.search.AStar()(g)
+    iterator = ns.search.OSGAstar()(g)
+
+    output_path_obj = Path(output_path)
+    output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    summary_path = str(output_path_obj).replace(".pkl", "_summary.json")
 
     programs_list = []
     start_time = time.time()
@@ -182,9 +226,34 @@ def run_experiment(
 
         timer = time.time() - start_time
         programs_list.append({"program": program, "time": timer})
-        print(f"  Found program {len(programs_list)}: {program}")
+        n = len(programs_list)
+        print(f"  Found program {n}: {program}")
 
-        if len(programs_list) >= num_programs:
+        # Evaluate immediately
+        initialized_program = neural_dsl.initialize(program)
+        _ = cost.validation_heuristic.with_n_epochs(final_n_epochs).compute_cost(
+            neural_dsl, initialized_program, cost.embedding
+        )
+        feature_data = datamodule.test.inputs
+        labels = datamodule.test.outputs
+        program_module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
+        module = ChannelUnpackEmbedding().embed_initialized_program(program_module)
+        metrics, predictions = eval_program(module, feature_data, labels, label_mode)
+
+        programs_list[-1]["report"] = metrics
+        programs_list[-1]["true_vals"] = labels.tolist()
+        programs_list[-1]["pred_vals"] = predictions.tolist()
+        print(
+            f"    Macro AUC: {metrics.get('macro_auc', 0.0):.6f}  "
+            f"Macro F1: {metrics.get('macro_f1', 0.0):.6f}"
+        )
+
+        # Save intermediate results
+        with open(output_path, "wb") as f:
+            pickle.dump(programs_list, f)
+        _save_summary(programs_list, summary_path, label_mode)
+
+        if n >= num_programs:
             print(f"  Reached max programs limit ({num_programs})")
             break
 
@@ -192,34 +261,7 @@ def run_experiment(
     print(f"\n  Total search time: {search_time:.2f} seconds")
     print(f"  Programs found: {len(programs_list)}")
 
-    # Evaluate programs
-    print("\n[5/5] Evaluating programs on test set...")
-    for i, d in enumerate(programs_list):
-        print(f"\n  Evaluating program {i + 1}/{len(programs_list)}...")
-        program = d["program"]
-        initialized_program = neural_dsl.initialize(program)
-
-        _ = cost.validation_heuristic.with_n_epochs(final_n_epochs).compute_cost(
-            neural_dsl, initialized_program, cost.embedding
-        )
-
-        feature_data = datamodule.test.inputs
-        labels = datamodule.test.outputs
-
-        program_module = ns.examples.near.TorchProgramModule(neural_dsl, initialized_program)
-        module = ChannelUnpackEmbedding().embed_initialized_program(program_module)
-        metrics, predictions = eval_program(module, feature_data, labels, label_mode)
-
-        d["report"] = metrics
-        d["true_vals"] = labels.tolist()
-        d["pred_vals"] = predictions.tolist()
-
-        print(f"    Macro AUC: {metrics.get('macro_auc', 0.0):.6f}")
-        print(f"    Macro F1: {metrics.get('macro_f1', 0.0):.6f}")
-
-    # Save results
-    output_path_obj = Path(output_path)
-    output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    # Final save
     with open(output_path, "wb") as f:
         pickle.dump(programs_list, f)
     print(f"\n  Saved final results to: {output_path}")
@@ -300,6 +342,12 @@ def main():
         help="Penalty multiplier for structural cost",
     )
     parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=10,
+        help="Maximum depth for DSL expansion and search",
+    )
+    parser.add_argument(
         "--device", type=str, default="cuda:0", help="Device to use for training"
     )
     parser.add_argument(
@@ -315,6 +363,42 @@ def main():
         default=False,
         help="Enable shield productions in the DSL",
     )
+    parser.add_argument(
+        "--validation-metric",
+        type=str,
+        default="",
+        help="Override validation metric (e.g. f1_score, hamming_accuracy)",
+    )
+    parser.add_argument(
+        "--restrict-to-hidden",
+        action="store_true",
+        default=False,
+        help="Restrict add/mul/ite to operate only on hidden (post-embed) representations",
+    )
+    parser.add_argument(
+        "--enable-bilinear",
+        action="store_true",
+        default=False,
+        help="Add bilinear production: s = x^T W y for learned interaction scores",
+    )
+    parser.add_argument(
+        "--enable-gate",
+        action="store_true",
+        default=False,
+        help="Add gate production: y = x * sigmoid(Wx+b) for per-feature gating",
+    )
+    parser.add_argument(
+        "--enable-embed-bool",
+        action="store_true",
+        default=False,
+        help="Add embed_bool production: $fInp -> {f,1} shortcut for ite conditions",
+    )
+    parser.add_argument(
+        "--use-number-holes",
+        action="store_true",
+        default=False,
+        help="Use NumberHolesNearStructuralCost instead of MinimalSteps",
+    )
     args = parser.parse_args()
 
     results = run_experiment(
@@ -326,29 +410,22 @@ def main():
         batch_size=args.batch_size,
         n_epochs=args.epochs,
         structural_cost_penalty=args.structural_cost_penalty,
+        max_depth=args.max_depth,
         final_n_epochs=args.final_epochs,
         lr=args.lr,
         device=args.device,
         label_mode=args.label_mode,
         use_shields=args.use_shields,
+        validation_metric=args.validation_metric,
+        restrict_to_hidden=args.restrict_to_hidden,
+        enable_bilinear=args.enable_bilinear,
+        enable_gate=args.enable_gate,
+        enable_embed_bool=args.enable_embed_bool,
+        use_number_holes=args.use_number_holes,
     )
 
     summary_path = args.output.replace(".pkl", "_summary.json")
-    summary = {
-        "num_programs": len(results),
-        "label_mode": args.label_mode,
-        "programs": [
-            {
-                "program": str(r["program"]),
-                "time": r["time"],
-                "macro_auc": r["report"].get("macro_auc", 0.0),
-                "macro_f1": r["report"].get("macro_f1", 0.0),
-            }
-            for r in results
-        ],
-    }
-    with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=2)
+    _save_summary(results, summary_path, args.label_mode)
     print(f"\nSaved summary to: {summary_path}")
 
 
