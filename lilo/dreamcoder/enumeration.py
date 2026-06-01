@@ -21,7 +21,11 @@ from neurosym.types.type import ArrowType
 from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.types.type_string_repr import parse_type
 from neurosym.types.type_with_environment import StrictEnvironment
+<<<<<<< HEAD
 
+=======
+from tqdm import tqdm
+>>>>>>> 511ad996 (add multiple types for eval)
 DEFAULT_SOLVER_DIRECTORY = "."
 
 INDUCTIVE_EXAMPLES_LIKELIHOOD_MODEL = "inductive_examples_likelihood_model"  # Only use the inductive examples to determine the likelihood.
@@ -229,7 +233,7 @@ def multicoreEnumeration(
     all_output_types = sorted(LIST_OUTPUT_TYPES)
     print(f"All DSL output types: {all_output_types}")
 
-    for task in g.keys():
+    for task in tqdm(g.keys()):
         dslf = list_dslf(*all_output_types)
         dsl = dslf.finalize()
         dsl_dict[task] = dsl
@@ -508,10 +512,10 @@ def multicoreEnumeration(
                 prob_fraction_2 = family.compute_likelihood(dist_dict[task], ns_prog)
                 assert (
                     abs(prob_fraction - prob_fraction_2) < 1e-5
-                ), f"Probability mismatch within NeuroSym!: {prob_fraction} [log({np.exp(prob_fraction)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})] in {render_s_expression(ns_prog)}"
+                ), f"For task {task}, probability mismatch within NeuroSym!: {prob_fraction} [log({np.exp(prob_fraction)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})] in {render_s_expression(ns_prog)}"
                 assert (
                     abs(rescored_log_prob - prob_fraction_2) < 1e-3
-                ), f"Log probability mismatch between DreamCoder and NeuroSym!: {rescored_log_prob} [log({np.exp(rescored_log_prob)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})]  in {render_s_expression(ns_prog)}"
+                ), f"For task {task}, log probability mismatch between DreamCoder and NeuroSym!: {rescored_log_prob} [log({np.exp(rescored_log_prob)})] vs {prob_fraction_2} [log({np.exp(prob_fraction_2)})]  in {render_s_expression(ns_prog)}"
                 parsed_enumerations.append(dreamcoder_entry)
             min_likelihood_dict[task] -= bi
             if time.time() - starting > enumerationTimeout:

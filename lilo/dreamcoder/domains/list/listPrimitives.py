@@ -292,6 +292,8 @@ def convert_type(t, variables_so_far):
         return arrow(
             *[convert_type(x, variables_so_far) for x in t.input_type],
             convert_type(t.output_type, variables_so_far),
+            *[convert_type(x, variables_so_far) for x in t.input_type],
+            convert_type(t.output_type, variables_so_far),
         )
     if isinstance(t, ns.AtomicType):
         return {
@@ -320,13 +322,15 @@ def semantic(arity, prod, dsl):
     def func(inputs):
         return prod.evaluate(dsl, {}, inputs, None)
 
+
     return do_curry(arity, func)
 
 
-LIST_OUTPUT_TYPES = frozenset(["[i] -> [i]", "[i] -> i", "i -> i"])
+LIST_OUTPUT_TYPES = frozenset(["[i] -> [i]", "[i] -> i", "[i] -> b", "i -> i", "i -> [i]", "i -> b", "b -> b", "b -> i", "b -> [i]"])
 
 
 def primitives():
+    all_output_types = LIST_OUTPUT_TYPES
     all_output_types = LIST_OUTPUT_TYPES
     dsl = list_dsl(*all_output_types)
 
