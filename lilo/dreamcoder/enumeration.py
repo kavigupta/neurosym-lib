@@ -21,11 +21,8 @@ from neurosym.types.type import ArrowType
 from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.types.type_string_repr import parse_type
 from neurosym.types.type_with_environment import StrictEnvironment
-<<<<<<< HEAD
-
-=======
 from tqdm import tqdm
->>>>>>> 511ad996 (add multiple types for eval)
+
 DEFAULT_SOLVER_DIRECTORY = "."
 
 INDUCTIVE_EXAMPLES_LIKELIHOOD_MODEL = "inductive_examples_likelihood_model"  # Only use the inductive examples to determine the likelihood.
