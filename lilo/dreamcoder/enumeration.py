@@ -68,12 +68,19 @@ def _infer_task_root_type(task):
 
     Mirrors the input/output inference the enumeration code used before a
     shared full DSL was introduced: we look at whether the example's input
-    and output are lists of ints or ints, and construct the corresponding
-    NeuroSym arrow type.
+    and output are lists of ints, bools, or ints, and construct the
+    corresponding NeuroSym arrow type.
     """
+
+    def _type_tag(value):
+        # bool must be checked before int: isinstance(True, int) is True.
+        if isinstance(value, bool):
+            return "b"
+        return "[i]" if isinstance(value, list) else "i"
+
     example = task.examples[0]
-    input_type = "[i]" if isinstance(example[0][0], list) else "i"
-    output_type = "[i]" if isinstance(example[1], list) else "i"
+    input_type = _type_tag(example[0][0])
+    output_type = _type_tag(example[1])
     return parse_type(f"{input_type} -> {output_type}")
 
 
