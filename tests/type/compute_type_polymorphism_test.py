@@ -50,9 +50,7 @@ class TestPolymorphicComposition(unittest.TestCase):
         # Both arguments of `++` share a type variable; concatenating two empty
         # lists must still type-check (this worked before the fix, by the
         # accident of shared variable names, and must keep working).
-        self.assertEqual(
-            _canonical_render(self._type("(++ (empty) (empty))")), "[#t0]"
-        )
+        self.assertEqual(_canonical_render(self._type("(++ (empty) (empty))")), "[#t0]")
         # `index` returns an element -- a bare type variable.
         self.assertEqual(_canonical_render(self._type("(index (0) (empty))")), "#t0")
 
