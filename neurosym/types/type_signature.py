@@ -3,15 +3,64 @@ Type signatures are used to represent the types of functions in the
 DSL.
 """
 
+import itertools
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Union
 
 from frozendict import frozendict
 from torch import NoneType
 
-from neurosym.types.type import ArrowType, Type, TypeVariable, UnificationError
+from neurosym.types.type import (
+    ArrowType,
+    GenericTypeVariable,
+    Type,
+    TypeVariable,
+    UnificationError,
+)
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
+
+_fresh_type_variable_counter = itertools.count()
+
+
+def _instantiate_type_scheme(types: List[Type]) -> List[Type]:
+    """
+    Freshen all type variables in the given types, returning a new list of types
+    with the same structure but with fresh type variables.
+
+    Variable subclasses (e.g. filtered variables) and their attributes are
+    preserved.
+    """
+    subst = {}
+    for typ in types:
+        for node in typ.walk_type_nodes():
+            if isinstance(node, GenericTypeVariable) and node.name not in subst:
+                fresh_name = f"_fresh_{next(_fresh_type_variable_counter)}"
+                subst[node.name] = replace(node, name=fresh_name)
+    return [typ.subst_type_vars(subst) for typ in types]
+
+
+def _unify_sequentially(pairs) -> dict:
+    """
+    Unify a sequence of pairs of types, returning a substitution mapping from type
+    variable names to types. The pairs are unified in order, and the accumulated
+    substitution is applied to each pair before unifying it, allowing for
+    transitive unification of type variables.
+
+    :raises UnificationError: if the pairs cannot be unified (including a failed
+        occurs check).
+    """
+    subst = {}
+    for expected, actual in pairs:
+        new = expected.subst_type_vars(subst).unify(actual.subst_type_vars(subst))
+        for name, value in new.items():
+            if name in value.get_type_vars() and not (
+                isinstance(value, GenericTypeVariable) and value.name == name
+            ):
+                raise UnificationError(f"occurs check failed: {name} in {value}")
+        subst = {name: value.subst_type_vars(new) for name, value in subst.items()}
+        subst.update(new)
+    return subst
 
 
 class TypeSignature(ABC):
@@ -111,16 +160,11 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        mapping = {}
+        *arguments, return_type = _instantiate_type_scheme(
+            list(self.arguments) + [self.return_type]
+        )
         try:
-            for t1, t2 in zip(self.arguments, types):
-                for_arg = t1.unify(t2)
-                for k, v in for_arg.items():
-                    if k in mapping:
-                        if mapping[k] != v:
-                            return None
-                    else:
-                        mapping[k] = v
+            mapping = _unify_sequentially(zip(arguments, types))
         except UnificationError:
             return None
         # Apply substitution to each child env before merging, so that
@@ -128,7 +172,7 @@ class FunctionTypeSignature(TypeSignature):
         if mapping:
             envs = [env.subst_type_vars(mapping) for env in envs]
         env = StrictEnvironment.merge_all(*envs)
-        return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
+        return TypeWithEnvironment(return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
         return len(self.arguments)
