@@ -1,0 +1,12 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: README
+chapters:
+- file: near_demo_regression.ipynb
+- file: near_demo_classification.ipynb
+- file: discrete_exercise_skeleton.ipynb
+- url: http://www.neurosymbolic.org/
+  title: Project Website
+

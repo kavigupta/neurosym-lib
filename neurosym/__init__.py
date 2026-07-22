@@ -1,3 +1,9 @@
+import sys
+import os
+directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(directory)
+sys.path.append(os.path.dirname(directory))
+
 from neurosym.datasets.load_data import (
     DatasetFromNpy,
     DatasetWrapper,
@@ -23,6 +29,9 @@ from neurosym.program_dist.tree_distribution.ordering import (
     DefaultNodeOrdering,
     DictionaryNodeOrdering,
     NodeOrdering,
+)
+from neurosym.program_dist.tree_distribution.preorder_mask.dreamcoder_lambda_transparency_mask import (
+    DreamCoderLambdaTransparencyMask,
 )
 from neurosym.program_dist.tree_distribution.preorder_mask.collect_preorder_symbols import (
     annotate_with_alternate_symbols,

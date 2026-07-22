@@ -1,0 +1,5 @@
+/om2/user/ellisk/ec/experimentOutputs/text/2019-01-25T02:53:59.182941/
+/om2/user/ellisk/ec/experimentOutputs/text/2019-01-25T02:58:17.082195/
+/om2/user/ellisk/ec/experimentOutputs/text/2019-01-25T03:02:10.385246/
+/om2/user/ellisk/ec/experimentOutputs/text/2019-01-25T03:06:06.834290/
+/om2/user/ellisk/ec/experimentOutputs/text/2019-01-25T03:09:45.988462/

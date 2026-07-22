@@ -18,6 +18,9 @@ from ..programs.s_expression import InitializedSExpression, SExpression
 from ..types.type import GenericTypeVariable, Type
 from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
+from .abstraction import AbstractionIndexParameter, AbstractionParameter
+from ..types.type_signature import FunctionTypeSignature
+from ..types.type_with_environment import StrictEnvironment, Environment
 
 ROOT_SYMBOL = "<root>"
 
@@ -297,6 +300,73 @@ class DSL:
                 return res
 
         child_types = [self.compute_type(child, lookup) for child in program.children]
+        prod = self.get_production(program.symbol)
+        return prod.type_signature().unify_arguments(child_types)
+
+    def compute_type_abs(
+        self,
+        program: SExpression | InitializedSExpression | str,
+        lookup: Callable[[SExpression], TypeWithEnvironment] = lambda x: None,
+    ) -> TypeWithEnvironment:
+        """
+        Computes the type of the given abstraction.
+
+        :param program: The program to compute the type of.
+        :param lookup: A function that can be used to look up the type of a program. This
+            is useful for handling special caes. If the function returns None, we compute
+            the type of the program using the DSL.
+        """
+        if lookup is not None:
+            res = lookup(program)
+            if res is not None:
+                return res
+        if isinstance(program, SExpression):
+            child_types = [
+                self.compute_type_abs(child, lookup) for child in program.children
+            ]
+        elif isinstance(program, InitializedSExpression):
+            child_types = []
+            for child_index in range(len(program.children)):
+                child = program.children[child_index]
+                if isinstance(child, AbstractionIndexParameter):
+                    function_type_signature = self.get_production(
+                        program.symbol
+                    ).type_signature()
+                    assert isinstance(function_type_signature, FunctionTypeSignature)
+
+                    # AbstractionIndexParameter.index is the de Bruijn variable index (e.g. $1, $0). Use it directly for the environment key.
+                    parameter_index = child.index
+                    assert (
+                        0 <= parameter_index < len(function_type_signature.arguments)
+                    ), (
+                        f"Invalid abstraction parameter index {parameter_index} "
+                        f"for production {program.symbol} with arity "
+                        f"{len(function_type_signature.arguments)}"
+                    )
+
+                    # Use child position to determine the argument type expected by the production, but use AbstractionIndexParameter.index as the key in the environment (de Bruijn index).
+                    expected_arg_index = child_index
+                    assert (
+                        0 <= expected_arg_index < len(function_type_signature.arguments)
+                    ), (
+                        f"Invalid argument position {expected_arg_index} "
+                        f"for production {program.symbol} with arity "
+                        f"{len(function_type_signature.arguments)}"
+                    )
+                    parameter_type = function_type_signature.arguments[expected_arg_index]
+                    env = StrictEnvironment(
+                        frozendict({parameter_index: parameter_type})
+                    )
+                    child_types.append(
+                        TypeWithEnvironment(
+                            typ=parameter_type,
+                            env=env,
+                        )
+                    )
+                else:
+                    child_types.append(self.compute_type_abs(child, lookup))
+        else:
+            raise Exception(f"Invalid program type: {type(program)}")
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
 
