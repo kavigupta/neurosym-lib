@@ -3,15 +3,78 @@ Type signatures are used to represent the types of functions in the
 DSL.
 """
 
+import itertools
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Union
 
 from frozendict import frozendict
 from torch import NoneType
 
-from neurosym.types.type import ArrowType, Type, TypeVariable, UnificationError
+from neurosym.types.type import (
+    ArrowType,
+    GenericTypeVariable,
+    Type,
+    TypeVariable,
+    UnificationError,
+)
 from neurosym.types.type_with_environment import StrictEnvironment, TypeWithEnvironment
+
+_fresh_type_variable_counter = itertools.count()
+
+
+def _instantiate_type_scheme(types: List[Type]) -> List[Type]:
+    """Rename every type variable in ``types`` to a globally-fresh name,
+    consistently across all the given types.
+
+    This implements let-polymorphism: each use of a polymorphic production is an
+    independent instance of its type scheme, so its variables must not be
+    conflated with identically-named variables coming from sibling subterms. For
+    example, ``index :: (i, [#T]) -> #T`` and ``++ :: ([#T], [#T]) -> [#T]`` each
+    declare a variable literally named ``#T``, but the two are unrelated. Without
+    fresh instantiation, composing them (``(++ (index 0 empty) empty)``) forces
+    the single shared ``#T`` into contradictory bindings and unification wrongly
+    fails.
+
+    Variable subclasses (e.g. filtered variables) and their attributes are
+    preserved.
+    """
+    subst = {}
+    for typ in types:
+        for node in typ.walk_type_nodes():
+            if isinstance(node, GenericTypeVariable) and node.name not in subst:
+                fresh_name = f"_fresh_{next(_fresh_type_variable_counter)}"
+                subst[node.name] = replace(node, name=fresh_name)
+    if not subst:
+        return list(types)
+    return [typ.subst_type_vars(subst) for typ in types]
+
+
+def _unify_sequentially(pairs) -> dict:
+    """Unify a sequence of ``(expected, actual)`` type pairs, threading a single
+    substitution through and composing it left to right.
+
+    Applying the accumulated substitution to each pair before unifying it keeps
+    the accumulated substitution's domain disjoint from each new binding's
+    domain, so composition reduces to "apply the new bindings to the old ones,
+    then take the union". This is what lets a variable that is constrained by two
+    different arguments (e.g. both arguments of ``++``) be unified transitively,
+    rather than reported as a spurious conflict.
+
+    :raises UnificationError: if the pairs cannot be unified (including a failed
+        occurs check).
+    """
+    subst = {}
+    for expected, actual in pairs:
+        new = expected.subst_type_vars(subst).unify(actual.subst_type_vars(subst))
+        for name, value in new.items():
+            if name in value.get_type_vars() and not (
+                isinstance(value, GenericTypeVariable) and value.name == name
+            ):
+                raise UnificationError(f"occurs check failed: {name} in {value}")
+        subst = {name: value.subst_type_vars(new) for name, value in subst.items()}
+        subst.update(new)
+    return subst
 
 
 class TypeSignature(ABC):
@@ -111,16 +174,14 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        mapping = {}
+        # Instantiate this signature's type scheme with fresh variables so its
+        # polymorphic variables are independent of identically-named variables in
+        # the argument types (see _instantiate_type_scheme).
+        *arguments, return_type = _instantiate_type_scheme(
+            list(self.arguments) + [self.return_type]
+        )
         try:
-            for t1, t2 in zip(self.arguments, types):
-                for_arg = t1.unify(t2)
-                for k, v in for_arg.items():
-                    if k in mapping:
-                        if mapping[k] != v:
-                            return None
-                    else:
-                        mapping[k] = v
+            mapping = _unify_sequentially(zip(arguments, types))
         except UnificationError:
             return None
         # Apply substitution to each child env before merging, so that
@@ -128,7 +189,7 @@ class FunctionTypeSignature(TypeSignature):
         if mapping:
             envs = [env.subst_type_vars(mapping) for env in envs]
         env = StrictEnvironment.merge_all(*envs)
-        return TypeWithEnvironment(self.return_type.subst_type_vars(mapping), env)
+        return TypeWithEnvironment(return_type.subst_type_vars(mapping), env)
 
     def arity(self) -> int:
         return len(self.arguments)
