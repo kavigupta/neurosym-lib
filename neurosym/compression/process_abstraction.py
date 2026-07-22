@@ -7,12 +7,17 @@ import stitch_core
 from neurosym.dsl.dsl import DSL
 
 from ..dsl.abstraction import AbstractionIndexParameter, AbstractionProduction
-from ..programs.s_expression import SExpression, postorder
+from ..programs.s_expression import (
+    InitializedSExpression,
+    SExpression,
+    postorder,
+)
 from ..programs.s_expression_render import (
     parse_s_expression,
     render_s_expression,
     symbols_for_program,
 )
+from ..types.type import ArrowType
 from ..types.type_signature import FunctionTypeSignature
 
 
@@ -224,6 +229,125 @@ class _StitchLambdaRewriter:
             f"lam_{original}",
             (self.from_stitch(s_exp),),
         )
+
+
+def _single_arg_lambda_symbol(dsl):
+    """Symbol of the DSL's single-argument lambda production (e.g. ``lam_0``).
+
+    DreamCoder lambdas are always single-argument (curried), so every inner
+    lambda in a DreamCoder abstraction maps to this production. Returns None if
+    the DSL has no single-argument lambda.
+    """
+    for prod in dsl.productions:
+        if prod.base_symbol() == "lam" and getattr(prod, "arity", None) == 1:
+            return prod.symbol()
+    return None
+
+
+def _dreamcoder_abstraction_to_stitch_body(dreamcoder_abstraction):
+    """Convert a DreamCoder invented-primitive string into stitch's canonical
+    abstraction form, returning ``(body_string, arity)``.
+
+    The leading ``#``-lambdas become abstraction parameters (``#0``, ``#1``,
+    ...), with de Bruijn indices remapped accordingly; genuine inner lambdas
+    keep their ``$``-de-Bruijn variables. Reuses stitch_core's conversion
+    primitives directly -- the ``Abstraction.from_dreamcoder`` wrapper mishandles
+    an empty ``name_mapping``.
+    """
+    assert dreamcoder_abstraction.startswith("#"), dreamcoder_abstraction
+    sexpr = stitch_core.parse(dreamcoder_abstraction[1:])
+    sexpr, num_lambdas = stitch_core.strip_lambdas(sexpr)
+    sexpr = stitch_core.dc_to_stitch_vars(sexpr, 0, num_lambdas)
+    return stitch_core.show_sexpr(sexpr), num_lambdas
+
+
+def _stitch_body_to_initialized(node, lam_symbol):
+    """Translate a parsed stitch abstraction body into a NeuroSym
+    ``InitializedSExpression``.
+
+    ``#N`` -> ``AbstractionIndexParameter(N)``, single-argument lambdas ->
+    ``lam_symbol``, and bare-string leaves -> zero-child nodes.
+
+    Returns None if a parameter is applied to arguments (a higher-order
+    metavariable), which NeuroSym's abstraction representation cannot express.
+    """
+    if isinstance(node, str):
+        if node.startswith("#"):
+            return AbstractionIndexParameter(int(node[1:]))
+        symbol = lam_symbol if node in ("lam", "lambda") else node
+        return InitializedSExpression(symbol, (), {})
+    if node.symbol.startswith("#"):
+        # `#N` applied to arguments == higher-order parameter application.
+        return None
+    symbol = lam_symbol if node.symbol in ("lam", "lambda") else node.symbol
+    children = []
+    for child in node.children:
+        converted = _stitch_body_to_initialized(child, lam_symbol)
+        if converted is None:
+            return None
+        children.append(converted)
+    return InitializedSExpression(symbol, tuple(children), {})
+
+
+def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
+    """Build a NeuroSym ``AbstractionProduction`` from a DreamCoder/Stitch
+    invented-primitive string, e.g.
+    ``#(lambda (all_1 (lambda (is-prime $0)) $0))``.
+
+    The abstraction's own parameters (the leading ``#``-lambdas) become
+    ``AbstractionIndexParameter``s; genuine inner lambdas (arguments to
+    higher-order primitives like ``map``/``filter``/``all``) become the DSL's
+    single-argument lambda production. Argument and return types are inferred
+    from the body via :py:meth:`DSL.compute_type_abs`.
+
+    :param dsl: The base DSL the abstraction is written over.
+    :param name: The symbol to give the resulting production (typically the
+        DreamCoder abstraction string, so it matches the grammar it came from).
+    :param dreamcoder_abstraction: The DreamCoder invented-primitive string.
+
+    :return: The ``AbstractionProduction``, or None if the abstraction cannot be
+        represented or typed in ``dsl`` -- an unknown primitive, failed type
+        unification, a higher-order parameter application, or free variables.
+    """
+    lam_symbol = _single_arg_lambda_symbol(dsl)
+    try:
+        body_string, _arity = _dreamcoder_abstraction_to_stitch_body(
+            dreamcoder_abstraction
+        )
+        parsed = parse_s_expression(body_string, for_stitch=True)
+    except (stitch_core.InvalidAbstractionException, ValueError):
+        # Unparseable / free variables / a higher-order metavariable applied to
+        # arguments (its body does not render as a single s-expression). None of
+        # these are representable NeuroSym abstractions.
+        return None
+    body = _stitch_body_to_initialized(parsed, lam_symbol)
+    if body is None:
+        return None
+    try:
+        type_with_env = dsl.compute_type_abs(body)
+    except KeyError:
+        # A primitive referenced by the abstraction is absent from this DSL.
+        return None
+    if type_with_env is None:
+        return None
+
+    if isinstance(type_with_env.typ, ArrowType):
+        type_signature = FunctionTypeSignature.from_type(type_with_env.typ)
+    else:
+        # Build a function type from the inferred environment. Environment index
+        # 0 is the most recent binder, so order arguments by descending index
+        # (outermost parameter first).
+        env_elements = type_with_env.env._elements
+        argument_types = []
+        for env_index in sorted(env_elements.keys(), reverse=True):
+            env_typ = env_elements[env_index]
+            if isinstance(env_typ, tuple):
+                assert len(env_typ) == 1, env_typ
+                env_typ = env_typ[0]
+            argument_types.append(env_typ)
+        type_signature = FunctionTypeSignature(argument_types, type_with_env.typ)
+
+    return AbstractionProduction(name, type_signature, body)
 
 
 def single_step_compression(dsl: DSL, programs: List[SExpression]):

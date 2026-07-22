@@ -13,14 +13,13 @@ from dreamcoder.tests.program_dist.utils import enumerate_dsl
 from dreamcoder.utilities import get_root_dir, limit_virtual_memory_fn
 
 import neurosym as ns
-from neurosym.compression.process_abstraction import _StitchLambdaRewriter
-from neurosym.dsl.abstraction import AbstractionProduction, _with_index_parameters
+from neurosym.compression.process_abstraction import (
+    _StitchLambdaRewriter,
+    abstraction_production_from_dreamcoder,
+)
 from neurosym.examples.dreamcoder.list_example import list_dsl, list_dslf
 from neurosym.programs.s_expression_render import render_s_expression
-from neurosym.types.type import ArrowType
-from neurosym.types.type_signature import FunctionTypeSignature
 from neurosym.types.type_string_repr import parse_type
-from neurosym.types.type_with_environment import StrictEnvironment
 from tqdm import tqdm
 
 DEFAULT_SOLVER_DIRECTORY = "."
@@ -94,82 +93,6 @@ def budgetIncrement(lb):
         return 0.5
     else:
         return 0.25
-
-
-import neurosym as ns
-from neurosym.dsl.abstraction import _with_index_parameters
-
-
-def parse_abstraction_dc_to_ns(
-    abstraction: str, primitive_list: list[str] = None
-) -> ns.InitializedSExpression | ns.AbstractionIndexParameter:
-    """
-    Convert a DreamCoder (Stitch) abstraction string into a NeuroSym
-    ``InitializedSExpression`` / ``AbstractionIndexParameter`` tree.
-
-    Example input:
-        ``#(lambda (lambda (index $1 (sort $0))))``
-
-    Tokenization and bracket-matching are delegated to
-    ``ns.parse_s_expression``. The only wrinkle is Stitch's leading ``#``,
-    which is not valid top-level s-expression syntax — we wrap the whole
-    thing in outer parens so ``#`` becomes a regular head symbol, which
-    the walker below recognizes as a stitch abstraction (body + applied
-    args). Nested ``#(...)`` inside the body falls out of the recursion
-    automatically because the parser already sees the surrounding parens.
-
-    ``primitive_list`` is kept for backwards-compatibility with the
-    previous signature but is no longer consulted — the parser derives
-    structure from syntax alone.
-
-    Raises ``ValueError`` on malformed input. DreamCoder abstractions
-    should always be well-formed, so a failure here is a parser bug
-    to be fixed rather than silently skipped.
-    """
-    del primitive_list
-    src = f"({abstraction})" if abstraction.startswith("#") else abstraction
-    return _convert_dc_sexp(ns.parse_s_expression(src, for_stitch=True))
-
-
-def _convert_dc_sexp(
-    s_exp,
-) -> ns.InitializedSExpression | ns.AbstractionIndexParameter:
-    if isinstance(s_exp, ns.SExpression):
-        # Stitch abstraction: first child is the body, remaining are args
-        # applied at this position. With no applied args the abstraction
-        # just is its body.
-        if s_exp.symbol == "#":
-            body_exp, *arg_exps = s_exp.children
-            # Peel outer ``lambda`` wrappers: in stitch, each ``lambda``
-            # declares one abstraction parameter (bound by $0, $1, ...); the
-            # NeuroSym representation encodes these via AbstractionIndexParameter
-            # inside the body rather than as explicit lambda nodes.
-            while (
-                isinstance(body_exp, ns.SExpression)
-                and body_exp.symbol == "lambda"
-                and len(body_exp.children) == 1
-            ):
-                body_exp = body_exp.children[0]
-            body = _convert_dc_sexp(body_exp)
-            if not arg_exps:
-                return body
-            assert isinstance(body, ns.InitializedSExpression)
-            arg_tuple = tuple(_convert_dc_sexp(a) for a in arg_exps)
-            return _with_index_parameters(body, arg_tuple)
-        # With ``for_stitch=True`` de Bruijn variables are wrapped as
-        # empty-children ``SExpression('$N', ())`` rather than bare strings.
-        # If applied to arguments (e.g. ``($1 0)``), the NeuroSym abstraction
-        # representation cannot express higher-order variable application, so
-        # we drop the applied args (matching the behavior in
-        # tests/s_exp/dreamcoder_abstractions_test.py::parse_abstraction_dc_to_ns).
-        if isinstance(s_exp.symbol, str) and s_exp.symbol.startswith("$"):
-            return ns.AbstractionIndexParameter(int(s_exp.symbol[1:]))
-        children = tuple(_convert_dc_sexp(c) for c in s_exp.children)
-        return ns.InitializedSExpression(s_exp.symbol, children, {})
-    assert isinstance(s_exp, str), f"Unexpected parser output: {s_exp!r}"
-    if s_exp.startswith("$"):
-        return ns.AbstractionIndexParameter(int(s_exp[1:]))
-    return ns.InitializedSExpression(s_exp, (), {})
 
 
 def neurosym_to_dreamcoder(s: str):
@@ -249,48 +172,26 @@ def multicoreEnumeration(
 
         for k, _val in library_list[task].items():
             if str(k) not in primitive_list and str(k)[0] != "$":
-                # This means that k is likely to be an abstraction, so we generate an abstraction production from the DreamCoder abstraction as described in the grammar
+                # k is an abstraction (an invented primitive absent from the base
+                # DSL and not a variable). Convert the DreamCoder abstraction into
+                # a NeuroSym AbstractionProduction -- its leading `#`-lambdas
+                # become parameters, inner lambdas become the DSL's single-arg
+                # lambda, and its type is inferred from the body. Abstractions
+                # NeuroSym cannot represent/type (unknown primitive, failed
+                # unification, higher-order parameter application) come back as
+                # None and are skipped.
                 print(f"Adding abstraction {k} to neurosym DSL.")
-                parsed_abstraction = parse_abstraction_dc_to_ns(str(k), primitive_list)
-                s_exp = ns.SExpression(k, [parsed_abstraction])
-                type_argument = [dsl.compute_type_abs(x) for x in s_exp.children][0]
-                if type_argument is None:
+                final = abstraction_production_from_dreamcoder(dsl, str(k), str(k))
+                if final is None:
                     print(
-                        f"Skipping abstraction {k}: could not infer abstraction type."
+                        f"Skipping abstraction {k}: could not represent or type it "
+                        "in the NeuroSym DSL."
                     )
                     continue
-
-                if isinstance(type_argument.typ, ArrowType):
-                    type_signature = FunctionTypeSignature.from_type(
-                        type_argument.typ
-                    )
-                else:
-                    # Build a function type from the inferred environment. Environment
-                    # index 0 is the most recent binder, so we order arguments by
-                    # descending environment index (outermost to innermost).
-                    assert isinstance(
-                        type_argument.env, StrictEnvironment
-                    ), f"Expected a StrictEnvironment for abstraction {k}, but got {type(type_argument.env)}"
-                    env_elements = type_argument.env._elements
-                    argument_types = []
-                    for env_index in sorted(env_elements.keys(), reverse=True):
-                        env_typ = env_elements[env_index]
-                        if isinstance(env_typ, tuple):
-                            if len(env_typ) != 1:
-                                raise ValueError(
-                                    f"Unexpected env type tuple at index {env_index}: {env_typ}"
-                                )
-                            env_typ = env_typ[0]
-                        argument_types.append(env_typ)
-                    type_signature = FunctionTypeSignature(
-                        argument_types,
-                        type_argument.typ,
-                    )
-
                 print(
-                    f"Parsed abstraction {k} to {s_exp} with type signature {type_signature}"
+                    f"Parsed abstraction {k} with type signature "
+                    f"{final.type_signature()}"
                 )
-                final = AbstractionProduction(str(k), type_signature, s_exp)
                 dsl = dsl.add_productions(final)
                 primitive_list.append(str(k))
 
@@ -366,9 +267,9 @@ def multicoreEnumeration(
             assert s in dreamcoder_ns_mapping, (
                 f"DreamCoder grammar references symbol {s!r} that is absent "
                 "from the NeuroSym DSL. This usually means an abstraction was "
-                "skipped above (compute_type_abs returned None) or a primitive "
-                "in the DC grammar is missing from list_dslf — fix that rather "
-                "than silently dropping the symbol."
+                "skipped above (abstraction_production_from_dreamcoder returned "
+                "None) or a primitive in the DC grammar is missing from "
+                "list_dslf — fix that rather than silently dropping the symbol."
             )
             return [dreamcoder_ns_mapping[s]]
 
