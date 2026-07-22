@@ -105,25 +105,25 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             iterations=kwargs["iterations"],
         )
         
-        # Map tasks to original program likelihoods.
-        task_to_program_likelihood = {}
+        # Construct a list of likelihoods parallel to `programs_rewritten` and `tasks`.
+        # The `_with_likelihood.json` file is written by `write_frontiers_to_file` in the
+        # exact same frontier order, with the same programs per frontier, as the input file
+        # that stitch consumes via `from_dreamcoder`. Both flatten frontier-by-frontier and
+        # program-by-program, so flattening the likelihoods in frontier order yields a list
+        # that is element-aligned with `programs_rewritten` and `tasks`.
+        #
+        # NOTE(kg): We cannot key likelihoods by task *name*, because task names are not
+        # unique across frontiers (distinct frontiers can share the same `task.name`).
+        # Keying by name collapses duplicate-named frontiers and produces a likelihood
+        # list shorter than the program list.
         with open(frontiers_filepath.replace(".json", "_with_likelihood.json"), "r") as f:
             frontiers_dict_with_likelihood = json.load(f)
-            for frontier in frontiers_dict_with_likelihood["frontiers"]:
-                task_to_program_likelihood[frontier["task"]] = frontier["likelihoods"]
-        
-        # Construct a list of likelihoods assuming that the order of programs for each task is preserved after rewriting. The list of likelihoods should be in the same order as `programs_rewritten`.
-        rewritten_program_likelihoods = []
-        visited_tasks = set()
-        for task in tasks:
-            if task not in visited_tasks:
-                if task in task_to_program_likelihood:
-                    rewritten_program_likelihoods.extend(task_to_program_likelihood[task])
-                else:
-                    logging.warning(f"Task {task} not found in original frontiers with likelihoods. Assigning likelihood of 0 to rewritten programs for this task.")
-                    rewritten_program_likelihoods.extend([0.0] * len(task_to_programs[task]))
-                visited_tasks.add(task)
-        
+        rewritten_program_likelihoods = [
+            likelihood
+            for frontier in frontiers_dict_with_likelihood["frontiers"]
+            for likelihood in frontier["likelihoods"]
+        ]
+
         assert len(programs_rewritten) == len(rewritten_program_likelihoods) == len(tasks), "Length of rewritten programs, their likelihoods, and tasks should be the same."
         # Rebuild the set of frontiers
         # NOTE(GG): Messy logic due to `include_samples=True` returns all samples; consider refactor.
