@@ -24,17 +24,9 @@ _fresh_type_variable_counter = itertools.count()
 
 
 def _instantiate_type_scheme(types: List[Type]) -> List[Type]:
-    """Rename every type variable in ``types`` to a globally-fresh name,
-    consistently across all the given types.
-
-    This implements let-polymorphism: each use of a polymorphic production is an
-    independent instance of its type scheme, so its variables must not be
-    conflated with identically-named variables coming from sibling subterms. For
-    example, ``index :: (i, [#T]) -> #T`` and ``++ :: ([#T], [#T]) -> [#T]`` each
-    declare a variable literally named ``#T``, but the two are unrelated. Without
-    fresh instantiation, composing them (``(++ (index 0 empty) empty)``) forces
-    the single shared ``#T`` into contradictory bindings and unification wrongly
-    fails.
+    """
+    Freshen all type variables in the given types, returning a new list of types
+    with the same structure but with fresh type variables.
 
     Variable subclasses (e.g. filtered variables) and their attributes are
     preserved.
@@ -45,21 +37,15 @@ def _instantiate_type_scheme(types: List[Type]) -> List[Type]:
             if isinstance(node, GenericTypeVariable) and node.name not in subst:
                 fresh_name = f"_fresh_{next(_fresh_type_variable_counter)}"
                 subst[node.name] = replace(node, name=fresh_name)
-    if not subst:
-        return list(types)
     return [typ.subst_type_vars(subst) for typ in types]
 
 
 def _unify_sequentially(pairs) -> dict:
-    """Unify a sequence of ``(expected, actual)`` type pairs, threading a single
-    substitution through and composing it left to right.
-
-    Applying the accumulated substitution to each pair before unifying it keeps
-    the accumulated substitution's domain disjoint from each new binding's
-    domain, so composition reduces to "apply the new bindings to the old ones,
-    then take the union". This is what lets a variable that is constrained by two
-    different arguments (e.g. both arguments of ``++``) be unified transitively,
-    rather than reported as a spurious conflict.
+    """
+    Unify a sequence of pairs of types, returning a substitution mapping from type
+    variable names to types. The pairs are unified in order, and the accumulated
+    substitution is applied to each pair before unifying it, allowing for
+    transitive unification of type variables.
 
     :raises UnificationError: if the pairs cannot be unified (including a failed
         occurs check).
@@ -174,9 +160,6 @@ class FunctionTypeSignature(TypeSignature):
     ) -> Union[TypeWithEnvironment, NoneType]:
         types = [x.typ for x in twes]
         envs = [x.env for x in twes]
-        # Instantiate this signature's type scheme with fresh variables so its
-        # polymorphic variables are independent of identically-named variables in
-        # the argument types (see _instantiate_type_scheme).
         *arguments, return_type = _instantiate_type_scheme(
             list(self.arguments) + [self.return_type]
         )
