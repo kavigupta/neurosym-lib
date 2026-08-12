@@ -526,6 +526,11 @@ def phase1_typed_ecg_dsl(
     restrict_to_hidden=True,
     enable_attn_embeds=False,
     disable_arith=False,
+    disable_add=False,
+    disable_mul=False,
+    disable_ite=False,
+    disable_linear=False,
+    disable_embeds=(),
 ):
     """Heterogeneous-typed ECG DSL with one lambda variable per feature group.
 
@@ -549,7 +554,14 @@ def phase1_typed_ecg_dsl(
     :param restrict_to_hidden: If True, add/mul/ite operate only on $fHid.
     :param enable_attn_embeds: Add per-feature-group lead-attention pooling productions.
     :param disable_arith: If True, omit add/mul (force ite-only combination).
+    :param disable_add: If True, omit ``add`` only (mul + ite remain).
+    :param disable_mul: If True, omit ``mul`` only (add + ite remain).
+    :param disable_ite: If True, omit ``ite`` only (add + mul remain).
+    :param disable_linear: If True, omit the intermediate ``linear`` production.
+    :param disable_embeds: Iterable of feature-group embed names to omit,
+        e.g. ``("embed_amp",)`` — used for feature-group ablation.
     """
+    disable_embeds = set(disable_embeds or ())
     dslf = DSLFactory(
         O=num_classes,
         H=hidden_dim,
@@ -570,54 +582,62 @@ def phase1_typed_ecg_dsl(
     arith_type = "$fHid" if restrict_to_hidden else "%num"
 
     if not disable_arith:
-        dslf.production(
-            "add",
-            f"({arith_type}, {arith_type}) -> {arith_type}",
-            lambda x, y: _guard_callables(fn=lambda x, y: x + y, x=x, y=y),
-        )
-        dslf.production(
-            "mul",
-            f"({arith_type}, {arith_type}) -> {arith_type}",
-            lambda x, y: _guard_callables(fn=lambda x, y: x * y, x=x, y=y),
-        )
+        if not disable_add:
+            dslf.production(
+                "add",
+                f"({arith_type}, {arith_type}) -> {arith_type}",
+                lambda x, y: _guard_callables(fn=lambda x, y: x + y, x=x, y=y),
+            )
+        if not disable_mul:
+            dslf.production(
+                "mul",
+                f"({arith_type}, {arith_type}) -> {arith_type}",
+                lambda x, y: _guard_callables(fn=lambda x, y: x * y, x=x, y=y),
+            )
 
-    dslf.production(
-        "ite",
-        f"({{f, 1}}, {arith_type}, {arith_type}) -> {arith_type}",
-        lambda cond, x, y: torch.sigmoid(cond) * x + (1 - torch.sigmoid(cond)) * y,
-    )
+    if not disable_ite:
+        dslf.production(
+            "ite",
+            f"({{f, 1}}, {arith_type}, {arith_type}) -> {arith_type}",
+            lambda cond, x, y: torch.sigmoid(cond) * x + (1 - torch.sigmoid(cond)) * y,
+        )
 
     # Typed embeds — Linear(N_g, H) per feature group.
-    dslf.production(
-        "embed_amp",
-        "$fAmp -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(60, hidden_dim)),
-    )
-    dslf.production(
-        "embed_int",
-        "$fInt -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(84, hidden_dim)),
-    )
-    dslf.production(
-        "embed_st",
-        "$fSt -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(12, hidden_dim)),
-    )
-    dslf.production(
-        "embed_morph",
-        "$fMorph -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(12, hidden_dim)),
-    )
-    dslf.production(
-        "embed_global",
-        "$fGlobal -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(9, hidden_dim)),
-    )
+    if "embed_amp" not in disable_embeds:
+        dslf.production(
+            "embed_amp",
+            "$fAmp -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(60, hidden_dim)),
+        )
+    if "embed_int" not in disable_embeds:
+        dslf.production(
+            "embed_int",
+            "$fInt -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(84, hidden_dim)),
+        )
+    if "embed_st" not in disable_embeds:
+        dslf.production(
+            "embed_st",
+            "$fSt -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(12, hidden_dim)),
+        )
+    if "embed_morph" not in disable_embeds:
+        dslf.production(
+            "embed_morph",
+            "$fMorph -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(12, hidden_dim)),
+        )
+    if "embed_global" not in disable_embeds:
+        dslf.production(
+            "embed_global",
+            "$fGlobal -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(9, hidden_dim)),
+        )
 
     if enable_attn_embeds:
         # Per-feature-group lead-attention pooling.
@@ -650,18 +670,20 @@ def phase1_typed_ecg_dsl(
         # No embed_global_attn — globals have no lead structure.
 
     # Post-embed productions (unchanged from the homogeneous DSL).
-    dslf.production(
-        "linear",
-        "$fHid -> $fHid",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(hidden_dim, hidden_dim)),
-    )
-    dslf.production(
-        "linear_bool",
-        "$fHid -> {f, 1}",
-        lambda x, lin: lin(x),
-        dict(lin=lambda: nn.Linear(hidden_dim, 1)),
-    )
+    if not disable_linear:
+        dslf.production(
+            "linear",
+            "$fHid -> $fHid",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(hidden_dim, hidden_dim)),
+        )
+    if not disable_ite:
+        dslf.production(
+            "linear_bool",
+            "$fHid -> {f, 1}",
+            lambda x, lin: lin(x),
+            dict(lin=lambda: nn.Linear(hidden_dim, 1)),
+        )
     dslf.production(
         "output",
         "$fHid -> $fOut",

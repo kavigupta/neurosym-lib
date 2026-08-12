@@ -105,6 +105,11 @@ def run_experiment(
     enable_phase1_attn_embeds: bool = False,
     phase1_typed: bool = False,
     use_number_holes: bool = False,
+    disable_add: bool = False,
+    disable_mul: bool = False,
+    disable_ite: bool = False,
+    disable_linear: bool = False,
+    disable_embeds: tuple = (),
 ) -> List[Dict[str, Any]]:
     """Run the NEAR experiment on ECG with Reduced Attention DSL."""
     print("=" * 80)
@@ -165,6 +170,11 @@ def run_experiment(
             restrict_to_hidden=restrict_to_hidden,
             enable_attn_embeds=enable_phase1_attn_embeds,
             disable_arith=disable_arith,
+            disable_add=disable_add,
+            disable_mul=disable_mul,
+            disable_ite=disable_ite,
+            disable_linear=disable_linear,
+            disable_embeds=disable_embeds,
         )
         num_channels = 5
         features_per_channel = None  # heterogeneous; not a single value
@@ -343,6 +353,10 @@ def main():
     )
     parser.add_argument("--data-dir", type=str, default="data/ecg")
     parser.add_argument("--num-programs", type=int, default=200)
+    parser.add_argument(
+        "--train-seed", type=int, default=0,
+        help="Dataset-shuffling seed (varies mini-batch order and SGD trajectory)",
+    )
     parser.add_argument("--hidden-dim", type=int, default=32)
     parser.add_argument("--neural-hidden-size", type=int, default=32)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -409,12 +423,34 @@ def main():
              "one per feature group (amp/int/st/morph/global) at native sizes",
     )
     parser.add_argument("--use-number-holes", action="store_true", default=False)
+    parser.add_argument(
+        "--disable-add", action="store_true", default=False,
+        help="Omit the 'add' production only (mul + ite remain)",
+    )
+    parser.add_argument(
+        "--disable-mul", action="store_true", default=False,
+        help="Omit the 'mul' production only (add + ite remain)",
+    )
+    parser.add_argument(
+        "--disable-ite", action="store_true", default=False,
+        help="Omit the 'ite' production (and linear_bool, which only feeds ite)",
+    )
+    parser.add_argument(
+        "--disable-linear", action="store_true", default=False,
+        help="Omit the intermediate 'linear' post-embed production",
+    )
+    parser.add_argument(
+        "--disable-embeds", type=str, default="",
+        help="Comma-separated feature-group embed names to omit "
+             "(e.g. 'embed_amp,embed_int' for feature-group ablation)",
+    )
     args = parser.parse_args()
 
     results = run_experiment(
         output_path=args.output,
         data_dir=args.data_dir,
         num_programs=args.num_programs,
+        train_seed=args.train_seed,
         hidden_dim=args.hidden_dim,
         neural_hidden_size=args.neural_hidden_size,
         batch_size=args.batch_size,
@@ -439,6 +475,13 @@ def main():
         enable_phase1_attn_embeds=args.enable_phase1_attn_embeds,
         phase1_typed=args.phase1_typed,
         use_number_holes=args.use_number_holes,
+        disable_add=args.disable_add,
+        disable_mul=args.disable_mul,
+        disable_ite=args.disable_ite,
+        disable_linear=args.disable_linear,
+        disable_embeds=tuple(
+            s.strip() for s in args.disable_embeds.split(",") if s.strip()
+        ),
     )
 
     summary_path = args.output.replace(".pkl", "_summary.json")

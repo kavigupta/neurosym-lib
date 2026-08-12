@@ -799,3 +799,54 @@ Adding `channel_attention` (exp 8) is the natural next step — it aggregates ac
 1. **Reduced variable space + Phase 1 hyperparams is the main win** (Phase 2 ~0.71 → Phase 3 ~0.83). Everything else is noise.
 2. **DSL vocabulary additions hit diminishing returns quickly**. Once the DSL can express the key pattern (pairwise channel interaction in embed space), further productions don't help the best program.
 3. **The 0.83 ceiling is structural**: pairwise composition can't match wide linear projections over all features. Need architectural change (channel-spanning production) to break through.
+
+---
+
+## Phase 5: Multi-label Re-evaluation (typed DSL under BCE)
+
+Re-runs the **typed DSL** (`phase1_typed_ecg_dsl`) under proper multi-label
+BCE training to answer: does the single-label win (T1, 0.9017) survive a
+loss-function change? Full multi-label data: 17,418 train / 2,183 val /
+2,198 test (vs single-label 13,004/1,643/1,660; ~2% all-negative records
+kept to match baseline data).
+
+### Framework defect found and fixed
+
+`compute_metrics` (`neurosym/examples/near/metrics.py`) short-circuited to
+`{neg_l1_dist, neg_l2_dist}` for *any* float-dtype labels. Multi-label
+targets are float (BCE), so F1/hamming/AUROC were **structurally
+unreachable** — this, not undertuning, is why Exp 3 (Phase 1) was stuck at
+0.873 on `neg_l2_dist`. Fix: a pure 0/1 float matrix with a label axis is
+now routed as multi-label classification (continuous regression unaffected;
+distance metrics still returned for back-compat). Added `macro_auroc` to the
+metric suite and the `near_example_trainer` validation allowlist.
+
+### M1–M4 (150-program budget, lr 1e-3, hidden 32, penalty 0.12, 250 final epochs)
+
+| Run | Search metric | Best macro AUC | 95% CI | Best program |
+|-----|---------------|----------------|--------|--------------|
+| **M2** | `f1_score` | **0.8938** | [0.8855, 0.9026] | `add(embed_int $3, mul(embed_amp $4, embed_amp $4))` |
+| M3 | `neg_l2_dist` | 0.8817 | [0.8720, 0.8908] | `ite(linear_bool(embed_amp $4), embed_global $0, mul(embed_amp $4, embed_amp $4))` |
+| M1 | `macro_auroc` | 0.8809 | [0.8713, 0.8909] | `mul(embed_amp $4, linear(embed_amp $4))` |
+| M4 | `macro_auroc`+attn | 0.8795 | [0.8696, 0.8888] | `linear(mul(embed_amp $4, embed_amp $4))` |
+
+Baselines (multi): RF 0.9047 [0.8981, 0.9108], MLP 0.9002 [0.8941, 0.9067],
+DT 0.7373.
+
+### Phase 5 Takeaways
+
+1. **Structural invariance.** M2's #1 program is byte-for-byte identical to
+   the single-label T1 #1 program (same template, same de Bruijn IDs):
+   `(lam (output (add (embed_int $3_2) (mul (embed_amp $4_1) (embed_amp $4_1)))))`.
+   The typed-DSL inductive bias is loss-agnostic; only embed weights differ.
+2. **Gain decomposition** 0.873 → 0.8938: typed DSL alone +0.009 (M3 vs Exp 3,
+   same `neg_l2_dist`); metric fix +0.012 (M2 vs M3).
+3. **`f1_score` > `macro_auroc` as a *search* metric** (0.8938 vs 0.8809) —
+   on partially-trained candidates thresholded F1 is lower-variance than AUROC.
+4. **Attention still hurts** (M4 0.8795 < M1 0.8809, same metric) — replicates
+   the single-label result.
+5. **Verdict:** statistically indistinguishable from MLP (CIs overlap
+   heavily); ~1.1 pt below RF (borderline). Multi-label generalizes; the small
+   gap is intrinsic task difficulty (label co-occurrence on MI/CD), not DSL
+   design. Updates Exp 3's conclusion: "single-label >> multi-label" was a
+   metrics-pipeline artifact, not a fundamental property.
