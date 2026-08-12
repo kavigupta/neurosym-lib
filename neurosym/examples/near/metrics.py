@@ -14,6 +14,7 @@ from sklearn.metrics import (
     classification_report,
     f1_score,
     hamming_loss,
+    roc_auc_score,
     roc_curve,
 )
 
@@ -96,6 +97,38 @@ def _is_one_hot(arr: np.ndarray) -> bool:
         return False
     summed = arr.sum(axis=-1)
     return np.all(np.isclose(summed, 1.0) | np.isclose(summed, 0.0))
+
+
+@internal_only
+def _safe_macro_auroc(y_true_bin: np.ndarray, scores: np.ndarray) -> Tuple[float, list]:
+    """
+    Compute macro-averaged AUROC over label columns, skipping degenerate
+    columns (those with only one class present in ``y_true_bin``).
+
+    :param y_true_bin: Binary indicator ground truth, shape (N, C).
+    :param scores: Prediction scores/probabilities, same shape as ``y_true_bin``.
+    :returns: ``(macro_auroc, per_class_auroc)``. ``macro_auroc`` is ``nan`` if
+        no column has both classes present.
+    """
+    y_true_bin = np.asarray(y_true_bin)
+    scores = np.asarray(scores, dtype=np.float64)
+    if y_true_bin.ndim == 1:
+        y_true_bin = y_true_bin[:, None]
+        scores = scores[:, None]
+    per_class = []
+    for c in range(y_true_bin.shape[-1]):
+        col_true = y_true_bin[:, c]
+        if np.unique(col_true).size < 2:
+            per_class.append(float("nan"))
+            continue
+        try:
+            per_class.append(float(roc_auc_score(col_true, scores[:, c])))
+        except ValueError as err:
+            log(f"AUROC undefined for class {c}: {err}")
+            per_class.append(float("nan"))
+    valid = [v for v in per_class if not np.isnan(v)]
+    macro = float(np.mean(valid)) if valid else float("nan")
+    return macro, per_class
 
 
 @internal_only
@@ -185,16 +218,30 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     y_true_np = np.asarray(ground_truth)
     y_pred_np = np.asarray(predictions)
 
+    regression_metrics: Dict[str, Any] = {}
     if y_true_np.dtype.kind == "f":
         diff = y_true_np - y_pred_np
         # L1 distance: mean of L1 norms (sum of absolute differences)
         # L2 distance: mean of L2 norms (sqrt of sum of squares)
         l1_dist = np.mean(np.sum(np.abs(diff), axis=-1))
         l2_dist = np.mean(np.sum(diff**2, axis=-1))
-        return {
+        regression_metrics = {
             "neg_l1_dist": -float(l1_dist),
             "neg_l2_dist": -float(l2_dist),
         }
+        # A float matrix that is a pure 0/1 indicator with a label axis is a
+        # multi-label classification target (BCE stores multi-hot as float),
+        # NOT a regression target. Fall through to classification metrics so
+        # f1/hamming/AUROC are reachable; genuine continuous regression
+        # targets are not binary indicators and return here unchanged.
+        is_multilabel_float = (
+            y_true_np.ndim >= 2
+            and y_true_np.shape[-1] > 1
+            and _is_binary_indicator(y_true_np)
+            and not _is_one_hot(y_true_np)
+        )
+        if not is_multilabel_float:
+            return regression_metrics
 
     # Detect task type.
     same_shape = y_true_np.shape == y_pred_np.shape
@@ -232,6 +279,8 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     unweighted_avg_f1 = 0.0
     all_f1 = []
     hamming_accuracy = 0.0
+    macro_auroc = float("nan")
+    per_class_auroc: list = []
     report: Dict[str, Any] = {}
 
     try:
@@ -253,6 +302,13 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
                 )
             if metric_name in ("all", "hamming_accuracy"):
                 hamming_accuracy = 1.0 - hamming_loss(y_true_norm, y_pred_norm)
+
+            if metric_name in ("all", "macro_auroc"):
+                n_labels = y_true_norm.shape[-1]
+                ml_scores = y_pred_np.reshape(-1, n_labels).astype(np.float64)
+                if not _looks_like_probabilities(ml_scores):
+                    ml_scores = _sigmoid(ml_scores)
+                macro_auroc, per_class_auroc = _safe_macro_auroc(y_true_norm, ml_scores)
 
             if metric_name == "all":
                 report = classification_report(
@@ -284,11 +340,17 @@ def compute_metrics(  # pylint: disable=too-many-branches,too-many-statements
     except ValueError as err:
         log(f"Error computing metrics: {err}")
 
-    return {
+    result: Dict[str, Any] = {
         "f1_score": float(weighted_avg_f1),
         "unweighted_f1": float(unweighted_avg_f1),
         "all_f1s": np.asarray(all_f1).tolist() if np.ndim(all_f1) else all_f1,
         "hamming_accuracy": float(hamming_accuracy),
+        "macro_auroc": float(macro_auroc),
+        "per_class_auroc": per_class_auroc,
         "report": report,
         "task_type": task_type,
     }
+    # Keep regression distances available for multi-hot float labels so that
+    # existing callers requesting neg_l2_dist/neg_l1_dist still work.
+    result.update(regression_metrics)
+    return result

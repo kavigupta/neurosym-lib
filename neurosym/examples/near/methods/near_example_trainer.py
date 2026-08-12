@@ -70,6 +70,7 @@ class NEARTrainerConfig:
             "hamming_accuracy",
             "f1_score",
             "unweighted_f1",
+            "macro_auroc",
             "neg_l2_dist",
             "neg_l1_dist",
         }
