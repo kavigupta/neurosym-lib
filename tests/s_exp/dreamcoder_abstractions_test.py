@@ -120,3 +120,47 @@ class TestCurriedLambdaFusion(unittest.TestCase):
             "(mapi_1 (lambda (lambda (+ $3 $0))) $0))) $0))"
         )
         self.assertEqual(_render_signature(sig), "[[i]] -> [[i]]")
+
+
+class TestNestedAbstractionReferences(unittest.TestCase):
+    """One abstraction defined in terms of another arrives with the inner one
+    inlined as `#(lambda ...)`. Once that inner abstraction is a production in the
+    DSL, the outer one references it rather than being skipped.
+    """
+
+    def test_references_added_production(self):
+        inner = "#(lambda (gt? 1 (sum $0)))"
+        outer = "#(lambda (#(lambda (gt? 1 (sum $0))) $0))"  # outer applies inner
+
+        dsl = _list_dsl()
+        # Before the inner abstraction is added, the outer one cannot be represented.
+        self.assertIsNone(
+            abstraction_production_from_dreamcoder(dsl, outer, outer)
+        )
+
+        inner_prod = abstraction_production_from_dreamcoder(dsl, inner, inner)
+        dsl = dsl.add_productions(inner_prod)
+        outer_prod = abstraction_production_from_dreamcoder(dsl, outer, outer)
+        # Outer applies inner (an `[i] -> b`) to its own `[i]` argument, so it has
+        # the same type, and its body references the inner production's symbol.
+        self.assertEqual(
+            render_type(outer_prod.type_signature().astype()), "[i] -> b"
+        )
+        self.assertIn(inner, ns.render_s_expression(outer_prod._body))
+
+    def test_reference_inside_fused_lambda(self):
+        # The referenced abstraction can appear inside a fused multi-arg lambda,
+        # applied to a remapped bound variable.
+        inner = "#(lambda (gt? 1 (sum $0)))"
+        outer = (
+            "#(lambda (mapi_3 (lambda (lambda "
+            "(#(lambda (gt? 1 (sum $0))) $0))) $0))"
+        )
+        dsl = _list_dsl()
+        dsl = dsl.add_productions(
+            abstraction_production_from_dreamcoder(dsl, inner, inner)
+        )
+        outer_prod = abstraction_production_from_dreamcoder(dsl, outer, outer)
+        self.assertEqual(
+            render_type(outer_prod.type_signature().astype()), "[[i]] -> [b]"
+        )
