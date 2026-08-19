@@ -249,7 +249,31 @@ def _lambda_symbol(dsl, arity):
     return None
 
 
-def _dreamcoder_abstraction_to_stitch_body(dreamcoder_abstraction):
+def _abstraction_name_mapping(dsl):
+    """Map already-added abstraction productions to atomic placeholder names.
+
+    Each abstraction is added to the DSL under its full DreamCoder ``#(lambda ...)``
+    string as its symbol. When a later abstraction is written in terms of an earlier
+    one, DreamCoder inlines the earlier one's ``#(lambda ...)`` into the body; this
+    mapping lets us rewrite those inlined occurrences to opaque names so they are
+    treated as references to the existing production rather than descended into.
+
+    :return: ``(name_mapping, placeholder_to_symbol)`` where ``name_mapping`` is a
+        list of ``(placeholder, anonymous)`` pairs and ``placeholder_to_symbol``
+        maps each placeholder back to the production symbol.
+    """
+    anonymous_symbols = [
+        prod.symbol() for prod in dsl.productions if prod.symbol().startswith("#")
+    ]
+    name_mapping = [
+        (f"__nested_abstraction_{i}", anonymous)
+        for i, anonymous in enumerate(anonymous_symbols)
+    ]
+    placeholder_to_symbol = {ph: anonymous for ph, anonymous in name_mapping}
+    return name_mapping, placeholder_to_symbol
+
+
+def _dreamcoder_abstraction_to_stitch_body(dreamcoder_abstraction, name_mapping=()):
     """Convert a DreamCoder invented-primitive string into stitch's canonical
     abstraction form, returning ``(body_string, arity)``.
 
@@ -258,9 +282,18 @@ def _dreamcoder_abstraction_to_stitch_body(dreamcoder_abstraction):
     keep their ``$``-de-Bruijn variables. Reuses stitch_core's conversion
     primitives directly -- the ``Abstraction.from_dreamcoder`` wrapper mishandles
     an empty ``name_mapping``.
+
+    ``name_mapping`` is a list of ``(placeholder, anonymous)`` pairs (see
+    :py:func:`_abstraction_name_mapping`); each nested ``#(lambda ...)`` invention
+    is replaced by its placeholder -- longest first, so a nested invention inside
+    another is not mangled -- before the de Bruijn conversion, so the placeholder
+    survives as an opaque atom rather than being descended into.
     """
     assert dreamcoder_abstraction.startswith("#"), dreamcoder_abstraction
-    sexpr = stitch_core.parse(dreamcoder_abstraction[1:])
+    body = dreamcoder_abstraction
+    for placeholder, anonymous in sorted(name_mapping, key=lambda kv: -len(kv[1])):
+        body = body.replace(anonymous, placeholder)
+    sexpr = stitch_core.parse(body[1:])
     sexpr, num_lambdas = stitch_core.strip_lambdas(sexpr)
     sexpr = stitch_core.dc_to_stitch_vars(sexpr, 0, num_lambdas)
     return stitch_core.show_sexpr(sexpr), num_lambdas
@@ -290,7 +323,9 @@ def _expected_child_arities(dsl, symbol, n_children):
     return arities
 
 
-def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
+def _convert_stitch_node(
+    node, expected_arity, dsl, placeholder_to_symbol, binder_levels, new_depth
+):
     """Recursively translate a parsed stitch node into a NeuroSym
     ``InitializedSExpression`` (or ``AbstractionIndexParameter``).
 
@@ -298,6 +333,9 @@ def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
         position (None if it does not expect a function). A curried run of that
         many single-argument lambdas is fused into one multi-argument lambda
         production.
+    :param placeholder_to_symbol: Maps placeholder names standing in for inlined
+        nested abstractions (see :py:func:`_abstraction_name_mapping`) back to the
+        already-added production symbol they reference.
     :param binder_levels: For each lambda binder currently in scope (outermost
         first), the *absolute environment level* it occupies in the translated
         program. DreamCoder curries -- the outermost lambda binds the first
@@ -310,10 +348,25 @@ def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
     symbol = node if isinstance(node, str) else node.symbol
     children = () if isinstance(node, str) else node.children
 
+    if symbol in placeholder_to_symbol:
+        # A nested invented primitive `#(lambda ...)`, rewritten to a placeholder
+        # upstream, that references an already-added abstraction production. Emit a
+        # reference to that production, converting any applied arguments.
+        referenced = placeholder_to_symbol[symbol]
+        arities = _expected_child_arities(dsl, referenced, len(children))
+        converted_children = tuple(
+            _convert_stitch_node(
+                child, arities[i], dsl, placeholder_to_symbol, binder_levels, new_depth
+            )
+            for i, child in enumerate(children)
+        )
+        return InitializedSExpression(referenced, converted_children, {})
+
     if symbol.startswith("#"):
         if children:
             # A metavariable applied to arguments (higher-order abstraction) or a
-            # nested invented primitive `#(lambda ...)` -- neither is expressible.
+            # nested `#(lambda ...)` invention not present in this DSL (so it was
+            # not rewritten to a placeholder above) -- neither is expressible.
             raise _UnrepresentableAbstraction()
         return AbstractionIndexParameter(int(symbol[1:]))
 
@@ -347,7 +400,8 @@ def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
         # the first argument, so map outermost -> position 0 by reversing the group.
         fused_levels = [new_depth + (arity - 1 - p) for p in range(arity)]
         converted_body = _convert_stitch_node(
-            body, None, dsl, binder_levels + fused_levels, new_depth + arity
+            body, None, dsl, placeholder_to_symbol, binder_levels + fused_levels,
+            new_depth + arity,
         )
         return InitializedSExpression(lam_symbol, (converted_body,), {})
 
@@ -357,13 +411,15 @@ def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
 
     arities = _expected_child_arities(dsl, symbol, len(children))
     converted_children = tuple(
-        _convert_stitch_node(child, arities[i], dsl, binder_levels, new_depth)
+        _convert_stitch_node(
+            child, arities[i], dsl, placeholder_to_symbol, binder_levels, new_depth
+        )
         for i, child in enumerate(children)
     )
     return InitializedSExpression(symbol, converted_children, {})
 
 
-def _stitch_body_to_initialized(node, dsl):
+def _stitch_body_to_initialized(node, dsl, placeholder_to_symbol=()):
     """Translate a parsed stitch abstraction body into a NeuroSym
     ``InitializedSExpression``.
 
@@ -374,12 +430,17 @@ def _stitch_body_to_initialized(node, dsl):
     a primitive is fused into the DSL's corresponding multi-argument lambda
     production, remapping the enclosed de Bruijn variables.
 
+    ``placeholder_to_symbol`` (see :py:func:`_abstraction_name_mapping`) maps
+    placeholder tokens standing in for inlined nested abstractions back to the
+    productions they reference.
+
     Returns None if the body cannot be represented (a higher-order metavariable
-    applied to arguments, an applied/free variable, an unknown primitive, or a
-    required multi-argument lambda production missing from the DSL).
+    applied to arguments, an applied/free variable, an unknown primitive, a
+    required multi-argument lambda production missing from the DSL, or a nested
+    abstraction not yet added to the DSL).
     """
     try:
-        return _convert_stitch_node(node, None, dsl, [], 0)
+        return _convert_stitch_node(node, None, dsl, dict(placeholder_to_symbol), [], 0)
     except (KeyError, _UnrepresentableAbstraction):
         return None
 
@@ -394,7 +455,9 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
     higher-order primitives like ``map``/``filter``/``all``) become the DSL's
     lambda production of matching arity -- a curried run of single-argument
     lambdas feeding a multi-argument primitive (e.g. ``mapi``/``reducei``) is
-    fused into one multi-argument lambda. Argument and return types are inferred
+    fused into one multi-argument lambda. A nested invented primitive (one
+    abstraction inlined into another) is rewritten to a reference to the
+    already-added production it names. Argument and return types are inferred
     from the body via :py:meth:`DSL.compute_type_abs`.
 
     :param dsl: The base DSL the abstraction is written over.
@@ -406,9 +469,10 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
         represented or typed in ``dsl`` -- an unknown primitive, failed type
         unification, a higher-order parameter application, or free variables.
     """
+    name_mapping, placeholder_to_symbol = _abstraction_name_mapping(dsl)
     try:
         body_string, _arity = _dreamcoder_abstraction_to_stitch_body(
-            dreamcoder_abstraction
+            dreamcoder_abstraction, name_mapping
         )
         parsed = parse_s_expression(body_string, for_stitch=True)
     except (stitch_core.InvalidAbstractionException, ValueError):
@@ -416,7 +480,7 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
         # arguments (its body does not render as a single s-expression). None of
         # these are representable NeuroSym abstractions.
         return None
-    body = _stitch_body_to_initialized(parsed, dsl)
+    body = _stitch_body_to_initialized(parsed, dsl, placeholder_to_symbol)
     if body is None:
         return None
     try:
