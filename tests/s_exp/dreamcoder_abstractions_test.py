@@ -1,15 +1,204 @@
+import functools
 import itertools
+import types
+import unittest
 from fractions import Fraction
 
 import numpy as np
 
 import neurosym as ns
+from neurosym.compression.process_abstraction import (
+    _convert_stitch_node,
+    abstraction_production_from_dreamcoder,
+)
 from neurosym.dsl.abstraction import AbstractionProduction, _with_index_parameters
+from neurosym.examples.dreamcoder.list_example import list_dslf
 from neurosym.program_dist.bigram import BigramProgramDistributionFamily
 from neurosym.types.type import AtomicType
 from neurosym.types.type_signature import FunctionTypeSignature
-from neurosym.types.type_string_repr import parse_type
+from neurosym.types.type_string_repr import parse_type, render_type
 from neurosym.types.type_with_environment import Environment, TypeWithEnvironment
+
+_LIST_OUTPUT_TYPES = [
+    "[i] -> [i]", "[i] -> b", "[i] -> i", "b -> [i]", "b -> b",
+    "b -> i", "i -> [i]", "i -> b", "i -> i",
+]
+
+
+@functools.lru_cache(maxsize=None)
+def _list_dsl():
+    # Building the list DSL is expensive (~20s); it is immutable and
+    # abstraction_production_from_dreamcoder does not mutate it, so cache it.
+    return list_dslf(*sorted(_LIST_OUTPUT_TYPES)).finalize()
+
+
+def _render_signature(signature):
+    return render_type(signature.astype())
+
+
+class TestAbstractionParameterTyping(unittest.TestCase):
+    """Typing DreamCoder abstractions whose parameters are used at various
+    depths and under various parents. Regression coverage for a crash where an
+    abstraction parameter (a stitch metavariable ``#k``) appeared as the body of
+    an inner lambda -- ``DSL.compute_type_abs`` assumed the parent was always a
+    function-typed production and asserted on the lambda's ``LambdaTypeSignature``.
+    """
+
+    def _signature_for(self, abstraction):
+        prod = abstraction_production_from_dreamcoder(
+            _list_dsl(), abstraction, abstraction
+        )
+        return None if prod is None else prod.type_signature()
+
+    def test_single_parameter(self):
+        sig = self._signature_for("#(lambda (gt? 1 (sum $0)))")
+        self.assertEqual(_render_signature(sig), "[i] -> b")
+
+    def test_two_parameters_ordered_by_application(self):
+        # $1 is the first-applied argument (#0), $0 the second (#1); a previous
+        # bug both crashed here and would have reversed the argument order.
+        sig = self._signature_for("#(lambda (lambda (gt? $1 (sum $0))))")
+        self.assertEqual(_render_signature(sig), "(i, [i]) -> b")
+
+    def test_parameter_as_lambda_body(self):
+        # Parameter $3 is the body of a nested inner lambda passed to mapi_1. This
+        # used to raise AssertionError in compute_type_abs. The nested single-arg
+        # lambdas are fused into mapi_1's 2-argument callback, so it now types:
+        # the callback ignores its args and returns parameter #1, mapping (range
+        # #0) to a list of #1 -- i.e. (int, t) -> [t].
+        sig = self._signature_for(
+            "#(lambda (lambda (lambda (mapi_1 (lambda (lambda $3)) (range $2)))))"
+        )
+        self.assertIsNotNone(sig)
+        self.assertEqual(len(sig.arguments), 2)
+        self.assertEqual(render_type(sig.arguments[0]), "i")
+        # return type is a list of the (polymorphic) second parameter.
+        self.assertEqual(sig.return_type, ns.ListType(sig.arguments[1]))
+
+
+class TestCurriedLambdaFusion(unittest.TestCase):
+    """DreamCoder curries higher-order arguments as nested single-argument
+    lambdas, but the list DSL types ``mapi``/``reducei`` with uncurried
+    multi-argument arrows. The conversion fuses such lambda runs into the DSL's
+    matching multi-argument lambda production; these tests pin the resulting types
+    and the correctness of the de Bruijn remapping.
+    """
+
+    def _signature_for(self, abstraction):
+        prod = abstraction_production_from_dreamcoder(
+            _list_dsl(), abstraction, abstraction
+        )
+        return None if prod is None else prod.type_signature()
+
+    def test_constant_callback(self):
+        # mapi_1 with a callback that ignores both args and returns 0.
+        sig = self._signature_for("#(lambda (mapi_1 (lambda (lambda 0)) $0))")
+        self.assertEqual(_render_signature(sig), "[i] -> [i]")
+
+    def test_callback_uses_both_fused_arguments(self):
+        # (+ $1 $0) uses mapi_1's index ($1) and element ($0).
+        sig = self._signature_for("#(lambda (mapi_1 (lambda (lambda (+ $1 $0))) $0))")
+        self.assertEqual(_render_signature(sig), "[i] -> [i]")
+
+    def test_three_argument_callback_reducei(self):
+        # reducei_1 takes a 3-argument callback (index, acc, element) -> fused into
+        # the DSL's 3-argument lambda (lam_2).
+        sig = self._signature_for(
+            "#(lambda (reducei_1 (lambda (lambda (lambda (+ $1 $0)))) 0 $0))"
+        )
+        self.assertEqual(_render_signature(sig), "[i] -> i")
+
+    def test_fused_argument_order_is_not_symmetric(self):
+        # mapi_3's callback binds (index : int, element : [i]). index-into-list
+        # requires (int, list); it types only if the fused binders keep that order.
+        ok = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda (index $1 $0))) $0))"
+        )
+        self.assertIsNotNone(ok)
+        self.assertEqual(len(ok.arguments), 1)
+        self.assertEqual(render_type(ok.arguments[0]), "[[i]]")
+        # Swapping the two references is ill-typed (index wants int first).
+        swapped = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda (index $0 $1))) $0))"
+        )
+        self.assertIsNone(swapped)
+
+    def test_deeply_nested_variable_reference(self):
+        # Inner mapi_1 callback references the OUTER mapi_3 index via $3, crossing
+        # the fused inner group; exercises the depth-aware de Bruijn remap.
+        sig = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda "
+            "(mapi_1 (lambda (lambda (+ $3 $0))) $0))) $0))"
+        )
+        self.assertEqual(_render_signature(sig), "[[i]] -> [[i]]")
+
+    def test_free_variable_asserts_rather_than_skipping(self):
+        # DreamCoder abstractions are closed and every parameter reference is
+        # rewritten to `#k` upstream, so a surviving free `$` is impossible for
+        # valid input -- it signals malformed input or a binder-tracking bug and
+        # must fail loudly, not silently skip. `$5` here is bound by nothing.
+        node = types.SimpleNamespace(
+            symbol="sum",
+            children=(types.SimpleNamespace(symbol="$5", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(node, None, _list_dsl(), {}, [], 0)
+
+    def test_applied_metavariable_asserts(self):
+        # A metavariable applied to arguments (higher-order abstraction) is
+        # forbidden by Stitch's no_curried_metavars flag, so reaching one signals
+        # a dropped flag -- assert rather than skip. Stitch renders an applied
+        # metavariable with a bare `#` head and a non-lambda first child (e.g.
+        # `#(1)` for `($0 1)`), distinct from a nested `#(lambda ...)` invention.
+        node = types.SimpleNamespace(
+            symbol="#",
+            children=(types.SimpleNamespace(symbol="1", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(node, None, _list_dsl(), {}, [], 0)
+
+    def test_nested_abstraction_references_added_production(self):
+        # One abstraction defined in terms of another arrives with the inner one
+        # inlined as `#(lambda ...)`. Once that inner abstraction is a production in
+        # the DSL, the outer one should reference it (not skip, not crash).
+        inner = "#(lambda (gt? 1 (sum $0)))"
+        outer = "#(lambda (#(lambda (gt? 1 (sum $0))) $0))"  # outer applies inner
+
+        dsl = _list_dsl()
+        # Before the inner abstraction is added, the outer one cannot be represented.
+        self.assertIsNone(
+            abstraction_production_from_dreamcoder(dsl, outer, outer)
+        )
+
+        inner_prod = abstraction_production_from_dreamcoder(dsl, inner, inner)
+        dsl = dsl.add_productions(inner_prod)
+        outer_prod = abstraction_production_from_dreamcoder(dsl, outer, outer)
+        # Outer applies inner (an `[i] -> b`) to its own `[i]` argument, so it has
+        # the same type, and its body references the inner production's symbol.
+        self.assertEqual(_render_signature(outer_prod.type_signature()), "[i] -> b")
+        self.assertIn(inner, ns.render_s_expression(outer_prod._body))
+
+    def test_nested_abstraction_inside_fused_lambda(self):
+        # The referenced abstraction can appear inside a fused multi-arg lambda,
+        # applied to a remapped bound variable.
+        inner = "#(lambda (gt? 1 (sum $0)))"
+        outer = "#(lambda (mapi_3 (lambda (lambda (#(lambda (gt? 1 (sum $0))) $0))) $0))"
+        dsl = _list_dsl()
+        dsl = dsl.add_productions(
+            abstraction_production_from_dreamcoder(dsl, inner, inner)
+        )
+        outer_prod = abstraction_production_from_dreamcoder(dsl, outer, outer)
+        self.assertEqual(_render_signature(outer_prod.type_signature()), "[[i]] -> [b]")
+
+    def test_partially_applied_higher_order_argument_asserts(self):
+        # mapi_1's slot expects a 2-argument callback (arity 2); supplying only
+        # one lambda cannot happen under Stitch's eta_long flag, so assert.
+        one_lambda = types.SimpleNamespace(
+            symbol="lambda",
+            children=(types.SimpleNamespace(symbol="0", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(one_lambda, 2, _list_dsl(), {}, [], 0)
 
 
 def matchBr(s: str, ind: int) -> int | None:
