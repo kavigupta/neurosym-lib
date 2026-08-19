@@ -1,8 +1,10 @@
 import functools
+import types
 import unittest
 
 import neurosym as ns
 from neurosym.compression.process_abstraction import (
+    _convert_stitch_node,
     abstraction_production_from_dreamcoder,
 )
 from neurosym.examples.dreamcoder.list_example import list_dsl
@@ -164,3 +166,42 @@ class TestNestedAbstractionReferences(unittest.TestCase):
         self.assertEqual(
             render_type(outer_prod.type_signature().astype()), "[[i]] -> [b]"
         )
+
+
+class TestSkipReasonsAndAssertions(unittest.TestCase):
+    """Cases that cannot occur for valid input (given how Stitch is invoked) must
+    fail loudly with an assertion rather than being silently skipped.
+    """
+
+    def test_free_variable_asserts(self):
+        # DreamCoder abstractions are closed and every parameter reference is
+        # rewritten to `#k` upstream, so a surviving free `$` is impossible for
+        # valid input -- it signals malformed input or a binder-tracking bug.
+        node = types.SimpleNamespace(
+            symbol="sum",
+            children=(types.SimpleNamespace(symbol="$5", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(node, None, _list_dsl(), {}, [], 0)
+
+    def test_applied_metavariable_asserts(self):
+        # A metavariable applied to arguments (higher-order abstraction) is
+        # forbidden by Stitch's no_curried_metavars flag. Stitch renders it with a
+        # bare `#` head and a non-lambda first child (e.g. `#(1)` for `($0 1)`),
+        # distinct from a nested `#(lambda ...)` invention.
+        node = types.SimpleNamespace(
+            symbol="#",
+            children=(types.SimpleNamespace(symbol="1", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(node, None, _list_dsl(), {}, [], 0)
+
+    def test_partially_applied_higher_order_argument_asserts(self):
+        # mapi_1's slot expects a 2-argument callback (arity 2); supplying only one
+        # lambda cannot happen under Stitch's eta_long flag, so assert.
+        one_lambda = types.SimpleNamespace(
+            symbol="lambda",
+            children=(types.SimpleNamespace(symbol="0", children=()),),
+        )
+        with self.assertRaises(AssertionError):
+            _convert_stitch_node(one_lambda, 2, _list_dsl(), {}, [], 0)

@@ -1,4 +1,7 @@
+import collections
 import itertools
+import os
+import sys
 import uuid
 from typing import List, Union
 
@@ -233,9 +236,26 @@ class _StitchLambdaRewriter:
 
 class _UnrepresentableAbstraction(Exception):
     """Raised internally when a stitch abstraction body cannot be represented as a
-    NeuroSym ``InitializedSExpression`` -- e.g. a higher-order metavariable applied
-    to arguments, an applied/free variable, or a curried lambda whose required
-    multi-argument lambda production is absent from the DSL."""
+    NeuroSym ``InitializedSExpression``. ``reason`` is a short category label used
+    to diagnose which cases actually occur in practice."""
+
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
+
+
+# Counts, by reason label, of abstractions that ``abstraction_production_from_dreamcoder``
+# could not represent (and therefore skipped). Kept as a lightweight diagnostic:
+# every skip is a genuine representational limitation (not a bug), so this makes
+# it observable which limitations actually bite on a given DSL/run. Truly
+# impossible cases (e.g. a free variable) assert instead of landing here.
+ABSTRACTION_SKIP_REASONS = collections.Counter()
+
+
+def _record_abstraction_skip(reason, dreamcoder_abstraction):
+    ABSTRACTION_SKIP_REASONS[reason] += 1
+    if os.environ.get("NEUROSYM_LOG_ABSTRACTION_SKIPS"):
+        print(f"[abstraction-skip:{reason}] {dreamcoder_abstraction}", file=sys.stderr)
 
 
 def _lambda_symbol(dsl, arity):
@@ -363,21 +383,48 @@ def _convert_stitch_node(
         return InitializedSExpression(referenced, converted_children, {})
 
     if symbol.startswith("#"):
-        if children:
-            # A metavariable applied to arguments (higher-order abstraction) or a
-            # nested `#(lambda ...)` invention not present in this DSL (so it was
-            # not rewritten to a placeholder above) -- neither is expressible.
-            raise _UnrepresentableAbstraction()
-        return AbstractionIndexParameter(int(symbol[1:]))
+        if not children:
+            # `#k` metavariable leaf (abstraction parameter).
+            return AbstractionIndexParameter(int(symbol[1:]))
+        # A `#`-headed node with children is one of two things that stitch both
+        # renders with a bare `#` head: a nested invented primitive `#(lambda ...)`
+        # (first child is a lambda) or a metavariable applied to arguments (first
+        # child is not). Nested inventions present in the DSL were already rewritten
+        # to placeholders upstream, so a `#(lambda ...)` reaching here references an
+        # abstraction NOT in this DSL.
+        first_child_is_lambda = (
+            not isinstance(children[0], str)
+            and children[0].symbol in ("lam", "lambda")
+        )
+        if first_child_is_lambda:
+            # Unrepresentable until the referenced abstraction is added (e.g. it was
+            # itself skipped, so everything built on it cascades to a skip too).
+            raise _UnrepresentableAbstraction("nested_abstraction")
+        # A metavariable applied to arguments == a higher-order abstraction, which
+        # NeuroSym has no node to represent; callers run Stitch with
+        # ``no_curried_metavars`` (see ``single_step_compression`` and lilo's
+        # stitch_proposer) to forbid these, so reaching one means a dropped flag.
+        raise AssertionError(
+            f"metavariable applied to {len(children)} argument(s); callers must run "
+            f"Stitch with no_curried_metavars to forbid this"
+        )
 
     if symbol.startswith("$"):
         if children:
             # Applying a bound variable -- not expressible as a NeuroSym variable.
-            raise _UnrepresentableAbstraction()
+            # (Possible in a DSL whose higher-order primitives pass a function to
+            # their callback; never seen in the list domain.)
+            raise _UnrepresentableAbstraction("applied_bound_variable")
         old_index = int(symbol[1:])
-        if not 0 <= old_index < len(binder_levels):
-            # A free variable (not bound by any enclosing inner lambda).
-            raise _UnrepresentableAbstraction()
+        # Not a representational limitation but an invariant: every abstraction
+        # parameter reference was rewritten to `#k` upstream, so a surviving `$`
+        # must be bound by an enclosing inner lambda. A free one means either a
+        # malformed abstraction (DreamCoder abstractions are closed) or a bug in
+        # the lambda-fusion binder bookkeeping -- fail loudly rather than skip.
+        assert 0 <= old_index < len(binder_levels), (
+            f"free de Bruijn variable {symbol}: index {old_index} is not bound by "
+            f"any of the {len(binder_levels)} enclosing inner lambdas"
+        )
         # De Bruijn index counts from the innermost binder; look up that binder's
         # level in the translated program and re-express it as a de Bruijn index.
         new_level = binder_levels[len(binder_levels) - 1 - old_index]
@@ -387,13 +434,17 @@ def _convert_stitch_node(
         arity = expected_arity if expected_arity and expected_arity >= 1 else 1
         lam_symbol = _lambda_symbol(dsl, arity)
         if lam_symbol is None:
-            raise _UnrepresentableAbstraction()
+            raise _UnrepresentableAbstraction("missing_lambda_arity")
         # Peel `arity` nested single-argument lambdas down to the shared body.
+        # Callers run Stitch with ``eta_long``, so a higher-order argument arrives
+        # as a full run of explicit lambdas; finding fewer than the slot's arrow
+        # arity means a dropped flag, not a partially-applied abstraction.
         body = node
         for _ in range(arity):
-            if isinstance(body, str) or body.symbol not in ("lam", "lambda"):
-                # Fewer lambdas than the expected arrow arity (partial application).
-                raise _UnrepresentableAbstraction()
+            assert not isinstance(body, str) and body.symbol in ("lam", "lambda"), (
+                f"expected {arity} nested lambdas for an arity-{arity} argument "
+                f"but found fewer; callers must run Stitch with eta_long"
+            )
             (body,) = body.children
         # The fused lambda binds `arity` new levels. In a native multi-argument
         # lambda, argument position k is `$k`; the outermost curried lambda binds
@@ -434,15 +485,21 @@ def _stitch_body_to_initialized(node, dsl, placeholder_to_symbol=()):
     placeholder tokens standing in for inlined nested abstractions back to the
     productions they reference.
 
-    Returns None if the body cannot be represented (a higher-order metavariable
-    applied to arguments, an applied/free variable, an unknown primitive, a
+    Raises :py:class:`_UnrepresentableAbstraction` (with a ``reason`` label) if the
+    body cannot be represented -- an applied bound variable, an unknown primitive, a
     required multi-argument lambda production missing from the DSL, or a nested
-    abstraction not yet added to the DSL).
+    abstraction not yet added to the DSL. Cases that cannot occur given how callers
+    invoke Stitch instead trip an assertion: a free variable (abstractions are
+    closed), a higher-order metavariable application (forbidden by
+    ``no_curried_metavars``), and a partially-applied higher-order argument (ruled
+    out by ``eta_long``).
     """
     try:
         return _convert_stitch_node(node, None, dsl, dict(placeholder_to_symbol), [], 0)
-    except (KeyError, _UnrepresentableAbstraction):
-        return None
+    except KeyError as e:
+        # dsl.get_production(...) failed: a primitive in the abstraction is absent
+        # from this DSL.
+        raise _UnrepresentableAbstraction("unknown_primitive") from e
 
 
 def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
@@ -479,16 +536,21 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
         # Unparseable / free variables / a higher-order metavariable applied to
         # arguments (its body does not render as a single s-expression). None of
         # these are representable NeuroSym abstractions.
+        _record_abstraction_skip("unparseable", dreamcoder_abstraction)
         return None
-    body = _stitch_body_to_initialized(parsed, dsl, placeholder_to_symbol)
-    if body is None:
+    try:
+        body = _stitch_body_to_initialized(parsed, dsl, placeholder_to_symbol)
+    except _UnrepresentableAbstraction as e:
+        _record_abstraction_skip(e.reason, dreamcoder_abstraction)
         return None
     try:
         type_with_env = dsl.compute_type_abs(body)
     except KeyError:
         # A primitive referenced by the abstraction is absent from this DSL.
+        _record_abstraction_skip("unknown_primitive_in_typing", dreamcoder_abstraction)
         return None
     if type_with_env is None:
+        _record_abstraction_skip("type_unification_failed", dreamcoder_abstraction)
         return None
 
     if isinstance(type_with_env.typ, ArrowType):
