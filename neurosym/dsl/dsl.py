@@ -15,11 +15,11 @@ from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import GenericTypeVariable, Type
+from ..types.type import GenericTypeVariable, Type, TypeVariable
 from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
 from .abstraction import AbstractionIndexParameter, AbstractionParameter
-from ..types.type_signature import FunctionTypeSignature
+from ..types.type_signature import LambdaTypeSignature
 from ..types.type_with_environment import StrictEnvironment, Environment
 
 ROOT_SYMBOL = "<root>"
@@ -307,6 +307,7 @@ class DSL:
         self,
         program: SExpression | InitializedSExpression | str,
         lookup: Callable[[SExpression], TypeWithEnvironment] = lambda x: None,
+        depth: int = 0,
     ) -> TypeWithEnvironment:
         """
         Computes the type of the given abstraction.
@@ -315,60 +316,58 @@ class DSL:
         :param lookup: A function that can be used to look up the type of a program. This
             is useful for handling special caes. If the function returns None, we compute
             the type of the program using the DSL.
+        :param depth: The number of enclosing lambdas above ``program``. Used to key
+            abstraction parameters in the environment so that they survive
+            lambda-unwinding (see below).
         """
         if lookup is not None:
             res = lookup(program)
             if res is not None:
                 return res
-        if isinstance(program, SExpression):
-            child_types = [
-                self.compute_type_abs(child, lookup) for child in program.children
-            ]
-        elif isinstance(program, InitializedSExpression):
-            child_types = []
-            for child_index in range(len(program.children)):
-                child = program.children[child_index]
-                if isinstance(child, AbstractionIndexParameter):
-                    function_type_signature = self.get_production(
-                        program.symbol
-                    ).type_signature()
-                    assert isinstance(function_type_signature, FunctionTypeSignature)
-
-                    # AbstractionIndexParameter.index is the de Bruijn variable index (e.g. $1, $0). Use it directly for the environment key.
-                    parameter_index = child.index
-                    assert (
-                        0 <= parameter_index < len(function_type_signature.arguments)
-                    ), (
-                        f"Invalid abstraction parameter index {parameter_index} "
-                        f"for production {program.symbol} with arity "
-                        f"{len(function_type_signature.arguments)}"
-                    )
-
-                    # Use child position to determine the argument type expected by the production, but use AbstractionIndexParameter.index as the key in the environment (de Bruijn index).
-                    expected_arg_index = child_index
-                    assert (
-                        0 <= expected_arg_index < len(function_type_signature.arguments)
-                    ), (
-                        f"Invalid argument position {expected_arg_index} "
-                        f"for production {program.symbol} with arity "
-                        f"{len(function_type_signature.arguments)}"
-                    )
-                    parameter_type = function_type_signature.arguments[expected_arg_index]
-                    env = StrictEnvironment(
-                        frozendict({parameter_index: parameter_type})
-                    )
-                    child_types.append(
-                        TypeWithEnvironment(
-                            typ=parameter_type,
-                            env=env,
-                        )
-                    )
-                else:
-                    child_types.append(self.compute_type_abs(child, lookup))
-        else:
+        if not isinstance(program, (SExpression, InitializedSExpression)):
             raise Exception(f"Invalid program type: {type(program)}")
-        prod = self.get_production(program.symbol)
-        return prod.type_signature().unify_arguments(child_types)
+        signature = self.get_production(program.symbol).type_signature()
+        # A lambda binds its arguments, so its body (its only child) is one level
+        # deeper. Every other production leaves its children at the same depth.
+        child_depth = depth + (
+            signature.function_arity
+            if isinstance(signature, LambdaTypeSignature)
+            else 0
+        )
+        child_types = []
+        for child in program.children:
+            if isinstance(child, AbstractionIndexParameter):
+                child_types.append(
+                    self._abstraction_parameter_type(child, child_depth)
+                )
+            else:
+                child_types.append(self.compute_type_abs(child, lookup, child_depth))
+        return signature.unify_arguments(child_types)
+
+    @staticmethod
+    def _abstraction_parameter_type(
+        child: "AbstractionIndexParameter", depth: int
+    ) -> TypeWithEnvironment:
+        """Type of an abstraction parameter reference (a stitch metavariable ``#k``).
+
+        Its type is a fresh type variable, shared across every reference to the
+        same parameter, whose concrete value is recovered by unification against
+        whichever production consumes it (a primitive argument slot, a lambda
+        body, ...). This works uniformly whether the parent is function-typed or a
+        lambda.
+
+        The parameter is recorded in the environment at key ``child.index + depth``.
+        Abstraction parameters behave like variables bound *outside* the body, so
+        they must sit above any enclosing lambda bindings; offsetting by ``depth``
+        (the number of enclosing lambdas) ensures that as each lambda unwinds the
+        environment, the parameter shifts down without being consumed, ultimately
+        landing at the stable key ``child.index``.
+        """
+        parameter_type = TypeVariable(f"__abstraction_parameter_{child.index}")
+        return TypeWithEnvironment(
+            typ=parameter_type,
+            env=StrictEnvironment(frozendict({child.index + depth: parameter_type})),
+        )
 
     def render(self) -> str:
         """

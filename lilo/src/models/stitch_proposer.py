@@ -236,7 +236,21 @@ class StitchProposerLibraryLearner(StitchBase, model_loaders.ModelLoader):
             frontiers_dict = json.load(f)
             stitch_kwargs = stitch.from_dreamcoder(frontiers_dict)
 
-        stitch_kwargs.update(dict(eta_long=True, no_mismatch_check=True))
+        # no_curried_metavars / no_curried_bodies: forbid higher-order
+        # abstractions (a metavariable applied to arguments, e.g.
+        # `#(lambda (lambda (lambda ($1 ($1 $2 $2) $2))))`). NeuroSym's
+        # abstraction representation has no "apply this parameter as a function"
+        # node, so such abstractions are unrepresentable downstream. Match the
+        # flags neurosym's own compression wrapper uses
+        # (neurosym.compression.process_abstraction.single_step_compression).
+        stitch_kwargs.update(
+            dict(
+                eta_long=True,
+                no_mismatch_check=True,
+                no_curried_metavars=True,
+                no_curried_bodies=True,
+            )
+        )
         
         compression_result = stitch.compress(
         **stitch_kwargs,
