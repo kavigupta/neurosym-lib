@@ -49,13 +49,74 @@ class TestAbstractionParameterTyping(unittest.TestCase):
         sig = self._signature_for("#(lambda (lambda (gt? $1 (sum $0))))")
         self.assertEqual(_render_signature(sig), "(i, [i]) -> b")
 
-    def test_parameter_as_lambda_body_does_not_crash(self):
+    def test_parameter_as_lambda_body(self):
         # Parameter $3 is the body of a nested inner lambda passed to mapi_1. A
-        # naive implementation raises AssertionError in compute_type_abs. It is not
-        # representable in the list DSL (mapi_1 wants an uncurried 2-argument
-        # callback, DreamCoder supplies nested single-argument lambdas), so it must
-        # be skipped (None) rather than crash.
+        # naive implementation raises AssertionError in compute_type_abs. The nested
+        # single-argument lambdas are fused into mapi_1's 2-argument callback, so it
+        # types: the callback ignores its args and returns parameter #1, mapping
+        # (range #0) to a list of #1 -- i.e. (int, t) -> [t].
         sig = self._signature_for(
             "#(lambda (lambda (lambda (mapi_1 (lambda (lambda $3)) (range $2)))))"
         )
-        self.assertIsNone(sig)
+        self.assertIsNotNone(sig)
+        self.assertEqual(len(sig.arguments), 2)
+        self.assertEqual(render_type(sig.arguments[0]), "i")
+        # return type is a list of the (polymorphic) second parameter.
+        self.assertEqual(sig.return_type, ns.ListType(sig.arguments[1]))
+
+
+class TestCurriedLambdaFusion(unittest.TestCase):
+    """DreamCoder curries higher-order arguments as nested single-argument
+    lambdas, but the list DSL types ``mapi``/``reducei`` with uncurried
+    multi-argument arrows. The conversion fuses such lambda runs into the DSL's
+    matching multi-argument lambda production; these tests pin the resulting types
+    and the correctness of the de Bruijn remapping.
+    """
+
+    def _signature_for(self, abstraction):
+        prod = abstraction_production_from_dreamcoder(
+            _list_dsl(), abstraction, abstraction
+        )
+        return None if prod is None else prod.type_signature()
+
+    def test_constant_callback(self):
+        # mapi_1 with a callback that ignores both args and returns 0.
+        sig = self._signature_for("#(lambda (mapi_1 (lambda (lambda 0)) $0))")
+        self.assertEqual(_render_signature(sig), "[i] -> [i]")
+
+    def test_callback_uses_both_fused_arguments(self):
+        # (+ $1 $0) uses mapi_1's index ($1) and element ($0).
+        sig = self._signature_for("#(lambda (mapi_1 (lambda (lambda (+ $1 $0))) $0))")
+        self.assertEqual(_render_signature(sig), "[i] -> [i]")
+
+    def test_three_argument_callback_reducei(self):
+        # reducei_1 takes a 3-argument callback (index, acc, element) -> fused into
+        # the DSL's 3-argument lambda (lam_2).
+        sig = self._signature_for(
+            "#(lambda (reducei_1 (lambda (lambda (lambda (+ $1 $0)))) 0 $0))"
+        )
+        self.assertEqual(_render_signature(sig), "[i] -> i")
+
+    def test_fused_argument_order_is_not_symmetric(self):
+        # mapi_3's callback binds (index : int, element : [i]). index-into-list
+        # requires (int, list); it types only if the fused binders keep that order.
+        ok = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda (index $1 $0))) $0))"
+        )
+        self.assertIsNotNone(ok)
+        self.assertEqual(len(ok.arguments), 1)
+        self.assertEqual(render_type(ok.arguments[0]), "[[i]]")
+        # Swapping the two references is ill-typed (index wants int first).
+        swapped = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda (index $0 $1))) $0))"
+        )
+        self.assertIsNone(swapped)
+
+    def test_deeply_nested_variable_reference(self):
+        # Inner mapi_1 callback references the OUTER mapi_3 index via $3, crossing
+        # the fused inner group; exercises the depth-aware de Bruijn remap.
+        sig = self._signature_for(
+            "#(lambda (mapi_3 (lambda (lambda "
+            "(mapi_1 (lambda (lambda (+ $3 $0))) $0))) $0))"
+        )
+        self.assertEqual(_render_signature(sig), "[[i]] -> [[i]]")
