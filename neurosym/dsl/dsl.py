@@ -15,9 +15,12 @@ from neurosym.utils.tree_trie import TreeTrie
 
 from ..programs.hole import Hole
 from ..programs.s_expression import InitializedSExpression, SExpression
-from ..types.type import GenericTypeVariable, Type
+from ..types.type import GenericTypeVariable, Type, TypeVariable
 from .minimal_term_size_for_type_computer import MinimalTermSizeForTypeComputer
 from .production import Production
+from .abstraction import AbstractionIndexParameter, AbstractionParameter
+from ..types.type_signature import LambdaTypeSignature
+from ..types.type_with_environment import StrictEnvironment, Environment
 
 ROOT_SYMBOL = "<root>"
 
@@ -299,6 +302,72 @@ class DSL:
         child_types = [self.compute_type(child, lookup) for child in program.children]
         prod = self.get_production(program.symbol)
         return prod.type_signature().unify_arguments(child_types)
+
+    def compute_type_abs(
+        self,
+        program: SExpression | InitializedSExpression | str,
+        lookup: Callable[[SExpression], TypeWithEnvironment] = lambda x: None,
+        depth: int = 0,
+    ) -> TypeWithEnvironment:
+        """
+        Computes the type of the given abstraction.
+
+        :param program: The program to compute the type of.
+        :param lookup: A function that can be used to look up the type of a program. This
+            is useful for handling special caes. If the function returns None, we compute
+            the type of the program using the DSL.
+        :param depth: The number of enclosing lambdas above ``program``. Used to key
+            abstraction parameters in the environment so that they survive
+            lambda-unwinding (see below).
+        """
+        if lookup is not None:
+            res = lookup(program)
+            if res is not None:
+                return res
+        if not isinstance(program, (SExpression, InitializedSExpression)):
+            raise Exception(f"Invalid program type: {type(program)}")
+        signature = self.get_production(program.symbol).type_signature()
+        # A lambda binds its arguments, so its body (its only child) is one level
+        # deeper. Every other production leaves its children at the same depth.
+        child_depth = depth + (
+            signature.function_arity
+            if isinstance(signature, LambdaTypeSignature)
+            else 0
+        )
+        child_types = []
+        for child in program.children:
+            if isinstance(child, AbstractionIndexParameter):
+                child_types.append(
+                    self._abstraction_parameter_type(child, child_depth)
+                )
+            else:
+                child_types.append(self.compute_type_abs(child, lookup, child_depth))
+        return signature.unify_arguments(child_types)
+
+    @staticmethod
+    def _abstraction_parameter_type(
+        child: "AbstractionIndexParameter", depth: int
+    ) -> TypeWithEnvironment:
+        """Type of an abstraction parameter reference (a stitch metavariable ``#k``).
+
+        Its type is a fresh type variable, shared across every reference to the
+        same parameter, whose concrete value is recovered by unification against
+        whichever production consumes it (a primitive argument slot, a lambda
+        body, ...). This works uniformly whether the parent is function-typed or a
+        lambda.
+
+        The parameter is recorded in the environment at key ``child.index + depth``.
+        Abstraction parameters behave like variables bound *outside* the body, so
+        they must sit above any enclosing lambda bindings; offsetting by ``depth``
+        (the number of enclosing lambdas) ensures that as each lambda unwinds the
+        environment, the parameter shifts down without being consumed, ultimately
+        landing at the stable key ``child.index``.
+        """
+        parameter_type = TypeVariable(f"__abstraction_parameter_{child.index}")
+        return TypeWithEnvironment(
+            typ=parameter_type,
+            env=StrictEnvironment(frozendict({child.index + depth: parameter_type})),
+        )
 
     def render(self) -> str:
         """
