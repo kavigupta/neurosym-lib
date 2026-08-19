@@ -231,15 +231,20 @@ class _StitchLambdaRewriter:
         )
 
 
-def _single_arg_lambda_symbol(dsl):
-    """Symbol of the DSL's single-argument lambda production (e.g. ``lam_0``).
+class _UnrepresentableAbstraction(Exception):
+    """Raised internally when a stitch abstraction body cannot be represented as a
+    NeuroSym ``InitializedSExpression`` -- e.g. a higher-order metavariable applied
+    to arguments, an applied/free variable, or a curried lambda whose required
+    multi-argument lambda production is absent from the DSL."""
 
-    DreamCoder lambdas are always single-argument (curried), so every inner
-    lambda in a DreamCoder abstraction maps to this production. Returns None if
-    the DSL has no single-argument lambda.
+
+def _lambda_symbol(dsl, arity):
+    """Symbol of the DSL's ``arity``-argument lambda production (``lam_0`` for a
+    single-argument lambda, ``lam_1`` for a two-argument one, ...), or None if the
+    DSL has no lambda of that arity.
     """
     for prod in dsl.productions:
-        if prod.base_symbol() == "lam" and getattr(prod, "arity", None) == 1:
+        if prod.base_symbol() == "lam" and getattr(prod, "arity", None) == arity:
             return prod.symbol()
     return None
 
@@ -261,32 +266,122 @@ def _dreamcoder_abstraction_to_stitch_body(dreamcoder_abstraction):
     return stitch_core.show_sexpr(sexpr), num_lambdas
 
 
-def _stitch_body_to_initialized(node, lam_symbol):
+def _expected_child_arities(dsl, symbol, n_children):
+    """For a production applied to ``n_children`` arguments, the arrow arity
+    expected at each argument slot -- the number of arguments the function passed
+    there takes -- or None for slots that do not expect a function.
+
+    A slot expects a function iff the production's declared type for that argument
+    is an :py:class:`~neurosym.types.type.ArrowType`; its arity is the number of
+    inputs to that arrow. DreamCoder curries higher-order arguments as nested
+    single-argument lambdas, so this is how many of them to fuse back into one
+    multi-argument lambda production (see :py:func:`_stitch_body_to_initialized`).
+    """
+    signature = dsl.get_production(symbol).type_signature()
+    arguments = getattr(signature, "arguments", None)
+    arities = []
+    for i in range(n_children):
+        arg_type = (
+            arguments[i] if arguments is not None and i < len(arguments) else None
+        )
+        arities.append(
+            len(arg_type.input_type) if isinstance(arg_type, ArrowType) else None
+        )
+    return arities
+
+
+def _convert_stitch_node(node, expected_arity, dsl, binder_levels, new_depth):
+    """Recursively translate a parsed stitch node into a NeuroSym
+    ``InitializedSExpression`` (or ``AbstractionIndexParameter``).
+
+    :param expected_arity: The arrow arity the consuming context expects at this
+        position (None if it does not expect a function). A curried run of that
+        many single-argument lambdas is fused into one multi-argument lambda
+        production.
+    :param binder_levels: For each lambda binder currently in scope (outermost
+        first), the *absolute environment level* it occupies in the translated
+        program. DreamCoder curries -- the outermost lambda binds the first
+        argument -- whereas a NeuroSym multi-argument lambda numbers ``$k`` by
+        argument position, so fusing a group reverses the binders within it; this
+        list records the resulting remapping so de Bruijn variables (at any depth)
+        can be rewritten correctly.
+    :param new_depth: The number of binders in scope in the translated program.
+    """
+    symbol = node if isinstance(node, str) else node.symbol
+    children = () if isinstance(node, str) else node.children
+
+    if symbol.startswith("#"):
+        if children:
+            # A metavariable applied to arguments (higher-order abstraction) or a
+            # nested invented primitive `#(lambda ...)` -- neither is expressible.
+            raise _UnrepresentableAbstraction()
+        return AbstractionIndexParameter(int(symbol[1:]))
+
+    if symbol.startswith("$"):
+        if children:
+            # Applying a bound variable -- not expressible as a NeuroSym variable.
+            raise _UnrepresentableAbstraction()
+        old_index = int(symbol[1:])
+        if not 0 <= old_index < len(binder_levels):
+            # A free variable (not bound by any enclosing inner lambda).
+            raise _UnrepresentableAbstraction()
+        # De Bruijn index counts from the innermost binder; look up that binder's
+        # level in the translated program and re-express it as a de Bruijn index.
+        new_level = binder_levels[len(binder_levels) - 1 - old_index]
+        return InitializedSExpression(f"${new_depth - 1 - new_level}", (), {})
+
+    if symbol in ("lam", "lambda"):
+        arity = expected_arity if expected_arity and expected_arity >= 1 else 1
+        lam_symbol = _lambda_symbol(dsl, arity)
+        if lam_symbol is None:
+            raise _UnrepresentableAbstraction()
+        # Peel `arity` nested single-argument lambdas down to the shared body.
+        body = node
+        for _ in range(arity):
+            if isinstance(body, str) or body.symbol not in ("lam", "lambda"):
+                # Fewer lambdas than the expected arrow arity (partial application).
+                raise _UnrepresentableAbstraction()
+            (body,) = body.children
+        # The fused lambda binds `arity` new levels. In a native multi-argument
+        # lambda, argument position k is `$k`; the outermost curried lambda binds
+        # the first argument, so map outermost -> position 0 by reversing the group.
+        fused_levels = [new_depth + (arity - 1 - p) for p in range(arity)]
+        converted_body = _convert_stitch_node(
+            body, None, dsl, binder_levels + fused_levels, new_depth + arity
+        )
+        return InitializedSExpression(lam_symbol, (converted_body,), {})
+
+    if not children:
+        # A nullary primitive leaf (e.g. `0`, `empty`, `true`).
+        return InitializedSExpression(symbol, (), {})
+
+    arities = _expected_child_arities(dsl, symbol, len(children))
+    converted_children = tuple(
+        _convert_stitch_node(child, arities[i], dsl, binder_levels, new_depth)
+        for i, child in enumerate(children)
+    )
+    return InitializedSExpression(symbol, converted_children, {})
+
+
+def _stitch_body_to_initialized(node, dsl):
     """Translate a parsed stitch abstraction body into a NeuroSym
     ``InitializedSExpression``.
 
-    ``#N`` -> ``AbstractionIndexParameter(N)``, single-argument lambdas ->
-    ``lam_symbol``, and bare-string leaves -> zero-child nodes.
+    ``#N`` -> ``AbstractionIndexParameter(N)`` and bare-string leaves ->
+    zero-child nodes. DreamCoder curries every lambda, but the NeuroSym list DSL
+    types higher-order primitives (``mapi``, ``reducei``, ...) with uncurried
+    multi-argument arrows, so a run of nested single-argument lambdas feeding such
+    a primitive is fused into the DSL's corresponding multi-argument lambda
+    production, remapping the enclosed de Bruijn variables.
 
-    Returns None if a parameter is applied to arguments (a higher-order
-    metavariable), which NeuroSym's abstraction representation cannot express.
+    Returns None if the body cannot be represented (a higher-order metavariable
+    applied to arguments, an applied/free variable, an unknown primitive, or a
+    required multi-argument lambda production missing from the DSL).
     """
-    if isinstance(node, str):
-        if node.startswith("#"):
-            return AbstractionIndexParameter(int(node[1:]))
-        symbol = lam_symbol if node in ("lam", "lambda") else node
-        return InitializedSExpression(symbol, (), {})
-    if node.symbol.startswith("#"):
-        # `#N` applied to arguments == higher-order parameter application.
+    try:
+        return _convert_stitch_node(node, None, dsl, [], 0)
+    except (KeyError, _UnrepresentableAbstraction):
         return None
-    symbol = lam_symbol if node.symbol in ("lam", "lambda") else node.symbol
-    children = []
-    for child in node.children:
-        converted = _stitch_body_to_initialized(child, lam_symbol)
-        if converted is None:
-            return None
-        children.append(converted)
-    return InitializedSExpression(symbol, tuple(children), {})
 
 
 def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
@@ -297,7 +392,9 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
     The abstraction's own parameters (the leading ``#``-lambdas) become
     ``AbstractionIndexParameter``s; genuine inner lambdas (arguments to
     higher-order primitives like ``map``/``filter``/``all``) become the DSL's
-    single-argument lambda production. Argument and return types are inferred
+    lambda production of matching arity -- a curried run of single-argument
+    lambdas feeding a multi-argument primitive (e.g. ``mapi``/``reducei``) is
+    fused into one multi-argument lambda. Argument and return types are inferred
     from the body via :py:meth:`DSL.compute_type_abs`.
 
     :param dsl: The base DSL the abstraction is written over.
@@ -309,7 +406,6 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
         represented or typed in ``dsl`` -- an unknown primitive, failed type
         unification, a higher-order parameter application, or free variables.
     """
-    lam_symbol = _single_arg_lambda_symbol(dsl)
     try:
         body_string, _arity = _dreamcoder_abstraction_to_stitch_body(
             dreamcoder_abstraction
@@ -320,7 +416,7 @@ def abstraction_production_from_dreamcoder(dsl, name, dreamcoder_abstraction):
         # arguments (its body does not render as a single s-expression). None of
         # these are representable NeuroSym abstractions.
         return None
-    body = _stitch_body_to_initialized(parsed, lam_symbol)
+    body = _stitch_body_to_initialized(parsed, dsl)
     if body is None:
         return None
     try:
