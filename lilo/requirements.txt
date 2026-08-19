@@ -1,0 +1,19 @@
+-e ..
+
+class-registry
+dill
+ipython
+matplotlib
+nltk
+num2words
+openai==0.28.1
+pandas
+plotly
+pregex
+psutil
+scipy
+seaborn
+setuptools<81
+tenacity
+tqdm
+transformers

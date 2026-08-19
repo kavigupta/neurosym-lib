@@ -1,0 +1,5 @@
+/om2/user/ellisk/ec/experimentOutputs/towers/2019-03-26T14:55:20.072713/
+/om2/user/ellisk/ec/experimentOutputs/towers/2019-03-26T14:58:52.281650/
+/om2/user/ellisk/ec/experimentOutputs/towers/2019-03-26T15:02:18.520979/
+/om2/user/ellisk/ec/experimentOutputs/towers/2019-03-26T15:05:45.771666/
+/om2/user/ellisk/ec/experimentOutputs/towers/2019-03-26T15:09:22.142422/

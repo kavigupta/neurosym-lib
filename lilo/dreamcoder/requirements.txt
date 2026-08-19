@@ -1,0 +1,10 @@
+openai==0.27.7
+pregex
+num2words
+nltk
+class-registry
+psutil
+seaborn
+pandas
+plotly
+tenacity
